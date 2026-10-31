@@ -97,6 +97,62 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
               ],
             ),
             const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    _editingDraftId == null ? 'Đơn mới' : 'Đang sửa đơn nháp',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Soạn đơn mới',
+                  onPressed: () async {
+                    final ownerId = _store.activeAuthenticatedUser?.id;
+                    if (!await _confirmReplaceCustomerForm() ||
+                        !mounted ||
+                        ownerId != _store.activeAuthenticatedUser?.id) {
+                      return;
+                    }
+                    _rebuildCustomerUi(() {
+                      _resetCustomerOrderForm();
+                      _syncCustomerControllersFromDb();
+                    });
+                  },
+                  icon: const Icon(Icons.note_add_outlined),
+                ),
+                IconButton(
+                  tooltip: 'Lưu đơn nháp',
+                  onPressed: _savingDraft ? null : _saveCustomerDraft,
+                  icon: const Icon(Icons.save_outlined),
+                ),
+                IconButton(
+                  tooltip: 'Mở đơn nháp',
+                  onPressed: _openCustomerDrafts,
+                  icon: const Icon(Icons.drafts_outlined),
+                ),
+              ],
+            ),
+            DeliveryWeatherStrip(
+              point: _pinnedPickupLocation ?? _store.liveDeviceLocation,
+            ),
+            ShippingLabelScanner(
+              onApply: (fields) => _rebuildCustomerUi(() {
+                if (fields['recipientName']!.isNotEmpty) {
+                  _recipientNameCtrl.text = fields['recipientName']!;
+                }
+                if (fields['recipientPhone']!.isNotEmpty) {
+                  _recipientPhoneCtrl.text = fields['recipientPhone']!;
+                }
+                if (fields['dropoffAddress']!.isNotEmpty) {
+                  _dropoffCtrl.text = fields['dropoffAddress']!;
+                  _pinnedDropoffLocation = null;
+                  _osrmPreviewPoints = null;
+                  _osrmDistMeters = null;
+                  _osrmDurationSec = null;
+                }
+              }),
+            ),
             const Text(
               '1. Lộ trình lấy & giao hàng',
               style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13.5),
@@ -111,28 +167,6 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                   color: AppColors.violet,
                   size: 18,
                 ),
-                suffixIcon: IconButton(
-                  tooltip: 'Tra cứu điểm lấy thực tế từ OpenStreetMap',
-                  onPressed: () async {
-                    final results =
-                        await SmartDispatchEngine.fetchLiveNominatimSuggestions(
-                          _pickupCtrl.text,
-                        );
-                    if (!mounted) return;
-                    _rebuildCustomerUi(() {});
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Đã tìm thấy ${results.length} địa điểm lấy hàng cho "${_pickupCtrl.text}"',
-                        ),
-                      ),
-                    );
-                  },
-                  icon: const Icon(
-                    Icons.travel_explore_rounded,
-                    color: AppColors.violet,
-                  ),
-                ),
               ),
               onChanged: (_) => _rebuildCustomerUi(() {
                 _userEditedPickupManually = true;
@@ -143,6 +177,17 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
               }),
             ),
             const SizedBox(height: 6),
+            PhotonAddressLookup(
+              controller: _pickupCtrl,
+              onSelected: (place) => _rebuildCustomerUi(() {
+                _pickupCtrl.text = place.address;
+                _pinnedPickupLocation = place.point;
+                _userEditedPickupManually = true;
+                _osrmPreviewPoints = null;
+                _osrmDistMeters = null;
+                _osrmDurationSec = null;
+              }),
+            ),
             Wrap(
               spacing: 6,
               runSpacing: 6,
@@ -284,31 +329,19 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                   color: AppColors.pink,
                   size: 20,
                 ),
-                suffixIcon: IconButton(
-                  tooltip: 'Tra cứu địa chỉ thực tế từ OpenStreetMap',
-                  onPressed: () async {
-                    final results =
-                        await SmartDispatchEngine.fetchLiveNominatimSuggestions(
-                          _dropoffCtrl.text,
-                        );
-                    if (!mounted) return;
-                    _rebuildCustomerUi(() {});
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Đã tìm thấy ${results.length} địa điểm thực tế cho "${_dropoffCtrl.text}"',
-                        ),
-                      ),
-                    );
-                  },
-                  icon: const Icon(
-                    Icons.travel_explore_rounded,
-                    color: AppColors.violet,
-                  ),
-                ),
               ),
               onChanged: (_) => _rebuildCustomerUi(() {
                 _pinnedDropoffLocation = null;
+                _osrmPreviewPoints = null;
+                _osrmDistMeters = null;
+                _osrmDurationSec = null;
+              }),
+            ),
+            PhotonAddressLookup(
+              controller: _dropoffCtrl,
+              onSelected: (place) => _rebuildCustomerUi(() {
+                _dropoffCtrl.text = place.address;
+                _pinnedDropoffLocation = place.point;
                 _osrmPreviewPoints = null;
                 _osrmDistMeters = null;
                 _osrmDurationSec = null;
@@ -435,7 +468,8 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                                   vertical: 3,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: (_additionalStops.isNotEmpty ||
+                                  color:
+                                      (_additionalStops.isNotEmpty ||
                                           _isRoundTrip)
                                       ? AppColors.acid
                                       : Colors.white,
@@ -569,15 +603,14 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                                           if (_dropoffCtrl.text
                                               .trim()
                                               .isEmpty) {
-                                            ScaffoldMessenger.of(
-                                              context,
-                                            ).showSnackBar(
-                                              const SnackBar(
-                                                content: Text(
-                                                  'Vui lòng nhập Điểm giao chính trước khi tối ưu thứ tự đa điểm!',
-                                                ),
-                                              ),
-                                            );
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                                  const SnackBar(
+                                                    content: Text(
+                                                      'Vui lòng nhập Điểm giao chính trước khi tối ưu thứ tự đa điểm!',
+                                                    ),
+                                                  ),
+                                                );
                                             return;
                                           }
                                           final allStops =
@@ -731,7 +764,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                                   child: Text(
                                     _lastTspSavedMeters! > 0
                                         ? 'Lộ trình đa điểm đã sắp xếp tối ưu bằng Nearest-Neighbor + 2-Opt (rút ngắn ${(_lastTspSavedMeters! / 1000.0).toStringAsFixed(2)} km).'
-                                    : 'Thứ tự các trạm giao đã tối ưu theo thuật toán 2-Opt TSP.',
+                                        : 'Thứ tự các trạm giao đã tối ưu theo thuật toán 2-Opt TSP.',
                                     style: const TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w800,
@@ -945,8 +978,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                             keyboardType: TextInputType.number,
                             onChanged: (_) => _rebuildCustomerUi(() {}),
                             decoration: InputDecoration(
-                              labelText:
-                                  'Giá trị hàng hóa khai báo (VNĐ)',
+                              labelText: 'Giá trị hàng hóa khai báo (VNĐ)',
                               hintText:
                                   'VD: 5000000 (Đền bù tối đa 30.000.000đ)',
                               helperText: rawVal <= 0
@@ -1301,8 +1333,9 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                         avatar: Icon(
                           Icons.electric_moped_rounded,
                           size: 15,
-                          color:
-                              _preferEcoEv ? Colors.white : AppColors.success,
+                          color: _preferEcoEv
+                              ? Colors.white
+                              : AppColors.success,
                         ),
                         label: Text(
                           _preferEcoEv
@@ -1668,8 +1701,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
       final rawAirMeters = GeoMath.distanceMeters(pickupPt, dropoffPt);
       distMeters =
           _osrmDistMeters ?? (rawAirMeters * 1.28).round().clamp(1500, 45000);
-      durationSec =
-          _osrmDurationSec ?? ((distMeters / 1000.0) * 180).round();
+      durationSec = _osrmDurationSec ?? ((distMeters / 1000.0) * 180).round();
     } else {
       var routeMeters = GeoMath.distanceMeters(pickupPt, dropoffPt) * 1.28;
       var prevPt = dropoffPt;
@@ -1689,8 +1721,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
         prevPt = sPt;
         lastDropoffPt = sPt;
       }
-      distMeters =
-          _osrmDistMeters ?? routeMeters.round().clamp(1500, 45000);
+      distMeters = _osrmDistMeters ?? routeMeters.round().clamp(1500, 45000);
       durationSec =
           _osrmDurationSec ??
           (((distMeters / 1000.0) * 180).round() +
@@ -1910,8 +1941,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                             ),
                             valueColor: AppColors.success,
                           ),
-                        if (_preferEcoEv &&
-                            estimate.estimatedCo2SavedGrams > 0)
+                        if (_preferEcoEv && estimate.estimatedCo2SavedGrams > 0)
                           _priceRow(
                             'Giảm phát thải Xe điện Xanh (Eco EV)',
                             '-${estimate.estimatedCo2SavedGrams.toStringAsFixed(0)}g CO₂',
@@ -1956,78 +1986,84 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
               ),
             const SizedBox(height: 12),
             const Text(
-              'Thanh toán tiền mặt (COD)',
+              'Phương thức thanh toán',
               style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
             ),
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5F1E8),
-                borderRadius: BorderRadius.all(Radius.zero),
-                border: Border.all(color: const Color(0xFF15131E)),
-              ),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final codField = TextField(
-                    controller: _codCtrl,
-                    keyboardType: TextInputType.number,
-                    onChanged: (_) => _rebuildCustomerUi(() {}),
-                    decoration: const InputDecoration(
-                      isDense: true,
-                      labelText: 'Tiền thu hộ COD (đ)',
-                      hintText: '0',
-                    ),
-                  );
-                  if (constraints.maxWidth < 480) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.account_balance_wallet_rounded,
-                              color: Color(0xFF5B33E6),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                'Phương thức đã chọn: $_selectedPaymentMethod',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                  color: Color(0xFF5B33E6),
+            const SizedBox(height: 8),
+            if (_selectedPaymentMethod == 'Tiền mặt (COD)') ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F1E8),
+                  borderRadius: BorderRadius.all(Radius.zero),
+                  border: Border.all(color: const Color(0xFF15131E)),
+                ),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final codField = TextField(
+                      controller: _codCtrl,
+                      keyboardType: TextInputType.number,
+                      onChanged: (_) => _rebuildCustomerUi(() {}),
+                      decoration: const InputDecoration(
+                        isDense: true,
+                        labelText: 'Tiền thu hộ COD (đ)',
+                        hintText: '0',
+                      ),
+                    );
+                    if (constraints.maxWidth < 480) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.account_balance_wallet_rounded,
+                                color: Color(0xFF5B33E6),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Phương thức đã chọn: $_selectedPaymentMethod',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    color: Color(0xFF5B33E6),
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          codField,
+                        ],
+                      );
+                    }
+                    return Row(
+                      children: [
+                        const Icon(
+                          Icons.account_balance_wallet_rounded,
+                          color: Color(0xFF5B33E6),
                         ),
-                        const SizedBox(height: 8),
-                        codField,
-                      ],
-                    );
-                  }
-                  return Row(
-                    children: [
-                      const Icon(
-                        Icons.account_balance_wallet_rounded,
-                        color: Color(0xFF5B33E6),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          'Phương thức đã chọn: $_selectedPaymentMethod',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF5B33E6),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Phương thức đã chọn: $_selectedPaymentMethod',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF5B33E6),
+                            ),
                           ),
                         ),
-                      ),
-                      SizedBox(width: 170, child: codField),
-                    ],
-                  );
-                },
+                        SizedBox(width: 170, child: codField),
+                      ],
+                    );
+                  },
+                ),
               ),
-            ),
+            ],
             if (_selectedPaymentMethod == 'Tiền mặt (COD)') ...[
               const SizedBox(height: 8),
               Wrap(
@@ -2077,6 +2113,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                 ),
                 onPressed: () async {
                   final messenger = ScaffoldMessenger.of(context);
+                  final ownerId = _store.activeAuthenticatedUser?.id;
                   if (!_validateOrderFormInputs()) {
                     _rebuildCustomerUi(() => _selectedScreenIndex = 2);
                     return;
@@ -2129,7 +2166,24 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                       ),
                     );
                   }
-                  if (!context.mounted) return;
+                  if (!context.mounted ||
+                      ownerId != _store.activeAuthenticatedUser?.id) {
+                    return;
+                  }
+                  final savedDraftId = _editingDraftId;
+                  _editingDraftId = null;
+                  if (savedDraftId != null) {
+                    try {
+                      await _store.deleteCustomerOrderDraft(savedDraftId);
+                    } catch (_) {
+                      // The order is committed even if draft cleanup fails.
+                    }
+                    _draftsFuture = null;
+                    if (!context.mounted ||
+                        ownerId != _store.activeAuthenticatedUser?.id) {
+                      return;
+                    }
+                  }
                   final batchInfo = created.batchGroupId != null
                       ? ' • Đã ghép cặp đơn 2H (${created.batchGroupId})'
                       : '';
@@ -2155,6 +2209,8 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                     _osrmPreviewPoints = null;
                     _osrmDistMeters = null;
                     _osrmDurationSec = null;
+                    _resetCustomerOrderForm();
+                    _syncCustomerControllersFromDb();
                     _selectedScreenIndex = 4;
                   });
                 },
@@ -2418,6 +2474,10 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            LiveOrderConnection(
+              key: ValueKey('live-${activeOrder.trackingCode}'),
+              room: activeOrder.trackingCode,
+            ),
             Wrap(
               alignment: WrapAlignment.spaceBetween,
               crossAxisAlignment: WrapCrossAlignment.center,

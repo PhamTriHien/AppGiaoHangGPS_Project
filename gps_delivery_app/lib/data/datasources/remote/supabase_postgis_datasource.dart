@@ -14,11 +14,45 @@ import '../../../domain/enums/service_type.dart';
 
 /// Datasource kết nối trực tiếp tới cơ sở dữ liệu PostgreSQL + PostGIS trên Supabase
 class SupabasePostgisDatasource {
+  SupabasePostgisDatasource();
+  SupabasePostgisDatasource._pinned(this._sessionClient);
+  SupabaseClient? _sessionClient;
+
+  Session? get authenticatedSession {
+    try {
+      return _requireClient().auth.currentSession;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  SupabasePostgisDatasource? pinAuthenticatedSession() {
+    final session = authenticatedSession;
+    if (session == null) return null;
+    final token = session.accessToken;
+    return SupabasePostgisDatasource._pinned(
+      SupabaseClient(
+        EnvConfig.supabaseUrl,
+        EnvConfig.supabaseAnonKey,
+        accessToken: () async => token,
+      ),
+    );
+  }
+
+  Future<void> disposePinnedSession() async {
+    await _sessionClient?.dispose();
+    _sessionClient = null;
+  }
+
   static SupabaseClient? _runtimeClient;
   static String? _runtimeBoundUrl;
   static String? _runtimeBoundKey;
 
-  static void bindRuntimeClient(String url, String anonKey) {
+  static void bindRuntimeClient(
+    String url,
+    String anonKey, {
+    SupabaseClient? client,
+  }) {
     final cleanUrl = url.trim();
     final cleanKey = anonKey.trim();
     if (cleanUrl.isEmpty || cleanKey.isEmpty) {
@@ -27,12 +61,19 @@ class SupabasePostgisDatasource {
       _runtimeBoundKey = null;
       return;
     }
+    if (client == null &&
+        _runtimeClient != null &&
+        _runtimeBoundUrl == cleanUrl &&
+        _runtimeBoundKey == cleanKey) {
+      return;
+    }
     _runtimeBoundUrl = cleanUrl;
     _runtimeBoundKey = cleanKey;
-    _runtimeClient = SupabaseClient(cleanUrl, cleanKey);
+    _runtimeClient = client ?? SupabaseClient(cleanUrl, cleanKey);
   }
 
   SupabaseClient _requireClient() {
+    if (_sessionClient != null) return _sessionClient!;
     if (!EnvConfig.isSupabaseConfigured) {
       throw const NetworkSyncException(
         message: 'Chưa cấu hình SUPABASE_URL / SUPABASE_ANON_KEY. Chuyển sang chế độ lưu trữ SQLite Offline.',
@@ -279,8 +320,8 @@ class SupabasePostgisDatasource {
               src['is_electric_vehicle'] == true ||
               src['is_electric_vehicle'] == 1 ||
               _normalizeVehicleType(src['vehicle_type']) == 'EV_MOTORBIKE',
-          'battery_percent':
-              ((src['battery_percent'] as num?)?.toInt() ?? 95).clamp(0, 100),
+          'battery_percent': ((src['battery_percent'] as num?)?.toInt() ?? 95)
+              .clamp(0, 100),
           'approval_status': _normalizeApprovalStatus(src['approval_status']),
           'wallet_balance': (src['wallet_balance'] as num?)?.toDouble() ?? 0.0,
         };

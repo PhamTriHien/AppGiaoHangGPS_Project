@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:isolate';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -21,6 +20,7 @@ class OfflineSyncRecord {
   final int retryCount;
   final String syncStatus;
   final int createdAtMs;
+  final String? ownerScope;
 
   const OfflineSyncRecord({
     required this.id,
@@ -30,6 +30,7 @@ class OfflineSyncRecord {
     required this.retryCount,
     required this.syncStatus,
     required this.createdAtMs,
+    this.ownerScope,
   });
 
   int get nextBackoffDelayMs {
@@ -47,8 +48,10 @@ class SqliteOfflineQueueDatasource {
   SqliteOfflineQueueDatasource._internal();
 
   static const String _dbFileName = 'gps_delivery_production.db';
-  static const int _dbVersion = 8;
+  static const int _dbVersion = 9;
   static const Uuid _uuid = Uuid();
+  final String runtimeSessionId = _uuid.v4();
+  String? Function()? syncScopeProvider;
 
   static bool _ffiInitialized = false;
   sqflite.Database? _database;
@@ -97,7 +100,7 @@ class SqliteOfflineQueueDatasource {
     if (isTestEnv) {
       fullPath = p.join(
         Directory.systemTemp.path,
-        'gps_delivery_test_runtime_${pid}_${Isolate.current.hashCode}.db',
+        'gps_delivery_test_runtime_${pid}_$runtimeSessionId.db',
       );
     } else if (Platform.isAndroid || Platform.isIOS) {
       final mobileDbDir = await sqflite.getDatabasesPath();
@@ -157,6 +160,12 @@ class SqliteOfflineQueueDatasource {
   }
 
   Future<void> _ensureSchemaColumnsMigrated(sqflite.Database db) async {
+    // Old queue entries remain unbound; never assign them to the next login.
+    await _ensureColumnExists(db, 'local_sync_queue', 'owner_scope', 'TEXT');
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS local_sync_queue_owner_pending '
+      'ON local_sync_queue(owner_scope, sync_status, created_at_ms)',
+    );
     await _ensureColumnExists(
       db,
       'drivers',
@@ -589,6 +598,7 @@ class SqliteOfflineQueueDatasource {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         idempotency_key TEXT UNIQUE NOT NULL,
         action_type TEXT NOT NULL,
+        owner_scope TEXT,
         payload_json TEXT NOT NULL,
         retry_count INTEGER NOT NULL DEFAULT 0,
         sync_status TEXT NOT NULL DEFAULT 'PENDING',
@@ -837,8 +847,10 @@ class SqliteOfflineQueueDatasource {
     required Map<String, dynamic> payload,
   }) async {
     final idempotencyKey = _uuid.v4();
+    final ownerScope = syncScopeProvider?.call();
     await upsertRow('local_sync_queue', {
       'idempotency_key': idempotencyKey,
+      'owner_scope': ownerScope,
       'action_type': actionType,
       'payload_json': jsonEncode(payload),
       'retry_count': 0,
@@ -848,11 +860,16 @@ class SqliteOfflineQueueDatasource {
     return idempotencyKey;
   }
 
-  Future<List<OfflineSyncRecord>> getPendingSyncItems({int limit = 50}) async {
+  Future<List<OfflineSyncRecord>> getPendingSyncItems({
+    int limit = 50,
+    String? ownerScope,
+  }) async {
     final rows = await queryRows(
       'local_sync_queue',
-      where: 'sync_status = ?',
-      whereArgs: ['PENDING'],
+      where: ownerScope == null
+          ? 'sync_status = ?'
+          : 'sync_status = ? AND owner_scope = ?',
+      whereArgs: ['PENDING', ?ownerScope],
       orderBy: 'created_at_ms ASC',
       limit: limit,
     );
@@ -867,22 +884,24 @@ class SqliteOfflineQueueDatasource {
         retryCount: (row['retry_count'] as num).toInt(),
         syncStatus: row['sync_status'] as String,
         createdAtMs: (row['created_at_ms'] as num).toInt(),
+        ownerScope: row['owner_scope'] as String?,
       );
     }).toList();
   }
 
   Future<int> getPendingQueueCount() async {
+    // Failed retries still need attention and must not look like a success.
     if (kIsWeb) {
       final rows = await queryRows(
         'local_sync_queue',
-        where: 'sync_status = ?',
-        whereArgs: ['PENDING'],
+        where: 'sync_status != ?',
+        whereArgs: ['SYNCED'],
       );
       return rows.length;
     }
     final db = await database;
     final result = await db.rawQuery(
-      "SELECT COUNT(*) AS cnt FROM local_sync_queue WHERE sync_status = 'PENDING'",
+      "SELECT COUNT(*) AS cnt FROM local_sync_queue WHERE sync_status != 'SYNCED'",
     );
     return sqflite.Sqflite.firstIntValue(result) ?? 0;
   }

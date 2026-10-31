@@ -13,11 +13,17 @@ class EnvConfig {
 
   static String _runtimeSupabaseUrl = '';
   static String _runtimeSupabaseAnonKey = '';
+  static bool _supabaseDisabled = false;
 
-  static String get supabaseUrl =>
-      _runtimeSupabaseUrl.isNotEmpty ? _runtimeSupabaseUrl : _envSupabaseUrl;
+  static String get supabaseUrl => _supabaseDisabled
+      ? ''
+      : _runtimeSupabaseUrl.isNotEmpty
+      ? _runtimeSupabaseUrl
+      : _envSupabaseUrl;
 
-  static String get supabaseAnonKey => _runtimeSupabaseAnonKey.isNotEmpty
+  static String get supabaseAnonKey => _supabaseDisabled
+      ? ''
+      : _runtimeSupabaseAnonKey.isNotEmpty
       ? _runtimeSupabaseAnonKey
       : _envSupabaseAnonKey;
 
@@ -25,14 +31,32 @@ class EnvConfig {
     required String url,
     required String anonKey,
   }) {
+    _supabaseDisabled = false;
     _runtimeSupabaseUrl = url.trim();
     _runtimeSupabaseAnonKey = anonKey.trim();
+  }
+
+  static void disableSupabaseRuntime() {
+    _supabaseDisabled = true;
+    _runtimeSupabaseUrl = '';
+    _runtimeSupabaseAnonKey = '';
   }
 
   static const String nominatimSearchEndpoint =
       'https://nominatim.openstreetmap.org/search';
   static const String osrmRouteEndpoint =
       'https://router.project-osrm.org/route/v1/driving';
+  static const String _envDeliveryApiBaseUrl = String.fromEnvironment(
+    'DELIVERY_API_BASE_URL',
+  );
+  static String _runtimeDeliveryApiBaseUrl = '';
+  static String get deliveryApiBaseUrl => _runtimeDeliveryApiBaseUrl.isNotEmpty
+      ? _runtimeDeliveryApiBaseUrl
+      : _envDeliveryApiBaseUrl;
+
+  static void configureDeliveryApiRuntime({required String baseUrl}) {
+    _runtimeDeliveryApiBaseUrl = baseUrl.trim();
+  }
 
   // Cấu hình Google Maps Platform API (Geocoding, Directions, Places & Tile Server)
   static const String googleMapsGeocodeEndpoint =
@@ -180,18 +204,17 @@ class EnvConfig {
       : _envOtpEmailWebhookToken;
   static String get smsProvider =>
       _runtimeSmsProvider.isNotEmpty ? _runtimeSmsProvider : _envSmsProvider;
-  static String get smsApiKey => _runtimeSmsApiKey.isNotEmpty
-      ? _runtimeSmsApiKey
-      : _envSmsApiKey;
-  static String get smsApiSecret => _runtimeSmsApiSecret.isNotEmpty
-      ? _runtimeSmsApiSecret
-      : _envSmsApiSecret;
-  static String get smsBrandname => _runtimeSmsBrandname.isNotEmpty
-      ? _runtimeSmsBrandname
-      : _envSmsBrandname;
-  static String get googleClientId => _runtimeGoogleClientId.isNotEmpty
-      ? _runtimeGoogleClientId
-      : _envGoogleClientId;
+  static String get smsApiKey =>
+      _runtimeSmsApiKey.isNotEmpty ? _runtimeSmsApiKey : _envSmsApiKey;
+  static String get smsApiSecret =>
+      _runtimeSmsApiSecret.isNotEmpty ? _runtimeSmsApiSecret : _envSmsApiSecret;
+  static String get smsBrandname =>
+      _runtimeSmsBrandname.isNotEmpty ? _runtimeSmsBrandname : _envSmsBrandname;
+  static String get googleClientId =>
+      _backendGoogleId ??
+      (_runtimeGoogleClientId.isNotEmpty
+          ? _runtimeGoogleClientId
+          : _envGoogleClientId);
   static String get googleClientSecret => _runtimeGoogleClientSecret.isNotEmpty
       ? _runtimeGoogleClientSecret
       : _envGoogleClientSecret;
@@ -209,7 +232,11 @@ class EnvConfig {
       otpEmailWebhookUrl.startsWith('http://') ||
       otpEmailWebhookUrl.startsWith('https://');
 
+  static bool get isEmailOtpConfigured =>
+      isOtpEmailWebhookConfigured || isSmtpConfigured;
+
   static bool get isExternalSmsGatewayConfigured {
+    if (_backendSmsReady != null) return _backendSmsReady!;
     final p = smsProvider.toUpperCase();
     if (p == 'TEXTBEE') {
       return smsApiKey.isNotEmpty && smsBrandname.isNotEmpty;
@@ -251,6 +278,15 @@ class EnvConfig {
   static bool get isGoogleOAuthConfigured =>
       googleClientId.isNotEmpty &&
       googleClientId.contains('.apps.googleusercontent.com');
+
+  static bool? _backendSmsReady;
+  static void configureBackendAuth(Map<String, dynamic> value) {
+    _backendSmsReady = value['sms'] == true;
+    _runtimeGoogleClientId = value['googleClientId']?.toString() ?? '';
+    _backendGoogleId = _runtimeGoogleClientId;
+  }
+
+  static String? _backendGoogleId;
 
   static void configureAuthProvidersRuntime({
     String? smtpHost,

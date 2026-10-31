@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
+
+import 'package:crypto/crypto.dart';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
@@ -8,6 +11,8 @@ import 'package:url_launcher/url_launcher.dart' as url_launcher;
 
 import '../../domain/enums/user_role.dart';
 import '../config/env_config.dart';
+import '../integrations/delivery_api_client.dart';
+import '../integrations/turnstile_challenge_service.dart';
 
 class OtpDeliveryReceipt {
   final bool success;
@@ -119,13 +124,13 @@ class RealAuthDeliveryService {
     final isEmail = target.contains('@');
 
     if (isEmail) {
-      if (!EnvConfig.isSmtpConfigured) {
+      if (!EnvConfig.isEmailOtpConfigured) {
         return OtpDeliveryReceipt(
           success: false,
           deliveredExternally: false,
           channel: 'SMTP_NOT_CONFIGURED',
           destination: target,
-          message: 'Chưa cấu hình tài khoản SMTP TLS trong EnvConfig để gửi Email OTP.',
+          message: 'Chưa cấu hình dịch vụ gửi Email OTP.',
           otpCode: otpCode,
         );
       }
@@ -138,204 +143,10 @@ class RealAuthDeliveryService {
     }
   }
 
-  /// Giao thức RFC-5321 SMTP over TLS (Cổng 465 / 587) gửi Email OTP thật tới hộp thư người nhận
   Future<OtpDeliveryReceipt> _sendRealSmtpTlsEmail({
     required String recipientEmail,
     required String otpCode,
-  }) async {
-    if (kIsWeb) {
-      if (EnvConfig.isOtpEmailWebhookConfigured) {
-        return _sendWebEmailOtpRelay(
-          recipientEmail: recipientEmail,
-          otpCode: otpCode,
-        );
-      }
-      return OtpDeliveryReceipt(
-        success: false,
-        deliveredExternally: false,
-        channel: 'SMTP_WEB_UNSUPPORTED',
-        destination: recipientEmail,
-        otpCode: otpCode,
-        message: 'Bản Web cần cấu hình OTP_EMAIL_WEBHOOK_URL để gửi Email OTP. SMTP 465/587 chỉ chạy trực tiếp trên Desktop/Mobile.',
-      );
-    }
-    Socket? rawSocket;
-    SecureSocket? tlsSocket;
-    StreamSubscription<String>? sub;
-    try {
-      final host = EnvConfig.smtpHost;
-      final port = EnvConfig.smtpPort;
-      final sender = EnvConfig.smtpSenderEmail.trim();
-      final password = EnvConfig.smtpAppPassword.replaceAll(' ', '').trim();
-
-      final responseQueue = <String>[];
-      Completer<String>? lineCompleter;
-
-      void onDataLine(String chunk) {
-        for (final rawLine in chunk.split('\r\n')) {
-          final line = rawLine.trim();
-          if (line.isEmpty) continue;
-          responseQueue.add(line);
-          if (line.length >= 3 &&
-              int.tryParse(line.substring(0, 3)) != null &&
-              (line.length == 3 || line[3] == ' ')) {
-            if (lineCompleter != null && !lineCompleter!.isCompleted) {
-              lineCompleter!.complete(line);
-            }
-          }
-        }
-      }
-
-      Future<String> waitServerCode() async {
-        if (responseQueue.isNotEmpty) {
-          final last = responseQueue.last;
-          if (last.length >= 3 &&
-              int.tryParse(last.substring(0, 3)) != null &&
-              (last.length == 3 || last[3] == ' ')) {
-            responseQueue.clear();
-            return last;
-          }
-        }
-        lineCompleter = Completer<String>();
-        final res = await lineCompleter!.future.timeout(
-          const Duration(seconds: 8),
-        );
-        responseQueue.clear();
-        return res;
-      }
-
-      if (port == 465) {
-        tlsSocket = await SecureSocket.connect(
-          host,
-          port,
-          timeout: const Duration(seconds: 8),
-        );
-        sub = utf8.decoder.bind(tlsSocket).listen(onDataLine);
-        await waitServerCode();
-      } else {
-        rawSocket = await Socket.connect(
-          host,
-          port,
-          timeout: const Duration(seconds: 8),
-        );
-        sub = utf8.decoder.bind(rawSocket).listen(onDataLine);
-        await waitServerCode();
-        rawSocket.write('EHLO ghst.vn\r\n');
-        await waitServerCode();
-        rawSocket.write('STARTTLS\r\n');
-        final tlsReady = await waitServerCode();
-        if (!tlsReady.startsWith('220')) {
-          throw SocketException(
-            'Máy chủ SMTP không hỗ trợ STARTTLS: $tlsReady',
-          );
-        }
-        await sub.cancel();
-        tlsSocket = await SecureSocket.secure(rawSocket);
-        sub = utf8.decoder.bind(tlsSocket).listen(onDataLine);
-      }
-
-      void sendCmd(String cmd) {
-        tlsSocket!.write('$cmd\r\n');
-      }
-
-      sendCmd('EHLO ghst.vn');
-      await waitServerCode();
-
-      sendCmd('AUTH LOGIN');
-      final authPrompt1 = await waitServerCode();
-      if (!authPrompt1.startsWith('334')) {
-        throw SocketException('SMTP AUTH LOGIN thất bại: $authPrompt1');
-      }
-
-      sendCmd(base64Encode(utf8.encode(sender)));
-      final authPrompt2 = await waitServerCode();
-      if (!authPrompt2.startsWith('334')) {
-        throw SocketException('SMTP từ chối tài khoản gửi: $authPrompt2');
-      }
-
-      sendCmd(base64Encode(utf8.encode(password)));
-      final authResult = await waitServerCode();
-      if (!authResult.startsWith('235')) {
-        throw SocketException(
-          'Xác thực mật khẩu ứng dụng SMTP thất bại: $authResult',
-        );
-      }
-
-      sendCmd('MAIL FROM:<$sender>');
-      final mailFromRes = await waitServerCode();
-      if (!mailFromRes.startsWith('250')) {
-        throw SocketException('MAIL FROM lỗi: $mailFromRes');
-      }
-
-      sendCmd('RCPT TO:<$recipientEmail>');
-      final rcptRes = await waitServerCode();
-      if (!rcptRes.startsWith('250')) {
-        throw SocketException('RCPT TO lỗi: $rcptRes');
-      }
-
-      sendCmd('DATA');
-      final dataPrompt = await waitServerCode();
-      if (!dataPrompt.startsWith('354')) {
-        throw SocketException('SMTP DATA lỗi: $dataPrompt');
-      }
-
-      final subjectB64 = base64Encode(
-        utf8.encode('[GHST] Mã xác thực OTP của bạn là $otpCode'),
-      );
-      final nowUtc = DateTime.now().toUtc().toIso8601String();
-      final emailPayload = StringBuffer()
-        ..writeln('From: "Giao Hang Sieu Toc (GHST)" <$sender>')
-        ..writeln('To: <$recipientEmail>')
-        ..writeln('Subject: =?UTF-8?B?$subjectB64?=')
-        ..writeln('MIME-Version: 1.0')
-        ..writeln('Content-Type: text/html; charset=UTF-8')
-        ..writeln()
-        ..writeln(
-          '<div style="font-family:Segoe UI,Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;background:#F5F1E8;border:2px solid #15131E;">'
-          '<div style="background:#CBFF3E;display:inline-block;padding:4px 10px;border:1px solid #15131E;font-weight:900;font-size:12px;">GHST • GIAO HÀNG SIÊU TỐC</div>'
-          '<h2 style="color:#15131E;margin:14px 0 8px;">Mã xác thực OTP đăng nhập</h2>'
-          '<p style="color:#333;font-size:14px;">Xin chào, mã xác thực OTP 6 chữ số của bạn là:</p>'
-          '<div style="background:#15131E;color:#CBFF3E;font-size:32px;font-weight:900;letter-spacing:8px;text-align:center;padding:16px;margin:16px 0;">$otpCode</div>'
-          '<p style="color:#555;font-size:12px;">Mã có hiệu lực trong vòng 120 giây (Thời điểm cấp: $nowUtc).</p>'
-          '</div>',
-        )
-        ..writeln('.');
-
-      tlsSocket.write(
-        emailPayload
-            .toString()
-            .replaceAll('\r\n', '\n')
-            .replaceAll('\n', '\r\n'),
-      );
-      final sendRes = await waitServerCode();
-      sendCmd('QUIT');
-
-      if (!sendRes.startsWith('250')) {
-        throw SocketException('Gửi nội dung thư thất bại: $sendRes');
-      }
-
-      return OtpDeliveryReceipt(
-        success: true,
-        deliveredExternally: true,
-        channel: 'SMTP_TLS',
-        destination: recipientEmail,
-        message:
-            'Đã gửi mã OTP 6 chữ số tới hộp thư $recipientEmail. Vui lòng kiểm tra Email và nhập mã bên dưới.',
-      );
-    } catch (e) {
-      return OtpDeliveryReceipt(
-        success: false,
-        deliveredExternally: false,
-        channel: 'SMTP_TLS_ERROR',
-        destination: recipientEmail,
-        message: 'Lỗi kết nối SMTP: $e',
-      );
-    } finally {
-      await sub?.cancel();
-      await tlsSocket?.close();
-      await rawSocket?.close();
-    }
-  }
+  }) => _sendWebEmailOtpRelay(recipientEmail: recipientEmail, otpCode: otpCode);
 
   /// Chuyển Email OTP tới backend HTTP. Backend chịu trách nhiệm gửi SMTP,
   /// nên mật khẩu SMTP không bao giờ bị đưa vào bundle Web.
@@ -344,6 +155,7 @@ class RealAuthDeliveryService {
     required String otpCode,
   }) async {
     try {
+      final grant = await TurnstileChallengeService.obtainOtpGrant();
       final headers = <String, String>{'Content-Type': 'application/json'};
       final token = EnvConfig.otpEmailWebhookToken.trim();
       if (token.isNotEmpty) headers['Authorization'] = 'Bearer $token';
@@ -352,6 +164,7 @@ class RealAuthDeliveryService {
             Uri.parse(EnvConfig.otpEmailWebhookUrl),
             headers: headers,
             body: jsonEncode({
+              'turnstileGrant': ?grant,
               'to': recipientEmail,
               'otp': otpCode,
               'subject': '[GHST] Mã xác thực OTP của bạn',
@@ -390,432 +203,62 @@ class RealAuthDeliveryService {
     }
   }
 
-  /// Điều phối SMS OTP thực tế 100% qua sóng viễn thông (TextBee.dev / Twilio / SpeedSMS.vn / eSMS.vn / HTTP Webhook)
   Future<OtpDeliveryReceipt> _dispatchMultiChannelPhoneSmsOtp({
     required String phoneNumber,
     required String otpCode,
   }) async {
-    final normPhone = EnvConfig.formatVietnamPhoneNational(phoneNumber);
-    final e164Phone = EnvConfig.formatVietnamPhoneE164(phoneNumber);
-    final provider = EnvConfig.smsProvider.toUpperCase();
-
-    if (provider == 'TEXTBEE' &&
-        EnvConfig.smsApiKey.isNotEmpty &&
-        EnvConfig.smsBrandname.isNotEmpty) {
-      return _sendTextBeeSmsGateway(e164Phone: e164Phone, otpCode: otpCode);
-    }
-    if (provider == 'ESMS' &&
-        EnvConfig.smsApiKey.isNotEmpty &&
-        EnvConfig.smsApiSecret.isNotEmpty) {
-      return _sendEsmsVnGateway(phoneNumber: normPhone, otpCode: otpCode);
-    }
-    if (provider == 'SPEEDSMS' && EnvConfig.smsApiKey.isNotEmpty) {
-      return _sendSpeedSmsGateway(phoneNumber: normPhone, otpCode: otpCode);
-    }
-    if (provider == 'TWILIO' &&
-        EnvConfig.smsApiKey.isNotEmpty &&
-        EnvConfig.smsApiSecret.isNotEmpty &&
-        EnvConfig.smsBrandname.isNotEmpty) {
-      return _sendTwilioSmsGateway(e164Phone: e164Phone, otpCode: otpCode);
-    }
-    if (EnvConfig.isSmsWebhookConfigured) {
-      return _sendRealSmsWebhook(phoneNumber: normPhone, otpCode: otpCode);
-    }
-
-    return OtpDeliveryReceipt(
-      success: false,
-      deliveredExternally: false,
-      channel: 'SMS_NOT_CONFIGURED',
-      destination: normPhone,
-      otpCode: otpCode,
-      message:
-          'Chưa gắn API Key cổng SMS viễn thông cho số $normPhone. Hãy nhập Email để nhận mã OTP 6 số thật qua SMTP TLS (hoạt động ngay trên Wi-Fi/4G), hoặc nhấn "Cấu hình Cổng SMS OTP Thật" bên dưới.',
-    );
-  }
-
-  /// Cổng TextBee.dev REST API (`https://api.textbee.dev/api/v1/gateway/devices/{deviceId}/send-sms`) bắn SMS thật từ SIM
-  Future<OtpDeliveryReceipt> _sendTextBeeSmsGateway({
-    required String e164Phone,
-    required String otpCode,
-  }) async {
+    final phone = EnvConfig.formatVietnamPhoneE164(phoneNumber);
     try {
-      final apiKey = EnvConfig.smsApiKey.trim();
-      final deviceId = EnvConfig.smsBrandname.trim();
-      final uri = Uri.parse(
-        'https://api.textbee.dev/api/v1/gateway/devices/$deviceId/send-sms',
+      final grant = await TurnstileChallengeService.obtainOtpGrant();
+      final response = await DeliveryApiClient.instance.request(
+        'local-auth/sms',
+        localAuth: true,
+        body: {'phone': phone, 'otp': otpCode, 'turnstileGrant': ?grant},
       );
-      final payload = jsonEncode({
-        'recipients': [e164Phone],
-        'message':
-            '[GHST] Ma xac thuc OTP Giao Hang Sieu Toc cua ban la: $otpCode (Hieu luc 120 giay).',
-      });
-      final res = await http
-          .post(
-            uri,
-            headers: {'x-api-key': apiKey, 'Content-Type': 'application/json'},
-            body: payload,
-          )
-          .timeout(const Duration(seconds: 8));
-      final raw = utf8.decode(res.bodyBytes, allowMalformed: true);
-      if (res.statusCode >= 200 && res.statusCode < 300) {
-        return OtpDeliveryReceipt(
-          success: true,
-          deliveredExternally: true,
-          channel: 'TEXTBEE_SMS',
-          destination: e164Phone,
-          otpCode: otpCode,
-          message:
-              'Đã bắn tin nhắn SMS OTP thật tới số $e164Phone qua trạm SIM TextBee.dev!',
-        );
-      }
+      final accepted = response['accepted'] == true;
+      return OtpDeliveryReceipt(
+        success: accepted,
+        deliveredExternally: accepted,
+        channel: response['channel']?.toString() ?? 'SMS_BACKEND',
+        destination: phone,
+        otpCode: otpCode,
+        message: accepted
+            ? 'Nhà cung cấp đã tiếp nhận yêu cầu gửi SMS.'
+            : 'Chưa gửi được SMS.',
+      );
+    } catch (_) {
       return OtpDeliveryReceipt(
         success: false,
         deliveredExternally: false,
-        channel: 'TEXTBEE_ERROR',
-        destination: e164Phone,
+        channel: 'SMS_BACKEND_ERROR',
+        destination: phone,
         otpCode: otpCode,
-        message: 'TextBee.dev trả về HTTP ${res.statusCode}: $raw',
-      );
-    } catch (e) {
-      return OtpDeliveryReceipt(
-        success: false,
-        deliveredExternally: false,
-        channel: 'TEXTBEE_ERROR',
-        destination: e164Phone,
-        otpCode: otpCode,
-        message: 'Lỗi kết nối TextBee.dev: $e',
+        message: 'Chưa gửi được SMS. Kiểm tra cấu hình dịch vụ tại backend.',
       );
     }
   }
 
-  /// Cổng eSMS.vn REST API v4 (`SendMultipleMessage_V4_post_json`)
-  Future<OtpDeliveryReceipt> _sendEsmsVnGateway({
-    required String phoneNumber,
-    required String otpCode,
-  }) async {
-    try {
-      final uri = Uri.parse(
-        'https://rest.esms.vn/MainService.svc/json/SendMultipleMessage_V4_post_json/',
-      );
-      final payload = jsonEncode({
-        'ApiKey': EnvConfig.smsApiKey,
-        'SecretKey': EnvConfig.smsApiSecret,
-        'Phone': phoneNumber,
-        'Content':
-            '[GHST] Ma xac thuc OTP Giao Hang Sieu Toc cua ban la $otpCode (Hieu luc 120s).',
-        'Brandname': EnvConfig.smsBrandname,
-        'SmsType': '2',
-      });
-      final res = await http
-          .post(
-            uri,
-            headers: const {'Content-Type': 'application/json'},
-            body: payload,
-          )
-          .timeout(const Duration(seconds: 6));
-      final raw = utf8.decode(res.bodyBytes, allowMalformed: true);
-      if (res.statusCode >= 200 &&
-          res.statusCode < 300 &&
-          raw.contains('"CodeResult":"100"')) {
-        return OtpDeliveryReceipt(
-          success: true,
-          deliveredExternally: true,
-          channel: 'ESMS_VN',
-          destination: phoneNumber,
-          otpCode: otpCode,
-          message:
-              'Đã gửi SMS Brandname (${EnvConfig.smsBrandname}) tới số $phoneNumber qua eSMS.vn!',
-        );
-      }
-      return OtpDeliveryReceipt(
-        success: false,
-        deliveredExternally: false,
-        channel: 'ESMS_ERROR',
-        destination: phoneNumber,
-        otpCode: otpCode,
-        message: 'eSMS.vn phản hồi: $raw',
-      );
-    } catch (e) {
-      return OtpDeliveryReceipt(
-        success: false,
-        deliveredExternally: false,
-        channel: 'ESMS_ERROR',
-        destination: phoneNumber,
-        otpCode: otpCode,
-        message: 'Lỗi kết nối eSMS.vn: $e',
-      );
-    }
-  }
-
-  /// Cổng SpeedSMS.vn REST API (`/index.php/sms/send`)
-  Future<OtpDeliveryReceipt> _sendSpeedSmsGateway({
-    required String phoneNumber,
-    required String otpCode,
-  }) async {
-    try {
-      final uri = Uri.parse('https://api.speedsms.vn/index.php/sms/send');
-      final basicAuth = base64Encode(
-        utf8.encode('${EnvConfig.smsApiKey.trim()}:x'),
-      );
-      final customSender = EnvConfig.smsBrandname.trim();
-      final hasCustomSender =
-          customSender.isNotEmpty && customSender != 'GHST-OTP';
-      final isAndroidDeviceId =
-          hasCustomSender && RegExp(r'^[0-9]+$').hasMatch(customSender);
-      final bodyMap = <String, dynamic>{
-        'to': [phoneNumber],
-        'content':
-            'Ma xac thuc OTP Giao Hang Sieu Toc (GHST) cua ban la $otpCode (Hieu luc 120s).',
-        'sms_type': isAndroidDeviceId ? 5 : (hasCustomSender ? 3 : 2),
-      };
-      if (hasCustomSender) {
-        bodyMap['sender'] = customSender;
-      }
-      final res = await http
-          .post(
-            uri,
-            headers: {
-              'Authorization': 'Basic $basicAuth',
-              'Content-Type': 'application/json',
-            },
-            body: jsonEncode(bodyMap),
-          )
-          .timeout(const Duration(seconds: 8));
-      final raw = utf8.decode(res.bodyBytes, allowMalformed: true);
-      if (res.statusCode >= 200 &&
-          res.statusCode < 300 &&
-          raw.contains('"status":"success"')) {
-        return OtpDeliveryReceipt(
-          success: true,
-          deliveredExternally: true,
-          channel: 'SPEEDSMS_VN',
-          destination: phoneNumber,
-          otpCode: otpCode,
-          message: 'Đã gửi SMS OTP thật tới số $phoneNumber qua SpeedSMS.vn!',
-        );
-      }
-      return OtpDeliveryReceipt(
-        success: false,
-        deliveredExternally: false,
-        channel: 'SPEEDSMS_ERROR',
-        destination: phoneNumber,
-        otpCode: otpCode,
-        message: 'SpeedSMS phản hồi: $raw',
-      );
-    } catch (e) {
-      return OtpDeliveryReceipt(
-        success: false,
-        deliveredExternally: false,
-        channel: 'SPEEDSMS_ERROR',
-        destination: phoneNumber,
-        otpCode: otpCode,
-        message: 'Lỗi kết nối SpeedSMS: $e',
-      );
-    }
-  }
-
-  /// Cổng Twilio Verify V2 (`VA...`) hoặc Twilio Programmable SMS (`+1...`)
-  Future<OtpDeliveryReceipt> _sendTwilioSmsGateway({
-    required String e164Phone,
-    required String otpCode,
-  }) async {
-    try {
-      final sid = EnvConfig.smsApiKey.trim();
-      final token = EnvConfig.smsApiSecret.trim();
-      final fromOrServiceSid = EnvConfig.smsBrandname.trim();
-      final basicAuth = base64Encode(utf8.encode('$sid:$token'));
-
-      if (fromOrServiceSid.toUpperCase().startsWith('VA')) {
-        final uri = Uri.parse(
-          'https://verify.twilio.com/v2/Services/$fromOrServiceSid/Verifications',
-        );
-        final formBody =
-            'To=${Uri.encodeQueryComponent(e164Phone)}&Channel=sms&Locale=vi';
-        final res = await http
-            .post(
-              uri,
-              headers: {
-                'Authorization': 'Basic $basicAuth',
-                'Content-Type': 'application/x-www-form-urlencoded',
-              },
-              body: formBody,
-            )
-            .timeout(const Duration(seconds: 8));
-        final raw = utf8.decode(res.bodyBytes, allowMalformed: true);
-        if (res.statusCode >= 200 && res.statusCode < 300) {
-          return OtpDeliveryReceipt(
-            success: true,
-            deliveredExternally: true,
-            channel: 'TWILIO_VERIFY_V2',
-            destination: e164Phone,
-            otpCode: otpCode,
-            message:
-                'Đã bắn tin nhắn SMS OTP thật 6 chữ số tới số $e164Phone qua cổng Twilio Verify!',
-          );
-        }
-        if (raw.contains('21608') || raw.toLowerCase().contains('unverified')) {
-          return OtpDeliveryReceipt(
-            success: false,
-            deliveredExternally: false,
-            channel: 'TWILIO_UNVERIFIED_NUMBER',
-            destination: e164Phone,
-            otpCode: otpCode,
-            message:
-                'Số $e164Phone chưa được thêm vào danh sách Verified Caller IDs của tài khoản Twilio Trial. Vui lòng xác thực số này tại: console.twilio.com -> Phone Numbers -> Manage -> Verified Caller IDs.',
-          );
-        }
-        return OtpDeliveryReceipt(
-          success: false,
-          deliveredExternally: false,
-          channel: 'TWILIO_VERIFY_ERROR',
-          destination: e164Phone,
-          otpCode: otpCode,
-          message: 'Twilio Verify trả về HTTP ${res.statusCode}: $raw',
-        );
-      }
-
-      final uri = Uri.parse(
-        'https://api.twilio.com/2010-04-01/Accounts/$sid/Messages.json',
-      );
-      final formBody =
-          'To=${Uri.encodeQueryComponent(e164Phone)}'
-          '&From=${Uri.encodeQueryComponent(fromOrServiceSid)}'
-          '&Body=${Uri.encodeQueryComponent('[GHST] Ma xac thuc OTP Giao Hang Sieu Toc la: $otpCode (Hieu luc 120s)')}';
-      final res = await http
-          .post(
-            uri,
-            headers: {
-              'Authorization': 'Basic $basicAuth',
-              'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: formBody,
-          )
-          .timeout(const Duration(seconds: 8));
-      final raw = utf8.decode(res.bodyBytes, allowMalformed: true);
-      if (res.statusCode >= 200 && res.statusCode < 300) {
-        return OtpDeliveryReceipt(
-          success: true,
-          deliveredExternally: true,
-          channel: 'TWILIO_SMS',
-          destination: e164Phone,
-          otpCode: otpCode,
-          message: 'Đã gửi SMS OTP quốc tế tới $e164Phone qua Twilio!',
-        );
-      }
-      return OtpDeliveryReceipt(
-        success: false,
-        deliveredExternally: false,
-        channel: 'TWILIO_ERROR',
-        destination: e164Phone,
-        otpCode: otpCode,
-        message: 'Twilio trả về HTTP ${res.statusCode}: $raw',
-      );
-    } catch (e) {
-      return OtpDeliveryReceipt(
-        success: false,
-        deliveredExternally: false,
-        channel: 'TWILIO_ERROR',
-        destination: e164Phone,
-        otpCode: otpCode,
-        message: 'Lỗi kết nối Twilio: $e',
-      );
-    }
-  }
-
-  /// Kiểm tra mã OTP 6 chữ số trực tiếp với máy chủ Twilio Verify V2 (`VerificationCheck`)
   Future<bool> verifyTwilioVerifyV2Code({
     required String phoneNumber,
     required String otpCode,
   }) async {
-    final serviceSid = EnvConfig.smsBrandname.trim();
-    if (EnvConfig.smsProvider.toUpperCase() != 'TWILIO' ||
-        !serviceSid.toUpperCase().startsWith('VA')) {
-      return false;
-    }
-    final e164Phone = EnvConfig.formatVietnamPhoneE164(phoneNumber);
     try {
-      final sid = EnvConfig.smsApiKey.trim();
-      final token = EnvConfig.smsApiSecret.trim();
-      final basicAuth = base64Encode(utf8.encode('$sid:$token'));
-      final uri = Uri.parse(
-        'https://verify.twilio.com/v2/Services/$serviceSid/VerificationCheck',
+      final response = await DeliveryApiClient.instance.request(
+        'local-auth/sms/verify',
+        localAuth: true,
+        body: {
+          'phone': EnvConfig.formatVietnamPhoneE164(phoneNumber),
+          'otp': otpCode,
+        },
       );
-      final formBody =
-          'To=${Uri.encodeQueryComponent(e164Phone)}'
-          '&Code=${Uri.encodeQueryComponent(otpCode.trim())}';
-      final res = await http
-          .post(
-            uri,
-            headers: {
-              'Authorization': 'Basic $basicAuth',
-              'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: formBody,
-          )
-          .timeout(const Duration(seconds: 8));
-      final raw = utf8.decode(res.bodyBytes, allowMalformed: true);
-      return res.statusCode >= 200 &&
-          res.statusCode < 300 &&
-          (raw.contains('"status": "approved"') ||
-              raw.contains('"status":"approved"') ||
-              raw.contains('"valid": true') ||
-              raw.contains('"valid":true'));
+      return response['approved'] == true;
     } catch (_) {
       return false;
     }
   }
 
-  /// Gửi SMS OTP qua HTTP Webhook Gateway thực tế
-  Future<OtpDeliveryReceipt> _sendRealSmsWebhook({
-    required String phoneNumber,
-    required String otpCode,
-  }) async {
-    try {
-      final uri = Uri.parse(EnvConfig.smsWebhookUrl);
-      final body = jsonEncode({
-        'phone': phoneNumber,
-        'e164Phone': EnvConfig.formatVietnamPhoneE164(phoneNumber),
-        'otp': otpCode,
-        'message':
-            '[GHST] Ma xac thuc OTP Giao Hang Sieu Toc cua ban la: $otpCode (Hieu luc 120s)',
-      });
-      final res = await http
-          .post(
-            uri,
-            headers: const {'Content-Type': 'application/json'},
-            body: body,
-          )
-          .timeout(const Duration(seconds: 6));
-      if (res.statusCode >= 200 && res.statusCode < 300) {
-        return OtpDeliveryReceipt(
-          success: true,
-          deliveredExternally: true,
-          channel: 'SMS_WEBHOOK',
-          destination: phoneNumber,
-          otpCode: otpCode,
-          message:
-              'Đã gửi SMS OTP thật tới số $phoneNumber qua cổng SMS Gateway!',
-        );
-      }
-      return OtpDeliveryReceipt(
-        success: false,
-        deliveredExternally: false,
-        channel: 'SMS_WEBHOOK_ERROR',
-        destination: phoneNumber,
-        otpCode: otpCode,
-        message: 'SMS Gateway trả về mã HTTP ${res.statusCode}',
-      );
-    } catch (e) {
-      return OtpDeliveryReceipt(
-        success: false,
-        deliveredExternally: false,
-        channel: 'SMS_WEBHOOK_ERROR',
-        destination: phoneNumber,
-        otpCode: otpCode,
-        message: 'Lỗi kết nối SMS Webhook: $e',
-      );
-    }
-  }
+  String? _oauthState;
+  String? _codeVerifier;
 
   bool _isExchangingOAuthCode = false;
   void Function(GoogleOAuthResult result)? _activeOnAuthenticated;
@@ -828,7 +271,12 @@ class RealAuthDeliveryService {
     final uri = Uri.tryParse(rawUrl);
     if (uri == null || uri.path != '/oauth2callback') return null;
     final code = uri.queryParameters['code'];
-    if (code == null || code.isEmpty) return null;
+    if (code == null ||
+        code.isEmpty ||
+        _oauthState == null ||
+        uri.queryParameters['state'] != _oauthState) {
+      return null;
+    }
 
     _isExchangingOAuthCode = true;
     final authResult = await exchangeGoogleAuthCodeForUserProfile(
@@ -858,6 +306,16 @@ class RealAuthDeliveryService {
     _isExchangingOAuthCode = false;
     _activeOnAuthenticated = onAuthenticated;
 
+    final random = Random.secure();
+    _oauthState = base64Url
+        .encode(List.generate(32, (_) => random.nextInt(256)))
+        .replaceAll('=', '');
+    _codeVerifier = base64Url
+        .encode(List.generate(48, (_) => random.nextInt(256)))
+        .replaceAll('=', '');
+    final challenge = base64Url
+        .encode(sha256.convert(ascii.encode(_codeVerifier!)).bytes)
+        .replaceAll('=', '');
     final googleAuthUrl = Uri.https(
       'accounts.google.com',
       '/o/oauth2/v2/auth',
@@ -866,6 +324,9 @@ class RealAuthDeliveryService {
         'redirect_uri': defaultRedirectUri,
         'response_type': 'code',
         'scope': 'openid email profile',
+        'state': _oauthState!,
+        'code_challenge': challenge,
+        'code_challenge_method': 'S256',
         'prompt': 'select_account',
       },
     ).toString();
@@ -922,40 +383,11 @@ class RealAuthDeliveryService {
     required String redirectUri,
   }) async {
     try {
-      final formBody = Uri(
-        queryParameters: {
-          'code': code,
-          'client_id': EnvConfig.googleClientId,
-          'client_secret': EnvConfig.googleClientSecret,
-          'redirect_uri': redirectUri,
-          'grant_type': 'authorization_code',
-        },
-      ).query;
-      final tokenRes = await http
-          .post(
-            Uri.parse('https://oauth2.googleapis.com/token'),
-            headers: const {
-              'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: formBody,
-          )
-          .timeout(const Duration(seconds: 8));
-      final tokenJsonStr = utf8.decode(
-        tokenRes.bodyBytes,
-        allowMalformed: true,
+      final infoMap = await DeliveryApiClient.instance.request(
+        'local-auth/google/exchange',
+        localAuth: true,
+        body: {'code': code, 'codeVerifier': _codeVerifier},
       );
-      final tokenMap = jsonDecode(tokenJsonStr) as Map<String, dynamic>;
-      final accessToken = tokenMap['access_token']?.toString();
-      if (accessToken == null || accessToken.isEmpty) return null;
-
-      final infoRes = await http
-          .get(
-            Uri.parse('https://www.googleapis.com/oauth2/v3/userinfo'),
-            headers: {'Authorization': 'Bearer $accessToken'},
-          )
-          .timeout(const Duration(seconds: 8));
-      final infoJsonStr = utf8.decode(infoRes.bodyBytes, allowMalformed: true);
-      final infoMap = jsonDecode(infoJsonStr) as Map<String, dynamic>;
 
       final email = infoMap['email']?.toString() ?? '';
       final name = infoMap['name']?.toString() ?? email.split('@').first;
@@ -971,6 +403,8 @@ class RealAuthDeliveryService {
   Future<void> stopGoogleOAuthServer() async {
     final srv = _activeOAuthServer;
     _activeOAuthServer = null;
+    _oauthState = null;
+    _codeVerifier = null;
     if (srv != null) {
       try {
         await srv.close(force: true);

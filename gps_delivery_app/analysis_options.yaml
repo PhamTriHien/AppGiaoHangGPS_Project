@@ -8,6 +8,8 @@ analyzer:
     - ios/**
     - web/**
     - windows/**
+    - macos/**
+    - linux/**
 
 linter:
   # Quy tắc kiểm tra chất lượng mã nguồn

@@ -1,4 +1,8 @@
 # Flutter / Dart build & tool artifacts
+# Local Graphify index and extraction caches
+graphify-out/
+.graphify_*
+
 **/build/
 **/.dart_tool/
 **/.flutter-plugins

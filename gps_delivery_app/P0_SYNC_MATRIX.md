@@ -1,0 +1,62 @@
+# P0: ma trận chuyển đổi dữ liệu
+
+Cập nhật 31/10/2026. Các trạng thái dưới đây mô tả code và schema cloud hiện tại (`workflowVersion: 13` đến `20261107_cloud_commercial_suite.sql` đã áp dụng ngày 31/10/2026), không chứng nhận đã kiểm thử mọi luồng giao dịch trên production.
+
+| Luồng | Nguồn hiện tại | Đích / quyền bắt buộc | Trạng thái |
+| --- | --- | --- | --- |
+| Login chính | MarketplaceScreen + CloudAuthScreen + Supabase Auth | Xác minh profile server, khôi phục phiên; không đọc danh tính local | Đã nối code mặc định; Google OAuth PKCE desktop đã xác thực callback thật và sửa focus/HTML; lưu hồ sơ lần đầu và recovery email thật chưa nghiệm thu |
+| Login/OTP/Google legacy | ArchitectureDashboardScreen + users SQLite tại /legacy | Giữ riêng dữ liệu cũ; không gán Auth bằng email/hash local | Không còn là giao diện chính; không tự nhập dữ liệu cũ |
+| Login quản trị | AdminPortalScreen tại `/admin` và `/cloud-admin` (SQLite cũ lưu trữ tại `/legacy-admin`) | Trang quản trị cloud riêng; xác minh `CloudAccountSession` + `isOperator` server | Đã hợp nhất `/admin` lên Cloud Operator (analytics, duyệt shop/tài khoản, voucher, flash sale, job worker, tích hợp); bản SQLite chỉ giữ lưu trữ tại `/legacy-admin` |
+| Hồ sơ cloud | CloudAccountSession → cloud/profile → delivery_cloud_profile | Hồ sơ thuộc auth.uid(); role và phân quyền nhân sự shop (`shop_staff`) do server duyệt | Đã dùng trong app chính, `/cloud` và `/admin`; hồ sơ legacy vẫn riêng |
+| Quyền merchant/driver & nhân sự shop | cloud/memberships, accounts/:id/memberships/:role, `delivery_market_shop_staff` | Hai tư cách độc lập + phân quyền `manager`/`staff` theo shop; operator/owner duyệt theo version | Profile schema 3, `isStaffOfShop`/`isManagerOfShop`, lease/cache revision và workspace nhiều tư cách đã đồng bộ code + schema cloud (`workflowVersion: 13`) |
+| Hồ sơ/địa chỉ khách local | customer_history_and_profile_views + SQLite tại `/legacy` | Công cụ nhập địa chỉ có xác nhận (`delivery_cloud_import`) | Màn hình `/legacy` giữ nguyên lưu trữ; nhập địa chỉ sang cloud yêu cầu xác minh mật khẩu local và chọn danh sách rõ ràng |
+| Sổ địa chỉ cloud | cloud/addresses → addresses_manage | Chỉ chủ sở hữu còn hoạt động, tối đa 25; kiểm tra version | Đã nối UI và form tạo đơn cloud |
+| Báo giá/đơn giao hàng cloud (5 chế độ) | CloudOrderForm + CloudOrdersRepository + cloud/quote,orders | 5 chế độ (`standard`, `express`, `saving`, `same_day_2h`, `truck`), quy đổi kích thước `L*W*H/5000`, đa điểm (`extra_stops`), khứ hồi (`round_trip`), khai giá bảo hiểm, EV/Quỹ Xanh, hẹn giờ, POD/OTP | Đã nối đồng bộ SQL + Node + Flutter (`workflowVersion: 13`); không đọc lịch sử local |
+| Chi tiết/lịch sử/gửi lại đơn cloud | CloudOrderDetailsScreen + cloud/orders/:id/history + OTP/chia sẻ | Kiểm tra quyền trước khi hiển thị snapshot; ẩn mã OTP trong lý do lịch sử; chủ/người nhận xem OTP qua `delivery_cloud_order_otp` | Đã nối danh sách cloud, tạo/thu hồi link chia sẻ vận đơn (`delivery_cloud_shares`) và gửi lại báo giá mới |
+| Đơn local, CSV, nháp | AppStateStore, SQLite/localStorage tại `/legacy` | Nháp riêng tài khoản; xác nhận và tạo bằng API | Giữ tách biệt tại `/legacy`; không tự tải đơn cũ lên cloud |
+| Nhận/giao/hoàn đơn cloud & cổng POD/OTP | cloud/orders/:id/transition + cloud/pod | Tài xế được duyệt; state/version server; kiểm tra ảnh POD và OTP người nhận khi `deliver`; chặn nhảy tọa độ GPS (`<= 120 km/h`) | Đã đồng bộ đầy đủ cho cả 5 chế độ giao hàng cloud |
+| Catalog, biến thể SKU, khu vực & nhân sự shop | browse/marketplace RPC → `delivery_market_*` (`variants`, `shop_staff`) | Merchant/staff hợp lệ, shop moderation, `banner_url`, `service_radius_km`, biến thể đa SKU, kích thước kiện, options, lịch bán | Đã nối trình biên tập merchant, chi tiết sản phẩm và đồng bộ schema cloud `20261107` |
+| Checkout COD & trả trước nhiều shop | `delivery_marketplace` quote/checkout + `/purchases/:id/payment*` | Giá server, quote 5 phút, ghi chú, hẹn giờ, gói giao hàng, EV, POD/OTP, voucher, xu, khóa tồn & bút toán kép `delivery_market_record_prepaid_capture` | Đã nối đầy đủ SQL + backend + UI; cổng `payOS` thật chờ cấu hình khóa merchant (`PAYOS_*`) |
+| Shop xử lý đơn mua & tách kiện | `delivery_market_shop_orders` + `delivery_market_shipments` → `delivery_cloud_orders` | Merchant/nhân sự nhận, chuẩn bị, bàn giao 1 vận đơn hoặc tách nhiều kiện (`order_shipment_split`); hạn 15 phút & worker `MARKET_JOBS_ENABLED=true` | Đã đồng bộ schema cloud `20261107` và bật worker `MARKET_JOBS_ENABLED=true` trên backend local |
+| Chat, tệp riêng tư & push đơn mua | `delivery_market_messages/notifications/attachments` + FCM router | Chỉ người mua/shop/operator theo đơn; bucket riêng tư `'delivery-private-evidence'`; bật/tắt nhận push thiết bị (`PushNotificationService`) | Đã đồng bộ đính kèm ảnh riêng tư (`chat`, `return`, `finance`) và đăng ký push cloud; gửi FCM thật chờ cấu hình khóa Firebase khi triển khai |
+| Thu/hoàn/đối soát tiền hàng | `delivery_market_operations` + `delivery_market_record_prepaid_capture` | Khóa đơn, tiền server; người duyệt khác người đề nghị; chứng từ đính kèm riêng tư; bút toán kép cân bằng (`promo_expense`, trả trước, COD) | Đã đồng bộ code/SQL/UI và schema cloud `20261107`; chưa nghiệm thu giao dịch tiền thật |
+| Trả hàng, vận đơn hoàn, đánh giá đối tác & theo dõi shop | `operations` RPC → `returns`, `delivery_partner_reviews`, `review_reports`, `shop_follows` | Hạn/số lượng theo `line_id`, sinh vận đơn hoàn chiều ngược, kiểm định `restock`/`writeoff`, đánh giá riêng sản phẩm/shop/tài xế, shop phản hồi & báo cáo vi phạm | Đã đồng bộ code/SQL/UI và schema cloud `20261107` |
+| Voucher, Flash Sale & Ví Xu cloud | `delivery_market_vouchers`, `flash_sales`, `coin_wallets`, `coin_ledger` | Ngân sách server, tài trợ platform/shop, khung giờ & hạn mức flash sale nguyên tử, đổi xu tối đa 20%, tích 1% sau quyết toán & thu hồi khi hủy/hoàn | Đã đồng bộ code/SQL/UI (`MarketPromotionsSheet`, `AdminPortalScreen`) và schema cloud `20261107`; hoàn toàn tách khỏi số dư xu/game local cũ |
+| payOS/GHN cloud | Payment/carrier gateways + PostgreSQL (`purchase_id` & `order_id`) | Sở hữu đơn/mua hàng/operator; xác thực chữ ký callback | Đã hỗ trợ cả cước giao hàng lẻ và thanh toán đơn mua nhiều shop; chờ cấu hình khóa thật (`payos`/`ghn` & `PUBLIC_BASE_URL` HTTPS) |
+| COD/số dư/rút tiền legacy | finance views + SQLite tại `/legacy` | Giữ tách biệt trong lưu trữ `/legacy` | Không bao giờ dùng số dư local làm tiền đã quyết toán trên cloud |
+| Tra cứu vận đơn công khai (`/track`) | `PublicOrderTrackingScreen` → `POST /delivery/tracking/lookup` → `delivery_cloud_public_lookup` | Mã đơn UUID + 4 số cuối SĐT người nhận hoặc mã chia sẻ 64-hex (`delivery_cloud_shares`); chỉ trả trạng thái & mốc thời gian | Đã chuyển hoàn toàn sang Cloud API/RPC, bỏ đọc `AppStateStore` local |
+| Link chia sẻ đơn mua canonical (`/share`) | `/share` → `delivery_market_public_tracking`; bảng `delivery_market_shares` | Token 256-bit lưu hash SHA-256, hạn 24h/thu hồi; chỉ tên shop, trạng thái và thời gian | Đã đồng bộ code/test và schema cloud |
+| Cấu hình provider & Báo cáo quản trị | Backend integration config + `AdminPortalScreen` (`admin_analytics`) | Operator cloud hoặc loopback hợp lệ; secret chỉ nằm ở backend; số liệu báo cáo tách doanh thu ước tính và đã quyết toán | Đã đồng bộ lên `/admin` cloud |
+| Hàng đợi legacy | local_sync_queue v9 | Scope project/Auth/local ID; server xác nhận | Đã chặn gửi nhầm; không tự chuyển hợp đồng legacy thành canonical |
+
+## Điều kiện chuyển login chính
+
+Không đổi login chính sang Auth rồi để người dùng đọc toàn bộ cache local. Trước khi bật mặc định cần:
+
+1. Định danh và quyền cloud rõ ràng; cache và trạng thái giao diện được tách theo Auth ID.
+2. Màn hình nghiệp vụ đã chuyển gọi đúng API; không tự cấp giá, quyền, thưởng hoặc trạng thái thanh toán.
+3. Những luồng chưa chuyển có trạng thái sản phẩm rõ ràng, không báo thành công cloud từ thao tác local.
+4. Kiểm thử liên thiết bị, đổi tài khoản, blocked user, token hết hạn và phục hồi mạng.
+
+## Lô đã triển khai
+
+- Migration bổ sung 20261029_cloud_addresses.sql, giữ các bảng và dữ liệu hiện có.
+- GET cloud/addresses và POST cloud/addresses/:id, chuyển JWT đến RPC cố định.
+- RLS chỉ cho chủ địa chỉ đọc; ghi qua RPC, khóa theo tài khoản và kiểm tra version.
+- UI sổ địa chỉ, tạo/sửa/xóa, mặc định, chọn lấy/giao và điền thông tin người nhận.
+- Kiểm thử SQL/gateway và Flutter desktop/mobile; dữ liệu fixture không ghi lên project thật.
+- CloudAccountSession dùng chung để khôi phục/xác minh hồ sơ và quyền; từ chối hồ sơ khác Auth ID, vai trò không hợp lệ và phản hồi cũ sau đổi phiên.
+- Màn hình đơn cloud bỏ dữ liệu và điều khiển theo quyền cũ khi bị khóa, thu hồi quyền, lỗi xác minh phiên hoặc đổi dự án. Lưu hồ sơ không bị GET cũ ghi đè.
+- Trạng thái operator của realtime có phạm vi dự án/tài khoản và chống phản hồi cũ cập nhật nhầm phiên.
+
+Màn hình đơn cloud đã bổ sung xác minh lại khi app trở về foreground: xóa dữ liệu/quyền đã xác minh khi rời foreground, dừng polling nền, bỏ phản hồi đang chờ của phiên xác minh cũ và đọc profile trước khi tải đơn trở lại. Kiểm thử bao gồm tài khoản bị khóa, lỗi xác minh và phản hồi đơn về muộn. Phạm vi hiện tại là màn hình đơn cloud, chưa thay thế các luồng legacy.
+
+CloudOrdersRepository đã tách đọc đơn/chuyến chờ nhận/tài khoản quản trị khỏi màn hình. Bộ nhớ chỉ dùng khi profile đã xác minh và khớp dự án/Auth ID/revision; tự xóa khi đổi phiên hoặc quyền, từ chối phản hồi cũ và chuyển view không mang theo dữ liệu/cursor trước đó. Phân trang dùng thời gian tạo + ID, gộp trùng theo ID, giữ dòng đã tải khi lỗi mạng trang tiếp và xóa khi API từ chối quyền. Snapshot bất biến, không ghi dữ liệu fixture vào cloud và không lấy đơn legacy làm kết quả dự phòng.
+
+## Tiếp theo
+
+App mặc định dùng `MarketplaceScreen` với Supabase Auth, profile/address cloud, catalog đa biến thể SKU, giỏ và đơn mua COD/trả trước. Dịch vụ gửi hàng mở `CloudOrdersScreen` và `CloudOrderForm` cùng phiên với đầy đủ 5 chế độ giao hàng cloud (`standard`, `express`, `saving`, `same_day_2h`, `truck`), đa điểm dừng, khứ hồi, khai giá, EV/Quỹ Xanh và POD/OTP. Trang `/admin` dùng chung phiên Cloud Operator (`AdminPortalScreen`), còn `/track` dùng tra cứu cloud công khai (`delivery_cloud_public_lookup`). Các màn hình SQLite cũ chỉ còn lưu trữ riêng tại `/legacy` và `/legacy-admin`, tuyệt đối không làm dữ liệu dự phòng cho danh tính cloud. Toàn bộ schema cloud đến `20261107_cloud_commercial_suite.sql` (`workflowVersion: 13`, profile `schema_version: 3`) và worker `MARKET_JOBS_ENABLED=true` đã được đồng bộ ngày 31/10/2026.
+
+Phiên cloud đã được đưa lên `GpsDeliveryApp` và dùng chung giữa route người dùng và quản trị cloud (`/`, `/cloud`, `/admin`, `/cloud-admin`). Hồ sơ có trang sửa riêng với kiểm tra dữ liệu và yêu cầu vai trò chờ server duyệt. Các trang/form/hộp thoại riêng tư dùng lease theo dự án, Auth ID, vai trò và phân quyền nhân sự shop (`shop_staff`); khi phiên mất hiệu lực, ẩn dữ liệu và gỡ cả xác nhận/chọn địa chỉ mở bên trên, không tự hồi sinh sau xác minh lại. Trên desktop Windows, Google OAuth PKCE đã bổ sung trang HTML đóng tab/xóa code khỏi URL, kích hoạt cửa sổ native `ghst/window` và không xóa `GhstUserShell` khi cửa sổ chỉ mất tiêu điểm (`AppLifecycleState.inactive`).
+
+Nhập địa chỉ local có xác minh mật khẩu tại thiết bị, xem trước, báo trùng và xác nhận tài khoản đích đã có code/test; không nhập mật khẩu/đơn/tiền lên cloud. Tiếp theo: cấu hình khóa thật cho `payOS`, `GHN`, FCM và `PUBLIC_BASE_URL` HTTPS công khai, sau đó nghiệm thu giao dịch tiền thật và hai thiết bị theo `EXECUTION_CHECKLIST.md`.

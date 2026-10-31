@@ -206,10 +206,9 @@ class DriverApplicantRecord {
     int batteryPercent = 95,
     List<String>? attachedKycDocs,
   }) : isElectricVehicle =
-            isElectricVehicle ?? inferElectricVehicle(vehicleType),
+           isElectricVehicle ?? inferElectricVehicle(vehicleType),
        batteryPercent = batteryPercent.clamp(0, 100),
-       attachedKycDocs = attachedKycDocs ??
-            <String>[];
+       attachedKycDocs = attachedKycDocs ?? <String>[];
 
   double get acceptanceRate {
     final totalDecisions = totalTrips + rejectedCount;
@@ -247,8 +246,7 @@ class MerchantApplicantRecord {
     this.codBalance = 0.0,
     this.webhookUrl = '',
     List<String>? attachedKycDocs,
-  }) : attachedKycDocs = attachedKycDocs ??
-            <String>[];
+  }) : attachedKycDocs = attachedKycDocs ?? <String>[];
 }
 
 class ComplaintTicketRecord {
@@ -343,10 +341,7 @@ class RbacRoleRecord {
   final String roleName;
   final Map<String, bool> permissions;
 
-  RbacRoleRecord({
-    required this.roleName,
-    required this.permissions,
-  });
+  RbacRoleRecord({required this.roleName, required this.permissions});
 }
 
 class PickupWarehouseRecord {
@@ -561,12 +556,14 @@ class ActiveOrderRecord {
 
   static ActiveOrderRecord fromSqlRow(Map<String, dynamic> row) {
     final svcRaw = (row['service_type'] ?? 'express30m').toString();
-    final svc = DeliveryServiceType.values
+    final svc =
+        DeliveryServiceType.values
             .where((e) => e.name == svcRaw || e.dbCode == svcRaw)
             .firstOrNull ??
         DeliveryServiceType.fromDbCode(svcRaw);
     final stRaw = (row['status'] ?? 'searching').toString();
-    final st = OrderStatus.values
+    final st =
+        OrderStatus.values
             .where((e) => e.name == stRaw || e.dbCode == stRaw)
             .firstOrNull ??
         OrderStatus.searching;
@@ -617,7 +614,8 @@ class ActiveOrderRecord {
       extraStopCount: (row['extra_stop_count'] as num? ?? 0).toInt(),
       batchGroupId: row['batch_group_id']?.toString(),
       co2SavedGrams: (row['co2_saved_grams'] as num? ?? 0.0).toDouble(),
-      greenFundContributed: row['green_fund_contributed'] == 1 ||
+      greenFundContributed:
+          row['green_fund_contributed'] == 1 ||
           row['green_fund_contributed'] == true,
       publicTrackingToken: row['public_tracking_token']?.toString(),
     );
@@ -635,6 +633,9 @@ class CsvBatchRowResult {
   final DeliveryServiceType serviceType;
   final bool isValid;
   final String statusNote;
+  final String pickupAddress;
+  final GeoPoint? pickupLocation;
+  final GeoPoint? dropoffLocation;
 
   const CsvBatchRowResult({
     required this.rowNumber,
@@ -647,6 +648,9 @@ class CsvBatchRowResult {
     required this.serviceType,
     required this.isValid,
     required this.statusNote,
+    this.pickupAddress = '',
+    this.pickupLocation,
+    this.dropoffLocation,
   });
 }
 

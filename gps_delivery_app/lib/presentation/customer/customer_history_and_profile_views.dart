@@ -1,6 +1,274 @@
 part of 'customer_subsystem_views.dart';
 
 extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
+  Future<void> _prefillOrderForRepeat(ActiveOrderRecord order) async {
+    final ownerId = _store.activeAuthenticatedUser?.id;
+    if (!await _confirmReplaceCustomerForm()) return;
+    List<Map<String, dynamic>> stops;
+    try {
+      stops = await _store.orderStopsFor(order.id);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Không tải được các điểm giao. Vui lòng thử lại.'),
+        ),
+      );
+      return;
+    }
+    if (!mounted || ownerId != _store.activeAuthenticatedUser?.id) return;
+    if (!_store.customerOrders.any((o) => o.id == order.id)) return;
+    _resetCustomerOrderForm();
+    _pickupCtrl.text = order.pickupAddress;
+    _dropoffCtrl.text = order.dropoffAddress;
+    _recipientNameCtrl.text = order.recipientName;
+    _recipientPhoneCtrl.text = order.recipientPhone;
+    final description = order.packageDescription
+        .replaceFirst(RegExp(r'\s*\[(?:Giao hẹn giờ|Hẹn giờ):[^\]]*\]'), '')
+        .trim();
+    final separator = description.indexOf(' - ');
+    _pkgCategory = separator >= 0
+        ? description.substring(0, separator)
+        : description;
+    if (_pkgCategory.isEmpty) _pkgCategory = 'Hàng hóa';
+    _pkgDescCtrl.text = separator >= 0
+        ? description.substring(separator + 3)
+        : '';
+    _weightCtrl.text = order.weightKg.toString();
+    _dimCtrl.text = order.dimensionsCm;
+    _codCtrl.text = order.codAmount.toStringAsFixed(0);
+    _voucherCtrl.clear();
+    _pinnedPickupLocation = order.pickupLocation;
+    _pinnedDropoffLocation = order.dropoffLocation;
+    _selectedService = order.serviceType;
+    _cashFeePayer = order.paymentMethod == 'Người nhận trả phí'
+        ? 'Người nhận trả phí'
+        : 'Người gửi trả phí';
+    _isScheduledDelivery = false;
+    _scheduledDeliverySlot = '13:00 - 15:00';
+    _editingDraftId = null;
+    _userEditedPickupManually = true;
+    _additionalStops.clear();
+    final dropoffs = stops
+        .where((s) => s['stop_type']?.toString() == 'DROPOFF')
+        .toList();
+    final first = dropoffs.isEmpty ? null : dropoffs.first;
+    if (first != null) {
+      _dropoffCtrl.text = first['address']?.toString() ?? _dropoffCtrl.text;
+      _recipientNameCtrl.text =
+          first['recipient_name']?.toString() ?? _recipientNameCtrl.text;
+      _recipientPhoneCtrl.text =
+          first['recipient_phone']?.toString() ?? _recipientPhoneCtrl.text;
+      final lat = first['latitude'];
+      final lng = first['longitude'];
+      _pinnedDropoffLocation = null;
+      if (lat is num && lng is num) {
+        _pinnedDropoffLocation = GeoPoint(
+          latitude: lat.toDouble(),
+          longitude: lng.toDouble(),
+        );
+      }
+    }
+    for (final stop in dropoffs.skip(1).take(4)) {
+      final address = stop['address']?.toString().trim() ?? '';
+      if (address.isEmpty) continue;
+      _additionalStops.add({
+        'address': address,
+        'recipientName': stop['recipient_name']?.toString() ?? '',
+        'recipientPhone': stop['recipient_phone']?.toString() ?? '',
+        'latitude': stop['latitude'],
+        'longitude': stop['longitude'],
+        'codAmount': stop['cod_amount'],
+      });
+    }
+    _osrmPreviewPoints = null;
+    _osrmDistMeters = null;
+    _osrmDurationSec = null;
+    if (!mounted) return;
+    _rebuildCustomerUi(() => _selectedScreenIndex = 2);
+  }
+
+  Future<void> _showCustomerOrderDetails(ActiveOrderRecord order) async {
+    final ownerId = _store.activeAuthenticatedUser?.id;
+    List<Map<String, dynamic>> stops;
+    Map<String, dynamic>? schedule;
+    try {
+      stops = await _store.orderStopsFor(order.id);
+      schedule = await _store.scheduledOrderFor(order.id);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Không tải được chi tiết đơn. Vui lòng thử lại.'),
+        ),
+      );
+      return;
+    }
+    if (!mounted || ownerId != _store.activeAuthenticatedUser?.id) return;
+    if (!_store.customerOrders.any((o) => o.id == order.id)) return;
+    final isReturned = order.paymentStatus == 'RETURNED';
+    final statusLabel = isReturned ? 'Đã hoàn kho' : order.status.displayName;
+    String dateLabel(int ms) {
+      final date = DateTime.fromMillisecondsSinceEpoch(ms);
+      String two(int n) => n.toString().padLeft(2, '0');
+      return '${two(date.day)}/${two(date.month)}/${date.year} ${two(date.hour)}:${two(date.minute)}';
+    }
+
+    final paymentLabel = switch (order.paymentStatus) {
+      'PAID' => 'Đã thanh toán',
+      'REFUNDED' => 'Đã hoàn tiền',
+      'RETURNED' => 'Đơn đã hoàn kho',
+      _ => 'Chưa ghi nhận thanh toán',
+    };
+    final details = <String, String>{
+      'Trạng thái': statusLabel,
+      'Ngày tạo': dateLabel(order.createdAtMs),
+      'Điểm lấy hàng': order.pickupAddress,
+      'Điểm giao cuối': order.dropoffAddress,
+      'Người nhận': '${order.recipientName} - ${order.recipientPhone}',
+      'Dịch vụ': order.serviceType.displayName,
+      'Kiện hàng': order.packageDescription,
+      'Khối lượng': '${order.weightKg} kg',
+      'Kích thước': order.dimensionsCm,
+      'Tài xế': order.assignedDriverName?.trim().isNotEmpty == true
+          ? order.assignedDriverName!
+          : 'Chưa phân công',
+      'Phương thức': order.paymentMethod,
+      'Thanh toán': paymentLabel,
+      'Cước vận chuyển': CurrencyFormatter.formatVnd(order.deliveryFee),
+      'Phụ phí': CurrencyFormatter.formatVnd(order.surchargeFee),
+      'Giảm giá': '-${CurrencyFormatter.formatVnd(order.discountAmount)}',
+      'Tổng cước vận chuyển': CurrencyFormatter.formatVnd(order.totalAmount),
+      'Tiền thu hộ COD': CurrencyFormatter.formatVnd(order.codAmount),
+    };
+    final scheduledAt = schedule?['scheduled_at_ms'];
+    if (scheduledAt is num) {
+      details['Lịch hẹn giao'] = dateLabel(scheduledAt.toInt());
+    }
+    if (order.deliveredAtMs != null) {
+      details['Thời gian hoàn tất'] = dateLabel(order.deliveredAtMs!);
+    }
+    final dropoffs = stops.where((s) => s['stop_type'] == 'DROPOFF').toList();
+    for (var i = 0; i < dropoffs.length; i++) {
+      final stop = dropoffs[i];
+      details['Điểm giao ${i + 1}'] = [
+        stop['address'],
+        stop['recipient_name'],
+        stop['recipient_phone'],
+      ].where((v) => v != null && v.toString().trim().isNotEmpty).join(' - ');
+    }
+    details['Bằng chứng giao'] = order.podImageNote?.trim().isNotEmpty == true
+        ? order.podImageNote!
+        : 'Chưa có bằng chứng giao hàng được lưu cho đơn này.';
+    if (order.cancelReason?.trim().isNotEmpty == true) {
+      details['Lý do kết thúc'] = order.cancelReason!;
+    }
+    final receipt = [
+      'THÔNG TIN ĐƠN GIAO HÀNG GHST',
+      'Mã vận đơn: ${order.trackingCode}',
+      ...details.entries.map((e) => '${e.key}: ${e.value}'),
+    ].join('\n');
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.receipt_long_outlined, color: Color(0xFF5B33E6)),
+            const SizedBox(width: 8),
+            Expanded(child: Text('Chi tiết ${order.trackingCode}')),
+          ],
+        ),
+        content: SizedBox(
+          width: 520,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ...details.entries.map(
+                  (e) => _detailLine(
+                    e.key,
+                    e.value,
+                    bold: e.key == 'Tổng cước vận chuyển',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton.icon(
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: order.trackingCode));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Đã sao chép mã ${order.trackingCode}')),
+              );
+            },
+            icon: const Icon(Icons.copy_outlined, size: 17),
+            label: const Text('Sao chép mã'),
+          ),
+          TextButton.icon(
+            onPressed: () {
+              try {
+                final path = _store.exportReportFileToDisk(
+                  fileName:
+                      'Don_hang_${order.trackingCode.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '')}.txt',
+                  content: receipt,
+                  mimeType: 'text/plain;charset=utf-8',
+                );
+                Navigator.of(dialogContext).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Đã xuất biên nhận: $path')),
+                );
+              } catch (_) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Không xuất được biên nhận. Vui lòng thử lại.',
+                    ),
+                  ),
+                );
+              }
+            },
+            icon: const Icon(Icons.download_outlined, size: 17),
+            label: const Text('Xuất biên nhận'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Đóng'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _detailLine(String label, String value, {bool bold = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 112,
+            child: Text(
+              label,
+              style: const TextStyle(fontSize: 12, color: Color(0xFF4A4754)),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: bold ? FontWeight.w900 : FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// UC08: Liên hệ tài xế (Chat nội bộ & Gọi điện - Khớp 100% uc08_lien_he_1791014536835.jpg)
   Widget _buildInAppChatView() {
     final activeOrder = _store.activeCustomerOrderRecord;
@@ -662,34 +930,54 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
   /// UC09: Lịch sử đơn hàng + Empty State + Skeleton (Khớp 100% uc09_lich_su_1791014563307.jpg, ui_state_02_empty.jpg, ui_state_04_skeleton.jpg)
   Widget _buildOrderHistoryAndPodView() {
     final query = _historySearchCtrl.text.trim().toLowerCase();
-    final filtered = _store.customerOrders.where((o) {
-      final isReturned = o.paymentStatus == 'RETURNED';
-      if (_historyFilterTab == 'Đang giao' &&
-          (o.status == OrderStatus.delivered ||
-              o.status == OrderStatus.cancelled ||
-              o.status == OrderStatus.failed ||
-              o.status == OrderStatus.returning ||
-              isReturned)) {
-        return false;
-      }
-      if (_historyFilterTab == 'Hoàn thành' &&
-          (o.status != OrderStatus.delivered || isReturned)) {
-        return false;
-      }
-      if (_historyFilterTab == 'Đã hủy' &&
-          o.status != OrderStatus.cancelled &&
-          o.status != OrderStatus.failed &&
-          o.status != OrderStatus.returning &&
-          !isReturned) {
-        return false;
-      }
-      if (query.isNotEmpty) {
-        return o.trackingCode.toLowerCase().contains(query) ||
-            o.pickupAddress.toLowerCase().contains(query) ||
-            o.dropoffAddress.toLowerCase().contains(query);
-      }
-      return true;
-    }).toList();
+    final filtered =
+        _store.customerOrders.where((o) {
+          final isReturned = o.paymentStatus == 'RETURNED';
+          if (_historyFilterTab == 'Đang giao' &&
+              (o.status == OrderStatus.delivered ||
+                  o.status == OrderStatus.cancelled ||
+                  o.status == OrderStatus.failed ||
+                  o.status == OrderStatus.returning ||
+                  isReturned)) {
+            return false;
+          }
+          if (_historyFilterTab == 'Hoàn thành' &&
+              (o.status != OrderStatus.delivered || isReturned)) {
+            return false;
+          }
+          if (_historyFilterTab == 'Đã hủy' &&
+              o.status != OrderStatus.cancelled) {
+            return false;
+          }
+          if (_historyFilterTab == 'Thất bại' &&
+              o.status != OrderStatus.failed) {
+            return false;
+          }
+          if (_historyFilterTab == 'Chuyển hoàn' &&
+              o.status != OrderStatus.returning &&
+              !isReturned) {
+            return false;
+          }
+          if (_historyPeriodDays != null &&
+              o.createdAtMs <
+                  DateTime.now()
+                      .subtract(Duration(days: _historyPeriodDays!))
+                      .millisecondsSinceEpoch) {
+            return false;
+          }
+          if (query.isNotEmpty) {
+            return o.trackingCode.toLowerCase().contains(query) ||
+                o.pickupAddress.toLowerCase().contains(query) ||
+                o.dropoffAddress.toLowerCase().contains(query) ||
+                o.recipientName.toLowerCase().contains(query) ||
+                o.recipientPhone.toLowerCase().contains(query);
+          }
+          return true;
+        }).toList()..sort(
+          (a, b) => _historyNewestFirst
+              ? b.createdAtMs.compareTo(a.createdAtMs)
+              : a.createdAtMs.compareTo(b.createdAtMs),
+        );
 
     return Card(
       shape: const RoundedRectangleBorder(
@@ -722,32 +1010,100 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                   onChanged: (_) => _rebuildCustomerUi(() {}),
                   decoration: const InputDecoration(
                     isDense: true,
-                    hintText: 'Tìm theo mã đơn hàng hoặc địa chỉ...',
+                    hintText: 'Tìm mã đơn, người nhận, SĐT hoặc địa chỉ...',
                     prefixIcon: Icon(Icons.search_rounded),
                   ),
                 ),
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 6,
-                  children: ['Tất cả', 'Đang giao', 'Hoàn thành', 'Đã hủy'].map(
-                    (tab) {
-                      return ChoiceChip(
-                        visualDensity: VisualDensity.compact,
-                        label: Text(tab),
-                        selected: _historyFilterTab == tab,
-                        onSelected: (_) => _rebuildCustomerUi(() {
-                          _historyFilterTab = tab;
+                  runSpacing: 6,
+                  children:
+                      [
+                        'Tất cả',
+                        'Đang giao',
+                        'Hoàn thành',
+                        'Đã hủy',
+                        'Thất bại',
+                        'Chuyển hoàn',
+                      ].map((tab) {
+                        return ChoiceChip(
+                          visualDensity: VisualDensity.compact,
+                          label: Text(tab),
+                          selected: _historyFilterTab == tab,
+                          onSelected: (_) => _rebuildCustomerUi(() {
+                            _historyFilterTab = tab;
+                          }),
+                        );
+                      }).toList(),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    DropdownButton<int>(
+                      value: _historyPeriodDays ?? 0,
+                      hint: const Text('Khoảng thời gian'),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 0,
+                          child: Text('Mọi thời gian'),
+                        ),
+                        DropdownMenuItem(value: 7, child: Text('7 ngày qua')),
+                        DropdownMenuItem(value: 30, child: Text('30 ngày qua')),
+                        DropdownMenuItem(value: 90, child: Text('90 ngày qua')),
+                      ],
+                      onChanged: (value) => _rebuildCustomerUi(
+                        () => _historyPeriodDays = value == 0 ? null : value,
+                      ),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () => _rebuildCustomerUi(
+                        () => _historyNewestFirst = !_historyNewestFirst,
+                      ),
+                      icon: Icon(
+                        _historyNewestFirst
+                            ? Icons.south_rounded
+                            : Icons.north_rounded,
+                        size: 16,
+                      ),
+                      label: Text(_historyNewestFirst ? 'Mới nhất' : 'Cũ nhất'),
+                    ),
+                    if (query.isNotEmpty ||
+                        _historyPeriodDays != null ||
+                        _historyFilterTab != 'Tất cả')
+                      TextButton(
+                        onPressed: () => _rebuildCustomerUi(() {
+                          _historySearchCtrl.clear();
+                          _historyFilterTab = 'Tất cả';
+                          _historyPeriodDays = null;
                         }),
-                      );
-                    },
-                  ).toList(),
+                        child: const Text('Xóa bộ lọc'),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 12),
                 if (filtered.isEmpty)
-                  EmptyOrdersStateWidget(
-                    onCreateOrder: () => _rebuildCustomerUi(() {
-                      _selectedScreenIndex = 2;
-                    }),
+                  Column(
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 18),
+                        child: Text(
+                          'Không có đơn hàng phù hợp với bộ lọc hiện tại.',
+                        ),
+                      ),
+                      TextButton.icon(
+                        onPressed: () => _rebuildCustomerUi(() {
+                          _historySearchCtrl.clear();
+                          _historyFilterTab = 'Tất cả';
+                          _historyPeriodDays = null;
+                        }),
+                        icon: const Icon(Icons.filter_alt_off_outlined),
+                        label: const Text('Đặt lại bộ lọc'),
+                      ),
+                    ],
                   )
                 else
                   ...filtered.map((ord) {
@@ -869,7 +1225,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                                           ord.podImageNote!.isNotEmpty
                                       ? 'Dịch vụ: ${ord.serviceType.displayName} • POD: ${ord.podImageNote}'
                                       : isDone
-                                      ? 'Dịch vụ: ${ord.serviceType.displayName} • POD: Đã ký nhận'
+                                      ? 'Dịch vụ: ${ord.serviceType.displayName} • Chưa lưu bằng chứng giao hàng'
                                       : ord.status == OrderStatus.cancelled
                                       ? 'Dịch vụ: ${ord.serviceType.displayName} • Hủy: ${ord.cancelReason ?? "Khách hủy đơn"}${ord.paymentStatus == "REFUNDED" ? " (Đã hoàn tiền)" : ""}'
                                       : 'Dịch vụ: ${ord.serviceType.displayName} • TT: ${ord.paymentStatus == "PAID"
@@ -906,7 +1262,41 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                                   );
                                 },
                                 icon: const Icon(Icons.my_location, size: 15),
-                                label: const Text('Xem chi tiết >'),
+                                label: const Text('Theo dõi'),
+                              ),
+                              TextButton.icon(
+                                onPressed: () => _showCustomerOrderDetails(ord),
+                                icon: const Icon(
+                                  Icons.receipt_long_outlined,
+                                  size: 15,
+                                ),
+                                label: const Text('Chi tiết'),
+                              ),
+                              TextButton.icon(
+                                onPressed: () {
+                                  Clipboard.setData(
+                                    ClipboardData(text: ord.trackingCode),
+                                  );
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Đã sao chép mã ${ord.trackingCode}',
+                                      ),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.copy_outlined, size: 15),
+                                label: const Text('Sao chép mã'),
+                              ),
+                              TextButton.icon(
+                                onPressed: () async {
+                                  await _prefillOrderForRepeat(ord);
+                                },
+                                icon: const Icon(
+                                  Icons.replay_rounded,
+                                  size: 15,
+                                ),
+                                label: const Text('Đặt lại'),
                               ),
                               TextButton.icon(
                                 onPressed: isDone
@@ -2393,11 +2783,9 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                         ),
                       ),
                       const SizedBox(height: 10),
-                      TextField(
+                      BankDirectoryField(
                         controller: bankNameCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Ngân hàng nhận thanh toán ví Tài xế',
-                        ),
+                        label: 'Ngân hàng nhận thanh toán ví Tài xế',
                       ),
                       const SizedBox(height: 10),
                       TextField(
@@ -2607,11 +2995,9 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                         ),
                       ),
                       const SizedBox(height: 10),
-                      TextField(
+                      BankDirectoryField(
                         controller: bankNameCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Ngân hàng nhận đối soát COD',
-                        ),
+                        label: 'Ngân hàng nhận đối soát COD',
                       ),
                       const SizedBox(height: 10),
                       TextField(

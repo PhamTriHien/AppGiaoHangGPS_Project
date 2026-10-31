@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'app_colors.dart';
 
 class AppSpacing {
@@ -22,6 +23,76 @@ class AppSpacing {
 
 class AppTheme {
   const AppTheme._();
+
+  static ThemeData get commerceTheme {
+    final base = ThemeData(
+      useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF16734F))
+          .copyWith(
+            surface: Colors.white,
+            secondary: const Color(0xFFB86127),
+            surfaceContainerLow: const Color(0xFFF0F3F5),
+          ),
+      scaffoldBackgroundColor: const Color(0xFFF7F9FA),
+    );
+    return base.copyWith(
+      textTheme: base.textTheme.copyWith(
+        displayLarge: base.textTheme.displayLarge?.copyWith(letterSpacing: 0),
+        displayMedium: base.textTheme.displayMedium?.copyWith(letterSpacing: 0),
+        displaySmall: base.textTheme.displaySmall?.copyWith(letterSpacing: 0),
+        headlineLarge: base.textTheme.headlineLarge?.copyWith(letterSpacing: 0),
+        headlineMedium: base.textTheme.headlineMedium?.copyWith(letterSpacing: 0),
+        headlineSmall: base.textTheme.headlineSmall?.copyWith(letterSpacing: 0),
+        titleLarge: base.textTheme.titleLarge?.copyWith(letterSpacing: 0),
+        titleMedium: base.textTheme.titleMedium?.copyWith(letterSpacing: 0),
+        titleSmall: base.textTheme.titleSmall?.copyWith(letterSpacing: 0),
+        bodyLarge: base.textTheme.bodyLarge?.copyWith(letterSpacing: 0),
+        bodyMedium: base.textTheme.bodyMedium?.copyWith(letterSpacing: 0),
+        bodySmall: base.textTheme.bodySmall?.copyWith(letterSpacing: 0),
+        labelLarge: base.textTheme.labelLarge?.copyWith(letterSpacing: 0),
+        labelMedium: base.textTheme.labelMedium?.copyWith(letterSpacing: 0),
+        labelSmall: base.textTheme.labelSmall?.copyWith(letterSpacing: 0),
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.white,
+        foregroundColor: Color(0xFF20282B),
+        elevation: 0,
+        centerTitle: false,
+      ),
+      navigationBarTheme: const NavigationBarThemeData(
+        backgroundColor: Colors.white,
+        indicatorColor: Color(0xFFDDEFE5),
+      ),
+      cardTheme: CardThemeData(
+        color: Colors.white,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: const BorderSide(color: Color(0xFFE1E7E9)),
+        ),
+      ),
+      inputDecorationTheme: const InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(4)),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          minimumSize: const Size(44, 44),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size(44, 44),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+        ),
+      ),
+    );
+  }
 
   static ThemeData get lightTheme {
     final colorScheme = ColorScheme.fromSeed(
@@ -130,10 +201,7 @@ class AppTheme {
             borderRadius: BorderRadius.zero,
             side: BorderSide(color: AppColors.ink, width: 1.2),
           ),
-          textStyle: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w800,
-          ),
+          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -142,13 +210,8 @@ class AppTheme {
           backgroundColor: Colors.white,
           side: const BorderSide(color: AppColors.ink, width: 1.2),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.zero,
-          ),
-          textStyle: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w800,
-          ),
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
         ),
       ),
       chipTheme: const ChipThemeData(

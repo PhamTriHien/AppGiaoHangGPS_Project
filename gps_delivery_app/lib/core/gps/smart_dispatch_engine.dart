@@ -1,14 +1,11 @@
-import 'dart:convert';
 import 'dart:math' as math;
-
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:http/http.dart' as http;
 
 import '../../data/datasources/local/app_state_store.dart';
 import '../../domain/entities/geo_point.dart';
 import '../../domain/enums/order_status.dart';
 import '../../domain/enums/service_type.dart';
 import '../config/env_config.dart';
+import '../integrations/delivery_api_client.dart';
 import '../utils/geo_math.dart';
 
 class DispatchCandidateScore {
@@ -86,7 +83,7 @@ class OsrmRouteResult {
 }
 
 /// Động cơ Điều phối Tài xế Thông minh
-/// & Bộ giải mã Địa chỉ Google Maps Geocoding / Nominatim + Dẫn đường Google Directions / OSRM Thực tế
+/// Uses backend-managed address lookup and routing.
 class SmartDispatchEngine {
   const SmartDispatchEngine._();
 
@@ -112,136 +109,7 @@ class SmartDispatchEngine {
     }
   }
 
-  static const List<GeocodedPlaceSuggestion> knownPlaces = [
-    GeocodedPlaceSuggestion(
-      title: '145 Phố Huế, Hai Bà Trưng',
-      fullAddress: '145 Phố Huế, Hai Bà Trưng, Hà Nội',
-      location: GeoPoint(latitude: 21.0145, longitude: 105.8512),
-    ),
-    GeocodedPlaceSuggestion(
-      title: '15 Ngõ 100 Lê Trọng Tấn',
-      fullAddress:
-          'Số 15, Ngõ 100, Đường Lê Trọng Tấn, Quận Thanh Xuân, Hà Nội',
-      location: GeoPoint(latitude: 20.9951, longitude: 105.8286),
-    ),
-    GeocodedPlaceSuggestion(
-      title: '123 Đường Lê Lợi',
-      fullAddress: '123 Đường Lê Lợi, Phường Bến Nghé, Quận 1, TP. HCM',
-      location: GeoPoint(latitude: 10.7769, longitude: 106.6953),
-    ),
-    GeocodedPlaceSuggestion(
-      title: '123 Lê Lợi',
-      fullAddress: '123 Lê Lợi, Phường Bến Thành, Quận 1, TP. HCM',
-      location: GeoPoint(latitude: 10.7731, longitude: 106.6983),
-    ),
-    GeocodedPlaceSuggestion(
-      title: '456 Đường Nguyễn Đình Chiểu',
-      fullAddress: '456 Đường Nguyễn Đình Chiểu, Phường 6, Quận 3, TP. HCM',
-      location: GeoPoint(latitude: 10.7752, longitude: 106.6869),
-    ),
-    GeocodedPlaceSuggestion(
-      title: 'Bitexco Financial Tower',
-      fullAddress:
-          'Bitexco Financial Tower, 45 Lê Lợi, P. Bến Nghé, Q.1, TP. HCM',
-      location: GeoPoint(latitude: 10.7716, longitude: 106.7044),
-    ),
-    GeocodedPlaceSuggestion(
-      title: 'Landmark 81',
-      fullAddress: 'Landmark 81, Quận Bình Thạnh, TP.HCM',
-      location: GeoPoint(latitude: 10.7950, longitude: 106.7218),
-    ),
-    GeocodedPlaceSuggestion(
-      title: '188 Phan Xích Long',
-      fullAddress: '188 Phan Xích Long, Quận Phú Nhuận, TP.HCM',
-      location: GeoPoint(latitude: 10.7972, longitude: 106.6882),
-    ),
-    GeocodedPlaceSuggestion(
-      title: 'Cảng Tân Thuận',
-      fullAddress: 'Cảng Tân Thuận, Khu Chế Xuất Q.7',
-      location: GeoPoint(latitude: 10.7425, longitude: 106.7250),
-    ),
-    GeocodedPlaceSuggestion(
-      title: 'Chợ Bến Thành',
-      fullAddress: 'Chợ Bến Thành, Quận 1, TP. HCM',
-      location: GeoPoint(latitude: 10.7725, longitude: 106.6980),
-    ),
-    GeocodedPlaceSuggestion(
-      title: 'Dinh Độc Lập',
-      fullAddress: 'Dinh Độc Lập, Quận 1, TP. HCM',
-      location: GeoPoint(latitude: 10.7770, longitude: 106.6953),
-    ),
-    GeocodedPlaceSuggestion(
-      title: '456 Nguyễn Huệ, Phú Nhuận',
-      fullAddress: '456 Đường Nguyễn Huệ, Quận Phú Nhuận, TP. HCM',
-      location: GeoPoint(latitude: 10.7992, longitude: 106.6805),
-    ),
-    GeocodedPlaceSuggestion(
-      title: '77 Võ Văn Tần, Quận 3',
-      fullAddress: '77 Võ Văn Tần, Phường 6, Quận 3, TP. HCM',
-      location: GeoPoint(latitude: 10.7761, longitude: 106.6894),
-    ),
-    GeocodedPlaceSuggestion(
-      title: '789 Điện Biên Phủ, Bình Thạnh',
-      fullAddress: '789 Điện Biên Phủ, Quận Bình Thạnh, TP. HCM',
-      location: GeoPoint(latitude: 10.7985, longitude: 106.7152),
-    ),
-    GeocodedPlaceSuggestion(
-      title: '72 Lê Thánh Tôn',
-      fullAddress: '72 Lê Thánh Tôn, Phường Bến Nghé, Quận 1, TP. HCM',
-      location: GeoPoint(latitude: 10.7780, longitude: 106.7018),
-    ),
-    GeocodedPlaceSuggestion(
-      title: '120 Nguyễn Trãi',
-      fullAddress: '120 Nguyễn Trãi, Phường 3, Quận 5, TP. HCM',
-      location: GeoPoint(latitude: 10.7582, longitude: 106.6785),
-    ),
-    GeocodedPlaceSuggestion(
-      title: '45 Lê Duẩn',
-      fullAddress: '45 Lê Duẩn, Phường Bến Nghé, Quận 1, TP. HCM',
-      location: GeoPoint(latitude: 10.7815, longitude: 106.7005),
-    ),
-    GeocodedPlaceSuggestion(
-      title: 'Phở Hòa Pasteur',
-      fullAddress: '260C Pasteur, Phường Võ Thị Sáu, Quận 3, TP. HCM',
-      location: GeoPoint(latitude: 10.7868, longitude: 106.6881),
-    ),
-    GeocodedPlaceSuggestion(
-      title: 'Cơm Tấm Phúc Lộc Thọ',
-      fullAddress:
-          '236 Nguyễn Thị Minh Khai, Phường Võ Thị Sáu, Quận 3, TP. HCM',
-      location: GeoPoint(latitude: 10.7778, longitude: 106.6898),
-    ),
-    GeocodedPlaceSuggestion(
-      title: 'Bánh Mì Huỳnh Hoa',
-      fullAddress: '26 Lê Thị Riêng, Phường Bến Thành, Quận 1, TP. HCM',
-      location: GeoPoint(latitude: 10.7712, longitude: 106.6913),
-    ),
-    GeocodedPlaceSuggestion(
-      title: 'Phê La - Hồ Tùng Mậu',
-      fullAddress: '115 Hồ Tùng Mậu, Phường Bến Nghé, Quận 1, TP. HCM',
-      location: GeoPoint(latitude: 10.7730, longitude: 106.7032),
-    ),
-    GeocodedPlaceSuggestion(
-      title: 'Poke Saigon - Lý Tự Trọng',
-      fullAddress: '42 Lý Tự Trọng, Phường Bến Nghé, Quận 1, TP. HCM',
-      location: GeoPoint(latitude: 10.7782, longitude: 106.7014),
-    ),
-    GeocodedPlaceSuggestion(
-      title: 'Cháo Sườn & Dimsum Đêm Chợ Cũ',
-      fullAddress: '84 Tôn Thất Đạm, Phường Bến Nghé, Quận 1, TP. HCM',
-      location: GeoPoint(latitude: 10.7718, longitude: 106.7038),
-    ),
-    GeocodedPlaceSuggestion(
-      title: 'Bún Chả Hương Liên',
-      fullAddress: '24 Lê Văn Hưu, Quận Hai Bà Trưng, Hà Nội',
-      location: GeoPoint(latitude: 21.0181, longitude: 105.8535),
-    ),
-    GeocodedPlaceSuggestion(
-      title: 'Cà Phê Giảng Phố Cổ',
-      fullAddress: '39 Nguyễn Hữu Huân, Quận Hoàn Kiếm, Hà Nội',
-      location: GeoPoint(latitude: 21.0338, longitude: 105.8546),
-    ),
-  ];
+  static const List<GeocodedPlaceSuggestion> knownPlaces = [];
 
   static List<GeocodedPlaceSuggestion> get _allPlaces => [
     ..._liveCachedPlaces,
@@ -267,7 +135,7 @@ class SmartDispatchEngine {
     return out;
   }
 
-  /// Tìm kiếm gợi ý địa chỉ cục bộ + bộ nhớ đệm Google Maps / Nominatim (hỗ trợ cả có dấu & không dấu)
+  /// Search previously verified addresses, including Vietnamese without accents.
   static List<GeocodedPlaceSuggestion> searchAddressSuggestions(String query) {
     final normalized = query.trim().toLowerCase();
     if (normalized.isEmpty) return _allPlaces.take(4).toList();
@@ -288,105 +156,48 @@ class SmartDispatchEngine {
     return const <GeocodedPlaceSuggestion>[];
   }
 
-  /// Truy vấn trực tiếp Google Maps Geocoding API + OpenStreetMap Nominatim toàn quốc (`countrycodes=vn`)
+  /// Address lookup through the managed backend; only verified results enter the cache.
   static Future<List<GeocodedPlaceSuggestion>> fetchLiveNominatimSuggestions(
-    String query,
-  ) async {
+    String query, {
+    DeliveryApiClient? api,
+  }) async {
     final trimmed = query.trim();
-    if (trimmed.isEmpty) return searchAddressSuggestions(trimmed);
-
-    final client = http.Client();
+    if (trimmed.length < 3) return searchAddressSuggestions(trimmed);
     try {
-      if (EnvConfig.isGoogleMapsKeyConfigured) {
-        final gUri = Uri.parse(EnvConfig.googleMapsGeocodeEndpoint).replace(
-          queryParameters: {
-            'address': trimmed,
-            'components': 'country:VN',
-            'language': 'vi',
-            'key': EnvConfig.googleMapsApiKey,
-          },
-        );
-        final gResp = await client
-            .get(gUri)
-            .timeout(const Duration(seconds: 4));
-        if (gResp.statusCode == 200) {
-          final gDecoded = jsonDecode(utf8.decode(gResp.bodyBytes));
-          if (gDecoded is Map<String, dynamic> &&
-              gDecoded['status'] == 'OK' &&
-              gDecoded['results'] is List) {
-            final gResults = <GeocodedPlaceSuggestion>[];
-            for (final item in gDecoded['results'] as List) {
-              if (item is Map<String, dynamic>) {
-                final formatted = '${item['formatted_address'] ?? ''}'.trim();
-                final geom = item['geometry'] as Map<String, dynamic>?;
-                final loc = geom?['location'] as Map<String, dynamic>?;
-                final lat = (loc?['lat'] as num?)?.toDouble();
-                final lng = (loc?['lng'] as num?)?.toDouble();
-                if (lat != null && lng != null && formatted.isNotEmpty) {
-                  final parts = formatted.split(',');
-                  final shortTitle = parts.take(2).join(',').trim();
-                  final suggestion = GeocodedPlaceSuggestion(
-                    title: shortTitle.isEmpty ? formatted : shortTitle,
-                    fullAddress: formatted,
-                    location: GeoPoint(latitude: lat, longitude: lng),
-                  );
-                  gResults.add(suggestion);
-                  _cachePlaceSuggestion(suggestion);
-                }
-              }
-            }
-            if (gResults.isNotEmpty) return gResults;
-          }
-        }
-      }
-
-      final uri = Uri.parse(EnvConfig.nominatimSearchEndpoint).replace(
-        queryParameters: {
-          'format': 'json',
-          'countrycodes': 'vn',
-          'limit': '5',
-          'q': trimmed,
-        },
+      final response = await (api ?? DeliveryApiClient.instance).request(
+        'places',
+        query: {'q': trimmed},
       );
-      final resp = await client
-          .get(
-            uri,
-            headers: kIsWeb
-                ? const <String, String>{}
-                : const <String, String>{
-                    'User-Agent': 'GpsDeliveryApp/1.0 (Flutter Multiplatform)',
-                  },
-          )
-          .timeout(const Duration(seconds: 4));
-      if (resp.statusCode == 200) {
-        final decoded = jsonDecode(utf8.decode(resp.bodyBytes));
-        if (decoded is List && decoded.isNotEmpty) {
-          final results = <GeocodedPlaceSuggestion>[];
-          for (final item in decoded) {
-            if (item is Map<String, dynamic>) {
-              final lat = double.tryParse('${item['lat']}');
-              final lon = double.tryParse('${item['lon']}');
-              final displayName = '${item['display_name'] ?? ''}'.trim();
-              if (lat != null && lon != null && displayName.isNotEmpty) {
-                final parts = displayName.split(',');
-                final shortTitle = parts.take(2).join(',').trim();
-                final suggestion = GeocodedPlaceSuggestion(
-                  title: shortTitle.isEmpty ? displayName : shortTitle,
-                  fullAddress: displayName,
-                  location: GeoPoint(latitude: lat, longitude: lon),
-                );
-                results.add(suggestion);
-                _cachePlaceSuggestion(suggestion);
-              }
-            }
-          }
-          if (results.isNotEmpty) return results;
+      final results = <GeocodedPlaceSuggestion>[];
+      for (final row in (response['places'] as List? ?? const [])) {
+        if (row is! Map) continue;
+        final lat = row['latitude'];
+        final lon = row['longitude'];
+        final address = row['address'];
+        if (lat is! num ||
+            lon is! num ||
+            !lat.isFinite ||
+            !lon.isFinite ||
+            lat.abs() > 90 ||
+            lon.abs() > 180 ||
+            address is! String ||
+            address.isEmpty) {
+          continue;
         }
+        final suggestion = GeocodedPlaceSuggestion(
+          title: row['title']?.toString() ?? address,
+          fullAddress: address,
+          location: GeoPoint(
+            latitude: lat.toDouble(),
+            longitude: lon.toDouble(),
+          ),
+        );
+        results.add(suggestion);
+        _cachePlaceSuggestion(suggestion);
       }
+      if (results.isNotEmpty) return results;
     } catch (_) {
-      // Tự động fallback về danh mục nội bộ khi không có kết nối mạng hoặc trong môi trường test
-    } finally {
-      client.close();
+      // Keep previously verified places available offline.
     }
     return searchAddressSuggestions(trimmed);
   }
@@ -429,240 +240,83 @@ class SmartDispatchEngine {
     return points;
   }
 
-  /// Truy vấn trực tiếp Google Maps Directions API + OSRM (`router.project-osrm.org`)
   static Future<OsrmRouteResult> fetchLiveOsrmRoute(
     GeoPoint start,
-    GeoPoint end,
-  ) async {
-    final client = http.Client();
+    GeoPoint end, {
+    DeliveryApiClient? api,
+  }) async {
     try {
-      if (EnvConfig.isGoogleMapsKeyConfigured) {
-        final gUri = Uri.parse(EnvConfig.googleMapsDirectionsEndpoint).replace(
-          queryParameters: {
-            'origin': '${start.latitude},${start.longitude}',
-            'destination': '${end.latitude},${end.longitude}',
-            'mode': 'driving',
-            'language': 'vi',
-            'key': EnvConfig.googleMapsApiKey,
-          },
-        );
-        final gResp = await client
-            .get(gUri)
-            .timeout(const Duration(seconds: 4));
-        if (gResp.statusCode == 200) {
-          final gDecoded = jsonDecode(utf8.decode(gResp.bodyBytes));
-          if (gDecoded is Map<String, dynamic> &&
-              gDecoded['status'] == 'OK' &&
-              gDecoded['routes'] is List &&
-              (gDecoded['routes'] as List).isNotEmpty) {
-            final rawFirstRoute = (gDecoded['routes'] as List).first;
-            if (rawFirstRoute is Map) {
-              final route = Map<String, dynamic>.from(rawFirstRoute);
-              final legs = route['legs'];
-              final firstLeg =
-                  (legs is List && legs.isNotEmpty && legs.first is Map)
-                  ? Map<String, dynamic>.from(legs.first as Map)
-                  : null;
-              final distMap = firstLeg?['distance'];
-              final durMap = firstLeg?['duration'];
-              final distVal = distMap is Map ? distMap['value'] : null;
-              final durVal = durMap is Map ? durMap['value'] : null;
-              final dist = ((distVal is num ? distVal.round() : 1200)).clamp(
-                50,
-                3000000,
-              );
-              final dur = ((durVal is num ? durVal.round() : 300)).clamp(
-                30,
-                259200,
-              );
-              final overview = route['overview_polyline'];
-              final encodedPoints = overview is Map
-                  ? '${overview['points'] ?? ''}'.trim()
-                  : '';
-              if (encodedPoints.isNotEmpty) {
-                final pts = decodeGoogleEncodedPolyline(encodedPoints);
-                if (pts.length >= 2) {
-                  _lastLiveOsrmPolyline = pts;
-                  return OsrmRouteResult(
-                    distanceMeters: dist,
-                    durationSeconds: dur,
-                    polylinePoints: pts,
-                    isLiveOsrm: true,
-                  );
-                }
-              }
-            }
-          }
-        }
-      }
-
-      final url =
-          '${EnvConfig.osrmRouteEndpoint}/${start.longitude},${start.latitude};${end.longitude},${end.latitude}?overview=full&geometries=geojson';
-      final resp = await client
-          .get(
-            Uri.parse(url),
-            headers: kIsWeb
-                ? const <String, String>{}
-                : const <String, String>{
-                    'User-Agent': 'GpsDeliveryApp/1.0 (Flutter Multiplatform)',
-                  },
+      final decoded = await (api ?? DeliveryApiClient.instance).request(
+        'route',
+        query: {
+          'coordinates':
+              '${start.longitude},${start.latitude};${end.longitude},${end.latitude}',
+        },
+      );
+      final route = (decoded['routes'] as List).first as Map;
+      final distance = route['distance'];
+      final duration = route['duration'];
+      final coordinates = (route['geometry'] as Map)['coordinates'] as List;
+      final points = coordinates
+          .map(
+            (row) => GeoPoint(
+              latitude: (row[1] as num).toDouble(),
+              longitude: (row[0] as num).toDouble(),
+            ),
           )
-          .timeout(const Duration(seconds: 4));
-      if (resp.statusCode == 200) {
-        final decoded = jsonDecode(utf8.decode(resp.bodyBytes));
-        if (decoded is Map<String, dynamic>) {
-          final routes = decoded['routes'];
-          if (routes is List && routes.isNotEmpty && routes.first is Map) {
-            final route = Map<String, dynamic>.from(routes.first as Map);
-            final rawDist = route['distance'];
-            final rawDur = route['duration'];
-            final dist = ((rawDist is num ? rawDist.round() : 1200)).clamp(
-              50,
-              3000000,
-            );
-            final dur = ((rawDur is num ? rawDur.round() : 300)).clamp(
-              30,
-              259200,
-            );
-            final geom = route['geometry'];
-            final coords = geom is Map ? geom['coordinates'] : null;
-            final pts = <GeoPoint>[];
-            if (coords is List) {
-              for (final c in coords) {
-                if (c is List && c.length >= 2 && c[0] is num && c[1] is num) {
-                  final lon = (c[0] as num).toDouble();
-                  final lat = (c[1] as num).toDouble();
-                  pts.add(GeoPoint(latitude: lat, longitude: lon));
-                }
-              }
-            }
-            if (pts.length >= 2) {
-              _lastLiveOsrmPolyline = pts;
-              return OsrmRouteResult(
-                distanceMeters: dist,
-                durationSeconds: dur,
-                polylinePoints: pts,
-                isLiveOsrm: true,
-              );
-            }
-          }
-        }
+          .toList();
+      if (distance is num &&
+          duration is num &&
+          distance.isFinite &&
+          duration.isFinite &&
+          distance >= 0 &&
+          duration >= 0 &&
+          points.length >= 2) {
+        _lastLiveOsrmPolyline = points;
+        return OsrmRouteResult(
+          distanceMeters: distance.round(),
+          durationSeconds: duration.round(),
+          polylinePoints: points,
+          isLiveOsrm: true,
+        );
       }
     } catch (_) {
-      // Fallback sang nội suy Haversine khi offline
-    } finally {
-      client.close();
+      // Estimates remain explicitly marked as offline, never live routing.
     }
-
     final rawMeters = GeoMath.distanceMeters(start, end);
-    final fallbackDist = rawMeters < 1.0
+    final distance = rawMeters < 1
         ? 0
         : (rawMeters * 1.28).round().clamp(50, 3000000);
-    final fallbackDur = ((fallbackDist / 1000.0) * 185).round();
-    final fallbackPts = generateRoutePolyline(start, end);
     return OsrmRouteResult(
-      distanceMeters: fallbackDist,
-      durationSeconds: fallbackDur,
-      polylinePoints: fallbackPts,
+      distanceMeters: distance,
+      durationSeconds: ((distance / 1000) * 185).round(),
+      polylinePoints: generateRoutePolyline(start, end),
       isLiveOsrm: false,
     );
   }
 
-  /// Giải mã ngược tọa độ GPS (Reverse Geocoding) sang địa chỉ đường phố thực tế qua Google Maps / OpenStreetMap Nominatim
   static Future<String> reverseGeocodeCoordinate(GeoPoint point) async {
-    final client = http.Client();
     try {
-      if (EnvConfig.isGoogleMapsKeyConfigured) {
-        final gUri = Uri.parse(EnvConfig.googleMapsGeocodeEndpoint).replace(
-          queryParameters: {
-            'latlng': '${point.latitude},${point.longitude}',
-            'language': 'vi',
-            'key': EnvConfig.googleMapsApiKey,
-          },
+      final response = await DeliveryApiClient.instance.request(
+        'reverse',
+        query: {
+          'lat': point.latitude.toStringAsFixed(5),
+          'lon': point.longitude.toStringAsFixed(5),
+        },
+      );
+      final address = response['address'];
+      if (address is String && address.isNotEmpty) {
+        _cachePlaceSuggestion(
+          GeocodedPlaceSuggestion(
+            title: address.split(',').take(2).join(','),
+            fullAddress: address,
+            location: point,
+          ),
         );
-        final gResp = await client
-            .get(gUri)
-            .timeout(const Duration(seconds: 4));
-        if (gResp.statusCode == 200) {
-          final decoded = jsonDecode(utf8.decode(gResp.bodyBytes));
-          if (decoded is Map<String, dynamic> &&
-              decoded['status'] == 'OK' &&
-              decoded['results'] is List &&
-              (decoded['results'] as List).isNotEmpty) {
-            final first = (decoded['results'] as List).first;
-            if (first is Map<String, dynamic>) {
-              final formatted = '${first['formatted_address'] ?? ''}'.trim();
-              if (formatted.isNotEmpty) {
-                final parts = formatted.split(',');
-                final shortTitle = parts.take(2).join(',').trim();
-                _cachePlaceSuggestion(
-                  GeocodedPlaceSuggestion(
-                    title: shortTitle.isEmpty ? formatted : shortTitle,
-                    fullAddress: formatted,
-                    location: point,
-                  ),
-                );
-                return formatted;
-              }
-            }
-          }
-        }
-      }
-
-      final uri = Uri.parse('https://nominatim.openstreetmap.org/reverse')
-          .replace(
-            queryParameters: {
-              'format': 'jsonv2',
-              'lat': point.latitude.toStringAsFixed(6),
-              'lon': point.longitude.toStringAsFixed(6),
-              'accept-language': 'vi',
-            },
-          );
-      final resp = await client
-          .get(
-            uri,
-            headers: kIsWeb
-                ? const <String, String>{}
-                : const <String, String>{
-                    'User-Agent': 'GpsDeliveryApp/1.0 (Flutter Multiplatform)',
-                  },
-          )
-          .timeout(const Duration(seconds: 4));
-      if (resp.statusCode == 200) {
-        final decoded = jsonDecode(utf8.decode(resp.bodyBytes));
-        if (decoded is Map<String, dynamic>) {
-          final displayName = '${decoded['display_name'] ?? ''}'.trim();
-          if (displayName.isNotEmpty) {
-            final parts = displayName.split(',');
-            final shortTitle = parts.take(2).join(',').trim();
-            _cachePlaceSuggestion(
-              GeocodedPlaceSuggestion(
-                title: shortTitle.isEmpty ? displayName : shortTitle,
-                fullAddress: displayName,
-                location: point,
-              ),
-            );
-            return displayName;
-          }
-        }
+        return address;
       }
     } catch (_) {
-      // Fallback sang địa điểm đã xác thực gần nhất khi mất kết nối mạng hoặc trong môi trường test
-    } finally {
-      client.close();
-    }
-
-    GeocodedPlaceSuggestion? nearest;
-    var bestMeters = double.infinity;
-    for (final p in _allPlaces) {
-      final d = GeoMath.distanceMeters(point, p.location);
-      if (d < bestMeters) {
-        bestMeters = d;
-        nearest = p;
-      }
-    }
-    if (nearest != null && bestMeters <= 900) {
-      return nearest.fullAddress;
+      // Use coordinates when the address service cannot verify this point.
     }
     return 'Tọa độ (${point.latitude.toStringAsFixed(5)}, ${point.longitude.toStringAsFixed(5)})';
   }
@@ -682,9 +336,9 @@ class SmartDispatchEngine {
     for (final p in _allPlaces) {
       final titleLow = p.title.toLowerCase();
       final fullLow = p.fullAddress.toLowerCase();
-      if (normalized.contains(titleLow) ||
+      if (normalized == titleLow ||
           fullLow == normalized ||
-          folded.contains(_foldVietnamese(titleLow)) ||
+          folded == _foldVietnamese(titleLow) ||
           _foldVietnamese(fullLow) == folded) {
         return p.location;
       }

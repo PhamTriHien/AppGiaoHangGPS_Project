@@ -131,18 +131,47 @@ extension AppStateOrderAndAdminOps on AppStateStore {
     bool isRoundTrip = false,
     bool greenFundContributed = false,
   }) {
+    bool isValidPoint(GeoPoint point) =>
+        point.latitude.isFinite &&
+        point.longitude.isFinite &&
+        point.latitude.abs() <= 90 &&
+        point.longitude.abs() <= 180;
+    if (customPickupLocation != null && !isValidPoint(customPickupLocation) ||
+        customDropoffLocation != null && !isValidPoint(customDropoffLocation)) {
+      throw ArgumentError('Tọa độ không hợp lệ');
+    }
     final pickupPt =
         customPickupLocation ??
         SmartDispatchEngine.resolveAddressToCoordinate(
           pickupAddress,
           fallback: const GeoPoint(latitude: 10.7769, longitude: 106.6953),
         );
-    final firstDropoffPt =
+    final verifiedDropoffPt =
         customDropoffLocation ??
-        SmartDispatchEngine.resolveAddressToCoordinate(
-          dropoffAddress,
-          fallback: const GeoPoint(latitude: 10.7550, longitude: 106.6750),
-        );
+        SmartDispatchEngine.tryResolveAddressToCoordinate(dropoffAddress);
+    final firstDropoffPt =
+        verifiedDropoffPt ??
+        const GeoPoint(latitude: 10.7550, longitude: 106.6750);
+    final extraStops = additionalStops
+        .where((stop) => '${stop['address'] ?? ''}'.trim().isNotEmpty)
+        .map((stop) => Map<String, dynamic>.from(stop))
+        .toList();
+    GeoPoint? explicitStopPoint(Map<String, dynamic> stop) {
+      if (stop['latitude'] is! num || stop['longitude'] is! num) return null;
+      final point = GeoPoint(
+        latitude: (stop['latitude'] as num).toDouble(),
+        longitude: (stop['longitude'] as num).toDouble(),
+      );
+      return isValidPoint(point) ? point : null;
+    }
+
+    final lastExtraStop = extraStops.lastOrNull;
+    final verifiedLastPoint = lastExtraStop == null
+        ? verifiedDropoffPt
+        : explicitStopPoint(lastExtraStop) ??
+              SmartDispatchEngine.tryResolveAddressToCoordinate(
+                lastExtraStop['address'].toString(),
+              );
     final normalizedStops = <Map<String, dynamic>>[
       {
         'stopType': 'DROPOFF',
@@ -153,9 +182,7 @@ extension AppStateOrderAndAdminOps on AppStateStore {
         'recipientPhone': recipientPhone,
         'codAmount': codAmount,
       },
-      ...additionalStops.where((stop) {
-        return (stop['address'] ?? '').toString().trim().isNotEmpty;
-      }),
+      ...extraStops,
     ];
     final extraStopCount =
         normalizedStops.length > 1 ? normalizedStops.length - 1 : 0;
@@ -165,15 +192,12 @@ extension AppStateOrderAndAdminOps on AppStateStore {
     var previousPoint = pickupPt;
     for (final stop in normalizedStops) {
       final stopAddress = stop['address'].toString().trim();
-      final stopPoint = stop['latitude'] is num && stop['longitude'] is num
-          ? GeoPoint(
-              latitude: (stop['latitude'] as num).toDouble(),
-              longitude: (stop['longitude'] as num).toDouble(),
-            )
-          : SmartDispatchEngine.resolveAddressToCoordinate(
-              stopAddress,
-              fallback: lastDropoffPt,
-            );
+      final stopPoint =
+          explicitStopPoint(stop) ??
+          SmartDispatchEngine.resolveAddressToCoordinate(
+            stopAddress,
+            fallback: lastDropoffPt,
+          );
       routeMeters += GeoMath.distanceMeters(previousPoint, stopPoint) * 1.28;
       previousPoint = stopPoint;
       lastDropoffPt = stopPoint;
@@ -196,7 +220,9 @@ extension AppStateOrderAndAdminOps on AppStateStore {
             ? 2700
             : (((distMeters / 1000.0) * 180).round() + extraStopCount * 180));
 
-    double geofenceFee = computeGeofenceSurchargeForPoint(lastDropoffPt);
+    double geofenceFee = verifiedLastPoint == null
+        ? 0
+        : computeGeofenceSurchargeForPoint(verifiedLastPoint);
     if (isWeatherSurchargeActive) {
       geofenceFee += badWeatherSurchargeConfig;
     }
@@ -1576,7 +1602,7 @@ extension AppStateOrderAndAdminOps on AppStateStore {
   }) {
     if (text.trim().isEmpty) return;
     final msg = ChatMessageRecord(
-      id: 'MSG-${DateTime.now().millisecondsSinceEpoch}-${chatMessages.length + 1}',
+      id: const Uuid().v4(),
       orderId: orderId,
       senderName: isCustomer ? customerFullName : activeDriverName,
       isCustomer: isCustomer,
@@ -1600,6 +1626,7 @@ extension AppStateOrderAndAdminOps on AppStateStore {
       'created_at_ms': DateTime.now().millisecondsSinceEpoch,
     });
     _persistMutation('SEND_CHAT', {'orderId': orderId, 'text': text.trim()});
+    _publishLiveChat(orderId, text.trim(), isCustomer, msg.id);
     _notifyStoreChanged();
   }
 
@@ -2968,12 +2995,13 @@ extension AppStateOrderAndAdminOps on AppStateStore {
   String exportReportFileToDisk({
     required String fileName,
     required String content,
+    String mimeType = 'text/csv;charset=utf-8',
   }) {
     if (kIsWeb) {
       triggerBrowserFileDownload(
         fileName: fileName,
         content: content,
-        mimeType: 'text/csv;charset=utf-8',
+        mimeType: mimeType,
       );
       final virtualPath = 'localStorage://exports/$fileName';
       _sqliteDb.upsertEntityRecord(

@@ -4,16 +4,21 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
+import 'package:csv/csv.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../../core/config/env_config.dart';
+import '../../../core/config/local_auth_config.dart';
 import '../../../core/gps/gps_integrity_validator.dart';
 import '../../../core/gps/grab_food_recommendation_engine.dart';
 import '../../../core/gps/kalman_gps_filter.dart';
 import '../../../core/gps/smart_dispatch_engine.dart';
 import '../../../core/promotions/promo_event_gamification_engine.dart';
+import '../../../core/integrations/live_delivery_service.dart';
+import '../../../core/integrations/push_notification_service.dart';
 import '../../../core/utils/geo_math.dart';
 import '../../../core/utils/platform_file_and_browser_bridge.dart';
 import '../../../core/utils/security_and_barcode_utils.dart';
@@ -35,6 +40,8 @@ part 'app_state_auth_and_gps_ops.dart';
 part 'app_state_order_and_admin_ops.dart';
 part 'app_state_demo_cleanup.dart';
 part 'app_state_commercial_ops.dart';
+part 'app_state_live_delivery_ops.dart';
+part 'app_state_customer_ops.dart';
 
 class AppStateStore extends ChangeNotifier {
   static final AppStateStore instance = AppStateStore._internal();
@@ -63,6 +70,16 @@ class AppStateStore extends ChangeNotifier {
   String lastSyncStatusMessage = 'Dữ liệu trên thiết bị';
 
   final Map<String, GeoPoint> verifiedDriverLocations = {};
+  final Map<String, StreamSubscription<List<Map<String, dynamic>>>> _liveRooms =
+      {};
+  final Map<String, String> _liveRoomRoles = {};
+  final Map<String, String> _publishedStatuses = {};
+  final Map<String, DateTime> _lastPublishedGps = {};
+  final Map<String, DateTime> _lastRemoteStatus = {};
+  final Map<String, String> liveRoomMessages = {};
+  final Map<String, String> liveEvidencePaths = {};
+  final Set<String> _seenLiveEvents = {};
+  bool _applyingLiveEvents = false;
 
   GeoPoint? verifiedLocationForOrder(ActiveOrderRecord? order) {
     if (order == null || order.assignedDriverName == null) return null;
@@ -147,6 +164,7 @@ class AppStateStore extends ChangeNotifier {
   final List<Map<String, dynamic>> systemAuditLogs = [];
 
   AppStateStore._internal() {
+    _sqliteDb.syncScopeProvider = () => _currentSyncScope;
     _initializeDefaultRoles();
     initializeDatabase();
   }
@@ -157,7 +175,7 @@ class AppStateStore extends ChangeNotifier {
       return 'localStorage://gps_delivery_state_snapshot.json';
     }
     final suffix = Platform.environment.containsKey('FLUTTER_TEST')
-        ? '_$pid'
+        ? '_${pid}_${_sqliteDb.runtimeSessionId}'
         : '';
     return '${Directory.systemTemp.path}${Platform.pathSeparator}gps_delivery_state_snapshot$suffix.json';
   }
@@ -217,12 +235,51 @@ class AppStateStore extends ChangeNotifier {
     return snapshotFilePath;
   }
 
-  Future<int> drainOfflineSyncQueue() async {
+  Future<int>? _syncDrain;
+
+  String? get _currentSyncScope {
+    final local = activeAuthenticatedUser;
+    final session = SupabasePostgisDatasource().authenticatedSession;
+    if (local == null || session == null) return null;
+    final cloud = session.user;
+    final sameEmail =
+        local.email.trim().isNotEmpty &&
+        local.email.trim().toLowerCase() == cloud.email?.trim().toLowerCase();
+    final samePhone =
+        local.phone.trim().isNotEmpty &&
+        _normalizePhone(local.phone) == _normalizePhone(cloud.phone ?? '');
+    if (!sameEmail && !samePhone) return null;
+    return jsonEncode([
+      EnvConfig.supabaseUrl.trim().replaceFirst(RegExp(r'/+$'), ''),
+      cloud.id,
+      local.id,
+    ]);
+  }
+
+  Future<int> drainOfflineSyncQueue() {
+    final pending = _syncDrain;
+    if (pending != null) return pending;
+    late final Future<int> operation;
+    operation = _drainOfflineSyncQueue().whenComplete(() {
+      if (identical(_syncDrain, operation)) _syncDrain = null;
+    });
+    _syncDrain = operation;
+    return operation;
+  }
+
+  Future<int> _drainOfflineSyncQueue() async {
     int syncedCount = 0;
+    final scope = _currentSyncScope;
+    if (isOfflineMode || scope == null) return 0;
+    final remote = SupabasePostgisDatasource().pinAuthenticatedSession();
+    if (remote == null) return 0;
     try {
-      final pending = await _sqliteDb.getPendingSyncItems(limit: 500);
-      final remote = SupabasePostgisDatasource();
+      final pending = await _sqliteDb.getPendingSyncItems(
+        limit: 500,
+        ownerScope: scope,
+      );
       for (final item in pending) {
+        if (isOfflineMode || scope != _currentSyncScope) break;
         if (EnvConfig.isSupabaseConfigured) {
           try {
             final table = item.payload['table']?.toString();
@@ -267,21 +324,36 @@ class AppStateStore extends ChangeNotifier {
                 table,
                 Map<String, dynamic>.from(record),
               );
+            } else {
+              // Keep unsupported commands pending until their remote handler exists.
+              throw StateError('Unsupported sync command');
             }
             await _sqliteDb.markSynced(item.id);
             syncedCount++;
+          } on StateError {
+            // Missing handlers must not exhaust the retry budget.
+            continue;
           } catch (_) {
             await _sqliteDb.incrementRetry(item.id, item.retryCount);
           }
-        } else {
-          await _sqliteDb.markSynced(item.id);
-          syncedCount++;
         }
       }
-      if (!isOfflineMode) {
+      if (!isOfflineMode && scope == _currentSyncScope) {
         offlineQueueCount = await _sqliteDb.getPendingQueueCount();
+        if (pending.isNotEmpty) {
+          lastSyncStatusMessage = offlineQueueCount > 0
+              ? 'Con $offlineQueueCount thao tac chua duoc may chu xac nhan'
+              : 'Da dong bo $syncedCount thao tac duoc may chu xac nhan';
+          _notifyStoreChanged();
+        }
       }
-    } catch (_) {}
+    } catch (_) {
+      lastSyncStatusMessage =
+          'Chưa đồng bộ được; thao tác vẫn được giữ trên máy.';
+      _notifyStoreChanged();
+    } finally {
+      await remote.disposePinnedSession();
+    }
     return syncedCount;
   }
 
@@ -374,11 +446,28 @@ class AppStateStore extends ChangeNotifier {
       final table = payload['table']?.toString();
       final record = payload['record'];
       if (table != null && record is Map<String, dynamic>) {
-        SupabasePostgisDatasource()
-            .upsertTableRecord(table, record)
-            .catchError((_) => <String, dynamic>{});
+        unawaited(_persistRemoteMutation(actionType, payload));
       }
     }
+  }
+
+  Future<void> _persistRemoteMutation(
+    String actionType,
+    Map<String, dynamic> payload,
+  ) async {
+    try {
+      // Persist before sending, including online writes that might time out.
+      await _sqliteDb.enqueueAction(actionType: actionType, payload: payload);
+      await drainOfflineSyncQueue();
+      offlineQueueCount = await _sqliteDb.getPendingQueueCount();
+      if (offlineQueueCount > 0) {
+        lastSyncStatusMessage =
+            'Còn $offlineQueueCount thao tác lưu trên máy, chưa được máy chủ xác nhận.';
+      }
+    } catch (_) {
+      lastSyncStatusMessage = 'Không lưu được hàng đợi đồng bộ. Hãy thử lại.';
+    }
+    _notifyStoreChanged();
   }
 
   Future<List<Map<String, dynamic>>> fetchOrderStatusHistories(
@@ -849,10 +938,10 @@ class AppStateStore extends ChangeNotifier {
     if (storeLower.isEmpty && repLower.isEmpty) return const [];
     return orders.where((o) {
       final custLower = o.customerName.trim().toLowerCase();
-      final grabStoreLower = GrabFoodRecommendationEngine
-          .extractGrabFoodStoreNameFromDescription(o.packageDescription)
-          ?.trim()
-          .toLowerCase();
+      final grabStoreLower =
+          GrabFoodRecommendationEngine.extractGrabFoodStoreNameFromDescription(
+            o.packageDescription,
+          )?.trim().toLowerCase();
       return (storeLower.isNotEmpty &&
               (custLower == storeLower || grabStoreLower == storeLower)) ||
           (repLower.isNotEmpty && custLower == repLower);
@@ -960,5 +1049,8 @@ class AppStateStore extends ChangeNotifier {
     return totalComp;
   }
 
-  void _notifyStoreChanged() => notifyListeners();
+  void _notifyStoreChanged() {
+    if (!_applyingLiveEvents) _publishLiveChanges();
+    notifyListeners();
+  }
 }

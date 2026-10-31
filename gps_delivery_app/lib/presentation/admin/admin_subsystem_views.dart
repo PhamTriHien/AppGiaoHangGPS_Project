@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/config/env_config.dart';
 import '../../core/gps/smart_dispatch_engine.dart';
+import '../../core/gps/osrm_dispatch_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/currency_formatter.dart';
@@ -15,7 +16,13 @@ import '../../domain/enums/order_status.dart';
 import '../../domain/enums/service_type.dart';
 import '../../domain/enums/user_role.dart';
 import '../widgets/animated_3d_ui_icons.dart';
+import '../widgets/auth_provider_settings.dart';
+import '../widgets/batch_route_optimizer.dart';
+import '../widgets/delivery_integration_status.dart';
+import '../widgets/support_ai_summary.dart';
+import '../widgets/road_dispatch_comparison.dart';
 import '../widgets/system_state_screens.dart';
+import '../screens/cloud_orders_screen.dart';
 
 part 'admin_overview_and_fleet_views.dart';
 part 'admin_config_and_governance_views.dart';
@@ -84,6 +91,8 @@ class _AdminSubsystemEntryState extends State<AdminSubsystemEntry> {
     'Thông báo hệ thống',
     'Phân quyền RBAC',
     'Vận hành thương mại',
+    'API & Dịch vụ',
+    'Đơn hàng cloud',
   ];
 
   @override
@@ -231,7 +240,7 @@ class _AdminSubsystemEntryState extends State<AdminSubsystemEntry> {
     // Nhóm 1: Dashboard (0), Người dùng (1), Tài xế (2), Đơn hàng (8), Giám sát GPS (3)
     // Nhóm 2: Giá cước (4), Khuyến mãi (5), Khu vực Geofence (9), Khiếu nại (6), Tài chính (7), Thông báo Push (10), Cài đặt (11)
     const topGroupIndices = [0, 1, 2, 8, 3];
-    const bottomGroupIndices = [4, 5, 9, 6, 7, 10, 11];
+    const bottomGroupIndices = [4, 5, 9, 6, 7, 10, 11, 13, 14];
 
     return Container(
       width: sidebarWidth,
@@ -344,6 +353,8 @@ class _AdminSubsystemEntryState extends State<AdminSubsystemEntry> {
       Icons.notifications_active_outlined, // 10: Thông báo Push
       Icons.settings_outlined, // 11: Cài đặt
       Icons.sync_lock_outlined, // 12: Vận hành thương mại
+      Icons.hub_outlined,
+      Icons.cloud_outlined,
     ];
     final safeIcon = icons[index];
     return Padding(
@@ -508,33 +519,37 @@ class _AdminSubsystemEntryState extends State<AdminSubsystemEntry> {
   }
 
   Widget _buildScreenSelectorBar() {
-    return SizedBox(
-      height: 40,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: _screenTitles.length,
-        separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.xs),
-        itemBuilder: (context, index) {
-          final isSelected = _selectedScreenIndex == index;
-          return ChoiceChip(
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.zero,
-              side: BorderSide(color: AppColors.ink, width: 1.2),
-            ),
-            label: Text(
-              _screenTitles[index],
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                color: isSelected ? AppColors.acid : AppColors.ink,
-              ),
-            ),
-            selected: isSelected,
-            selectedColor: AppColors.ink,
-            backgroundColor: Colors.white,
-            onSelected: (_) => setState(() => _selectedScreenIndex = index),
-          );
-        },
+    return Semantics(
+      label: 'Mục quản trị',
+      child: Container(
+        height: 48,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: AppColors.ink, width: 1.2),
+        ),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<int>(
+            value: _selectedScreenIndex,
+            isExpanded: true,
+            menuMaxHeight: 480,
+            items: [
+              for (var index = 0; index < _screenTitles.length; index++)
+                DropdownMenuItem(
+                  value: index,
+                  child: Text(
+                    _screenTitles[index],
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                ),
+            ],
+            onChanged: (index) {
+              if (index != null) setState(() => _selectedScreenIndex = index);
+            },
+          ),
+        ),
       ),
     );
   }
@@ -567,6 +582,20 @@ class _AdminSubsystemEntryState extends State<AdminSubsystemEntry> {
         return _buildRbacPermissionMatrixView();
       case 12:
         return _buildCommercialOperationsView();
+      case 13:
+        if (!_store.hasAdminPermission('Hệ thống: Bảo mật')) {
+          return const Text('Cần quyền Hệ thống: Bảo mật để quản lý API.');
+        }
+        return const Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AuthProviderSettings(canEdit: true),
+            Divider(height: 24),
+            DeliveryIntegrationStatus(),
+          ],
+        );
+      case 14:
+        return const CloudOrdersScreen(admin: true, embedded: true);
       default:
         return _buildSystemOverviewDashboard();
     }

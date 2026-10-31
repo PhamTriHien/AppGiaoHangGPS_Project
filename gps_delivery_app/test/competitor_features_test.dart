@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gps_delivery_app/core/gps/smart_dispatch_engine.dart';
+import 'package:gps_delivery_app/core/integrations/cloud_orders_service.dart';
 import 'package:gps_delivery_app/core/utils/geo_math.dart';
-import 'package:gps_delivery_app/core/utils/security_and_barcode_utils.dart';
 import 'package:gps_delivery_app/data/datasources/local/app_state_store.dart';
 import 'package:gps_delivery_app/data/datasources/local/sqlite_offline_queue_datasource.dart';
 import 'package:gps_delivery_app/data/datasources/remote/supabase_postgis_datasource.dart';
@@ -13,6 +13,54 @@ import 'package:gps_delivery_app/domain/enums/user_role.dart';
 import 'package:gps_delivery_app/main.dart';
 import 'package:gps_delivery_app/presentation/customer/customer_subsystem_views.dart';
 import 'package:gps_delivery_app/presentation/merchant/merchant_subsystem_views.dart';
+
+class _PublicTrackCloudFixture extends CloudOrdersService {
+  final calls = <Map<String, dynamic>>[];
+
+  @override
+  Future<Map<String, dynamic>> publicLookup(
+    String trackingCode,
+    String phoneLast4,
+  ) async {
+    calls.add({
+      'method': 'publicLookup',
+      'trackingCode': trackingCode,
+      'phoneLast4': phoneLast4,
+    });
+    return {
+      'tracking_code': trackingCode,
+      'status': 'inTransit',
+      'service_type': 'express',
+      'distance_meters': 5400,
+      'created_at': '2026-10-31T06:00:00Z',
+      'updated_at': '2026-10-31T06:15:00Z',
+      'timeline': [
+        {
+          'action': 'create',
+          'status': 'searching',
+          'created_at': '2026-10-31T06:00:00Z',
+        },
+        {
+          'action': 'pickup',
+          'status': 'inTransit',
+          'created_at': '2026-10-31T06:15:00Z',
+        },
+      ],
+    };
+  }
+
+  @override
+  Future<Map<String, dynamic>> publicTracking(String token) async {
+    calls.add({'method': 'publicTracking', 'token': token});
+    return {
+      'shop_name': 'GHST Express',
+      'delivery_status': 'inTransit',
+      'state': 'inTransit',
+      'updated_at': '2026-10-31T06:15:00Z',
+      'expires_at': '2026-11-03T06:15:00Z',
+    };
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -77,7 +125,10 @@ void main() {
         roundTripRes.optimizedDistanceMeters,
         greaterThan(oneWayRes.optimizedDistanceMeters),
       );
-      expect(roundTripRes.routePolyline.last.latitude, closeTo(pickup.latitude, 1e-5));
+      expect(
+        roundTripRes.routePolyline.last.latitude,
+        closeTo(pickup.latitude, 1e-5),
+      );
       expect(
         roundTripRes.routePolyline.last.longitude,
         closeTo(pickup.longitude, 1e-5),
@@ -116,7 +167,6 @@ void main() {
 
       await Future<void>.delayed(const Duration(milliseconds: 50));
       final persistedStops = await store.orderStopsFor(created.id);
-      // 1 điểm lấy (PICKUP) + 2 điểm giao (DROPOFF) + 1 điểm quay về kho/người gửi (RETURN) = 4 trạm
       expect(persistedStops, hasLength(4));
       expect(persistedStops.first['stop_type'], equals('PICKUP'));
       expect(persistedStops.last['stop_type'], equals('RETURN'));
@@ -124,7 +174,6 @@ void main() {
       final firstDropoffOtp = (persistedStops[1]['otp_code'] ?? '').toString();
       expect(firstDropoffOtp.length, equals(4));
 
-      // Sai OTP sẽ bị từ chối
       final wrongOk = await store.completeOrderStop(
         orderId: created.id,
         sequenceNo: 1,
@@ -132,7 +181,6 @@ void main() {
       );
       expect(wrongOk, isFalse);
 
-      // Đúng OTP hoàn tất trạm giao #1 (sequence_no = 1)
       final rightOk = await store.completeOrderStop(
         orderId: created.id,
         sequenceNo: 1,
@@ -318,7 +366,7 @@ void main() {
   );
 
   testWidgets(
-    'Feature 3 (GrabExpress): Public /track route renders live 3D tracking, OTP & masked phone without login',
+    'Feature 3 (GrabExpress): Public /track route queries Cloud lookup (code + phone last4) and 64-hex share token without login or PII leak',
     (tester) async {
       tester.view.physicalSize = const Size(1280, 960);
       tester.view.devicePixelRatio = 1.0;
@@ -330,48 +378,53 @@ void main() {
       store.clearAuthenticatedSession();
       expect(store.activeAuthenticatedUser, isNull);
 
-      final trackedOrder = store.createNewOrder(
-        pickupAddress: 'Bitexco Financial Tower, Quận 1, TP. HCM',
-        dropoffAddress: 'Landmark 81, Bình Thạnh, TP. HCM',
-        recipientName: 'Trần Minh Khôi',
-        recipientPhone: '0912345678',
-        packageDescription: 'Máy ảnh kỹ thuật số khai giá',
-        weightKg: 1.8,
-        dimensionsCm: '30 x 20 x 15 cm',
-        serviceType: DeliveryServiceType.express30m,
-        codAmount: 0,
-        paymentMethod: 'Tiền mặt (COD)',
-        preferEcoEv: true,
-        declaredValueVnd: 12000000,
-        greenFundContributed: true,
-      );
-      final expectedOtp = SecurityAndBarcodeUtils.generateOrderDeliveryOtp4(
-        trackedOrder.trackingCode,
-      );
-      final expectedMaskedPhone = SecurityAndBarcodeUtils.maskPhoneNumber(
-        '0912345678',
-        shouldMask: true,
-      );
-
+      final cloud = _PublicTrackCloudFixture();
+      const cloudCode = 'CL-0123456789ABCDEF0123456789ABCDEF';
       await tester.pumpWidget(
         GpsDeliveryApp(
-          initialRoute: '/track?code=${trackedOrder.trackingCode}',
+          initialRoute: '/track?code=$cloudCode',
+          cloudService: cloud,
         ),
       );
-      await tester.pump(const Duration(milliseconds: 250));
+      await tester.pump();
 
       expect(tester.takeException(), isNull);
-      expect(find.textContaining(trackedOrder.trackingCode), findsWidgets);
-      expect(find.textContaining(expectedOtp), findsWidgets);
-      expect(find.textContaining(expectedMaskedPhone), findsWidgets);
+      await tester.enterText(
+        find.widgetWithText(TextField, '4 số cuối SĐT nhận'),
+        '5678',
+      );
+      await tester.tap(find.text('Tra cứu'));
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(
+        find.text('Vận đơn $cloudCode • Giao nhanh'),
+        findsOneWidget,
+      );
+      expect(find.text('Đang giao • Lộ trình 5.4 km'), findsOneWidget);
+      expect(find.text('Lấy hàng — Đang giao'), findsOneWidget);
       expect(find.textContaining('0912345678'), findsNothing);
+      expect(cloud.calls.single['method'], 'publicLookup');
+      expect(cloud.calls.single['phoneLast4'], '5678');
+
+      final shareToken = 'a' * 64;
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Mã vận đơn (CL-...) hoặc mã chia sẻ'),
+        shareToken,
+      );
+      await tester.pump();
+      await tester.tap(find.text('Tra cứu'));
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(find.text('GHST Express'), findsOneWidget);
+      expect(find.text('Trạng thái: Đang giao'), findsOneWidget);
+      expect(cloud.calls.last['method'], 'publicTracking');
+      expect(cloud.calls.last['token'], shareToken);
     },
   );
 
   test(
     'Feature 6a (GrabFood): Meal-slot detection, SQLite v8 + PostGIS B2B menu sync, multi-criteria GPS ranking, cold-bag cart checkout & reorder favorites',
     () async {
-      // 1. MealTimeSlot contextual time-of-day detection
       expect(MealTimeSlot.resolveForHour(8), equals(MealTimeSlot.breakfast));
       expect(MealTimeSlot.resolveForHour(12), equals(MealTimeSlot.lunch));
       expect(
@@ -381,7 +434,6 @@ void main() {
       expect(MealTimeSlot.resolveForHour(19), equals(MealTimeSlot.dinner));
       expect(MealTimeSlot.resolveForHour(23), equals(MealTimeSlot.lateNight));
 
-      // 2. Register a B2B Partner Merchant and publish a real dish to SQLite v8
       store.registerUserAccountWithRole(
         phone: '0944556677',
         fullName: 'Chủ Quán Trà & Cơm B2B',
@@ -428,7 +480,6 @@ void main() {
       expect(createdDish.isPartnerMerchant, isTrue);
       expect(createdDish.storeName, equals('Bếp Xanh Sài Gòn B2B'));
 
-      // Verify PostGIS normalization for merchant_menu_items
       final pgMenuRow = SupabasePostgisDatasource.normalizeForPostgisSchema(
         'merchant_menu_items',
         createdDish.toSqlRow(),
@@ -439,7 +490,6 @@ void main() {
       );
       expect(pgMenuRow['is_cold_item'], isTrue);
 
-      // Verify SQLite v8 cold reload persistence
       await store.reloadFromSqlite();
       final reloadedDish = store.merchantMenuItems
           .where((m) => m.id == createdDish.id)
@@ -447,7 +497,6 @@ void main() {
       expect(reloadedDish, isNotNull);
       expect(reloadedDish!.name, equals('Trà Trái Cây Nhiệt Đới Ít Đường'));
 
-      // 3. Multi-criteria GPS ranking near District 1, HCMC
       const customerQ1 = GeoPoint(latitude: 10.7750, longitude: 106.7020);
       final afternoonVenues =
           GrabFoodRecommendationEngine.rankRecommendedVenues(
@@ -461,7 +510,6 @@ void main() {
         afternoonVenues.any((v) => v.storeName == 'Bếp Xanh Sài Gòn B2B'),
         isTrue,
       );
-      // Hanoi café should rank far below nearby HCMC Q.1 venues
       final hcmcIdx = afternoonVenues.indexWhere(
         (v) => v.storeName == 'Bếp Xanh Sài Gòn B2B',
       );
@@ -472,7 +520,6 @@ void main() {
         expect(hcmcIdx, lessThan(hanoiIdx));
       }
 
-      // Near-me (< 3km) filter excludes far-away Hanoi venues
       final nearMeVenues = GrabFoodRecommendationEngine.rankRecommendedVenues(
         customerLocation: customerQ1,
         partnerMenuItems: store.merchantMenuItems,
@@ -480,7 +527,6 @@ void main() {
       );
       expect(nearMeVenues.every((v) => v.roadDistanceKm <= 3.0), isTrue);
 
-      // Toggle out-of-stock hides partner dish from recommendations
       await store.toggleMerchantMenuItemAvailability(createdDish.id);
       final afterOutStock = GrabFoodRecommendationEngine.rankRecommendedVenues(
         customerLocation: customerQ1,
@@ -490,7 +536,6 @@ void main() {
       expect(afterOutStock, isEmpty);
       await store.toggleMerchantMenuItemAvailability(createdDish.id);
 
-      // 4. Customer places a multi-item GrabFood cart order with cold item & EV preference
       store.registerUserAccountWithRole(
         phone: '0933888999',
         fullName: 'Khách Ẩm Thực Quận 1',
@@ -514,9 +559,7 @@ void main() {
         kitchenNote: 'Ít đá, thêm muỗng gỗ',
       );
 
-      // 2 x 52.000đ = 104.000đ food subtotal collected as COD for partner restaurant
       expect(foodOrder.codAmount, equals(104000.0));
-      // Cold item auto-attaches [GIỮ LẠNH CHỐNG TAN ĐÁ] & +10.000đ thermal cold-bag surcharge
       expect(
         foodOrder.packageDescription,
         contains('[GrabFood • Bếp Xanh Sài Gòn B2B]'),
@@ -529,7 +572,6 @@ void main() {
       expect(foodOrder.preferEcoEv, isTrue);
       expect(activePartnerDish.soldCount, equals(2));
 
-      // Reorder favorites extracts the ordered GrabFood venue for 1-tap reorder
       final reorders = GrabFoodRecommendationEngine.extractReorderFavorites(
         customerOrders: store.customerOrders,
         partnerMenuItems: store.merchantMenuItems,
@@ -539,7 +581,6 @@ void main() {
         isTrue,
       );
 
-      // B2B Partner Merchant also sees incoming GrabFood order in merchantPersonalOrders
       store.applyAuthenticatedUserSession(
         merUser,
         activeWorkspaceRole: SubsystemRole.merchant,
@@ -549,7 +590,6 @@ void main() {
         isTrue,
       );
 
-      // Clean up test menu item
       await store.deleteMerchantMenuItem(createdDish.id);
       store.clearAuthenticatedSession();
     },
@@ -574,7 +614,6 @@ void main() {
         tester.view.physicalSize = viewport;
         tester.view.devicePixelRatio = 1.0;
 
-        // 1. Customer Home Dashboard (index 0) displays GrabFood discovery strip
         await tester.pumpWidget(
           MaterialApp(
             key: ValueKey('gf_home_${viewport.width.toInt()}'),
@@ -590,7 +629,6 @@ void main() {
           findsWidgets,
         );
 
-        // 2. Customer Dedicated GrabFood Screen (index 13) renders meal slots, venues & cart
         await tester.pumpWidget(
           MaterialApp(
             key: ValueKey('gf_cust13_${viewport.width.toInt()}'),
@@ -603,7 +641,6 @@ void main() {
         expect(tester.takeException(), isNull);
         expect(find.textContaining('Giỏ hàng GrabFood'), findsWidgets);
 
-        // 3. Merchant B2B GrabFood Menu Manager Screen (index 11) renders cleanly
         await tester.pumpWidget(
           MaterialApp(
             key: ValueKey('gf_mer11_${viewport.width.toInt()}'),
@@ -625,7 +662,6 @@ void main() {
   test(
     'Feature 7a (Shopee x Grab Promo Events): Flash Sale, 7-day Check-in, Lucky Spin Wheel, Mystery Blind Box Gacha & GrabChallenges persist in SQLite and discount real orders',
     () async {
-      // 1. Register a clean customer account and verify starter wallet without pre-seeding vouchers
       final promoUser = store.registerUserAccountWithRole(
         phone: '0944555666',
         fullName: 'Khách Săn Thưởng Shopee Grab',
@@ -641,7 +677,6 @@ void main() {
       expect(initialWallet.checkInStreak, equals(0));
       expect(initialWallet.openedBlindBoxes, isEmpty);
 
-      // Verify probability weights sum to 100% and flash window resolver works
       final wheelWeightSum = PromoEventGamificationEngine.spinWheelSegments
           .fold<int>(0, (s, seg) => s + seg.weight);
       final boxWeightSum = PromoEventGamificationEngine.blindBoxPrizePool
@@ -653,7 +688,6 @@ void main() {
       );
       expect(noonWindow.activeWindowLabel, contains('12:00'));
 
-      // 2. Daily 7-day check-in streak + duplicate same-day guard
       final day1Time = DateTime(2026, 10, 28, 9, 0);
       final chk1 = store.claimDailyPromoCheckIn(nowOverride: day1Time);
       expect(chk1.success, isTrue);
@@ -672,7 +706,6 @@ void main() {
       expect(chk2.coinsDelta, equals(100));
       expect(store.activeCustomerPromoWallet.ghstCoins, equals(270));
 
-      // 3. Flash Sale campaign claim mints real voucher into SQLite
       final flashClaim = store.claimFlashSaleCampaign('CAMP_FLASH_0H_50P');
       expect(flashClaim.success, isTrue);
       expect(flashClaim.mintedVoucherCode, equals('FLASH50P'));
@@ -683,7 +716,6 @@ void main() {
       expect(store.activeCustomerPromoWallet.ghstCoins, equals(290));
       expect(store.claimFlashSaleCampaign('CAMP_FLASH_0H_50P').success, isFalse);
 
-      // 4. Lucky Spin Wheel: Jackpot 45K voucher + Blind Box Ticket slice + empty-ticket guard
       final spinJackpot = store.spinLuckyWheel(forcedSegmentIndex: 6);
       expect(spinJackpot.success, isTrue);
       expect(spinJackpot.rarity, equals(PromoRarityTier.legendary));
@@ -698,10 +730,8 @@ void main() {
       expect(store.activeCustomerPromoWallet.spinTickets, equals(0));
       expect(store.activeCustomerPromoWallet.blindBoxTickets, equals(2));
 
-      // Out of spin tickets guard
       expect(store.spinLuckyWheel().success, isFalse);
 
-      // 5. Mystery Blind Box Gacha: open SSR 60K box, prevent reopening same box until board reset
       final boxOpen = store.openMysteryBlindBox(
         0,
         forcedPrizeId: 'BB_SSR_60K',
@@ -709,16 +739,16 @@ void main() {
       expect(boxOpen.success, isTrue);
       expect(boxOpen.rarity, equals(PromoRarityTier.legendary));
       expect(boxOpen.mintedVoucherCode, startsWith('BOXSSR60K-'));
-      expect(store.activeCustomerPromoWallet.openedBlindBoxes.containsKey(0), isTrue);
+      expect(
+        store.activeCustomerPromoWallet.openedBlindBoxes.containsKey(0),
+        isTrue,
+      );
 
-      // Reopening already-unsealed box #0 is blocked
       expect(store.openMysteryBlindBox(0).success, isFalse);
 
-      // Resetting the 6-box board reseals all boxes while keeping rewards
       store.resetMysteryBlindBoxBoard();
       expect(store.activeCustomerPromoWallet.openedBlindBoxes, isEmpty);
 
-      // 6. Exchange GHST Xu for +1 Spin Ticket
       final beforeExchangeSpins = store.activeCustomerPromoWallet.spinTickets;
       final exchangeRes = store.exchangePromoCoins(targetType: 'SPIN_TICKET');
       expect(exchangeRes.success, isTrue);
@@ -727,7 +757,6 @@ void main() {
         equals(beforeExchangeSpins + 1),
       );
 
-      // 7. Cold-reload from SQLite preserves minted vouchers and promo wallet state
       expect(promoUser, isNotNull);
       await store.reloadFromSqlite();
       store.applyAuthenticatedUserSession(
@@ -741,7 +770,6 @@ void main() {
       expect(store.activeCustomerPromoWallet.totalSpinsCount, equals(2));
       expect(store.activeCustomerPromoWallet.totalBlindBoxesOpened, equals(1));
 
-      // 8. Apply Spin Wheel voucher to a real GPS delivery order & claim GrabChallenges mission
       final discountedOrder = store.createNewOrder(
         pickupAddress: 'Chợ Bến Thành, Quận 1, TP. HCM',
         dropoffAddress: 'Landmark 81, Bình Thạnh, TP. HCM',
@@ -784,7 +812,6 @@ void main() {
         tester.view.physicalSize = viewport;
         tester.view.devicePixelRatio = 1.0;
 
-        // 1. Customer Home Dashboard (index 0) shows Shopee x Grab Event banner
         await tester.pumpWidget(
           MaterialApp(
             key: ValueKey('promo_home_${viewport.width.toInt()}'),
@@ -797,7 +824,6 @@ void main() {
         expect(tester.takeException(), isNull);
         expect(find.textContaining('SHOPEE × GRAB EVENT'), findsWidgets);
 
-        // 2. Promo & Gamification Hub (index 12) switches cleanly across all 4 sub-tabs
         await tester.pumpWidget(
           MaterialApp(
             key: ValueKey('promo_hub_${viewport.width.toInt()}'),
@@ -813,7 +839,6 @@ void main() {
           findsOneWidget,
         );
 
-        // Switch to Tab 1: Vòng Xoay May Mắn
         final spinTabFinder = find.text('Vòng Xoay May Mắn');
         await tester.ensureVisible(spinTabFinder);
         await tester.tap(spinTabFinder);
@@ -824,7 +849,6 @@ void main() {
           findsOneWidget,
         );
 
-        // Animate a live Spin Wheel turn on 1440x900 desktop viewport
         if (viewport.width == 1440 &&
             store.activeCustomerPromoWallet.spinTickets > 0) {
           final spinBtn = find.text('Bấm Quay Thưởng (-1 Vé)');
@@ -841,7 +865,6 @@ void main() {
           }
         }
 
-        // Switch to Tab 2: Hộp Mù Bí Ẩn
         final boxTabFinder = find.text('Hộp Mù Bí Ẩn');
         await tester.ensureVisible(boxTabFinder);
         await tester.tap(boxTabFinder);
@@ -854,7 +877,6 @@ void main() {
         expect(find.text('BOX #01'), findsOneWidget);
         expect(find.text('BOX #06'), findsOneWidget);
 
-        // Switch to Tab 3: Kho Voucher
         final walletTabFinder = find.text('Kho Voucher');
         await tester.ensureVisible(walletTabFinder);
         await tester.tap(walletTabFinder);

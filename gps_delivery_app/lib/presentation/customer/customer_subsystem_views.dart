@@ -16,6 +16,11 @@ import '../../domain/enums/order_status.dart';
 import '../../domain/enums/service_type.dart';
 import '../screens/public_order_tracking_screen.dart';
 import '../widgets/animated_3d_ui_icons.dart';
+import '../widgets/bank_directory_field.dart';
+import '../widgets/delivery_weather_strip.dart';
+import '../widgets/photon_address_lookup.dart';
+import '../widgets/shipping_label_scanner.dart';
+import '../widgets/live_order_connection.dart';
 import '../widgets/system_state_screens.dart';
 
 part 'customer_auth_and_address_views.dart';
@@ -23,6 +28,7 @@ part 'customer_order_and_pricing_views.dart';
 part 'customer_history_and_profile_views.dart';
 part 'customer_grab_food_views.dart';
 part 'customer_promo_events_views.dart';
+part 'customer_drafts_view.dart';
 
 /// Phân hệ Khách hàng (Customer App) - 14 màn hình chuẩn thiết kế gốc (uc02..uc12, uc41, uc42)
 class CustomerSubsystemEntry extends StatefulWidget {
@@ -81,6 +87,11 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
   bool _mapPinTargetsDropoff = true;
   bool _userEditedPickupManually = false;
   bool? _homeShowActiveOrderRouteOverride;
+  String? _editingDraftId;
+  bool _savingDraft = false;
+  Future<List<Map<String, dynamic>>>? _draftsFuture;
+  String? _formOwnerId;
+  int _draftFormRevision = 0;
 
   // Trạng thái Sổ địa chỉ (UC02)
   String _selectedAddressTag = 'Nhà riêng';
@@ -98,6 +109,8 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
   // Trạng thái Lịch sử đơn hàng
   String _historyFilterTab = 'Tất cả';
   final TextEditingController _historySearchCtrl = TextEditingController();
+  int? _historyPeriodDays;
+  bool _historyNewestFirst = true;
 
   // Trạng thái Đánh giá 5 sao & Tiền thưởng Tip
   int _ratingStars = 5;
@@ -156,11 +169,13 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
     'Trung tâm thông báo',
     'Ưu đãi & Săn thưởng (Shopee × Grab)',
     'Ăn uống & Gợi ý (GrabFood)',
+    '??n nh?p',
   ];
 
   @override
   void initState() {
     super.initState();
+    _formOwnerId = _store.activeAuthenticatedUser?.id;
     if (widget.forcedScreenIndex != null) {
       _selectedScreenIndex = widget.forcedScreenIndex!.clamp(
         0,
@@ -212,6 +227,18 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
 
   void _onStoreChanged() {
     if (!mounted) return;
+    final ownerId = _store.activeAuthenticatedUser?.id;
+    if (_formOwnerId != ownerId) {
+      _formOwnerId = ownerId;
+      _resetCustomerOrderForm();
+      _draftsFuture = null;
+      _historySearchCtrl.clear();
+      _historyFilterTab = 'Tất cả';
+      _historyPeriodDays = null;
+      _chatInputCtrl.clear();
+      _customerEvidenceFiles.clear();
+      _complaintDescCtrl.clear();
+    }
     final profileKey =
         '${_store.customerFullName}|${_store.displayCustomerPhone}|${_store.customerEmail}|${_store.customerDefaultAddress}|${_store.customerGender}';
     if (_lastSyncedCustomerProfileKey != profileKey) {
@@ -378,62 +405,64 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
         )
         .length;
 
-    final menuGroups = <(String, List<(IconData, String, int, String?, Color?)>)>[
-      (
-        'DỊCH VỤ CHÍNH',
-        [
-          (Icons.home_outlined, 'Trang chủ', 0, null, null),
-          (Icons.add_box_outlined, 'Tạo đơn hàng mới', 2, null, null),
+    final menuGroups =
+        <(String, List<(IconData, String, int, String?, Color?)>)>[
           (
-            Icons.restaurant_menu_rounded,
-            'Ăn uống (GrabFood)',
-            13,
-            cartQty > 0 ? '$cartQty' : 'MỚI',
-            const Color(0xFF00B14F),
-          ),
-        ],
-      ),
-      (
-        'ĐƠN HÀNG & BẢN ĐỒ',
-        [
-          (
-            Icons.receipt_long_outlined,
-            'Đơn hàng',
-            7,
-            activeOrdersCount > 0 ? '$activeOrdersCount' : null,
-            AppColors.acid,
+            'DỊCH VỤ CHÍNH',
+            [
+              (Icons.home_outlined, 'Trang chủ', 0, null, null),
+              (Icons.add_box_outlined, 'Tạo đơn hàng mới', 2, null, null),
+              (Icons.drafts_outlined, 'Đơn nháp', 14, null, null),
+              (
+                Icons.restaurant_menu_rounded,
+                'Ăn uống (GrabFood)',
+                13,
+                cartQty > 0 ? '$cartQty' : 'MỚI',
+                const Color(0xFF00B14F),
+              ),
+            ],
           ),
           (
-            Icons.my_location_rounded,
-            'Theo dõi hành trình GPS',
-            4,
-            null,
-            null,
+            'ĐƠN HÀNG & BẢN ĐỒ',
+            [
+              (
+                Icons.receipt_long_outlined,
+                'Đơn hàng',
+                7,
+                activeOrdersCount > 0 ? '$activeOrdersCount' : null,
+                AppColors.acid,
+              ),
+              (
+                Icons.my_location_rounded,
+                'Theo dõi hành trình GPS',
+                4,
+                null,
+                null,
+              ),
+              (Icons.bookmarks_outlined, 'Sổ địa chỉ nhận hàng', 1, null, null),
+            ],
           ),
-          (Icons.bookmarks_outlined, 'Sổ địa chỉ nhận hàng', 1, null, null),
-        ],
-      ),
-      (
-        'ƯU ĐÃI & CÁ NHÂN',
-        [
           (
-            Icons.redeem_rounded,
-            'Săn thưởng & Ưu đãi',
-            12,
-            usableVouchers > 0 ? '$usableVouchers' : 'HOT',
-            const Color(0xFFEE4D2D),
+            'ƯU ĐÃI & CÁ NHÂN',
+            [
+              (
+                Icons.redeem_rounded,
+                'Săn thưởng & Ưu đãi',
+                12,
+                usableVouchers > 0 ? '$usableVouchers' : 'HOT',
+                const Color(0xFFEE4D2D),
+              ),
+              (
+                Icons.notifications_none_rounded,
+                'Trung tâm thông báo',
+                11,
+                unreadNotis > 0 ? '$unreadNotis' : null,
+                AppColors.pink,
+              ),
+              (Icons.person_outline_rounded, 'Hồ sơ cá nhân', 10, null, null),
+            ],
           ),
-          (
-            Icons.notifications_none_rounded,
-            'Trung tâm thông báo',
-            11,
-            unreadNotis > 0 ? '$unreadNotis' : null,
-            AppColors.pink,
-          ),
-          (Icons.person_outline_rounded, 'Hồ sơ cá nhân', 10, null, null),
-        ],
-      ),
-    ];
+        ];
 
     return Container(
       width: sidebarWidth,
@@ -528,8 +557,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
                                     _selectedScreenIndex == 9));
                         final badgeText = item.$4;
                         final badgeColor = item.$5 ?? AppColors.acid;
-                        final useLightBadgeText =
-                            badgeColor != AppColors.acid;
+                        final useLightBadgeText = badgeColor != AppColors.acid;
                         return Padding(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 10,
@@ -702,10 +730,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
                   ),
                   label: const Text(
                     'Săn quà',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w900,
-                    ),
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -1021,10 +1046,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
                 shape: const RoundedRectangleBorder(
                   borderRadius: BorderRadius.zero,
                 ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 7,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
                 minimumSize: Size.zero,
               ),
               onPressed: widget.onLogout,
@@ -1161,6 +1183,8 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
         return _buildDedicatedVoucherUc11View();
       case 13:
         return _buildGrabFoodDiscoveryAndCartView(context);
+      case 14:
+        return _buildCustomerDraftsView();
       default:
         return _buildCustomerHomeDashboardView();
     }
@@ -1204,7 +1228,11 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
           color: Colors.white,
           border: Border.all(color: AppColors.ink, width: 1.5),
           boxShadow: const [
-            BoxShadow(color: AppColors.ink, offset: Offset(3, 3), blurRadius: 0),
+            BoxShadow(
+              color: AppColors.ink,
+              offset: Offset(3, 3),
+              blurRadius: 0,
+            ),
           ],
         ),
         child: Column(
@@ -1256,68 +1284,58 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
                 double scaledBase(DeliveryServiceType s) =>
                     (s.defaultBaseFare * baseScale).roundToDouble();
 
-                final tiles =
-                    <
-                      (
-                        String,
-                        String,
-                        IconData,
-                        Color,
-                        DeliveryServiceType?,
-                        bool,
-                      )
-                    >[
-                      (
-                        'Giao nhanh 30p',
-                        'Từ ${CurrencyFormatter.formatVnd(scaledBase(DeliveryServiceType.express30m))}',
-                        Icons.bolt_rounded,
-                        AppColors.pink,
-                        DeliveryServiceType.express30m,
-                        false,
-                      ),
-                      (
-                        'Ghép đơn 2H',
-                        'Từ ${CurrencyFormatter.formatVnd(scaledBase(DeliveryServiceType.sameDay2h))}',
-                        Icons.hub_outlined,
-                        const Color(0xFF0EA5E9),
-                        DeliveryServiceType.sameDay2h,
-                        false,
-                      ),
-                      (
-                        'Tiêu chuẩn 2h',
-                        'Từ ${CurrencyFormatter.formatVnd(scaledBase(DeliveryServiceType.standard))}',
-                        Icons.inventory_2_outlined,
-                        AppColors.violet,
-                        DeliveryServiceType.standard,
-                        false,
-                      ),
-                      (
-                        'Tiết kiệm 4h',
-                        'Từ ${CurrencyFormatter.formatVnd(scaledBase(DeliveryServiceType.saving))}',
-                        Icons.savings_outlined,
-                        AppColors.success,
-                        DeliveryServiceType.saving,
-                        false,
-                      ),
-                      (
-                        'Xe tải nhẹ',
-                        'Từ ${CurrencyFormatter.formatVnd(scaledBase(DeliveryServiceType.truck))}',
-                        Icons.local_shipping_outlined,
-                        AppColors.ink,
-                        DeliveryServiceType.truck,
-                        false,
-                      ),
-                      (
-                        'Ăn uống GrabFood',
-                        cartTotalItems > 0
-                            ? 'Giỏ: $cartTotalItems món • Đặt ngay'
-                            : 'Gợi ý quán ngon gần bạn',
-                        Icons.restaurant_menu_rounded,
-                        const Color(0xFF00B14F),
-                        null,
-                        true,
-                      ),
-                    ];
+                final tiles = <(String, String, IconData, Color, DeliveryServiceType?, bool)>[
+                  (
+                    'Giao nhanh 30p',
+                    'Từ ${CurrencyFormatter.formatVnd(scaledBase(DeliveryServiceType.express30m))}',
+                    Icons.bolt_rounded,
+                    AppColors.pink,
+                    DeliveryServiceType.express30m,
+                    false,
+                  ),
+                  (
+                    'Ghép đơn 2H',
+                    'Từ ${CurrencyFormatter.formatVnd(scaledBase(DeliveryServiceType.sameDay2h))}',
+                    Icons.hub_outlined,
+                    const Color(0xFF0EA5E9),
+                    DeliveryServiceType.sameDay2h,
+                    false,
+                  ),
+                  (
+                    'Tiêu chuẩn 2h',
+                    'Từ ${CurrencyFormatter.formatVnd(scaledBase(DeliveryServiceType.standard))}',
+                    Icons.inventory_2_outlined,
+                    AppColors.violet,
+                    DeliveryServiceType.standard,
+                    false,
+                  ),
+                  (
+                    'Tiết kiệm 4h',
+                    'Từ ${CurrencyFormatter.formatVnd(scaledBase(DeliveryServiceType.saving))}',
+                    Icons.savings_outlined,
+                    AppColors.success,
+                    DeliveryServiceType.saving,
+                    false,
+                  ),
+                  (
+                    'Xe tải nhẹ',
+                    'Từ ${CurrencyFormatter.formatVnd(scaledBase(DeliveryServiceType.truck))}',
+                    Icons.local_shipping_outlined,
+                    AppColors.ink,
+                    DeliveryServiceType.truck,
+                    false,
+                  ),
+                  (
+                    'Ăn uống GrabFood',
+                    cartTotalItems > 0
+                        ? 'Giỏ: $cartTotalItems món • Đặt ngay'
+                        : 'Gợi ý quán ngon gần bạn',
+                    Icons.restaurant_menu_rounded,
+                    const Color(0xFF00B14F),
+                    null,
+                    true,
+                  ),
+                ];
 
                 return Wrap(
                   spacing: spacing,
@@ -1462,7 +1480,11 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
           color: Colors.white,
           border: Border.all(color: AppColors.ink, width: 1.5),
           boxShadow: const [
-            BoxShadow(color: AppColors.ink, offset: Offset(3, 3), blurRadius: 0),
+            BoxShadow(
+              color: AppColors.ink,
+              offset: Offset(3, 3),
+              blurRadius: 0,
+            ),
           ],
         ),
         child: Column(
@@ -1553,9 +1575,8 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
                         visualDensity: VisualDensity.compact,
                       ),
                       onPressed: () => setState(
-                        () => _selectedScreenIndex = showOrderRouteOnHome
-                            ? 4
-                            : 2,
+                        () =>
+                            _selectedScreenIndex = showOrderRouteOnHome ? 4 : 2,
                       ),
                       icon: Icon(
                         showOrderRouteOnHome
@@ -1649,7 +1670,11 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
           color: Colors.white,
           border: Border.all(color: AppColors.ink, width: 1.4),
           boxShadow: const [
-            BoxShadow(color: AppColors.ink, offset: Offset(3, 3), blurRadius: 0),
+            BoxShadow(
+              color: AppColors.ink,
+              offset: Offset(3, 3),
+              blurRadius: 0,
+            ),
           ],
         ),
         child: Column(
@@ -1882,6 +1907,26 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
                         vertical: 8,
                       ),
                     ),
+                    onPressed: _openCustomerDrafts,
+                    icon: const Icon(Icons.drafts_outlined, size: 15),
+                    label: const Text(
+                      'Đơn nháp',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 11.5,
+                      ),
+                    ),
+                  ),
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      foregroundColor: AppColors.ink,
+                      side: const BorderSide(color: AppColors.ink, width: 1.2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
+                    ),
                     onPressed: () => setState(() => _selectedScreenIndex = 12),
                     icon: const Icon(
                       Icons.local_offer_outlined,
@@ -2032,46 +2077,46 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                    Expanded(
-                      flex: 7,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          buildServiceSuperAppGrid(),
-                          const SizedBox(height: 12),
-                          _buildHomePromoEventsBanner(context),
-                          const SizedBox(height: 12),
-                          _buildHomeGrabFoodDiscoveryStrip(context),
-                        ],
-                      ),
+                  Expanded(
+                    flex: 7,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        buildServiceSuperAppGrid(),
+                        const SizedBox(height: 12),
+                        _buildHomePromoEventsBanner(context),
+                        const SizedBox(height: 12),
+                        _buildHomeGrabFoodDiscoveryStrip(context),
+                      ],
                     ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      flex: 5,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          buildCompactHomeMapCard(mapHeight: 330),
-                          if (recentCard != null) ...[
-                            const SizedBox(height: 12),
-                            recentCard,
-                          ],
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    flex: 5,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        buildCompactHomeMapCard(mapHeight: 330),
+                        if (recentCard != null) ...[
+                          const SizedBox(height: 12),
+                          recentCard,
                         ],
-                      ),
+                      ],
                     ),
-                  ],
-                );
-              }
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  buildServiceSuperAppGrid(),
-                  const SizedBox(height: 12),
-                  _buildHomePromoEventsBanner(context),
-                  const SizedBox(height: 12),
-                  _buildHomeGrabFoodDiscoveryStrip(context),
-                  const SizedBox(height: 12),
-                  buildCompactHomeMapCard(mapHeight: 280),
+                  ),
+                ],
+              );
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                buildServiceSuperAppGrid(),
+                const SizedBox(height: 12),
+                _buildHomePromoEventsBanner(context),
+                const SizedBox(height: 12),
+                _buildHomeGrabFoodDiscoveryStrip(context),
+                const SizedBox(height: 12),
+                buildCompactHomeMapCard(mapHeight: 280),
                 if (recentCard != null) ...[
                   const SizedBox(height: 12),
                   recentCard,

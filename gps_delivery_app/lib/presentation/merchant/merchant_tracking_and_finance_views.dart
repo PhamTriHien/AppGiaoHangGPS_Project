@@ -78,6 +78,18 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (shopOrders.isNotEmpty)
+          LiveOrderConnection(
+            key: ValueKey(
+              'merchant-live-${shopOrders[_selectedWaybillOrderIndex.clamp(0, shopOrders.length - 1)].trackingCode}',
+            ),
+            room:
+                shopOrders[_selectedWaybillOrderIndex.clamp(
+                      0,
+                      shopOrders.length - 1,
+                    )]
+                    .trackingCode,
+          ),
         Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -92,7 +104,8 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                 fontWeight: FontWeight.w700,
                 fontSize: 12,
               ),
-              onSelected: (_) => _rebuildMerchantUi(() => _shopOrderStatusTab = t),
+              onSelected: (_) =>
+                  _rebuildMerchantUi(() => _shopOrderStatusTab = t),
             );
           }).toList(),
         ),
@@ -251,8 +264,8 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                                               o.recipientPhone;
                                           _editOrderAddrCtrl.text =
                                               o.dropoffAddress;
-                                          _editOrderCodCtrl.text =
-                                              o.codAmount.toStringAsFixed(0);
+                                          _editOrderCodCtrl.text = o.codAmount
+                                              .toStringAsFixed(0);
                                           _lastSyncedEditOrderCode =
                                               o.trackingCode;
                                           _selectedScreenIndex = 6;
@@ -281,45 +294,46 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                 : _selectedWaybillOrderIndex.clamp(0, shopOrders.length - 1);
             final ActiveOrderRecord? focusedOrd = filtered.isNotEmpty
                 ? (filtered.contains(shopOrders[safeFocusIdx])
-                    ? shopOrders[safeFocusIdx]
-                    : filtered.first)
+                      ? shopOrders[safeFocusIdx]
+                      : filtered.first)
                 : null;
             if (focusedOrd == null) {
               return colLeft;
             }
             final isFocusedActiveRoute =
                 _store.activeOrderRecord?.trackingCode ==
-                    focusedOrd.trackingCode;
+                focusedOrd.trackingCode;
             final cachedPolyline =
                 _merchantSyncedPolylines[focusedOrd.trackingCode];
-            final focusedRoutePoints = cachedPolyline != null &&
-                    cachedPolyline.length >= 2
+            final focusedRoutePoints =
+                cachedPolyline != null && cachedPolyline.length >= 2
                 ? cachedPolyline
                 : (isFocusedActiveRoute &&
-                        _store.activeRoutePolyline.length >= 2
-                    ? _store.activeRoutePolyline
-                    : SmartDispatchEngine.generateRoutePolyline(
-                        focusedOrd.pickupLocation,
-                        focusedOrd.dropoffLocation,
-                        segments: 10,
-                      ));
+                          _store.activeRoutePolyline.length >= 2
+                      ? _store.activeRoutePolyline
+                      : SmartDispatchEngine.generateRoutePolyline(
+                          focusedOrd.pickupLocation,
+                          focusedOrd.dropoffLocation,
+                          segments: 10,
+                        ));
             final assignedDrv = focusedOrd.assignedDriverName == null
                 ? null
                 : _store.drivers
-                    .where((d) => d.fullName == focusedOrd.assignedDriverName)
-                    .firstOrNull;
+                      .where((d) => d.fullName == focusedOrd.assignedDriverName)
+                      .firstOrNull;
             final totalAirMeters = GeoMath.distanceMeters(
               focusedOrd.pickupLocation,
               focusedOrd.dropoffLocation,
             );
-            final double realProgress = assignedDrv != null && totalAirMeters > 1
+            final double realProgress =
+                assignedDrv != null && totalAirMeters > 1
                 ? (1.0 -
-                        (GeoMath.distanceMeters(
-                              assignedDrv.location,
-                              focusedOrd.dropoffLocation,
-                            ) /
-                            totalAirMeters))
-                    .clamp(0.08, 0.96)
+                          (GeoMath.distanceMeters(
+                                assignedDrv.location,
+                                focusedOrd.dropoffLocation,
+                              ) /
+                              totalAirMeters))
+                      .clamp(0.08, 0.96)
                 : 0.0;
             final double ordSpeedKmh;
             final double ordProgress;
@@ -341,8 +355,8 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                 ordProgress = realProgress > 0
                     ? realProgress
                     : (isFocusedActiveRoute
-                        ? (_store.routeProgressStep / 10.0).clamp(0.1, 0.95)
-                        : 0.5);
+                          ? (_store.routeProgressStep / 10.0).clamp(0.1, 0.95)
+                          : 0.5);
               case OrderStatus.delivered:
                 ordSpeedKmh = 0;
                 ordProgress = 1.0;
@@ -395,9 +409,9 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                         onPressed: () async {
                           final routeRes =
                               await SmartDispatchEngine.fetchLiveOsrmRoute(
-                            focusedOrd.pickupLocation,
-                            focusedOrd.dropoffLocation,
-                          );
+                                focusedOrd.pickupLocation,
+                                focusedOrd.dropoffLocation,
+                              );
                           if (!context.mounted) return;
                           _rebuildMerchantUi(() {
                             _merchantSyncedPolylines[focusedOrd.trackingCode] =
@@ -455,11 +469,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
             if (constraints.maxWidth < 1040) {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  colRight,
-                  const SizedBox(height: 14),
-                  colLeft,
-                ],
+                children: [colRight, const SizedBox(height: 14), colLeft],
               );
             }
             return Row(
@@ -517,10 +527,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
         ),
       );
     }
-    final safeIdx = _selectedWaybillOrderIndex.clamp(
-      0,
-      shopOrders.length - 1,
-    );
+    final safeIdx = _selectedWaybillOrderIndex.clamp(0, shopOrders.length - 1);
     final ord = shopOrders[safeIdx];
     if (_lastSyncedEditOrderCode != ord.trackingCode) {
       _editOrderNameCtrl.text = ord.recipientName;
@@ -575,7 +582,9 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                       _editOrderNameCtrl.text = item.recipientName;
                       _editOrderPhoneCtrl.text = item.recipientPhone;
                       _editOrderAddrCtrl.text = item.dropoffAddress;
-                      _editOrderCodCtrl.text = item.codAmount.toStringAsFixed(0);
+                      _editOrderCodCtrl.text = item.codAmount.toStringAsFixed(
+                        0,
+                      );
                       _lastSyncedEditOrderCode = item.trackingCode;
                     }),
                   );
@@ -640,7 +649,8 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF14B866),
                   ),
-                  onPressed: ord.status == OrderStatus.delivered ||
+                  onPressed:
+                      ord.status == OrderStatus.delivered ||
                           ord.status == OrderStatus.cancelled ||
                           ord.status == OrderStatus.returning ||
                           ord.paymentStatus == 'RETURNED'
@@ -685,7 +695,8 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                             );
                             return;
                           }
-                          final newCod = double.tryParse(
+                          final newCod =
+                              double.tryParse(
                                 _editOrderCodCtrl.text.replaceAll(
                                   RegExp(r'[^0-9.]'),
                                   '',
@@ -761,7 +772,9 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                     child: RadioGroup<String>(
                       groupValue: _shopCancelReason,
                       onChanged: (v) {
-                        if (v != null) _rebuildMerchantUi(() => _shopCancelReason = v);
+                        if (v != null) {
+                          _rebuildMerchantUi(() => _shopCancelReason = v);
+                        }
                       },
                       child: Column(
                         children: cancelReasons
@@ -786,7 +799,8 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.danger,
                       ),
-                      onPressed: ord.status.canTransitionTo(OrderStatus.cancelled)
+                      onPressed:
+                          ord.status.canTransitionTo(OrderStatus.cancelled)
                           ? () {
                               final ok = _store.cancelOrder(
                                 ord.trackingCode,
@@ -832,10 +846,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                 children: [
                   const Text(
                     'Hành động nhanh (Đơn giao thất bại)',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
                   ),
                   const SizedBox(height: 6),
                   Text(
@@ -913,11 +924,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
         if (constraints.maxWidth < 760) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              colLeft,
-              const SizedBox(height: 16),
-              colRight,
-            ],
+            children: [colLeft, const SizedBox(height: 16), colRight],
           );
         }
         return Row(
@@ -935,7 +942,8 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
   /// UC37: Đối soát công nợ tiền thu hộ COD (Chuẩn uc37_doi_soat_v2)
   Widget _buildCodReconciliationView() {
     double shipDeductedFromMerchantCod(ActiveOrderRecord o) {
-      final isRecipientOrPrepaid = o.paymentMethod == 'Người nhận trả phí' ||
+      final isRecipientOrPrepaid =
+          o.paymentMethod == 'Người nhận trả phí' ||
           o.paymentMethod.contains('MoMo') ||
           o.paymentMethod.contains('VNPay') ||
           o.paymentMethod.contains('ZaloPay') ||
@@ -958,18 +966,14 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
     final persistedRec = activeMerId.isEmpty
         ? null
         : _store.codReconciliations
-            .where((r) => r.merchantId == activeMerId)
-            .firstOrNull;
+              .where((r) => r.merchantId == activeMerId)
+              .firstOrNull;
     final shopOrders = _store.merchantPersonalOrders;
     final deliveredCodOrders = shopOrders.where(
-      (o) =>
-          o.status == OrderStatus.delivered &&
-          o.paymentStatus != 'RETURNED',
+      (o) => o.status == OrderStatus.delivered && o.paymentStatus != 'RETURNED',
     );
     final returnedShopOrders = shopOrders.where(
-      (o) =>
-          o.status == OrderStatus.delivered &&
-          o.paymentStatus == 'RETURNED',
+      (o) => o.status == OrderStatus.delivered && o.paymentStatus == 'RETURNED',
     );
     final totalCod = deliveredCodOrders.fold<double>(
       0,
@@ -987,8 +991,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
       0,
       (sum, o) => sum + returnFeeOf(o),
     );
-    final totalDeductions =
-        totalShipFee + totalCodHandlingFee + totalReturnFee;
+    final totalDeductions = totalShipFee + totalCodHandlingFee + totalReturnFee;
     final compCredit = _store.computeMerchantCompensationCredits(activeMer);
     final netCod = totalCod - totalDeductions + compCredit;
     final availableCod = activeMer?.codBalance ?? 0.0;
@@ -1028,7 +1031,8 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                       final isReturnedSettled =
                           o.status == OrderStatus.delivered &&
                           o.paymentStatus == 'RETURNED';
-                      final isVoided = o.status == OrderStatus.cancelled ||
+                      final isVoided =
+                          o.status == OrderStatus.cancelled ||
                           o.status == OrderStatus.failed ||
                           o.status == OrderStatus.returning ||
                           isReturnedSettled;
@@ -1041,8 +1045,8 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                       final netVal = isReturnedSettled
                           ? -shipDeduct
                           : (!isSettled
-                              ? 0.0
-                              : (o.codAmount - shipDeduct - codFee));
+                                ? 0.0
+                                : (o.codAmount - shipDeduct - codFee));
                       final stLabel = isReturnedSettled
                           ? 'Đã hoàn kho'
                           : o.status.displayName;
@@ -1055,9 +1059,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                   );
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(
-                        'Đã xuất bảng đối soát công nợ tại: $path',
-                      ),
+                      content: Text('Đã xuất bảng đối soát công nợ tại: $path'),
                     ),
                   );
                 },
@@ -1084,9 +1086,11 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
               final cols = maxW >= 880
                   ? 4
                   : maxW >= 460
-                      ? 2
-                      : 1;
-              final cardW = cols == 1 ? maxW : (maxW - (cols - 1) * 12.0) / cols;
+                  ? 2
+                  : 1;
+              final cardW = cols == 1
+                  ? maxW
+                  : (maxW - (cols - 1) * 12.0) / cols;
               return Wrap(
                 spacing: 12,
                 runSpacing: 12,
@@ -1123,9 +1127,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: DataTable(
-              headingRowColor: WidgetStateProperty.all(
-                const Color(0xFFF5F1E8),
-              ),
+              headingRowColor: WidgetStateProperty.all(const Color(0xFFF5F1E8)),
               columns: const [
                 DataColumn(label: Text('Mã đơn')),
                 DataColumn(label: Text('Ngày giao')),
@@ -1142,17 +1144,17 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                 final isReturnedToWarehouse =
                     o.paymentStatus == 'RETURNED' ||
                     o.status == OrderStatus.returning;
-                final isVoided = o.status == OrderStatus.cancelled ||
+                final isVoided =
+                    o.status == OrderStatus.cancelled ||
                     o.status == OrderStatus.failed ||
                     isReturnedToWarehouse;
                 final done =
                     o.status == OrderStatus.delivered && !isReturnedToWarehouse;
-                final codHandlingFee =
-                    isVoided ? 0.0 : codHandlingFeeOf(o);
-                final shipDeduct =
-                    isVoided ? 0.0 : shipDeductedFromMerchantCod(o);
-                final retFee =
-                    isReturnedCompleted ? returnFeeOf(o) : 0.0;
+                final codHandlingFee = isVoided ? 0.0 : codHandlingFeeOf(o);
+                final shipDeduct = isVoided
+                    ? 0.0
+                    : shipDeductedFromMerchantCod(o);
+                final retFee = isReturnedCompleted ? returnFeeOf(o) : 0.0;
                 final expectedNet = isVoided
                     ? 0.0
                     : (o.codAmount - shipDeduct - codHandlingFee);
@@ -1178,8 +1180,8 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                         isReturnedCompleted
                             ? '-${CurrencyFormatter.formatVnd(retFee)} (Phí hoàn 50%)'
                             : (isVoided || shipDeduct == 0
-                                ? '0 đ (${o.paymentMethod})'
-                                : '-${CurrencyFormatter.formatVnd(shipDeduct)}'),
+                                  ? '0 đ (${o.paymentMethod})'
+                                  : '-${CurrencyFormatter.formatVnd(shipDeduct)}'),
                       ),
                     ),
                     DataCell(
@@ -1194,17 +1196,17 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                         isReturnedCompleted
                             ? '-${CurrencyFormatter.formatVnd(retFee)}'
                             : done
-                                ? CurrencyFormatter.formatVnd(net)
-                                : isVoided
-                                    ? '0 đ'
-                                    : '0 đ (Dự kiến: ${CurrencyFormatter.formatVnd(expectedNet)})',
+                            ? CurrencyFormatter.formatVnd(net)
+                            : isVoided
+                            ? '0 đ'
+                            : '0 đ (Dự kiến: ${CurrencyFormatter.formatVnd(expectedNet)})',
                         style: TextStyle(
                           fontWeight: FontWeight.w800,
                           color: isVoided
                               ? AppColors.danger
                               : done
-                                  ? AppColors.success
-                                  : AppColors.textSecondary,
+                              ? AppColors.success
+                              : AppColors.textSecondary,
                         ),
                       ),
                     ),
@@ -1213,24 +1215,24 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                         backgroundColor: isVoided
                             ? AppColors.danger.withValues(alpha: 0.14)
                             : done
-                                ? AppColors.success.withValues(alpha: 0.14)
-                                : const Color(0xFFF5F1E8),
+                            ? AppColors.success.withValues(alpha: 0.14)
+                            : const Color(0xFFF5F1E8),
                         label: Text(
                           isReturnedToWarehouse
                               ? 'Đã hoàn kho'
                               : isVoided
-                                  ? 'Đã hủy / Thất bại'
-                                  : done
-                                      ? 'Đã chuyển'
-                                      : 'Chờ thu COD',
+                              ? 'Đã hủy / Thất bại'
+                              : done
+                              ? 'Đã chuyển'
+                              : 'Chờ thu COD',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             color: isVoided
                                 ? AppColors.danger
                                 : done
-                                    ? AppColors.success
-                                    : const Color(0xFFFF5E83),
+                                ? AppColors.success
+                                : const Color(0xFFFF5E83),
                           ),
                         ),
                       ),
@@ -1438,26 +1440,26 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                     ),
                   ),
                 ..._store.merchantPersonalWithdrawals.map(
-                      (w) => ListTile(
-                        dense: true,
-                        contentPadding: EdgeInsets.zero,
-                        leading: const Icon(
-                          Icons.account_balance_wallet_outlined,
-                          color: AppColors.success,
-                        ),
-                        title: Text(
-                          '#${w.id} • ${CurrencyFormatter.formatVnd(w.amount)}',
-                          style: const TextStyle(fontWeight: FontWeight.w800),
-                        ),
-                        subtitle: Text('${w.bankName} (${w.accountMasked})'),
-                        trailing: Chip(
-                          label: Text(
-                            w.status,
-                            style: const TextStyle(fontSize: 11),
-                          ),
-                        ),
+                  (w) => ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(
+                      Icons.account_balance_wallet_outlined,
+                      color: AppColors.success,
+                    ),
+                    title: Text(
+                      '#${w.id} • ${CurrencyFormatter.formatVnd(w.amount)}',
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                    subtitle: Text('${w.bankName} (${w.accountMasked})'),
+                    trailing: Chip(
+                      label: Text(
+                        w.status,
+                        style: const TextStyle(fontSize: 11),
                       ),
                     ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -1465,11 +1467,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
         if (constraints.maxWidth < 760) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              colLeft,
-              const SizedBox(height: 16),
-              colRight,
-            ],
+            children: [colLeft, const SizedBox(height: 16), colRight],
           );
         }
         return Row(
@@ -1497,8 +1495,9 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
         )
         .toList();
     final deliveredCount = deliveredOrders.length;
-    final failedOnlyCount =
-        shopOrders.where((o) => o.status == OrderStatus.failed).length;
+    final failedOnlyCount = shopOrders
+        .where((o) => o.status == OrderStatus.failed)
+        .length;
     final returnedCount = shopOrders
         .where(
           (o) =>
@@ -1508,8 +1507,10 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
         )
         .length;
     final failedCount = failedOnlyCount + returnedCount;
-    final inProgressCount =
-        (totalOrders - deliveredCount - failedCount).clamp(0, totalOrders);
+    final inProgressCount = (totalOrders - deliveredCount - failedCount).clamp(
+      0,
+      totalOrders,
+    );
     final successRate = deliveredCount * 100.0 / safeTotal;
     final inProgressRate = inProgressCount * 100.0 / safeTotal;
     final failedRate = failedOnlyCount * 100.0 / safeTotal;
@@ -1533,22 +1534,25 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
         )
         .length;
     final now = DateTime.now();
-    final recent7dOrders =
-        shopOrders.where((o) => o.daysAgoFrom(now) <= 6).toList();
+    final recent7dOrders = shopOrders
+        .where((o) => o.daysAgoFrom(now) <= 6)
+        .toList();
     final chronoBuckets = List<(String, int)>.generate(7, (idx) {
       final daysAgo = 6 - idx;
       final dt = now.subtract(Duration(days: daysAgo));
       final label =
           '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}';
-      final cnt =
-          recent7dOrders.where((o) => o.daysAgoFrom(now) == daysAgo).length;
+      final cnt = recent7dOrders
+          .where((o) => o.daysAgoFrom(now) == daysAgo)
+          .length;
       return (label, cnt);
     });
-    final maxDay =
-        chronoBuckets.fold<int>(1, (m, item) => item.$2 > m ? item.$2 : m);
+    final maxDay = chronoBuckets.fold<int>(
+      1,
+      (m, item) => item.$2 > m ? item.$2 : m,
+    );
     final dailyChartItems = chronoBuckets.map((item) {
-      final ratio =
-          item.$2 == 0 ? 0.03 : (item.$2 / maxDay).clamp(0.18, 1.0);
+      final ratio = item.$2 == 0 ? 0.03 : (item.$2 / maxDay).clamp(0.18, 1.0);
       return (item.$1, ratio, item.$2);
     }).toList();
 
@@ -1570,7 +1574,10 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
             children: [
               Text(
                 'Báo cáo & Thống kê Cửa hàng (Tháng ${DateTime.now().month}/${DateTime.now().year})',
-                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 16,
+                ),
               ),
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
@@ -1608,9 +1615,11 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
               final cols = maxW >= 860
                   ? 3
                   : maxW >= 460
-                      ? 2
-                      : 1;
-              final cardW = cols == 1 ? maxW : (maxW - (cols - 1) * 10.0) / cols;
+                  ? 2
+                  : 1;
+              final cardW = cols == 1
+                  ? maxW
+                  : (maxW - (cols - 1) * 10.0) / cols;
               return Wrap(
                 spacing: 10,
                 runSpacing: 10,
@@ -1696,7 +1705,9 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                           for (final item in dailyChartItems)
                             Expanded(
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 2),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 2,
+                                ),
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.end,
                                   children: [
@@ -1810,11 +1821,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
               if (constraints.maxWidth < 760) {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    chartBox,
-                    const SizedBox(height: 14),
-                    statusBox,
-                  ],
+                  children: [chartBox, const SizedBox(height: 14), statusBox],
                 );
               }
               return Row(
@@ -1874,8 +1881,9 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                       '${ord.trackingCode} (${ord.status.displayName})',
                       style: TextStyle(
                         fontSize: 11,
-                        fontWeight:
-                            selected ? FontWeight.w800 : FontWeight.w600,
+                        fontWeight: selected
+                            ? FontWeight.w800
+                            : FontWeight.w600,
                       ),
                     ),
                     onPressed: () {
@@ -1911,7 +1919,9 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                     )
                     .toList(),
                 onChanged: (v) {
-                  if (v != null) _rebuildMerchantUi(() => _shopComplaintType = v);
+                  if (v != null) {
+                    _rebuildMerchantUi(() => _shopComplaintType = v);
+                  }
                 },
               ),
               const SizedBox(height: 10),
@@ -1920,8 +1930,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                 maxLines: 3,
                 decoration: const InputDecoration(
                   labelText: 'Mô tả chi tiết sự cố / yêu cầu bồi thường',
-                  hintText:
-                      'Nhập tình trạng kiện hàng hoặc chênh lệch COD...',
+                  hintText: 'Nhập tình trạng kiện hàng hoặc chênh lệch COD...',
                 ),
               ),
               const SizedBox(height: 10),
@@ -1937,11 +1946,11 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                     );
                     return;
                   }
-                  final pickedName = await SecurityAndBarcodeUtils
-                      .pickLocalDocumentOrImage(
-                    dialogTitle:
-                        'Chọn tệp ảnh / chứng từ khiếu nại Cửa hàng B2B',
-                  );
+                  final pickedName =
+                      await SecurityAndBarcodeUtils.pickLocalDocumentOrImage(
+                        dialogTitle:
+                            'Chọn tệp ảnh / chứng từ khiếu nại Cửa hàng B2B',
+                      );
                   if (!context.mounted || pickedName == null) return;
                   if (_attachedShopEvidenceFiles.contains(pickedName)) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -1995,10 +2004,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                       .map(
                         (f) => InputChip(
                           visualDensity: VisualDensity.compact,
-                          label: Text(
-                            f,
-                            style: const TextStyle(fontSize: 11),
-                          ),
+                          label: Text(f, style: const TextStyle(fontSize: 11)),
                           onDeleted: () => _rebuildMerchantUi(
                             () => _attachedShopEvidenceFiles.remove(f),
                           ),
@@ -2053,14 +2059,16 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                     final baseDesc = _shopComplaintDescCtrl.text.trim().isEmpty
                         ? 'Yêu cầu kiểm tra đối soát / bồi thường đơn hàng'
                         : _shopComplaintDescCtrl.text.trim();
-                    final chosenFiles =
-                        List<String>.from(_attachedShopEvidenceFiles);
+                    final chosenFiles = List<String>.from(
+                      _attachedShopEvidenceFiles,
+                    );
                     final fullDesc = chosenFiles.isEmpty
                         ? baseDesc
                         : '$baseDesc • [Đính kèm: ${chosenFiles.join(", ")}]';
                     _store.addIncidentOrComplaint(
                       orderId: orderCode,
-                      reporterName: _store.activeMerchantRecord?.storeName ??
+                      reporterName:
+                          _store.activeMerchantRecord?.storeName ??
                           'Cửa hàng B2B',
                       issueType: 'Shop KN: $_shopComplaintType',
                       description: fullDesc,
@@ -2175,10 +2183,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        c.description,
-                        style: const TextStyle(fontSize: 12),
-                      ),
+                      Text(c.description, style: const TextStyle(fontSize: 12)),
                       if (c.evidenceFiles.isNotEmpty) ...[
                         const SizedBox(height: 6),
                         Wrap(
@@ -2203,19 +2208,21 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                       ],
                       if (c.replies.length > 1) ...[
                         const Divider(),
-                        ...c.replies.skip(1).map(
-                          (rep) => Padding(
-                            padding: const EdgeInsets.only(bottom: 3),
-                            child: Text(
-                              '• $rep',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.success,
+                        ...c.replies
+                            .skip(1)
+                            .map(
+                              (rep) => Padding(
+                                padding: const EdgeInsets.only(bottom: 3),
+                                child: Text(
+                                  '• $rep',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.success,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ),
                       ],
                     ],
                   ),
@@ -2227,11 +2234,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
         if (constraints.maxWidth < 760) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              colLeft,
-              const SizedBox(height: 16),
-              colRight,
-            ],
+            children: [colLeft, const SizedBox(height: 16), colRight],
           );
         }
         return Row(

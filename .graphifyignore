@@ -1,0 +1,33 @@
+# Local credentials and runtime/customer data
+.env
+.env.*
+*.env
+**/.integration-config.json
+**/auth-providers.json
+**/*credentials*.json
+**/*service-account*.json
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/*.db*
+**/*.sqlite*
+**/uploads/
+**/logs/
+
+# Dependencies, generated output and assistant implementation
+**/node_modules/
+**/build/
+**/.dart_tool/
+**/ephemeral/
+**/Pods/
+**/.symlinks/
+**/.gradle/
+.git/
+.codex/
+.agents/
+graphify-out/
+**/package-lock.json
+**/pubspec.lock
+**/generated_plugin_registrant.*
+**/generated_plugins.cmake

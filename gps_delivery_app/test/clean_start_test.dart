@@ -42,6 +42,8 @@ void main() {
     expect(store.isDriverOnline, isFalse);
     expect(store.hasRealDeviceGpsFix, isFalse);
     expect(store.merchantPersonalWarehouses, isEmpty);
+    expect(GrabFoodRecommendationEngine.curatedMenuCatalog, isEmpty);
+    expect(store.merchantMenuItems, isEmpty);
     expect(store.rbacRoles, isNotEmpty);
     await store.initializeDatabase();
     expect(store.users, isEmpty);
@@ -58,16 +60,29 @@ void main() {
       });
       for (final size in [const Size(360, 800), const Size(1440, 1024)]) {
         tester.view.physicalSize = size;
-        await tester.pumpWidget(const GpsDeliveryApp());
+        await tester.pumpWidget(const GpsDeliveryApp(initialRoute: '/legacy'));
         await tester.pump();
         expect(find.text('Đăng nhập hệ thống'), findsOneWidget);
+        expect(find.text('Đơn hàng cloud'), findsNothing);
+        expect(find.byTooltip('Đơn hàng cloud'), findsNothing);
         expect(find.text('Đăng ký tài khoản'), findsOneWidget);
         expect(find.text('Thiết lập quản trị viên'), findsNothing);
-        expect(find.text('Tiếp tục với Google'), findsOneWidget);
+        expect(find.text('Tiếp tục với Google'), findsNothing);
         expect(find.text('Thiết lập quản trị'), findsNothing);
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pumpWidget(const GpsDeliveryApp(initialRoute: '/admin'));
+        await tester.pump();
+        expect(find.text('GHST CLOUD ADMIN'), findsOneWidget);
+        expect(find.text('Đăng nhập quản trị'), findsOneWidget);
+        expect(find.text('Email quản trị'), findsOneWidget);
+        expect(find.text('Đăng ký tài khoản'), findsNothing);
+        expect(find.text('Tiếp tục với Google'), findsNothing);
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpWidget(
+          const GpsDeliveryApp(initialRoute: '/legacy-admin'),
+        );
         await tester.pump();
         expect(find.text('Đăng nhập quản trị'), findsOneWidget);
         expect(find.text('Đăng ký tài khoản'), findsNothing);
@@ -76,7 +91,7 @@ void main() {
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox.shrink());
       }
-      await tester.pumpWidget(const GpsDeliveryApp());
+      await tester.pumpWidget(const GpsDeliveryApp(initialRoute: '/legacy'));
       await tester.pump();
       await tester.tap(find.text('Đăng ký tài khoản'));
       await tester.pump();
@@ -104,9 +119,13 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
       expect(store.users.single.role, SubsystemRole.customer);
       expect(find.text('Tạo đơn hàng mới'), findsWidgets);
+      expect(find.text('Đơn hàng cloud'), findsNothing);
+      expect(find.byTooltip('Đơn hàng cloud'), findsNothing);
       await tester.pumpWidget(const SizedBox.shrink());
       store.clearAuthenticatedSession();
-      await tester.pumpWidget(const GpsDeliveryApp(initialRoute: '/admin'));
+      await tester.pumpWidget(
+        const GpsDeliveryApp(initialRoute: '/legacy-admin'),
+      );
       await tester.pump();
       await tester.enterText(find.byType(TextFormField).first, '0908777666');
       await tester.enterText(find.byType(TextFormField).last, 'test-password');
@@ -163,7 +182,7 @@ void main() {
       await tester.tap(find.text('Đăng xuất').first);
       await tester.pump();
       await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pumpWidget(const GpsDeliveryApp());
+      await tester.pumpWidget(const GpsDeliveryApp(initialRoute: '/legacy'));
       await tester.pump();
       await tester.enterText(find.byType(TextField).first, '0908999888');
       await tester.enterText(
@@ -190,7 +209,7 @@ void main() {
       );
       await store.reloadFromSqlite();
       expect(store.users.single.role, SubsystemRole.customer);
-      await tester.pumpWidget(const GpsDeliveryApp());
+      await tester.pumpWidget(const GpsDeliveryApp(initialRoute: '/legacy'));
       await tester.pump();
       expect(find.text('Đăng nhập hệ thống'), findsOneWidget);
       await tester.pumpWidget(const SizedBox.shrink());

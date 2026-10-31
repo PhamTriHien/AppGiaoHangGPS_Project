@@ -1154,6 +1154,12 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                 labelText: 'Phản hồi của Quản trị viên / Phương án đền bù',
               ),
             ),
+            if (canResolveComplaint)
+              SupportAiSummary(
+                key: ValueKey(activeTicket.ticketCode),
+                text: '${activeTicket.issueType}\n${activeTicket.description}',
+                onApply: (text) => _replyTicketCtrl.text = text,
+              ),
             const SizedBox(height: AppSpacing.sm),
             Wrap(
               spacing: 10,
@@ -2859,6 +2865,18 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
               ],
             ),
             const Divider(height: 24),
+            if (canManageSecurity) ...[
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () =>
+                      _rebuildAdminUi(() => _selectedScreenIndex = 13),
+                  icon: const Icon(Icons.hub_outlined),
+                  label: const Text('API & Dịch vụ'),
+                ),
+              ),
+              const Divider(height: 24),
+            ],
             Text(
               'Nhật ký Kiểm toán Hệ thống (Audit Logs)',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(

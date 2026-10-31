@@ -49,3 +49,10 @@ app.*.map.json
 # Local OTP relay credentials
 backend/otp-relay/.env
 backend/otp-relay/node_modules/
+backend/otp-relay/*.traineddata*
+backend/otp-relay/.cache/
+backend/otp-relay/.integration-config.json
+backend/otp-relay/.integration-config.json.*.tmp
+backend/otp-relay/.integration-audit.log
+backend/otp-relay/*service-account*.json
+tools/local-services/

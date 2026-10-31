@@ -36,6 +36,7 @@ import 'package:gps_delivery_app/presentation/widgets/studio_design_widgets.dart
 import 'package:gps_delivery_app/presentation/widgets/system_state_screens.dart';
 
 import 'fixtures/app_state_test_fixtures.dart';
+import 'fixtures/managed_delivery_fixture.dart';
 
 void main() {
   setUpAll(() async {
@@ -44,6 +45,7 @@ void main() {
     AppStateStore.instance.seedTestRecords();
     await AppStateStore.instance.persistTestRecords();
     await AppStateStore.instance.reloadFromSqlite();
+    await ManagedDeliveryFixture().cachePlaces();
   });
 
   testWidgets(
@@ -56,7 +58,7 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      await tester.pumpWidget(const GpsDeliveryApp());
+      await tester.pumpWidget(const GpsDeliveryApp(initialRoute: '/legacy'));
 
       await tester.tap(find.text('Mã OTP'));
       await tester.pump();
@@ -64,7 +66,10 @@ void main() {
       // 1. Khi mở app: Hiển thị màn hình chính thức UC01 Đăng nhập / Đăng ký kèm nền đồ họa 3D thời gian thực
       expect(find.text('Đăng nhập hệ thống'), findsOneWidget);
       expect(find.text('Gửi mã OTP'), findsOneWidget);
-      expect(find.text('Tiếp tục với Google'), findsOneWidget);
+      expect(
+        find.text('Tiếp tục với Google'),
+        EnvConfig.isGoogleOAuthConfigured ? findsOneWidget : findsNothing,
+      );
       expect(find.text('Tiếp tục với Facebook'), findsNothing);
       expect(
         find.byWidgetPredicate(
@@ -137,6 +142,13 @@ void main() {
       expect(find.text('Tổng quan hệ thống'), findsNothing);
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpWidget(const GpsDeliveryApp(initialRoute: '/admin'));
+      await tester.pump();
+      expect(find.text('GHST CLOUD ADMIN'), findsOneWidget);
+      expect(find.text('Email quản trị'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpWidget(
+        const GpsDeliveryApp(initialRoute: '/legacy-admin'),
+      );
       await tester.pump();
       await tester.enterText(find.byType(TextFormField).first, '0900999999');
       await tester.enterText(find.byType(TextFormField).last, '12345678');
@@ -297,18 +309,21 @@ void main() {
 
     final places = await SmartDispatchEngine.fetchLiveNominatimSuggestions(
       'Phố Huế',
+      api: ManagedDeliveryFixture(),
     );
     expect(places, isNotEmpty);
 
     final route = await SmartDispatchEngine.fetchLiveOsrmRoute(
       const GeoPoint(latitude: 21.0145, longitude: 105.8512),
       const GeoPoint(latitude: 20.9951, longitude: 105.8286),
+      api: ManagedDeliveryFixture(),
     );
     expect(route.distanceMeters, greaterThan(500));
     expect(route.polylinePoints.length, greaterThanOrEqualTo(2));
+    expect(route.isLiveOsrm, isTrue);
   });
 
-  test('TC-11: Kiểm tra tính nhất quán Logic Nghiệp vụ (Voucher %, Hoa hồng 80%, Chặn hủy FSM, Ký quỹ 200k & Hoàn tiền Rút)', () {
+  test('TC-11: Kiểm tra tính nhất quán Logic Nghiệp vụ (Voucher %, Hoa hồng 80%, Chặn hủy FSM, Ký quỹ 200k & Hoàn tiền Rút)', () async {
     final store = AppStateStore.instance;
     expect(EnvConfig.driverAcceptTimeoutSeconds, equals(28));
 
@@ -326,6 +341,8 @@ void main() {
       codAmount: 100000,
       paymentMethod: 'Tiền mặt (COD)',
       voucherCode: 'GHN-BACKTOSCHOOL',
+      customDistanceMeters: 14500,
+      customDurationSeconds: 2610,
     );
     // Tổng cước trước giảm là 158.250đ -> 10% là 15.825đ (<= 25.000đ)
     expect(pctOrder.discountAmount, closeTo(15825, 1.0));
@@ -486,6 +503,7 @@ void main() {
       'ten_nguoi_nhan,sdt_nguoi_nhan,dia_chi_giao,mo_ta_hang,khoi_luong_kg,tien_cod_vnd,loai_dich_vu\n'
       'Lê Văn Bốn,0901234567,120 Nguyễn Trãi Quận 5 TP.HCM,320000\n'
       'Phạm Thị Bảy,0902345678,45 Lê Duẩn Quận 1 TP.HCM,Giày thể thao,1.8,450000,EXPRESS',
+      customPickupAddress: '123 Đường Lê Lợi Quận 1 TP.HCM',
     );
     expect(dualCsv.validCount, equals(2));
     expect(dualCsv.rows[0].codAmount, closeTo(320000, 1.0));
@@ -536,7 +554,11 @@ void main() {
     );
     expect(store.offlineQueueCount, equals(1));
     store.toggleOfflineSimulation(false);
-    expect(store.offlineQueueCount, equals(0));
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    expect(await store.drainOfflineSyncQueue(), equals(0));
+    expect(store.offlineQueueCount, equals(1));
+    await SqliteOfflineQueueDatasource.instance.clearAllPendingSyncItems();
+    await store.drainOfflineSyncQueue();
 
     final trafficTicket = store.complaints.first.ticketCode;
     final codBeforeTrafficResolve = store.merchantCodBalance;
@@ -658,6 +680,7 @@ void main() {
       'Nguyễn Văn H,0912345678,123 Đường Lê Lợi Quận 1 TP.HCM,Gốm sứ,2.0,300000,EXPRESS\n'
       'Lỗi SĐT,123,Địa chỉ ngắn,Hàng lỗi,1.0,100000,STANDARD',
       commitOrders: true,
+      customPickupAddress: '145 Phố Huế, Hai Bà Trưng, Hà Nội',
     );
     expect(csvRes.validCount, equals(1));
     expect(csvRes.invalidCount, equals(1));
@@ -1296,11 +1319,13 @@ void main() {
     await Future<void>.delayed(const Duration(milliseconds: 80));
     expect(await sqlite.getPendingQueueCount(), equals(2));
 
-    // 3. Khi khôi phục Online: hàng đợi SQLite thực sự được xả sạch (drain) về 0 trên đĩa
+    // Reconnecting without a configured cloud must retain unsent commands.
     store.toggleOfflineSimulation(false);
+    expect(await store.drainOfflineSyncQueue(), equals(0));
+    expect(store.offlineQueueCount, equals(2));
+    expect(await sqlite.getPendingQueueCount(), equals(2));
+    await sqlite.clearAllPendingSyncItems();
     await store.drainOfflineSyncQueue();
-    expect(store.offlineQueueCount, equals(0));
-    expect(await sqlite.getPendingQueueCount(), equals(0));
 
     // 4. Mã vạch chuẩn ISO/IEC 15417 Code-128B (Start B=104, Mod-103 Checksum, Stop=106) & A6 SVG
     final symbols = SecurityAndBarcodeUtils.encodeCode128BSymbols('GHST-01');
@@ -1797,6 +1822,7 @@ void main() {
       pickupAddress: 'Chợ Bến Thành, Quận 1, TP. HCM',
       dropoffAddress: 'Dinh Độc Lập, Quận 1, TP. HCM',
       recipientName: 'Khách Kiểm Toán Offline',
+      customCustomerName: 'Khách Kiểm Toán Offline',
       recipientPhone: '0911888999',
       packageDescription: 'Hộp tài liệu kiểm toán',
       weightKg: 1.0,
@@ -1851,8 +1877,11 @@ void main() {
     expect(await sqlite.getPendingQueueCount(), equals(3));
 
     store.toggleOfflineSimulation(false);
+    expect(await store.drainOfflineSyncQueue(), equals(0));
+    expect(store.offlineQueueCount, equals(3));
+    expect(await sqlite.getPendingQueueCount(), equals(3));
+    await sqlite.clearAllPendingSyncItems();
     await store.drainOfflineSyncQueue();
-    expect(store.offlineQueueCount, equals(0));
 
     // 2. Snapshot khôi phục chính xác isCustomerGoogleLinked = false
     store.toggleCustomerSocialLink(provider: 'GOOGLE', linked: false);

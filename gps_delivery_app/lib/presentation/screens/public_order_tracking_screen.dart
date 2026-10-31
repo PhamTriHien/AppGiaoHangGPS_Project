@@ -1,25 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../core/gps/smart_dispatch_engine.dart';
+import '../../core/integrations/cloud_orders_service.dart';
+import '../../core/network/public_json_api.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/utils/currency_formatter.dart';
-import '../../core/utils/security_and_barcode_utils.dart';
-import '../../data/datasources/local/app_state_store.dart';
-import '../../domain/enums/order_status.dart';
-import '../widgets/system_state_screens.dart';
+import '../widgets/cloud_order_labels.dart';
 
-/// Màn hình Theo dõi Hành trình Công khai (/track) không cần đăng nhập (mô hình GrabExpress Share My Ride)
-/// Tự động che số điện thoại nhạy cảm (0912***678), hiển thị Bản đồ GPS 3D, Tiến độ đa điểm dừng và Mã OTP nhận hàng.
+/// Màn hình Tra cứu & Theo dõi Hành trình Cloud công khai (/track).
+/// Tra cứu trực tiếp từ Cloud bằng liên kết chia sẻ 64 ký tự hex hoặc
+/// Mã vận đơn Cloud (CL-...) kèm 4 số cuối SĐT người nhận, bảo mật tuyệt đối dữ liệu cá nhân.
 class PublicOrderTrackingScreen extends StatefulWidget {
   final String? initialQuery;
+  final CloudOrdersService? cloudService;
 
-  const PublicOrderTrackingScreen({super.key, this.initialQuery});
+  const PublicOrderTrackingScreen({
+    super.key,
+    this.initialQuery,
+    this.cloudService,
+  });
 
   static String? _extractQueryParamRaw(String raw) {
     final trimmed = raw.trim();
     if (trimmed.isEmpty) return null;
-    final regexMatch = RegExp(r'[?&](?:code|token)=([^&]+)').firstMatch(trimmed);
+    final regexMatch = RegExp(
+      r'[?&](?:code|token)=([^&]+)',
+    ).firstMatch(trimmed);
     if (regexMatch != null) {
       final rawVal = regexMatch.group(1)?.trim() ?? '';
       if (rawVal.isNotEmpty) {
@@ -69,9 +74,17 @@ class PublicOrderTrackingScreen extends StatefulWidget {
 }
 
 class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
-  final AppStateStore _store = AppStateStore.instance;
+  late final CloudOrdersService _service =
+      widget.cloudService ?? CloudOrdersService();
   late final TextEditingController _searchCtrl;
+  final TextEditingController _last4Ctrl = TextEditingController();
+  bool _busy = false;
+  String? _error;
+  Map<String, dynamic>? _lookupData;
+  Map<String, dynamic>? _shareData;
   String _activeQuery = '';
+
+  bool _isShareToken(String q) => RegExp(r'^[a-fA-F0-9]{64}$').hasMatch(q);
 
   @override
   void initState() {
@@ -82,32 +95,76 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
         '';
     _activeQuery = initial.trim();
     _searchCtrl = TextEditingController(text: _activeQuery);
-    _store.addListener(_onStoreChanged);
-  }
-
-  void _onStoreChanged() {
-    if (mounted) setState(() {});
+    if (_isShareToken(_activeQuery)) {
+      _submitSearch();
+    }
   }
 
   @override
   void dispose() {
-    _store.removeListener(_onStoreChanged);
     _searchCtrl.dispose();
+    _last4Ctrl.dispose();
     super.dispose();
   }
 
-  void _submitSearch() {
+  Future<void> _submitSearch() async {
+    if (_busy) return;
+    final query = _searchCtrl.text.trim();
+    final last4 = _last4Ctrl.text.trim();
     setState(() {
-      _activeQuery = _searchCtrl.text.trim();
+      _activeQuery = query;
+      _error = null;
+      _lookupData = null;
+      _shareData = null;
     });
+    if (query.isEmpty) return;
+    if (_isShareToken(query)) {
+      setState(() => _busy = true);
+      try {
+        final res = await _service.publicTracking(query.toLowerCase());
+        if (mounted) setState(() => _shareData = res);
+      } catch (e) {
+        if (mounted) {
+          setState(
+            () => _error = e is PublicApiException
+                ? e.message
+                : 'Liên kết chia sẻ không tồn tại hoặc đã hết hạn.',
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _busy = false);
+      }
+      return;
+    }
+    final upper = query.toUpperCase();
+    if (!RegExp(r'^CL-[A-F0-9]{32}$').hasMatch(upper) ||
+        !RegExp(r'^[0-9]{4}$').hasMatch(last4)) {
+      setState(
+        () => _error =
+            'Nhập đúng mã vận đơn Cloud (CL-...) và đủ 4 số cuối SĐT người nhận, hoặc dán mã chia sẻ 64 ký tự.',
+      );
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      final res = await _service.publicLookup(upper, last4);
+      if (mounted) setState(() => _lookupData = res);
+    } catch (e) {
+      if (mounted) {
+        setState(
+          () => _error = e is PublicApiException
+              ? e.message
+              : 'Không tìm thấy vận đơn khớp thông tin xác thực.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final matchedOrder = _activeQuery.isEmpty
-        ? null
-        : _store.findOrderForPublicTracking(_activeQuery);
-
+    final typingToken = _isShareToken(_searchCtrl.text.trim());
     return Scaffold(
       backgroundColor: AppColors.paper,
       appBar: AppBar(
@@ -173,7 +230,7 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'NHẬP MÃ VẬN ĐƠN HOẶC MÃ CHIA SẺ HÀNH TRÌNH',
+                        'TRA CỨU HÀNH TRÌNH CLOUD BẢO MẬT',
                         style: TextStyle(
                           fontWeight: FontWeight.w900,
                           fontSize: 12.5,
@@ -182,28 +239,38 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
                       ),
                       const SizedBox(height: 4),
                       const Text(
-                        'Người nhận có thể theo dõi vị trí tài xế GPS 3D thời gian thực mà không cần đăng nhập tài khoản. SĐT cá nhân được che tự động bảo vệ quyền riêng tư.',
+                        'Nhập mã vận đơn Cloud (CL-...) kèm 4 số cuối SĐT người nhận, hoặc dán mã chia sẻ 64 ký tự. Địa chỉ, SĐT đầy đủ và mã OTP nhận hàng được bảo vệ trên Cloud.',
                         style: TextStyle(
                           fontSize: 11.5,
                           color: AppColors.textSecondary,
                         ),
                       ),
                       const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _searchCtrl,
-                              onSubmitted: (_) => _submitSearch(),
-                              decoration: const InputDecoration(
-                                hintText:
-                                    'Ví dụ: GH-2026... hoặc TRK-...',
-                                prefixIcon: Icon(Icons.search_rounded),
-                              ),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final wide = constraints.maxWidth >= 620;
+                          final codeField = TextField(
+                            controller: _searchCtrl,
+                            onChanged: (_) => setState(() {}),
+                            onSubmitted: (_) => _submitSearch(),
+                            decoration: const InputDecoration(
+                              labelText: 'Mã vận đơn (CL-...) hoặc mã chia sẻ',
+                              prefixIcon: Icon(Icons.search_rounded),
                             ),
-                          ),
-                          const SizedBox(width: 10),
-                          ElevatedButton.icon(
+                          );
+                          final phoneField = TextField(
+                            controller: _last4Ctrl,
+                            enabled: !typingToken && !_busy,
+                            maxLength: 4,
+                            keyboardType: TextInputType.number,
+                            onSubmitted: (_) => _submitSearch(),
+                            decoration: const InputDecoration(
+                              labelText: '4 số cuối SĐT nhận',
+                              counterText: '',
+                              prefixIcon: Icon(Icons.pin_outlined),
+                            ),
+                          );
+                          final button = ElevatedButton.icon(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.violet,
                               foregroundColor: Colors.white,
@@ -212,35 +279,61 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
                                 vertical: 14,
                               ),
                             ),
-                            onPressed: _submitSearch,
+                            onPressed: _busy ? null : _submitSearch,
                             icon: const Icon(
                               Icons.gps_fixed_rounded,
                               size: 17,
                             ),
                             label: const Text('Tra cứu'),
-                          ),
-                        ],
+                          );
+                          if (wide) {
+                            return Row(
+                              children: [
+                                Expanded(flex: 5, child: codeField),
+                                const SizedBox(width: 10),
+                                Expanded(flex: 2, child: phoneField),
+                                const SizedBox(width: 10),
+                                button,
+                              ],
+                            );
+                          }
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              codeField,
+                              const SizedBox(height: 10),
+                              phoneField,
+                              const SizedBox(height: 10),
+                              button,
+                            ],
+                          );
+                        },
                       ),
+                      if (_busy) ...[
+                        const SizedBox(height: 10),
+                        const LinearProgressIndicator(),
+                      ],
                     ],
                   ),
                 ),
                 const SizedBox(height: 16),
-                if (_activeQuery.isEmpty)
-                  _buildEmptyOrNotFoundBox(
-                    title: 'Sẵn sàng tra cứu hành trình GPS trực tiếp',
-                    subtitle:
-                        'Nhập mã vận đơn do người gửi hoặc cửa hàng chia sẻ để xem vị trí tài xế 3D, lộ trình đa điểm dừng và mã OTP nhận hàng.',
-                    icon: Icons.share_location_rounded,
-                  )
-                else if (matchedOrder == null)
-                  _buildEmptyOrNotFoundBox(
-                    title: 'Không tìm thấy vận đơn "$_activeQuery"',
-                    subtitle:
-                        'Vui lòng kiểm tra lại chính xác mã vận đơn (VD: GH-...) hoặc liên kết chia sẻ từ người gửi.',
+                if (_error != null)
+                  _buildStatusBox(
+                    title: 'Không tra cứu được vận đơn',
+                    subtitle: _error!,
                     icon: Icons.find_in_page_outlined,
                   )
+                else if (_lookupData != null)
+                  _buildCloudLookupDetail(_lookupData!)
+                else if (_shareData != null)
+                  _buildShareDetail(_shareData!)
                 else
-                  _buildLivePublicTrackingDetail(matchedOrder),
+                  _buildStatusBox(
+                    title: 'Sẵn sàng tra cứu hành trình Cloud trực tiếp',
+                    subtitle:
+                        'Nhập mã vận đơn Cloud (CL-...) và 4 số cuối SĐT người nhận, hoặc mở liên kết chia sẻ từ người gửi để xem tiến độ giao hàng thời gian thực.',
+                    icon: Icons.share_location_rounded,
+                  ),
               ],
             ),
           ),
@@ -249,105 +342,69 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
     );
   }
 
-  Widget _buildEmptyOrNotFoundBox({
+  Widget _buildStatusBox({
     required String title,
     required String subtitle,
     required IconData icon,
-  }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: AppColors.ink, width: 1.4),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF5F1E8),
-              border: Border.all(color: AppColors.ink),
-            ),
-            child: Icon(icon, size: 30, color: AppColors.violet),
+  }) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(24),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      border: Border.all(color: AppColors.ink, width: 1.4),
+    ),
+    child: Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF5F1E8),
+            border: Border.all(color: AppColors.ink),
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 14.5,
-                    color: AppColors.ink,
-                  ),
+          child: Icon(icon, size: 30, color: AppColors.violet),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 14.5,
+                  color: AppColors.ink,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
 
-  Widget _buildLivePublicTrackingDetail(ActiveOrderRecord order) {
-    final remMeters = _store.distanceFromDriverToOrderDropoffMeters(order);
-    final etaMinutes = (remMeters / 500.0).ceil().clamp(1, 60);
-    final deliveryOtp4 = SecurityAndBarcodeUtils.generateOrderDeliveryOtp4(
-      order.trackingCode,
-    );
-    final isSearching =
-        order.status == OrderStatus.searching ||
-        order.status == OrderStatus.draft;
-    final isAccepted =
-        order.status == OrderStatus.accepted ||
-        order.status == OrderStatus.arrivingPickup;
-    final isInTransit = order.status == OrderStatus.inTransit;
-    final isDelivered = order.status == OrderStatus.delivered;
-    final isCancelled = order.status == OrderStatus.cancelled;
-    final isFailedOrReturning =
-        order.status == OrderStatus.failed ||
-        order.status == OrderStatus.returning;
-
-    final assignedDriver = order.assignedDriverName == null
-        ? null
-        : _store.drivers
-              .where(
-                (d) =>
-                    d.fullName.trim().toLowerCase() ==
-                    order.assignedDriverName!.trim().toLowerCase(),
-              )
-              .firstOrNull;
-    final maskedRecipientPhone = SecurityAndBarcodeUtils.maskPhoneNumber(
-      order.recipientPhone,
-      shouldMask: true,
-    );
-    final maskedDriverPhone = assignedDriver == null
-        ? 'Đang điều phối'
-        : SecurityAndBarcodeUtils.maskPhoneNumber(
-            assignedDriver.phone,
-            shouldMask: true,
-          );
-    final distRatio = order.distanceMeters > 0
-        ? (1.0 - (remMeters / order.distanceMeters).clamp(0.0, 1.0))
-        : 0.0;
-    final mapProgress = isDelivered
-        ? 1.0
-        : (isSearching || isCancelled || isFailedOrReturning
-              ? 0.0
-              : distRatio.clamp(isInTransit ? 0.25 : 0.08, 0.95));
-    final shareLink =
-        'https://ghst.vn/#/track?code=${Uri.encodeComponent(order.trackingCode)}';
+  Widget _buildCloudLookupDetail(Map<String, dynamic> data) {
+    final status = '${data['status'] ?? 'searching'}';
+    final service = '${data['service_type'] ?? 'standard'}';
+    final meters = (data['distance_meters'] as num? ?? 0).toDouble();
+    final timeline = (data['timeline'] as List? ?? const [])
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
+    final isSearching = status == 'searching';
+    final isAccepted = status == 'accepted' || status == 'arrivingPickup';
+    final isInTransit = status == 'inTransit';
+    final isDelivered = status == 'delivered';
+    final isCancelled = status == 'cancelled';
+    final code = '${data['tracking_code']}';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -367,8 +424,8 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Vận đơn ${order.trackingCode.startsWith('#') ? order.trackingCode : '#${order.trackingCode}'} • ${order.serviceType.displayName}',
+                  SelectableText(
+                    'Vận đơn $code • ${cloudServiceTypes[service] ?? service}',
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w900,
@@ -376,128 +433,27 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
                     ),
                   ),
                   Text(
-                    isDelivered
-                        ? 'Đã giao thành công • Hoàn tất 100%'
-                        : isCancelled
-                        ? 'Đã hủy • ${order.cancelReason ?? "Khách hủy"}'
-                        : isSearching
-                        ? 'Trạng thái: ${order.status.displayName}'
-                        : 'Dự kiến giao: ~$etaMinutes phút nữa (${(remMeters / 1000).toStringAsFixed(2)} km)',
+                    '${cloudStatuses[status] ?? status}'
+                    '${meters > 0 ? ' • Lộ trình ${(meters / 1000).toStringAsFixed(1)} km' : ''}',
                     style: const TextStyle(
-                      fontSize: 12,
+                      fontSize: 12.5,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textSecondary,
                     ),
                   ),
                 ],
               ),
-              Wrap(
-                spacing: 8,
-                runSpacing: 6,
-                children: [
-                  if (!isDelivered && !isCancelled)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFECFDF5),
-                        border: Border.all(color: const Color(0xFF16A34A)),
-                      ),
-                      child: Text(
-                        'Mã OTP nhận hàng: $deliveryOtp4',
-                        style: const TextStyle(
-                          fontFamily: 'monospace',
-                          fontSize: 12,
-                          fontWeight: FontWeight.w900,
-                          color: Color(0xFF166534),
-                        ),
-                      ),
-                    ),
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      Clipboard.setData(ClipboardData(text: shareLink));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Đã sao chép link chia sẻ: $shareLink'),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.link_rounded, size: 16),
-                    label: const Text('Sao chép Link'),
-                  ),
-                ],
+              OutlinedButton.icon(
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: code));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Đã sao chép mã vận đơn.')),
+                  );
+                },
+                icon: const Icon(Icons.copy_rounded, size: 16),
+                label: const Text('Sao chép mã'),
               ),
             ],
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            children: [
-              if (order.preferEcoEv || order.co2SavedGrams > 0)
-                _buildPublicFeatureBadge(
-                  icon: Icons.eco_rounded,
-                  label:
-                      'Giao Xanh EV • Giảm ${order.co2SavedGrams.toStringAsFixed(0)}g CO₂',
-                  bg: const Color(0xFFDCFCE7),
-                  fg: const Color(0xFF166534),
-                ),
-              if (order.batchGroupId != null &&
-                  order.batchGroupId!.trim().isNotEmpty)
-                _buildPublicFeatureBadge(
-                  icon: Icons.hub_rounded,
-                  label: 'Ghép đơn cùng hướng 2H (${order.batchGroupId})',
-                  bg: const Color(0xFFEDE9FE),
-                  fg: const Color(0xFF5B33E6),
-                ),
-              if (order.declaredValueVnd > 0)
-                _buildPublicFeatureBadge(
-                  icon: Icons.verified_user_rounded,
-                  label:
-                      'Bảo hiểm hàng hóa ${CurrencyFormatter.formatVnd(order.declaredValueVnd)}',
-                  bg: const Color(0xFFFFF7ED),
-                  fg: const Color(0xFF9A3412),
-                ),
-              if (order.isRoundTrip)
-                _buildPublicFeatureBadge(
-                  icon: Icons.sync_alt_rounded,
-                  label: 'Giao khứ hồi 2 chiều',
-                  bg: const Color(0xFFE0F2FE),
-                  fg: const Color(0xFF075985),
-                ),
-              if (order.extraStopCount > 0)
-                _buildPublicFeatureBadge(
-                  icon: Icons.alt_route_rounded,
-                  label: 'Đa điểm dừng (+${order.extraStopCount} trạm phụ)',
-                  bg: const Color(0xFFFCE7F3),
-                  fg: const Color(0xFF9D174D),
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Map3dPerspectiveWidget(
-            height: 360,
-            mode: MapViewMode.customerLiveTracking,
-            is3dMode: _store.isMap3dEnabled,
-            speedKmh: (isAccepted || isInTransit) ? _store.currentSpeedKmh : 0.0,
-            onToggle3d: _store.toggleMap3d,
-            driverLocation: _store.verifiedLocationForOrder(order),
-            progressFraction: mapProgress,
-            routePoints: SmartDispatchEngine.generateRoutePolyline(
-              order.pickupLocation,
-              order.dropoffLocation,
-              segments: 10,
-            ),
-            pickupLabel: '[A] Điểm lấy',
-            dropoffLabel: '[B] Điểm giao',
-            nextTurnInstruction: isDelivered
-                ? 'Đơn ${order.trackingCode} đã giao hoàn tất'
-                : isSearching
-                ? 'Đang điều phối tài xế gần điểm lấy hàng'
-                : 'Tài xế cách điểm giao ${(remMeters / 1000).toStringAsFixed(2)} km (~$etaMinutes phút)',
-            roadName: '${order.pickupAddress} → ${order.dropoffAddress}',
           ),
           const SizedBox(height: 12),
           Container(
@@ -506,8 +462,10 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
               color: const Color(0xFFF5F1E8),
               border: Border.all(color: AppColors.ink),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+            child: Wrap(
+              spacing: 16,
+              runSpacing: 8,
+              alignment: WrapAlignment.spaceAround,
               children: [
                 _buildStepPill(
                   '1. Đã tạo đơn',
@@ -533,168 +491,100 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              border: Border.all(color: AppColors.ink),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'THÔNG TIN GIAO NHẬN (ĐÃ CHE SĐT BẢO MẬT)',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 12,
-                    color: AppColors.ink,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '• Người gửi: ${order.customerName} | Điểm lấy: ${order.pickupAddress}',
-                  style: const TextStyle(fontSize: 12),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '• Người nhận: ${order.recipientName} ($maskedRecipientPhone) | Điểm giao: ${order.dropoffAddress}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '• Tài xế phụ trách: ${order.assignedDriverName ?? "Đang tìm tài xế"} • Biển số: ${order.assignedDriverPlate ?? "---"} • SĐT: $maskedDriverPhone',
-                  style: const TextStyle(fontSize: 12),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '• Thu hộ COD: ${CurrencyFormatter.formatVnd(order.codAmount)} • Tổng cước: ${CurrencyFormatter.formatVnd(order.totalAmount)} (${order.paymentMethod})',
-                  style: const TextStyle(fontSize: 12),
-                ),
-              ],
+          Text(
+            'Tạo lúc: ${cloudDate(data['created_at'])} · Cập nhật: ${cloudDate(data['updated_at'])}',
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
             ),
           ),
-          const SizedBox(height: 12),
-          FutureBuilder<List<Map<String, dynamic>>>(
-            future: _store.orderStopsFor(order.id),
-            builder: (context, snapshot) {
-              final stops = snapshot.data ?? const [];
-              if (stops.length <= 2) return const SizedBox.shrink();
-              return Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: AppColors.ink),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'TIẾN ĐỘ LỘ TRÌNH ĐA ĐIỂM DỪNG (${stops.length} TRẠM)',
+          const Divider(height: 24),
+          const Text(
+            'NHẬT KÝ HÀNH TRÌNH XÁC THỰC CLOUD',
+            style: TextStyle(
+              fontWeight: FontWeight.w900,
+              fontSize: 12,
+              color: AppColors.ink,
+            ),
+          ),
+          const SizedBox(height: 8),
+          if (timeline.isEmpty)
+            const Text('Chưa có mốc cập nhật hành trình.'),
+          for (final item in timeline)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.check_circle_outline,
+                    size: 16,
+                    color: AppColors.violet,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '${cloudActions[item['action']] ?? item['action']} — ${cloudStatuses[item['status']] ?? item['status']}',
                       style: const TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 12,
-                        color: AppColors.violet,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    ...stops.map((st) {
-                      final seq = (st['sequence_no'] as num?)?.toInt() ?? 0;
-                      final stopType = (st['stop_type'] ?? 'DROPOFF').toString();
-                      final isDone =
-                          (st['status'] ?? '').toString() == 'COMPLETED' ||
-                          isDelivered;
-                      final rawPhone = (st['recipient_phone'] ?? '').toString();
-                      final maskedStopPhone = rawPhone.isEmpty
-                          ? ''
-                          : SecurityAndBarcodeUtils.maskPhoneNumber(
-                              rawPhone,
-                              shouldMask: true,
-                            );
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 6),
-                        child: Row(
-                          children: [
-                            Icon(
-                              isDone
-                                  ? Icons.check_circle_rounded
-                                  : Icons.radio_button_unchecked_rounded,
-                              size: 16,
-                              color: isDone
-                                  ? AppColors.success
-                                  : AppColors.textSecondary,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                '[Trạm ${seq + 1} - $stopType] ${st['address']}'
-                                '${maskedStopPhone.isNotEmpty ? " • $maskedStopPhone" : ""}',
-                                style: TextStyle(
-                                  fontSize: 11.5,
-                                  fontWeight: isDone
-                                      ? FontWeight.w700
-                                      : FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              color: isDone
-                                  ? const Color(0xFFDCFCE7)
-                                  : const Color(0xFFF1F5F9),
-                              child: Text(
-                                isDone ? 'ĐÃ XONG' : 'ĐANG CHỜ',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w800,
-                                  color: isDone
-                                      ? const Color(0xFF166534)
-                                      : AppColors.textSecondary,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
-                  ],
-                ),
-              );
-            },
-          ),
+                  ),
+                  Text(
+                    cloudDate(item['created_at']),
+                    style: const TextStyle(
+                      fontSize: 11.5,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildPublicFeatureBadge({
-    required IconData icon,
-    required String label,
-    required Color bg,
-    required Color fg,
-  }) {
+  Widget _buildShareDetail(Map<String, dynamic> data) {
+    const marketStates = {
+      'pending': 'Chờ cửa hàng xác nhận',
+      'accepted': 'Đang chuẩn bị',
+      'ready': 'Đang vận chuyển',
+      'cancelled': 'Đã hủy',
+    };
+    final statusLabel =
+        cloudStatuses[data['delivery_status']] ??
+        cloudStatuses[data['state']] ??
+        marketStates[data['state']] ??
+        'Đang cập nhật';
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: bg,
-        border: Border.all(color: fg.withValues(alpha: 0.5)),
+        color: Colors.white,
+        border: Border.all(color: AppColors.ink, width: 1.5),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 14, color: fg),
-          const SizedBox(width: 4),
           Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-              color: fg,
+            '${data['shop_name'] ?? 'GHST Express'}',
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+              color: AppColors.violet,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Trạng thái: $statusLabel',
+            style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Cập nhật: ${cloudDate(data['updated_at'])} · Hết hạn liên kết: ${cloudDate(data['expires_at'])}',
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
             ),
           ),
         ],

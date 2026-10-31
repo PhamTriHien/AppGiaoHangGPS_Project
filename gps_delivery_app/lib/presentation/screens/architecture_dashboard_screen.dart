@@ -13,11 +13,9 @@ import '../bloc/system_architecture_cubit.dart';
 import '../customer/customer_subsystem_views.dart';
 import '../driver/driver_subsystem_views.dart';
 import '../merchant/merchant_subsystem_views.dart';
-import 'public_order_tracking_screen.dart';
-import '../widgets/animated_3d_ui_icons.dart';
 import '../widgets/in_app_google_oauth_dialog.dart';
 import '../widgets/studio_design_widgets.dart';
-import '../widgets/system_state_screens.dart';
+import '../widgets/studio_user_auth_frame.dart';
 
 class ArchitectureDashboardScreen extends StatefulWidget {
   const ArchitectureDashboardScreen({super.key});
@@ -28,8 +26,7 @@ class ArchitectureDashboardScreen extends StatefulWidget {
 }
 
 class _ArchitectureDashboardScreenState
-    extends State<ArchitectureDashboardScreen>
-    with SingleTickerProviderStateMixin {
+    extends State<ArchitectureDashboardScreen> {
   final AppStateStore _store = AppStateStore.instance;
   final TextEditingController _phoneCtrl = TextEditingController();
   final TextEditingController _emailCtrl = TextEditingController();
@@ -38,11 +35,6 @@ class _ArchitectureDashboardScreenState
   final TextEditingController _newPasswordCtrl = TextEditingController();
   final TextEditingController _otpCtrl = TextEditingController();
 
-  late final AnimationController _login3dController;
-  final ValueNotifier<Offset> _parallaxNotifier = ValueNotifier<Offset>(
-    Offset.zero,
-  );
-  late final Listenable _bg3dListenable;
   Timer? _otpCountdownTimer;
 
   bool _showStartup3dSplash = false;
@@ -67,40 +59,12 @@ class _ArchitectureDashboardScreenState
   void initState() {
     super.initState();
     _showStartup3dSplash = false;
-    _login3dController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 9000),
-      value: 0.35,
-    );
-    _bg3dListenable = Listenable.merge([_login3dController, _parallaxNotifier]);
     if (!_isAutomatedTestBinding) {
-      _syncAmbientControllerForAuthState();
       unawaited(
         _store.startRealTimeDeviceGpsTracking(forcePromptPermission: true),
       );
-      unawaited(
-        MeshyScooter3dMesh.instance.ensureLoaded(
-          onReady: () {
-            if (mounted && !_isLoggedIn) setState(() {});
-          },
-        ),
-      );
     }
     _store.addListener(_onStoreUpdated);
-  }
-
-  void _syncAmbientControllerForAuthState() {
-    if (_isAutomatedTestBinding) return;
-    final shouldAnimateLoginBg = !_isLoggedIn && !_showStartup3dSplash;
-    if (shouldAnimateLoginBg) {
-      if (!_login3dController.isAnimating) {
-        _login3dController.repeat();
-      }
-    } else {
-      if (_login3dController.isAnimating) {
-        _login3dController.stop();
-      }
-    }
   }
 
   void _onStoreUpdated() {
@@ -165,8 +129,6 @@ class _ArchitectureDashboardScreenState
     _otpCountdownTimer?.cancel();
     RealAuthDeliveryService.instance.stopGoogleOAuthServer();
     RealAuthDeliveryService.instance.stopMobileQrAuthServer();
-    _login3dController.dispose();
-    _parallaxNotifier.dispose();
     _store.removeListener(_onStoreUpdated);
     _phoneCtrl.dispose();
     _emailCtrl.dispose();
@@ -220,7 +182,7 @@ class _ArchitectureDashboardScreenState
     }
     final canDeliverExternal2fa =
         EnvConfig.isExternalSmsGatewayConfigured ||
-        (EnvConfig.isSmtpConfigured &&
+        (EnvConfig.isEmailOtpConfigured &&
             authenticated.email.contains('@') &&
             !authenticated.email.endsWith('@giaohanggps.vn')) ||
         _isAutomatedTestBinding;
@@ -364,7 +326,7 @@ class _ArchitectureDashboardScreenState
         registerEmail.contains('@')) {
       if (EnvConfig.isExternalSmsGatewayConfigured) {
         deliveryDestination = rawInput;
-        if (!_isAutomatedTestBinding && EnvConfig.isSmtpConfigured) {
+        if (!_isAutomatedTestBinding && EnvConfig.isEmailOtpConfigured) {
           RealAuthDeliveryService.instance.deliverOtpChallenge(
             destination: registerEmail,
             otpCode: otp,
@@ -526,7 +488,7 @@ class _ArchitectureDashboardScreenState
   ) async {
     if (!EnvConfig.isGoogleOAuthConfigured) {
       setState(() {
-        _authErrorMessage = 'Chưa cấu hình GOOGLE_CLIENT_ID & GOOGLE_CLIENT_SECRET trong EnvConfig để xác thực với máy chủ Google OAuth 2.0.';
+        _authErrorMessage = 'Đăng nhập Google chưa được cấu hình trên thiết bị này. Vui lòng liên hệ quản trị viên.';
       });
       return;
     }
@@ -628,7 +590,6 @@ class _ArchitectureDashboardScreenState
 
   @override
   Widget build(BuildContext context) {
-    _syncAmbientControllerForAuthState();
     if (_showStartup3dSplash) {
       return Studio3dStartupSplashScreen(
         onCompleted: () {
@@ -785,319 +746,202 @@ class _ArchitectureDashboardScreenState
     );
   }
 
-  void _updateLoginParallax(Offset pos, Size screenSize) {
-    if (screenSize.width <= 0 || screenSize.height <= 0) return;
-    final nx = ((pos.dx - screenSize.width / 2) / (screenSize.width / 2)).clamp(
-      -1.0,
-      1.0,
-    );
-    final ny = ((pos.dy - screenSize.height / 2) / (screenSize.height / 2))
-        .clamp(-1.0, 1.0);
-    final prev = _parallaxNotifier.value;
-    if ((nx - prev.dx).abs() < 0.02 && (ny - prev.dy).abs() < 0.02) {
-      return;
-    }
-    _parallaxNotifier.value = Offset(nx, ny);
-  }
-
   Widget _buildUc01LoginRegisterScreen(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.techBg,
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final screenSize = Size(constraints.maxWidth, constraints.maxHeight);
-          return MouseRegion(
-            onHover: (e) => _updateLoginParallax(e.localPosition, screenSize),
-            onExit: (_) => _parallaxNotifier.value = Offset.zero,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: RepaintBoundary(
-                      child: AnimatedBuilder(
-                        animation: _bg3dListenable,
-                        builder: (context, _) {
-                          final p = _parallaxNotifier.value;
-                          return CustomPaint(
-                            painter: Studio3dLoginAmbientMapPainter(
-                              phase: _login3dController.value,
-                              parallaxX: p.dx,
-                              parallaxY: p.dy,
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-                SafeArea(
-                  child: Center(
-                    child: SingleChildScrollView(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: (constraints.maxWidth * 0.04).clamp(
-                          12.0,
-                          32.0,
-                        ),
-                        vertical: (constraints.maxHeight * 0.03).clamp(
-                          16.0,
-                          32.0,
-                        ),
-                      ),
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxWidth: (constraints.maxWidth * 0.88).clamp(
-                            300.0,
-                            480.0,
-                          ),
-                        ),
-                        child: _buildNeoBrutalistAuthCard(
-                          context,
-                          isCompact: constraints.maxWidth < 400,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
+    return StudioUserAuthFrame(child: _buildNeoBrutalistAuthCard(context));
   }
 
-  Widget _buildNeoBrutalistAuthCard(
-    BuildContext context, {
-    bool isCompact = false,
-  }) {
-    return ValueListenableBuilder<Offset>(
-      valueListenable: _parallaxNotifier,
-      builder: (context, parallax, child) {
-        final shadowShiftX = -parallax.dx * 4.0;
-        final shadowShiftY = -parallax.dy * 4.0;
-
-        return Container(
-          padding: EdgeInsets.fromLTRB(
-            isCompact ? 18 : 28,
-            24,
-            isCompact ? 18 : 28,
-            26,
-          ),
+  Widget _buildNeoBrutalistAuthCard(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const StudioUserAuthBrand(),
+        const SizedBox(height: 12),
+        Container(
           decoration: BoxDecoration(
-            color: AppColors.paper,
-            border: Border.all(color: AppColors.ink, width: 2.0),
-            boxShadow: [
-              const BoxShadow(
-                color: AppColors.ink,
-                offset: Offset(5, 5),
-                blurRadius: 0,
-              ),
-              BoxShadow(
-                color: AppColors.violet,
-                offset: Offset(11 + shadowShiftX, 11 + shadowShiftY),
-                blurRadius: 0,
-              ),
-              BoxShadow(
-                color: AppColors.acid.withValues(alpha: 0.45),
-                offset: Offset(
-                  16 + shadowShiftX * 1.4,
-                  16 + shadowShiftY * 1.4,
+            color: Colors.white,
+            border: Border.all(color: AppColors.ink, width: 1.5),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => _switchAuthView(),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    color: !_isRegisterMode
+                        ? AppColors.violet
+                        : Colors.transparent,
+                    alignment: Alignment.center,
+                    child: Text(
+                      'Đăng nhập',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                        color: !_isRegisterMode ? Colors.white : AppColors.ink,
+                      ),
+                    ),
+                  ),
                 ),
-                blurRadius: 0,
+              ),
+              Container(width: 1.5, height: 38, color: AppColors.ink),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => _switchAuthView(register: true),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    color: _isRegisterMode
+                        ? AppColors.violet
+                        : Colors.transparent,
+                    alignment: Alignment.center,
+                    child: Text(
+                      'Đăng ký tài khoản',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                        color: _isRegisterMode ? Colors.white : AppColors.ink,
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
-          child: child,
-        );
-      },
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Animated3dIconBadge(
-            style: Icon3dStyle.scooterExpress,
-            size: 76,
-            showRadarPulse: true,
+        ),
+        const SizedBox(height: 14),
+        Text(
+          _isRegisterMode
+              ? 'Tạo tài khoản mới'
+              : (_isForgotPasswordMode
+                    ? 'Khôi phục mật khẩu bằng OTP'
+                    : 'Đăng nhập hệ thống'),
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 21,
+            fontWeight: FontWeight.w900,
+            color: AppColors.ink,
+            letterSpacing: -0.6,
           ),
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-            decoration: BoxDecoration(
-              color: AppColors.acid,
-              border: Border.all(color: AppColors.ink, width: 1.2),
-            ),
-            child: const Text(
-              'GHST • GIAO HÀNG SIÊU TỐC',
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w900,
-                color: AppColors.ink,
-                fontFamily: 'Consolas',
-                letterSpacing: 1.1,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          _isRegisterMode
+              ? 'Nhập Số điện thoại, Họ tên và Mật khẩu để tạo tài khoản'
+              : (_isForgotPasswordMode
+                    ? 'Nhập Số điện thoại hoặc Email để nhận mã OTP đặt lại mật khẩu'
+                    : (_usePasswordLogin
+                          ? 'Nhập Số điện thoại / Email và mật khẩu đã đăng ký'
+                          : 'Nhập Số điện thoại hoặc Email để nhận mã xác thực OTP')),
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 12,
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 14),
+        if (!_isRegisterMode) ...[
+          Row(
+            children: [
+              Expanded(
+                child: ChoiceChip(
+                  label: const SizedBox(
+                    width: double.infinity,
+                    child: Text(
+                      'Mã OTP',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.ink,
+                      ),
+                    ),
+                  ),
+                  selected: !_usePasswordLogin && !_isForgotPasswordMode,
+                  selectedColor: AppColors.acid,
+                  onSelected: (_) => setState(() {
+                    _usePasswordLogin = false;
+                    _isForgotPasswordMode = false;
+                    _authErrorMessage = null;
+                  }),
+                ),
               ),
-            ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ChoiceChip(
+                  label: const SizedBox(
+                    width: double.infinity,
+                    child: Text(
+                      'Mật khẩu',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.ink,
+                      ),
+                    ),
+                  ),
+                  selected: _usePasswordLogin && !_isForgotPasswordMode,
+                  selectedColor: AppColors.acid,
+                  onSelected: (_) => setState(() {
+                    _usePasswordLogin = true;
+                    _isForgotPasswordMode = false;
+                    _otpSent = false;
+                    _authErrorMessage = null;
+                  }),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: AppColors.ink, width: 1.5),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => _switchAuthView(),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      color: !_isRegisterMode
-                          ? AppColors.violet
-                          : Colors.transparent,
-                      alignment: Alignment.center,
-                      child: Text(
-                        'Đăng nhập',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w900,
-                          color: !_isRegisterMode
-                              ? Colors.white
-                              : AppColors.ink,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                Container(width: 1.5, height: 38, color: AppColors.ink),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => _switchAuthView(register: true),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      color: _isRegisterMode
-                          ? AppColors.violet
-                          : Colors.transparent,
-                      alignment: Alignment.center,
-                      child: Text(
-                        'Đăng ký tài khoản',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w900,
-                          color: _isRegisterMode ? Colors.white : AppColors.ink,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-          Text(
-            _isRegisterMode
-                ? 'Tạo tài khoản mới'
-                : (_isForgotPasswordMode
-                      ? 'Khôi phục mật khẩu bằng OTP'
-                      : 'Đăng nhập hệ thống'),
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 21,
-              fontWeight: FontWeight.w900,
-              color: AppColors.ink,
-              letterSpacing: -0.6,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            _isRegisterMode
-                ? 'Nhập Số điện thoại, Họ tên và Mật khẩu để tạo tài khoản'
-                : (_isForgotPasswordMode
-                      ? 'Nhập Số điện thoại hoặc Email để nhận mã OTP đặt lại mật khẩu'
-                      : (_usePasswordLogin
-                            ? 'Nhập Số điện thoại / Email và mật khẩu đã đăng ký'
-                            : 'Nhập Số điện thoại hoặc Email để nhận mã xác thực OTP')),
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 14),
-          if (!_isRegisterMode) ...[
-            Row(
-              children: [
-                Expanded(
-                  child: ChoiceChip(
-                    label: const SizedBox(
-                      width: double.infinity,
-                      child: Text(
-                        'Mã OTP',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.ink,
-                        ),
-                      ),
-                    ),
-                    selected: !_usePasswordLogin && !_isForgotPasswordMode,
-                    selectedColor: AppColors.acid,
-                    onSelected: (_) => setState(() {
-                      _usePasswordLogin = false;
-                      _isForgotPasswordMode = false;
-                      _authErrorMessage = null;
-                    }),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ChoiceChip(
-                    label: const SizedBox(
-                      width: double.infinity,
-                      child: Text(
-                        'Mật khẩu',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.ink,
-                        ),
-                      ),
-                    ),
-                    selected: _usePasswordLogin && !_isForgotPasswordMode,
-                    selectedColor: AppColors.acid,
-                    onSelected: (_) => setState(() {
-                      _usePasswordLogin = true;
-                      _isForgotPasswordMode = false;
-                      _otpSent = false;
-                      _authErrorMessage = null;
-                    }),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-          ],
-          if (_isRegisterMode) ...[
-            TextField(
-              controller: _fullNameCtrl,
-              onChanged: (_) => setState(() => _authErrorMessage = null),
-              decoration: const InputDecoration(
-                hintText: 'Ví dụ: Nguyễn Văn A',
-                labelText: 'Họ và tên',
-                prefixIcon: Icon(
-                  Icons.person_outline_rounded,
-                  color: AppColors.violet,
-                ),
+        ],
+        if (_isRegisterMode) ...[
+          TextField(
+            controller: _fullNameCtrl,
+            onChanged: (_) => setState(() => _authErrorMessage = null),
+            decoration: const InputDecoration(
+              hintText: 'Ví dụ: Nguyễn Văn A',
+              labelText: 'Họ và tên',
+              prefixIcon: Icon(
+                Icons.person_outline_rounded,
+                color: AppColors.violet,
               ),
             ),
-            const SizedBox(height: 10),
-          ],
+          ),
+          const SizedBox(height: 10),
+        ],
+        TextField(
+          controller: _phoneCtrl,
+          keyboardType: _isRegisterMode
+              ? TextInputType.phone
+              : TextInputType.emailAddress,
+          onChanged: (_) {
+            setState(() {
+              _authErrorMessage = null;
+              if (_otpSent) {
+                _otpSent = false;
+              }
+            });
+          },
+          decoration: InputDecoration(
+            hintText: _isRegisterMode
+                ? 'Ví dụ: 0912345678'
+                : 'Nhập SĐT (0912...) hoặc Email',
+            labelText: _isRegisterMode
+                ? 'Số điện thoại'
+                : 'Số điện thoại hoặc Email',
+            prefixIcon: Icon(
+              _phoneCtrl.text.contains('@')
+                  ? Icons.alternate_email_rounded
+                  : Icons.phone_iphone_rounded,
+              color: AppColors.violet,
+            ),
+          ),
+        ),
+        if (_isRegisterMode) ...[
+          const SizedBox(height: 10),
           TextField(
-            controller: _phoneCtrl,
-            keyboardType: _isRegisterMode
-                ? TextInputType.phone
-                : TextInputType.emailAddress,
+            controller: _emailCtrl,
+            keyboardType: TextInputType.emailAddress,
             onChanged: (_) {
               setState(() {
                 _authErrorMessage = null;
@@ -1106,359 +950,328 @@ class _ArchitectureDashboardScreenState
                 }
               });
             },
+            decoration: const InputDecoration(
+              hintText: 'Không bắt buộc (Ví dụ: ban@gmail.com)',
+              labelText: 'Địa chỉ Email (Tùy chọn)',
+              prefixIcon: Icon(Icons.email_outlined, color: AppColors.violet),
+            ),
+          ),
+        ],
+        if (_isRegisterMode || _usePasswordLogin) ...[
+          const SizedBox(height: 10),
+          TextField(
+            controller: _passwordCtrl,
+            obscureText: _obscurePassword,
+            onChanged: (_) => setState(() => _authErrorMessage = null),
             decoration: InputDecoration(
-              hintText: _isRegisterMode
-                  ? 'Ví dụ: 0912345678'
-                  : 'Nhập SĐT (0912...) hoặc Email',
+              hintText: 'Tối thiểu 6 ký tự',
               labelText: _isRegisterMode
-                  ? 'Số điện thoại'
-                  : 'Số điện thoại hoặc Email',
-              prefixIcon: Icon(
-                _phoneCtrl.text.contains('@')
-                    ? Icons.alternate_email_rounded
-                    : Icons.phone_iphone_rounded,
+                  ? 'Tạo mật khẩu đăng nhập'
+                  : 'Mật khẩu',
+              prefixIcon: const Icon(
+                Icons.lock_outline_rounded,
                 color: AppColors.violet,
               ),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscurePassword
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
+                  size: 18,
+                  color: AppColors.textSecondary,
+                ),
+                onPressed: () =>
+                    setState(() => _obscurePassword = !_obscurePassword),
+              ),
             ),
           ),
-          if (_isRegisterMode) ...[
-            const SizedBox(height: 10),
-            TextField(
-              controller: _emailCtrl,
-              keyboardType: TextInputType.emailAddress,
-              onChanged: (_) {
-                setState(() {
-                  _authErrorMessage = null;
-                  if (_otpSent) {
-                    _otpSent = false;
-                  }
-                });
-              },
-              decoration: const InputDecoration(
-                hintText: 'Không bắt buộc (Ví dụ: ban@gmail.com)',
-                labelText: 'Địa chỉ Email (Tùy chọn)',
-                prefixIcon: Icon(Icons.email_outlined, color: AppColors.violet),
-              ),
-            ),
-          ],
-          if (_isRegisterMode || _usePasswordLogin) ...[
-            const SizedBox(height: 10),
-            TextField(
-              controller: _passwordCtrl,
-              obscureText: _obscurePassword,
-              onChanged: (_) => setState(() => _authErrorMessage = null),
-              decoration: InputDecoration(
-                hintText: 'Tối thiểu 6 ký tự',
-                labelText: _isRegisterMode
-                    ? 'Tạo mật khẩu đăng nhập'
-                    : 'Mật khẩu',
-                prefixIcon: const Icon(
-                  Icons.lock_outline_rounded,
-                  color: AppColors.violet,
-                ),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscurePassword
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
-                    size: 18,
-                    color: AppColors.textSecondary,
-                  ),
-                  onPressed: () =>
-                      setState(() => _obscurePassword = !_obscurePassword),
-                ),
-              ),
-            ),
-          ],
-          if (!_isRegisterMode && _usePasswordLogin) ...[
-            const SizedBox(height: 6),
-            Align(
-              alignment: Alignment.centerRight,
-              child: GestureDetector(
-                onTap: () => setState(() {
-                  _isForgotPasswordMode = true;
-                  _usePasswordLogin = false;
-                  _otpSent = false;
-                  _authErrorMessage = null;
-                }),
-                child: const Text(
-                  'Quên mật khẩu? Lấy mã OTP qua SĐT / Email',
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.violet,
-                    decoration: TextDecoration.underline,
-                  ),
-                ),
-              ),
-            ),
-          ],
-          if (_otpSent && !_usePasswordLogin) ...[
-            const SizedBox(height: 10),
-            Builder(
-              builder: (context) {
-                final remainSec = _store.getRemainingOtpSeconds(
-                  _phoneCtrl.text,
-                );
-                final isEmailChannel = _lastOtpReceipt != null
-                    ? (_lastOtpReceipt!.channel == 'EMAIL_SMTP' ||
-                          _lastOtpReceipt!.channel == 'SMTP_TLS')
-                    : _phoneCtrl.text.trim().contains('@');
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 7,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.acid.withValues(alpha: 0.35),
-                        border: Border.all(color: AppColors.ink, width: 1.0),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                isEmailChannel
-                                    ? Icons.mark_email_read_outlined
-                                    : Icons.sms_outlined,
-                                size: 15,
-                                color: AppColors.ink,
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  _isDeliveringOtp
-                                      ? 'Đang gửi mã xác thực OTP thật...'
-                                      : (_lastOtpReceipt?.message ??
-                                            'Mã xác thực OTP đã được gửi đi.'),
-                                  style: const TextStyle(
-                                    fontSize: 11.0,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.ink,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 5),
-                          Wrap(
-                            spacing: 10,
-                            runSpacing: 4,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
-                                ),
-                                color: remainSec > 0
-                                    ? AppColors.ink
-                                    : AppColors.danger,
-                                child: Text(
-                                  remainSec > 0
-                                      ? 'Hiệu lực: ${remainSec}s'
-                                      : 'Đã hết hạn (0s)',
-                                  style: const TextStyle(
-                                    fontSize: 10.5,
-                                    fontWeight: FontWeight.w900,
-                                    color: Colors.white,
-                                    fontFamily: 'Consolas',
-                                  ),
-                                ),
-                              ),
-                              GestureDetector(
-                                onTap: _handleSendOtp,
-                                child: const Text(
-                                  'Gửi lại mã',
-                                  style: TextStyle(
-                                    fontSize: 11.2,
-                                    fontWeight: FontWeight.w900,
-                                    color: AppColors.violet,
-                                    decoration: TextDecoration.underline,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _otpCtrl,
-              keyboardType: TextInputType.number,
-              maxLength: 6,
-              decoration: const InputDecoration(
-                hintText: 'Nhập 6 chữ số',
-                labelText: 'Mã xác thực OTP (6 chữ số)',
-                counterText: '',
-                prefixIcon: Icon(
-                  Icons.verified_user_outlined,
-                  color: AppColors.ink,
-                ),
-              ),
-            ),
-            if (_isForgotPasswordMode) ...[
-              const SizedBox(height: 10),
-              TextField(
-                controller: _newPasswordCtrl,
-                obscureText: _obscurePassword,
-                onChanged: (_) => setState(() => _authErrorMessage = null),
-                decoration: const InputDecoration(
-                  hintText: 'Tối thiểu 6 ký tự',
-                  labelText: 'Mật khẩu mới',
-                  prefixIcon: Icon(
-                    Icons.lock_reset_rounded,
-                    color: AppColors.violet,
-                  ),
-                ),
-              ),
-            ],
-          ],
-          if (_authErrorMessage != null) ...[
-            const SizedBox(height: 8),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppColors.gold,
-                border: Border.all(color: AppColors.ink, width: 1.2),
-              ),
-              child: Text(
-                _authErrorMessage!,
-                style: const TextStyle(
-                  color: AppColors.ink,
-                  fontSize: 12,
+        ],
+        if (!_isRegisterMode && _usePasswordLogin) ...[
+          const SizedBox(height: 6),
+          Align(
+            alignment: Alignment.centerRight,
+            child: GestureDetector(
+              onTap: () => setState(() {
+                _isForgotPasswordMode = true;
+                _usePasswordLogin = false;
+                _otpSent = false;
+                _authErrorMessage = null;
+              }),
+              child: const Text(
+                'Quên mật khẩu? Lấy mã OTP qua SĐT / Email',
+                style: TextStyle(
+                  fontSize: 11.5,
                   fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-          ],
-          const SizedBox(height: 14),
-          Container(
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.ink,
-                  offset: Offset(5, 5),
-                  blurRadius: 0,
-                ),
-              ],
-            ),
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.violet,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 15),
-                elevation: 0,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.zero,
-                  side: BorderSide(color: AppColors.ink, width: 1.5),
-                ),
-              ),
-              onPressed: () {
-                if (!_isRegisterMode &&
-                    _usePasswordLogin &&
-                    !_isForgotPasswordMode) {
-                  _handlePasswordLogin(context);
-                } else if (!_otpSent) {
-                  _handleSendOtp();
-                } else {
-                  _handleVerifyOtpAndAuthenticate(context);
-                }
-              },
-              child: Text(
-                ((!_isRegisterMode &&
-                        _usePasswordLogin &&
-                        !_isForgotPasswordMode)
-                    ? 'Đăng nhập'
-                    : (_otpSent
-                          ? (_isRegisterMode
-                                ? 'Xác nhận OTP & Tạo tài khoản'
-                                : (_isForgotPasswordMode
-                                      ? 'Đổi mật khẩu & Đăng nhập'
-                                      : 'Xác nhận OTP & Đăng nhập'))
-                          : (_isRegisterMode &&
-                                    _emailCtrl.text.trim().isEmpty &&
-                                    !EnvConfig.isExternalSmsGatewayConfigured &&
-                                    !_isAutomatedTestBinding
-                                ? 'Tạo tài khoản'
-                                : 'Gửi mã OTP'))),
-                style: const TextStyle(
-                  fontSize: 15.5,
-                  fontWeight: FontWeight.w900,
+                  color: AppColors.violet,
+                  decoration: TextDecoration.underline,
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 16),
-          const Row(
-            children: [
-              Expanded(child: Divider(color: AppColors.line)),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12),
-                child: Text(
-                  'hoặc',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    fontFamily: 'Consolas',
-                  ),
-                ),
-              ),
-              Expanded(child: Divider(color: AppColors.line)),
-            ],
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.ink,
-                backgroundColor: AppColors.acid.withValues(alpha: 0.45),
-                side: const BorderSide(color: AppColors.ink, width: 1.5),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.zero,
-                ),
-              ),
-              onPressed: () => _showMobileQrPhoneAuthDialog(context),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+        ],
+        if (_otpSent && !_usePasswordLogin) ...[
+          const SizedBox(height: 10),
+          Builder(
+            builder: (context) {
+              final remainSec = _store.getRemainingOtpSeconds(_phoneCtrl.text);
+              final isEmailChannel = _lastOtpReceipt != null
+                  ? (_lastOtpReceipt!.channel == 'EMAIL_SMTP' ||
+                        _lastOtpReceipt!.channel == 'SMTP_TLS')
+                  : _phoneCtrl.text.trim().contains('@');
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Icon(
-                    Icons.qr_code_scanner_rounded,
-                    size: 18,
-                    color: AppColors.ink,
-                  ),
-                  SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      'Đăng nhập bằng mã QR',
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 13.0,
-                        color: AppColors.ink,
-                      ),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 7,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.acid.withValues(alpha: 0.35),
+                      border: Border.all(color: AppColors.ink, width: 1.0),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              isEmailChannel
+                                  ? Icons.mark_email_read_outlined
+                                  : Icons.sms_outlined,
+                              size: 15,
+                              color: AppColors.ink,
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                _isDeliveringOtp
+                                    ? 'Đang gửi mã xác thực OTP thật...'
+                                    : (_lastOtpReceipt?.message ??
+                                          'Mã xác thực OTP đã được gửi đi.'),
+                                style: const TextStyle(
+                                  fontSize: 11.0,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.ink,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 5),
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 4,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              color: remainSec > 0
+                                  ? AppColors.ink
+                                  : AppColors.danger,
+                              child: Text(
+                                remainSec > 0
+                                    ? 'Hiệu lực: ${remainSec}s'
+                                    : 'Đã hết hạn (0s)',
+                                style: const TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
+                                  fontFamily: 'Consolas',
+                                ),
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: _handleSendOtp,
+                              child: const Text(
+                                'Gửi lại mã',
+                                style: TextStyle(
+                                  fontSize: 11.2,
+                                  fontWeight: FontWeight.w900,
+                                  color: AppColors.violet,
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                 ],
+              );
+            },
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _otpCtrl,
+            keyboardType: TextInputType.number,
+            maxLength: 6,
+            decoration: const InputDecoration(
+              hintText: 'Nhập 6 chữ số',
+              labelText: 'Mã xác thực OTP (6 chữ số)',
+              counterText: '',
+              prefixIcon: Icon(
+                Icons.verified_user_outlined,
+                color: AppColors.ink,
               ),
             ),
           ),
+          if (_isForgotPasswordMode) ...[
+            const SizedBox(height: 10),
+            TextField(
+              controller: _newPasswordCtrl,
+              obscureText: _obscurePassword,
+              onChanged: (_) => setState(() => _authErrorMessage = null),
+              decoration: const InputDecoration(
+                hintText: 'Tối thiểu 6 ký tự',
+                labelText: 'Mật khẩu mới',
+                prefixIcon: Icon(
+                  Icons.lock_reset_rounded,
+                  color: AppColors.violet,
+                ),
+              ),
+            ),
+          ],
+        ],
+        if (_authErrorMessage != null) ...[
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.gold,
+              border: Border.all(color: AppColors.ink, width: 1.2),
+            ),
+            child: Text(
+              _authErrorMessage!,
+              style: const TextStyle(
+                color: AppColors.ink,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+        const SizedBox(height: 14),
+        Container(
+          width: double.infinity,
+          decoration: const BoxDecoration(
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.ink,
+                offset: Offset(5, 5),
+                blurRadius: 0,
+              ),
+            ],
+          ),
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.violet,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 15),
+              elevation: 0,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.zero,
+                side: BorderSide(color: AppColors.ink, width: 1.5),
+              ),
+            ),
+            onPressed: () {
+              if (!_isRegisterMode &&
+                  _usePasswordLogin &&
+                  !_isForgotPasswordMode) {
+                _handlePasswordLogin(context);
+              } else if (!_otpSent) {
+                _handleSendOtp();
+              } else {
+                _handleVerifyOtpAndAuthenticate(context);
+              }
+            },
+            child: Text(
+              ((!_isRegisterMode && _usePasswordLogin && !_isForgotPasswordMode)
+                  ? 'Đăng nhập'
+                  : (_otpSent
+                        ? (_isRegisterMode
+                              ? 'Xác nhận OTP & Tạo tài khoản'
+                              : (_isForgotPasswordMode
+                                    ? 'Đổi mật khẩu & Đăng nhập'
+                                    : 'Xác nhận OTP & Đăng nhập'))
+                        : (_isRegisterMode &&
+                                  _emailCtrl.text.trim().isEmpty &&
+                                  !EnvConfig.isExternalSmsGatewayConfigured &&
+                                  !_isAutomatedTestBinding
+                              ? 'Tạo tài khoản'
+                              : 'Gửi mã OTP'))),
+              style: const TextStyle(
+                fontSize: 15.5,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        const Row(
+          children: [
+            Expanded(child: Divider(color: AppColors.line)),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 12),
+              child: Text(
+                'hoặc',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  fontFamily: 'Consolas',
+                ),
+              ),
+            ),
+            Expanded(child: Divider(color: AppColors.line)),
+          ],
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.ink,
+              backgroundColor: AppColors.acid.withValues(alpha: 0.45),
+              side: const BorderSide(color: AppColors.ink, width: 1.5),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.zero,
+              ),
+            ),
+            onPressed: () => _showMobileQrPhoneAuthDialog(context),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.qr_code_scanner_rounded,
+                  size: 18,
+                  color: AppColors.ink,
+                ),
+                SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    'Đăng nhập bằng mã QR',
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 13.0,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (EnvConfig.isGoogleOAuthConfigured) ...[
           const SizedBox(height: 8),
           SizedBox(
             width: double.infinity,
@@ -1500,56 +1313,20 @@ class _ArchitectureDashboardScreenState
               ),
             ),
           ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.ink,
-                backgroundColor: const Color(0xFFECFDF5),
-                side: const BorderSide(color: AppColors.ink, width: 1.4),
-                padding: const EdgeInsets.symmetric(vertical: 11),
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.zero,
-                ),
-              ),
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const PublicOrderTrackingScreen(),
-                  ),
-                );
-              },
-              icon: const Icon(
-                Icons.share_location_rounded,
-                size: 17,
-                color: AppColors.success,
-              ),
-              label: const Text(
-                'Tra cứu vận đơn công khai (/track)',
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 12.5,
-                  color: AppColors.ink,
-                ),
-              ),
+        ],
+        if (_isRegisterMode) ...[
+          const SizedBox(height: 12),
+          const Text(
+            'Bạn muốn trở thành Đối tác Tài xế hoặc Cửa hàng? Hãy đăng ký tài khoản rồi gửi hồ sơ tại mục Cá nhân.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 11.2,
+              fontWeight: FontWeight.w600,
             ),
           ),
-          if (_isRegisterMode) ...[
-            const SizedBox(height: 12),
-            const Text(
-              'Bạn muốn trở thành Đối tác Tài xế hoặc Cửa hàng? Hãy đăng ký tài khoản rồi gửi hồ sơ tại mục Cá nhân.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 11.2,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
         ],
-      ),
+      ],
     );
   }
 
@@ -1755,7 +1532,7 @@ class _ArchitectureDashboardScreenState
                 final needs2fa =
                     _store.isUserTwoFactorEnabled(user.phone) &&
                     (EnvConfig.isExternalSmsGatewayConfigured ||
-                        (EnvConfig.isSmtpConfigured &&
+                        (EnvConfig.isEmailOtpConfigured &&
                             user.email.contains('@') &&
                             !user.email.endsWith('@giaohanggps.vn')));
                 if (needs2fa) {

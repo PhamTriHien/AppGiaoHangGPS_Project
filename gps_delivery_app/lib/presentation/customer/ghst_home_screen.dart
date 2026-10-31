@@ -1,0 +1,680 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+
+import '../../core/integrations/cloud_account_session.dart';
+import '../../core/integrations/cloud_session_lease.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/utils/currency_formatter.dart';
+import '../../domain/entities/geo_point.dart';
+import '../screens/cloud_order_details_screen.dart';
+import '../widgets/cloud_order_labels.dart';
+import '../widgets/cloud_session_boundary.dart';
+import '../widgets/system_state_screens.dart';
+
+/// Original customer home composition, with exclusively session-scoped reads.
+class GhstHomeScreen extends StatefulWidget {
+  const GhstHomeScreen({
+    super.key,
+    required this.session,
+    required this.onCreateOrder,
+    required this.onCatalog,
+    required this.onAddresses,
+    required this.onOrders,
+    required this.onAddressChanged,
+    this.trackingOnly = false,
+  });
+  final CloudAccountSession session;
+  final ValueChanged<Map<String, dynamic>> onCreateOrder;
+  final VoidCallback onCatalog, onAddresses, onOrders;
+  final ValueChanged<String> onAddressChanged;
+  final bool trackingOnly;
+
+  @override
+  State<GhstHomeScreen> createState() => _GhstHomeScreenState();
+}
+
+class _GhstHomeScreenState extends State<GhstHomeScreen> {
+  late final _lease = CloudSessionLease(session: widget.session);
+  final _data = <String, List<Map<String, dynamic>>>{};
+  final _errors = <String>{};
+  final _loading = <String>{};
+  int _generation = 0;
+  String? _trackedId;
+  bool get _allowed => mounted && _lease.valid;
+
+  @override
+  void initState() {
+    super.initState();
+    _lease.addListener(_invalidated);
+    unawaited(_load());
+  }
+
+  void _invalidated() {
+    if (mounted && !_lease.valid) {
+      _generation++;
+      setState(() {
+        _data.clear();
+        _errors.clear();
+        _loading.clear();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _generation++;
+    _lease.removeListener(_invalidated);
+    _lease.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    if (!_allowed) return;
+    final generation = ++_generation;
+    setState(() {
+      _errors.clear();
+      _data.clear();
+      _loading.addAll([
+        'orders',
+        'addresses',
+        if (!widget.trackingOnly) 'catalog',
+      ]);
+    });
+    await Future.wait([
+      _read(
+        'orders',
+        'orders',
+        () => widget.session.service.request('orders'),
+        generation,
+      ),
+      _read(
+        'addresses',
+        'addresses',
+        () => widget.session.service.request('addresses'),
+        generation,
+      ),
+      if (!widget.trackingOnly)
+        _read(
+          'catalog',
+          'products',
+          () => widget.session.service.market('catalog'),
+          generation,
+        ),
+    ]);
+  }
+
+  Future<void> _read(
+    String section,
+    String key,
+    Future<Map<String, dynamic>> Function() request,
+    int generation,
+  ) async {
+    try {
+      final response = await request();
+      if (!_allowed || generation != _generation) return;
+      final raw = response[key];
+      if (raw is! List || raw.any((row) => row is! Map)) {
+        throw const FormatException('Invalid home response');
+      }
+      final rows = raw
+          .map((row) => Map<String, dynamic>.from(row as Map))
+          .toList();
+      setState(() {
+        _data[section] = rows;
+        _loading.remove(section);
+      });
+      if (section == 'addresses') {
+        widget.onAddressChanged('${_defaultAddress?['full_address'] ?? ''}');
+      }
+    } catch (error) {
+      if (!_allowed ||
+          generation != _generation ||
+          _lease.handleAccessFailure(error)) {
+        return;
+      }
+      setState(() {
+        _data.remove(section);
+        _loading.remove(section);
+        _errors.add(section);
+      });
+    }
+  }
+
+  Map<String, dynamic>? get _defaultAddress {
+    final addresses = _data['addresses'] ?? const [];
+    return addresses.where((row) => row['is_default'] == true).firstOrNull ??
+        addresses.firstOrNull;
+  }
+
+  GeoPoint? get _savedPoint {
+    final address = _defaultAddress;
+    final lat = address?['latitude'], lng = address?['longitude'];
+    if (lat is! num ||
+        lng is! num ||
+        !lat.isFinite ||
+        !lng.isFinite ||
+        lat.abs() > 90 ||
+        lng.abs() > 180) {
+      return null;
+    }
+    return GeoPoint(latitude: lat.toDouble(), longitude: lng.toDouble());
+  }
+
+  Map<String, dynamic>? get _trackedOrder {
+    if (_trackedId == '') return null;
+    final orders = _data['orders'] ?? const [];
+    return orders.where((row) => row['id'] == _trackedId).firstOrNull ??
+        orders
+            .where(
+              (row) => ![
+                'delivered',
+                'returned',
+                'cancelled',
+              ].contains(row['status']),
+            )
+            .firstOrNull;
+  }
+
+  List<GeoPoint> _route(Map<String, dynamic>? order) {
+    final details = order?['details'];
+    if (details is! Map) return const [];
+    final points = <GeoPoint>[];
+    for (final prefix in ['pickup', 'dropoff']) {
+      final lat = details['${prefix}_lat'], lng = details['${prefix}_lng'];
+      if (lat is! num ||
+          lng is! num ||
+          !lat.isFinite ||
+          !lng.isFinite ||
+          lat.abs() > 90 ||
+          lng.abs() > 180) {
+        return const [];
+      }
+      points.add(GeoPoint(latitude: lat.toDouble(), longitude: lng.toDouble()));
+    }
+    return points;
+  }
+
+  Future<void> _details(Map<String, dynamic> order) async {
+    if (!_allowed) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => CloudSessionBoundary(
+          session: widget.session,
+          builder: (_, lease) =>
+              CloudOrderDetailsScreen(lease: lease, order: order),
+        ),
+      ),
+    );
+    if (_allowed) await _load();
+  }
+
+  Widget _panel(Widget child) => Container(
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      border: Border.all(color: AppColors.ink, width: 1.5),
+      boxShadow: const [BoxShadow(color: AppColors.ink, offset: Offset(3, 3))],
+    ),
+    child: Material(type: MaterialType.transparency, child: child),
+  );
+
+  Widget _heading(String title, {Widget? action}) => Row(
+    children: [
+      Expanded(
+        child: Text(
+          title,
+          style: const TextStyle(
+            fontSize: 13.5,
+            color: AppColors.ink,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0,
+          ),
+        ),
+      ),
+      ?action,
+    ],
+  );
+
+  Widget _readState(String section, String empty) {
+    if (_loading.contains(section)) return const LinearProgressIndicator();
+    if (_errors.contains(section)) {
+      return Row(
+        children: [
+          const Expanded(child: Text('Chưa tải được dữ liệu.')),
+          TextButton.icon(
+            onPressed: _load,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Thử lại'),
+          ),
+        ],
+      );
+    }
+    return Text(
+      empty,
+      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+    );
+  }
+
+  Widget _services() => _panel(
+    Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _heading('Dịch vụ Giao nhận & Ăn uống nhanh'),
+        const SizedBox(height: 10),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final columns = constraints.maxWidth >= 520 ? 3 : 2;
+            final width = (constraints.maxWidth - 10 * (columns - 1)) / columns;
+            final entries = <(String, IconData, Color, VoidCallback?)>[
+              (
+                'Giao nhanh',
+                Icons.bolt_rounded,
+                AppColors.pink,
+                widget.session.canCreateShippingOrder
+                    ? () => widget.onCreateOrder({'service_type': 'express'})
+                    : null,
+              ),
+              (
+                'Ghép đơn 2H',
+                Icons.hub_outlined,
+                const Color(0xFF0EA5E9),
+                widget.session.canCreateShippingOrder
+                    ? () => widget.onCreateOrder({
+                        'service_type': 'same_day_2h',
+                      })
+                    : null,
+              ),
+              (
+                'Tiêu chuẩn',
+                Icons.inventory_2_outlined,
+                AppColors.violet,
+                widget.session.canCreateShippingOrder
+                    ? () => widget.onCreateOrder({'service_type': 'standard'})
+                    : null,
+              ),
+              (
+                'Tiết kiệm 4h',
+                Icons.savings_outlined,
+                AppColors.success,
+                widget.session.canCreateShippingOrder
+                    ? () => widget.onCreateOrder({'service_type': 'saving'})
+                    : null,
+              ),
+              (
+                'Xe tải nhẹ',
+                Icons.local_shipping_outlined,
+                AppColors.ink,
+                widget.session.canCreateShippingOrder
+                    ? () => widget.onCreateOrder({'service_type': 'truck'})
+                    : null,
+              ),
+              (
+                'Ăn uống & Mua sắm',
+                Icons.restaurant_menu_rounded,
+                const Color(0xFF00B14F),
+                widget.onCatalog,
+              ),
+            ];
+            return Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                for (final entry in entries)
+                  SizedBox(
+                    width: width,
+                    child: Tooltip(
+                      message: entry.$4 == null
+                          ? 'Dịch vụ chưa được mở'
+                          : entry.$1,
+                      child: Semantics(
+                        button: true,
+                        enabled: entry.$4 != null,
+                        child: InkWell(
+                          onTap: entry.$4,
+                          child: Container(
+                            constraints: const BoxConstraints(minHeight: 70),
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: entry.$4 == null
+                                  ? const Color(0xFFF3F4F6)
+                                  : Colors.white,
+                              border: Border.all(
+                                color: entry.$4 == null
+                                    ? AppColors.techMuted
+                                    : entry.$3,
+                                width: 1.2,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                SizedBox(
+                                  width: 32,
+                                  height: 32,
+                                  child: ColoredBox(
+                                    color: entry.$3.withValues(alpha: .14),
+                                    child: Icon(
+                                      entry.$2,
+                                      color: entry.$4 == null
+                                          ? AppColors.textSecondary
+                                          : entry.$3,
+                                      size: 18,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    entry.$1,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w900,
+                                      color: AppColors.ink,
+                                      letterSpacing: 0,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
+      ],
+    ),
+  );
+
+  Widget _location() => _panel(
+    Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            const SizedBox(
+              width: 36,
+              height: 36,
+              child: ColoredBox(
+                color: AppColors.pink,
+                child: Icon(
+                  Icons.location_on_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Bạn muốn giao hàng hay đặt món đến đâu?',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.ink,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  if (_loading.contains('addresses') ||
+                      _errors.contains('addresses'))
+                    _readState('addresses', '')
+                  else
+                    Text(
+                      'Vị trí hiện tại: ${_defaultAddress?['full_address'] ?? 'Chưa chọn điểm lấy hàng'}',
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            OutlinedButton.icon(
+              onPressed: widget.onAddresses,
+              icon: const Icon(Icons.bookmarks_outlined, size: 15),
+              label: const Text('Sổ địa chỉ'),
+            ),
+            OutlinedButton.icon(
+              onPressed: widget.onOrders,
+              icon: const Icon(Icons.receipt_long_outlined, size: 15),
+              label: const Text('Đơn hàng của tôi'),
+            ),
+            if (widget.session.canCreateShippingOrder)
+              FilledButton.icon(
+                onPressed: () => widget.onCreateOrder({}),
+                icon: const Icon(Icons.arrow_forward_rounded, size: 15),
+                label: const Text('Đặt đơn'),
+              ),
+          ],
+        ),
+      ],
+    ),
+  );
+
+  Widget _map() => _panel(
+    Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _heading(
+          _trackedOrder == null
+              ? 'Bản đồ định vị trực tiếp'
+              : 'Hành trình • ${_trackedOrder!['tracking_code'] ?? _trackedOrder!['id']}',
+        ),
+        if ((_data['orders'] ?? const []).any(
+          (row) => _route(row).length == 2,
+        )) ...[
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            key: ValueKey(
+              _route(_trackedOrder).length == 2 ? _trackedOrder!['id'] : '',
+            ),
+            isExpanded: true,
+            initialValue: _route(_trackedOrder).length == 2
+                ? '${_trackedOrder!['id']}'
+                : '',
+            decoration: const InputDecoration(labelText: 'Hành trình đơn hàng'),
+            items: [
+              const DropdownMenuItem(value: '', child: Text('Địa chỉ đã lưu')),
+              for (final order in _data['orders'] ?? <Map<String, dynamic>>[])
+                if (_route(order).length == 2)
+                  DropdownMenuItem(
+                    value: '${order['id']}',
+                    child: Text('${order['tracking_code'] ?? order['id']}'),
+                  ),
+            ],
+            onChanged: (id) => setState(() => _trackedId = id),
+          ),
+        ],
+        const SizedBox(height: 8),
+        Map3dPerspectiveWidget(
+          key: const ValueKey('ghst-home-map'),
+          height: widget.trackingOnly ? 440 : 330,
+          showTopBanner: false,
+          mode: MapViewMode.customerPreview,
+          singlePinPoint: _route(_trackedOrder).length == 2
+              ? null
+              : _savedPoint,
+          singlePinLabel: 'Địa chỉ đã lưu',
+          customFleetDrivers: const [],
+          useGlobalFallbackRoute: false,
+          routePoints: _route(_trackedOrder),
+          pickupLabel: 'Điểm lấy',
+          dropoffLabel: 'Điểm giao',
+          onTapGeoPoint:
+              !widget.session.canCreateShippingOrder ||
+                  _route(_trackedOrder).isNotEmpty
+              ? null
+              : (point) {
+                  if (_allowed) {
+                    widget.onCreateOrder({
+                      'dropoff_lat': point.latitude,
+                      'dropoff_lng': point.longitude,
+                    });
+                  }
+                },
+        ),
+      ],
+    ),
+  );
+
+  Widget _recent() {
+    final orders = _data['orders'] ?? const [];
+    return _panel(
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _heading(
+            'Đơn gần đây',
+            action: TextButton(
+              onPressed: widget.onOrders,
+              child: const Text('Xem tất cả'),
+            ),
+          ),
+          if (_loading.contains('orders') ||
+              _errors.contains('orders') ||
+              orders.isEmpty)
+            _readState('orders', 'Chưa có đơn giao hàng.')
+          else
+            for (final order in orders.take(widget.trackingOnly ? 10 : 3))
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.local_shipping_outlined),
+                title: Text('${order['tracking_code'] ?? order['id']}'),
+                subtitle: Text(
+                  '${cloudStatuses[order['status']] ?? order['status'] ?? ''}',
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _details(order),
+              ),
+        ],
+      ),
+    );
+  }
+
+  Widget _discovery() {
+    final products = _data['catalog'] ?? const [];
+    return _panel(
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _heading(
+            'Khám phá cửa hàng',
+            action: TextButton(
+              onPressed: widget.onCatalog,
+              child: const Text('Xem tất cả'),
+            ),
+          ),
+          if (_loading.contains('catalog') ||
+              _errors.contains('catalog') ||
+              products.isEmpty)
+            _readState('catalog', 'Chưa có sản phẩm đang mở bán.')
+          else
+            for (final product in products.take(4))
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: (product['image_url'] as String? ?? '').isEmpty
+                      ? const ColoredBox(
+                          color: Color(0xFFF5F3FF),
+                          child: Icon(Icons.storefront_outlined),
+                        )
+                      : Image.network(
+                          '${product['image_url']}',
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) =>
+                              const Icon(Icons.image_not_supported_outlined),
+                        ),
+                ),
+                title: Text('${product['name']}'),
+                subtitle: Text('${product['shop_name']}'),
+                trailing: Text(
+                  CurrencyFormatter.formatVnd(
+                    (product['price'] as num? ?? 0).toDouble(),
+                  ),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 12,
+                  ),
+                ),
+                onTap: widget.onCatalog,
+              ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_lease.valid) return const SizedBox.shrink();
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Align(
+              alignment: Alignment.centerRight,
+              child: IconButton(
+                tooltip: 'Tải lại trang chủ',
+                onPressed: _loading.isEmpty ? _load : null,
+                icon: const Icon(Icons.refresh),
+              ),
+            ),
+            if (!widget.trackingOnly) ...[
+              _location(),
+              const SizedBox(height: 12),
+            ],
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final services = Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _services(),
+                    const SizedBox(height: 12),
+                    _discovery(),
+                  ],
+                );
+                final tracking = Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [_map(), const SizedBox(height: 12), _recent()],
+                );
+                if (widget.trackingOnly) return tracking;
+                if (constraints.maxWidth >= 900) {
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(flex: 7, child: services),
+                      const SizedBox(width: 14),
+                      Expanded(flex: 5, child: tracking),
+                    ],
+                  );
+                }
+                return Column(
+                  children: [services, const SizedBox(height: 12), tracking],
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

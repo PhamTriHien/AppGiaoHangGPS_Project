@@ -61,21 +61,27 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
         )
         .length;
     final otherCount =
-        (totalOrders - deliveredCount - inTransitCount - cancelledCount)
-            .clamp(0, totalOrders);
+        (totalOrders - deliveredCount - inTransitCount - cancelledCount).clamp(
+          0,
+          totalOrders,
+        );
 
     final deliveredPct = ((deliveredCount / safeTotal) * 100).round();
     final inTransitPct = ((inTransitCount / safeTotal) * 100).round();
     final cancelledPct = ((cancelledCount / safeTotal) * 100).round();
-    final otherPct =
-        totalOrders == 0 ? 0 : (100 - deliveredPct - inTransitPct - cancelledPct).clamp(0, 100);
+    final otherPct = totalOrders == 0
+        ? 0
+        : (100 - deliveredPct - inTransitPct - cancelledPct).clamp(0, 100);
 
     final bucketsRev = List<double>.filled(7, 0.0);
     final bucketsCnt = List<int>.filled(7, 0);
     final now = DateTime.now();
     final chartDayLabels = List<String>.generate(7, (idx) {
-      final d = DateTime(now.year, now.month, now.day)
-          .subtract(Duration(days: 6 - idx));
+      final d = DateTime(
+        now.year,
+        now.month,
+        now.day,
+      ).subtract(Duration(days: 6 - idx));
       return '${d.day.toString().padLeft(2, "0")}/${d.month.toString().padLeft(2, "0")}';
     });
     for (final ord in _store.orders) {
@@ -88,8 +94,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
         bucketsRev[dayIdx] += ord.totalAmount;
       }
     }
-    final maxRev =
-        bucketsRev.fold<double>(1.0, (a, b) => a > b ? a : b);
+    final maxRev = bucketsRev.fold<double>(1.0, (a, b) => a > b ? a : b);
     final maxCnt = bucketsCnt.fold<int>(1, (a, b) => a > b ? a : b);
     final blueNorm = List<double>.generate(7, (i) {
       if (!canViewFinance || bucketsRev[i] <= 0) return 0.96;
@@ -116,10 +121,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
         const SizedBox(height: 2),
         Text(
           'Dashboard Tổng quan Hệ thống • ${_store.lastSyncStatusMessage}',
-          style: const TextStyle(
-            fontSize: 12.5,
-            color: Color(0xFF4A4754),
-          ),
+          style: const TextStyle(fontSize: 12.5, color: Color(0xFF4A4754)),
         ),
         const SizedBox(height: 18),
         LayoutBuilder(
@@ -128,8 +130,8 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
             final cols = maxW >= 960
                 ? 4
                 : maxW >= 540
-                    ? 2
-                    : 1;
+                ? 2
+                : 1;
             final cardWidth = cols == 1
                 ? maxW
                 : (maxW - (cols - 1) * 16.0) / cols;
@@ -284,8 +286,12 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                   children: [
                     Icon(Icons.inbox_outlined, color: AppColors.textSecondary),
                     SizedBox(width: 12),
-                    Expanded(child: Text('Chưa có đơn hàng',
-                      style: TextStyle(color: AppColors.textSecondary))),
+                    Expanded(
+                      child: Text(
+                        'Chưa có đơn hàng',
+                        style: TextStyle(color: AppColors.textSecondary),
+                      ),
+                    ),
                   ],
                 ),
               );
@@ -505,38 +511,40 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                     )
                   else
                     ..._store.orders.map((o) {
-                    final isReturned = o.paymentStatus == 'RETURNED';
-                    final isDone =
-                        o.status == OrderStatus.delivered && !isReturned;
-                    final isCancelled = o.status == OrderStatus.cancelled ||
-                        o.status == OrderStatus.failed ||
-                        o.status == OrderStatus.returning ||
-                        isReturned;
-                    return InkWell(
-                      onTap: () {
-                        _store.selectDriverOrder(o.trackingCode);
-                        _rebuildAdminUi(() => _selectedScreenIndex = 8);
-                      },
-                      child: _buildNewestOrderRow(
-                        code: o.trackingCode,
-                        customer: o.customerName,
-                        driver: o.assignedDriverName ?? 'Đang tìm tài xế',
-                        amount: CurrencyFormatter.formatVnd(o.totalAmount),
-                        statusLabel:
-                            isReturned ? 'Đã hoàn kho' : o.status.displayName,
-                        pillBg: isDone
-                            ? const Color(0xFFDCFCE7)
-                            : isCancelled
-                                ? const Color(0xFFFEE2E2)
-                                : const Color(0xFFE9E9E4),
-                        pillFg: isDone
-                            ? const Color(0xFF14B866)
-                            : isCancelled
-                                ? const Color(0xFFB91C1C)
-                                : const Color(0xFF5B33E6),
-                      ),
-                    );
-                  }),
+                      final isReturned = o.paymentStatus == 'RETURNED';
+                      final isDone =
+                          o.status == OrderStatus.delivered && !isReturned;
+                      final isCancelled =
+                          o.status == OrderStatus.cancelled ||
+                          o.status == OrderStatus.failed ||
+                          o.status == OrderStatus.returning ||
+                          isReturned;
+                      return InkWell(
+                        onTap: () {
+                          _store.selectDriverOrder(o.trackingCode);
+                          _rebuildAdminUi(() => _selectedScreenIndex = 8);
+                        },
+                        child: _buildNewestOrderRow(
+                          code: o.trackingCode,
+                          customer: o.customerName,
+                          driver: o.assignedDriverName ?? 'Đang tìm tài xế',
+                          amount: CurrencyFormatter.formatVnd(o.totalAmount),
+                          statusLabel: isReturned
+                              ? 'Đã hoàn kho'
+                              : o.status.displayName,
+                          pillBg: isDone
+                              ? const Color(0xFFDCFCE7)
+                              : isCancelled
+                              ? const Color(0xFFFEE2E2)
+                              : const Color(0xFFE9E9E4),
+                          pillFg: isDone
+                              ? const Color(0xFF14B866)
+                              : isCancelled
+                              ? const Color(0xFFB91C1C)
+                              : const Color(0xFF5B33E6),
+                        ),
+                      );
+                    }),
                 ],
               ),
             );
@@ -762,7 +770,6 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
     );
   }
 
-
   /// UC23: Quản lý Người dùng & Cửa hàng (Chuẩn uc23_nguoi_dung_1791015002658.jpg)
   Widget _buildUserAndMerchantManagementView() {
     final canManageUsers = _store.hasAdminPermission('User: Khóa/Mở');
@@ -806,19 +813,21 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: [
-              ('ALL', 'Tất cả vai trò'),
-              ('CUSTOMER', 'Khách hàng'),
-              ('DRIVER', 'Tài xế'),
-              ('MERCHANT', 'Cửa hàng B2B'),
-              ('ADMIN', 'Quản trị viên'),
-            ].map((item) {
-              return ChoiceChip(
-                label: Text(item.$2),
-                selected: _userRoleFilter == item.$1,
-                onSelected: (_) => _rebuildAdminUi(() => _userRoleFilter = item.$1),
-              );
-            }).toList(),
+            children:
+                [
+                  ('ALL', 'Tất cả vai trò'),
+                  ('CUSTOMER', 'Khách hàng'),
+                  ('DRIVER', 'Tài xế'),
+                  ('MERCHANT', 'Cửa hàng B2B'),
+                  ('ADMIN', 'Quản trị viên'),
+                ].map((item) {
+                  return ChoiceChip(
+                    label: Text(item.$2),
+                    selected: _userRoleFilter == item.$1,
+                    onSelected: (_) =>
+                        _rebuildAdminUi(() => _userRoleFilter = item.$1),
+                  );
+                }).toList(),
           ),
           const SizedBox(height: 12),
           if (_store.users
@@ -831,111 +840,115 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
               padding: EdgeInsets.all(16),
               child: Text(
                 'Không tìm thấy tài khoản người dùng nào phù hợp bộ lọc hiện tại.',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: AppColors.textSecondary,
-                ),
+                style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
               ),
             )
           else
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: DataTable(
-              headingRowColor: WidgetStateProperty.all(
-                const Color(0xFFF5F1E8),
+                headingRowColor: WidgetStateProperty.all(
+                  const Color(0xFFF5F1E8),
+                ),
+                columns: const [
+                  DataColumn(label: Text('ID')),
+                  DataColumn(label: Text('Họ và tên')),
+                  DataColumn(label: Text('Số điện thoại')),
+                  DataColumn(label: Text('Email')),
+                  DataColumn(label: Text('Vai trò')),
+                  DataColumn(label: Text('Trạng thái')),
+                ],
+                rows: _store.users
+                    .where(
+                      (u) =>
+                          _userRoleFilter == 'ALL' ||
+                          u.roleDbCode == _userRoleFilter,
+                    )
+                    .map((u) {
+                      return DataRow(
+                        cells: [
+                          DataCell(Text(u.id)),
+                          DataCell(
+                            Text(
+                              u.fullName,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                          DataCell(
+                            Text(
+                              SecurityAndBarcodeUtils.maskPhoneNumber(
+                                u.phone,
+                                shouldMask: !canManageUsers,
+                              ),
+                            ),
+                          ),
+                          DataCell(
+                            Text(
+                              u.email.isEmpty
+                                  ? 'Chưa cập nhật'
+                                  : (canManageUsers
+                                        ? u.email
+                                        : '***@${u.email.split("@").last}'),
+                            ),
+                          ),
+                          DataCell(
+                            Chip(
+                              label: Text(
+                                u.role.title,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
+                          DataCell(
+                            ActionChip(
+                              onPressed: canManageUsers
+                                  ? () {
+                                      if (u.role == SubsystemRole.admin ||
+                                          u.id ==
+                                              _store
+                                                  .activeAuthenticatedUser
+                                                  ?.id) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            backgroundColor: AppColors.danger,
+                                            content: Text(
+                                              'Không được phép tự khóa tài khoản Quản trị viên đang điều hành!',
+                                            ),
+                                          ),
+                                        );
+                                        return;
+                                      }
+                                      _store.toggleUserAccountStatus(u.id);
+                                    }
+                                  : null,
+                              backgroundColor: u.status == 'ACTIVE'
+                                  ? AppColors.success.withValues(alpha: 0.14)
+                                  : AppColors.danger.withValues(alpha: 0.14),
+                              label: Text(
+                                u.status == 'ACTIVE' ? 'Hoạt động' : 'Đã khóa',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: u.status == 'ACTIVE'
+                                      ? AppColors.success
+                                      : AppColors.danger,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    })
+                    .toList(),
               ),
-              columns: const [
-                DataColumn(label: Text('ID')),
-                DataColumn(label: Text('Họ và tên')),
-                DataColumn(label: Text('Số điện thoại')),
-                DataColumn(label: Text('Email')),
-                DataColumn(label: Text('Vai trò')),
-                DataColumn(label: Text('Trạng thái')),
-              ],
-              rows: _store.users
-                  .where(
-                    (u) =>
-                        _userRoleFilter == 'ALL' ||
-                        u.roleDbCode == _userRoleFilter,
-                  )
-                  .map((u) {
-                return DataRow(
-                  cells: [
-                    DataCell(Text(u.id)),
-                    DataCell(
-                      Text(
-                        u.fullName,
-                        style: const TextStyle(fontWeight: FontWeight.w800),
-                      ),
-                    ),
-                    DataCell(
-                      Text(
-                        SecurityAndBarcodeUtils.maskPhoneNumber(
-                          u.phone,
-                          shouldMask: !canManageUsers,
-                        ),
-                      ),
-                    ),
-                    DataCell(
-                      Text(
-                        u.email.isEmpty
-                            ? 'Chưa cập nhật'
-                            : (canManageUsers
-                                ? u.email
-                                : '***@${u.email.split("@").last}'),
-                      ),
-                    ),
-                    DataCell(
-                      Chip(
-                        label: Text(
-                          u.role.title,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ),
-                    DataCell(
-                      ActionChip(
-                        onPressed: canManageUsers
-                            ? () {
-                                if (u.role == SubsystemRole.admin ||
-                                    u.id ==
-                                        _store.activeAuthenticatedUser?.id) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      backgroundColor: AppColors.danger,
-                                      content: Text(
-                                        'Không được phép tự khóa tài khoản Quản trị viên đang điều hành!',
-                                      ),
-                                    ),
-                                  );
-                                  return;
-                                }
-                                _store.toggleUserAccountStatus(u.id);
-                              }
-                            : null,
-                        backgroundColor: u.status == 'ACTIVE'
-                            ? AppColors.success.withValues(alpha: 0.14)
-                            : AppColors.danger.withValues(alpha: 0.14),
-                        label: Text(
-                          u.status == 'ACTIVE' ? 'Hoạt động' : 'Đã khóa',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: u.status == 'ACTIVE'
-                                ? AppColors.success
-                                : AppColors.danger,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              }).toList(),
             ),
-          ),
         ],
       ),
     );
@@ -948,8 +961,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
     final pwdCtrl = TextEditingController();
     SubsystemRole selectedRole = SubsystemRole.customer;
 
-    final canCreateAdminRole =
-        _store.hasAdminPermission('Hệ thống: Bảo mật');
+    final canCreateAdminRole = _store.hasAdminPermission('Hệ thống: Bảo mật');
     Animation<double>? dialogRouteAnim;
     showDialog<void>(
       context: context,
@@ -1089,10 +1101,12 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
         );
       },
     ).whenComplete(() {
-      SecurityAndBarcodeUtils.disposeControllersAfterDialog(
-        [nameCtrl, phoneCtrl, emailCtrl, pwdCtrl],
-        dialogRouteAnim,
-      );
+      SecurityAndBarcodeUtils.disposeControllersAfterDialog([
+        nameCtrl,
+        phoneCtrl,
+        emailCtrl,
+        pwdCtrl,
+      ], dialogRouteAnim);
     });
   }
 
@@ -1126,8 +1140,9 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
     final safeDrvIdx = _store.drivers.isEmpty
         ? 0
         : _selectedKycDriverIndex.clamp(0, _store.drivers.length - 1);
-    final featuredDriver =
-        _store.drivers.isNotEmpty ? _store.drivers[safeDrvIdx] : null;
+    final featuredDriver = _store.drivers.isNotEmpty
+        ? _store.drivers[safeDrvIdx]
+        : null;
     final safeMerIdx = _store.merchantApplicants.isEmpty
         ? 0
         : _selectedKycMerchantIndex.clamp(
@@ -1181,156 +1196,164 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                 )
               else
                 ..._store.drivers.asMap().entries.map((entry) {
-                final idx = entry.key;
-                final drv = entry.value;
-                final isSelected = !_selectedKycIsMerchant && idx == safeDrvIdx;
-                return InkWell(
-                  onTap: () => _rebuildAdminUi(() {
-                    _selectedKycIsMerchant = false;
-                    _selectedKycDriverIndex = idx;
-                  }),
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 10),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? const Color(0xFFEDE9FE)
-                          : const Color(0xFFF5F1E8),
-                      borderRadius: BorderRadius.all(Radius.zero),
-                      border: Border.all(
+                  final idx = entry.key;
+                  final drv = entry.value;
+                  final isSelected =
+                      !_selectedKycIsMerchant && idx == safeDrvIdx;
+                  return InkWell(
+                    onTap: () => _rebuildAdminUi(() {
+                      _selectedKycIsMerchant = false;
+                      _selectedKycDriverIndex = idx;
+                    }),
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
                         color: isSelected
-                            ? AppColors.violet
-                            : const Color(0xFF15131E),
-                        width: isSelected ? 1.8 : 1.0,
+                            ? const Color(0xFFEDE9FE)
+                            : const Color(0xFFF5F1E8),
+                        borderRadius: BorderRadius.all(Radius.zero),
+                        border: Border.all(
+                          color: isSelected
+                              ? AppColors.violet
+                              : const Color(0xFF15131E),
+                          width: isSelected ? 1.8 : 1.0,
+                        ),
                       ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${drv.id} • ${drv.fullName} (${drv.phone})',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${drv.id} • ${drv.fullName} (${drv.phone})',
+                            style: const TextStyle(fontWeight: FontWeight.w800),
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'CCCD: ${drv.citizenId} • Xe: ${drv.vehicleType} (${drv.licensePlate}) • Trạng thái: ${drv.approvalStatus}',
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.success,
-                              ),
-                              onPressed: canApproveDriver &&
-                                      drv.approvalStatus != 'Đã duyệt'
-                                  ? () {
-                                      _rebuildAdminUi(
-                                        () => _selectedKycDriverIndex = idx,
-                                      );
-                                      _store.updateDriverApproval(
-                                        drv.id,
-                                        'Đã duyệt',
-                                      );
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            'Đã duyệt hồ sơ tài xế ${drv.fullName} (${drv.id})!',
+                          const SizedBox(height: 2),
+                          Text(
+                            'CCCD: ${drv.citizenId} • Xe: ${drv.vehicleType} (${drv.licensePlate}) • Trạng thái: ${drv.approvalStatus}',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.success,
+                                ),
+                                onPressed:
+                                    canApproveDriver &&
+                                        drv.approvalStatus != 'Đã duyệt'
+                                    ? () {
+                                        _rebuildAdminUi(
+                                          () => _selectedKycDriverIndex = idx,
+                                        );
+                                        _store.updateDriverApproval(
+                                          drv.id,
+                                          'Đã duyệt',
+                                        );
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              'Đã duyệt hồ sơ tài xế ${drv.fullName} (${drv.id})!',
+                                            ),
                                           ),
-                                        ),
-                                      );
-                                    }
-                                  : null,
-                              child: Text(
-                                drv.approvalStatus == 'Đã duyệt'
-                                    ? 'Đã duyệt'
-                                    : 'Duyệt hồ sơ',
+                                        );
+                                      }
+                                    : null,
+                                child: Text(
+                                  drv.approvalStatus == 'Đã duyệt'
+                                      ? 'Đã duyệt'
+                                      : 'Duyệt hồ sơ',
+                                ),
                               ),
-                            ),
-                            OutlinedButton(
-                              onPressed: canApproveDriver &&
-                                      drv.approvalStatus != 'Từ chối'
-                                  ? () {
-                                      _rebuildAdminUi(
-                                        () => _selectedKycDriverIndex = idx,
-                                      );
-                                      _store.updateDriverApproval(
-                                        drv.id,
-                                        'Từ chối',
-                                      );
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            'Đã từ chối hồ sơ tài xế ${drv.fullName} (${drv.id}).',
+                              OutlinedButton(
+                                onPressed:
+                                    canApproveDriver &&
+                                        drv.approvalStatus != 'Từ chối'
+                                    ? () {
+                                        _rebuildAdminUi(
+                                          () => _selectedKycDriverIndex = idx,
+                                        );
+                                        _store.updateDriverApproval(
+                                          drv.id,
+                                          'Từ chối',
+                                        );
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              'Đã từ chối hồ sơ tài xế ${drv.fullName} (${drv.id}).',
+                                            ),
                                           ),
-                                        ),
-                                      );
-                                    }
-                                  : null,
-                              child: const Text(
-                                'Từ chối',
-                                style: TextStyle(color: AppColors.danger),
+                                        );
+                                      }
+                                    : null,
+                                child: const Text(
+                                  'Từ chối',
+                                  style: TextStyle(color: AppColors.danger),
+                                ),
                               ),
-                            ),
-                            OutlinedButton.icon(
-                              onPressed: canEditDriver
-                                  ? () => _showAdminEditDriverVehicleDialog(
+                              OutlinedButton.icon(
+                                onPressed: canEditDriver
+                                    ? () => _showAdminEditDriverVehicleDialog(
                                         context,
                                         drv,
                                       )
-                                  : null,
-                              icon: const Icon(Icons.edit_road_rounded, size: 15),
-                              label: const Text('Sửa xe'),
-                            ),
-                            OutlinedButton.icon(
-                              onPressed: canSuspendDriver &&
-                                      (drv.approvalStatus == 'Đã duyệt' ||
-                                          drv.approvalStatus == 'Đình chỉ')
-                                  ? () {
-                                      final ok = _store
-                                          .suspendOrUnsuspendDriver(drv.id);
-                                      if (!ok) return;
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            drv.approvalStatus == 'Đình chỉ'
-                                                ? 'Đã đình chỉ hoạt động tài xế ${drv.fullName} (${drv.id}).'
-                                                : 'Đã mở đình chỉ tài xế ${drv.fullName} (${drv.id}).',
+                                    : null,
+                                icon: const Icon(
+                                  Icons.edit_road_rounded,
+                                  size: 15,
+                                ),
+                                label: const Text('Sửa xe'),
+                              ),
+                              OutlinedButton.icon(
+                                onPressed:
+                                    canSuspendDriver &&
+                                        (drv.approvalStatus == 'Đã duyệt' ||
+                                            drv.approvalStatus == 'Đình chỉ')
+                                    ? () {
+                                        final ok = _store
+                                            .suspendOrUnsuspendDriver(drv.id);
+                                        if (!ok) return;
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              drv.approvalStatus == 'Đình chỉ'
+                                                  ? 'Đã đình chỉ hoạt động tài xế ${drv.fullName} (${drv.id}).'
+                                                  : 'Đã mở đình chỉ tài xế ${drv.fullName} (${drv.id}).',
+                                            ),
                                           ),
-                                        ),
-                                      );
-                                    }
-                                  : null,
-                              icon: Icon(
-                                drv.approvalStatus == 'Đình chỉ'
-                                    ? Icons.lock_open_rounded
-                                    : Icons.pause_circle_outline_rounded,
-                                size: 15,
-                                color: drv.approvalStatus == 'Đình chỉ'
-                                    ? AppColors.success
-                                    : AppColors.warning,
+                                        );
+                                      }
+                                    : null,
+                                icon: Icon(
+                                  drv.approvalStatus == 'Đình chỉ'
+                                      ? Icons.lock_open_rounded
+                                      : Icons.pause_circle_outline_rounded,
+                                  size: 15,
+                                  color: drv.approvalStatus == 'Đình chỉ'
+                                      ? AppColors.success
+                                      : AppColors.warning,
+                                ),
+                                label: Text(
+                                  drv.approvalStatus == 'Đình chỉ'
+                                      ? 'Mở đình chỉ'
+                                      : 'Đình chỉ',
+                                ),
                               ),
-                              label: Text(
-                                drv.approvalStatus == 'Đình chỉ'
-                                    ? 'Mở đình chỉ'
-                                    : 'Đình chỉ',
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                );
-              }),
+                  );
+                }),
               const Divider(height: 24),
               const Text(
                 '2. Danh sách Hồ sơ Đăng ký Cửa hàng B2B',
@@ -1355,112 +1378,116 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                 )
               else
                 ..._store.merchantApplicants.asMap().entries.map((mEntry) {
-                final mIdx = mEntry.key;
-                final mer = mEntry.value;
-                final isMerSelected =
-                    _selectedKycIsMerchant && mIdx == safeMerIdx;
-                return InkWell(
-                  onTap: () => _rebuildAdminUi(() {
-                    _selectedKycIsMerchant = true;
-                    _selectedKycMerchantIndex = mIdx;
-                  }),
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 10),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: isMerSelected
-                          ? const Color(0xFFEDE9FE)
-                          : const Color(0xFFF5F1E8),
-                      borderRadius: BorderRadius.all(Radius.zero),
-                      border: Border.all(
+                  final mIdx = mEntry.key;
+                  final mer = mEntry.value;
+                  final isMerSelected =
+                      _selectedKycIsMerchant && mIdx == safeMerIdx;
+                  return InkWell(
+                    onTap: () => _rebuildAdminUi(() {
+                      _selectedKycIsMerchant = true;
+                      _selectedKycMerchantIndex = mIdx;
+                    }),
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
                         color: isMerSelected
-                            ? AppColors.violet
-                            : const Color(0xFF15131E),
-                        width: isMerSelected ? 1.8 : 1.0,
+                            ? const Color(0xFFEDE9FE)
+                            : const Color(0xFFF5F1E8),
+                        borderRadius: BorderRadius.all(Radius.zero),
+                        border: Border.all(
+                          color: isMerSelected
+                              ? AppColors.violet
+                              : const Color(0xFF15131E),
+                          width: isMerSelected ? 1.8 : 1.0,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${mer.id} • ${mer.storeName} (${mer.ownerPhone})',
+                            style: const TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'MST: ${mer.taxCode} • Loại hình: ${mer.businessType} • Đại diện: ${mer.representativeName}\nNgân hàng COD: ${mer.bankName} (${mer.bankAccount}) • Trạng thái: ${mer.approvalStatus}',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.success,
+                                ),
+                                onPressed:
+                                    canApproveDriver &&
+                                        mer.approvalStatus != 'Đã duyệt'
+                                    ? () {
+                                        _rebuildAdminUi(() {
+                                          _selectedKycIsMerchant = true;
+                                          _selectedKycMerchantIndex = mIdx;
+                                        });
+                                        _store.updateMerchantApproval(
+                                          mer.id,
+                                          'Đã duyệt',
+                                        );
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              'Đã duyệt cửa hàng ${mer.storeName} (${mer.id})!',
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    : null,
+                                child: Text(
+                                  mer.approvalStatus == 'Đã duyệt'
+                                      ? 'Đã duyệt'
+                                      : 'Duyệt cửa hàng',
+                                ),
+                              ),
+                              OutlinedButton(
+                                onPressed:
+                                    canApproveDriver &&
+                                        mer.approvalStatus != 'Từ chối'
+                                    ? () {
+                                        _rebuildAdminUi(() {
+                                          _selectedKycIsMerchant = true;
+                                          _selectedKycMerchantIndex = mIdx;
+                                        });
+                                        _store.updateMerchantApproval(
+                                          mer.id,
+                                          'Từ chối',
+                                        );
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              'Đã từ chối hồ sơ cửa hàng ${mer.storeName} (${mer.id}).',
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    : null,
+                                child: const Text(
+                                  'Từ chối',
+                                  style: TextStyle(color: AppColors.danger),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${mer.id} • ${mer.storeName} (${mer.ownerPhone})',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'MST: ${mer.taxCode} • Loại hình: ${mer.businessType} • Đại diện: ${mer.representativeName}\nNgân hàng COD: ${mer.bankName} (${mer.bankAccount}) • Trạng thái: ${mer.approvalStatus}',
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.success,
-                              ),
-                              onPressed: canApproveDriver &&
-                                      mer.approvalStatus != 'Đã duyệt'
-                                  ? () {
-                                      _rebuildAdminUi(() {
-                                        _selectedKycIsMerchant = true;
-                                        _selectedKycMerchantIndex = mIdx;
-                                      });
-                                      _store.updateMerchantApproval(
-                                        mer.id,
-                                        'Đã duyệt',
-                                      );
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            'Đã duyệt cửa hàng ${mer.storeName} (${mer.id})!',
-                                          ),
-                                        ),
-                                      );
-                                    }
-                                  : null,
-                              child: Text(
-                                mer.approvalStatus == 'Đã duyệt'
-                                    ? 'Đã duyệt'
-                                    : 'Duyệt cửa hàng',
-                              ),
-                            ),
-                            OutlinedButton(
-                              onPressed: canApproveDriver &&
-                                      mer.approvalStatus != 'Từ chối'
-                                  ? () {
-                                      _rebuildAdminUi(() {
-                                        _selectedKycIsMerchant = true;
-                                        _selectedKycMerchantIndex = mIdx;
-                                      });
-                                      _store.updateMerchantApproval(
-                                        mer.id,
-                                        'Từ chối',
-                                      );
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            'Đã từ chối hồ sơ cửa hàng ${mer.storeName} (${mer.id}).',
-                                          ),
-                                        ),
-                                      );
-                                    }
-                                  : null,
-                              child: const Text(
-                                'Từ chối',
-                                style: TextStyle(color: AppColors.danger),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }),
+                  );
+                }),
             ],
           ),
         );
@@ -1498,58 +1525,58 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                     Text(
                       '• Tài khoản nhận đối soát COD: ${featuredMerchant.bankName} - ${featuredMerchant.bankAccount}',
                     ),
-                        Text(
-                          '• Trạng thái xét duyệt: ${featuredMerchant.approvalStatus}',
-                        ),
-                        if (featuredMerchant.attachedKycDocs.isNotEmpty) ...[
-                          const SizedBox(height: 6),
-                          Wrap(
-                            spacing: 6,
-                            runSpacing: 6,
-                            children: featuredMerchant.attachedKycDocs
-                                .map(
-                                  (doc) => ActionChip(
-                                    visualDensity: VisualDensity.compact,
-                                    avatar: const Icon(
-                                      Icons.insert_drive_file_outlined,
-                                      size: 14,
-                                    ),
-                                    label: Text(
-                                      doc,
-                                      style: const TextStyle(fontSize: 11),
-                                    ),
-                                    onPressed: () =>
-                                        _showKycDocumentInspectDialog(
-                                      context,
-                                      docTitle: 'Tệp đính kèm thực tế: $doc',
-                                      applicantName: featuredMerchant.storeName,
-                                      details:
-                                          '• Tên tệp đối tác tải lên: $doc\n• Mã cửa hàng: ${featuredMerchant.id}\n• Mã số thuế: ${featuredMerchant.taxCode}\n• Trạng thái xét duyệt: ${featuredMerchant.approvalStatus}',
-                                      onQuickApprove: canApproveDriver &&
-                                              featuredMerchant.approvalStatus !=
-                                                  'Đã duyệt'
-                                          ? () => _store.updateMerchantApproval(
-                                                featuredMerchant.id,
-                                                'Đã duyệt',
-                                              )
-                                          : null,
-                                    ),
-                                  ),
-                                )
-                                .toList(),
-                          ),
-                        ] else
-                          const Padding(
-                            padding: EdgeInsets.only(top: 4),
-                            child: Text(
-                              '• Tệp đính kèm từ thiết bị: Chưa tải lên tệp chứng từ mới.',
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                color: AppColors.textSecondary,
+                    Text(
+                      '• Trạng thái xét duyệt: ${featuredMerchant.approvalStatus}',
+                    ),
+                    if (featuredMerchant.attachedKycDocs.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: featuredMerchant.attachedKycDocs
+                            .map(
+                              (doc) => ActionChip(
+                                visualDensity: VisualDensity.compact,
+                                avatar: const Icon(
+                                  Icons.insert_drive_file_outlined,
+                                  size: 14,
+                                ),
+                                label: Text(
+                                  doc,
+                                  style: const TextStyle(fontSize: 11),
+                                ),
+                                onPressed: () => _showKycDocumentInspectDialog(
+                                  context,
+                                  docTitle: 'Tệp đính kèm thực tế: $doc',
+                                  applicantName: featuredMerchant.storeName,
+                                  details:
+                                      '• Tên tệp đối tác tải lên: $doc\n• Mã cửa hàng: ${featuredMerchant.id}\n• Mã số thuế: ${featuredMerchant.taxCode}\n• Trạng thái xét duyệt: ${featuredMerchant.approvalStatus}',
+                                  onQuickApprove:
+                                      canApproveDriver &&
+                                          featuredMerchant.approvalStatus !=
+                                              'Đã duyệt'
+                                      ? () => _store.updateMerchantApproval(
+                                          featuredMerchant.id,
+                                          'Đã duyệt',
+                                        )
+                                      : null,
+                                ),
                               ),
-                            ),
+                            )
+                            .toList(),
+                      ),
+                    ] else
+                      const Padding(
+                        padding: EdgeInsets.only(top: 4),
+                        child: Text(
+                          '• Tệp đính kèm từ thiết bị: Chưa tải lên tệp chứng từ mới.',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            color: AppColors.textSecondary,
                           ),
-                        const Divider(height: 20),
+                        ),
+                      ),
+                    const Divider(height: 20),
                     const Text(
                       'Hồ sơ pháp lý B2B đính kèm đã tải lên (Bấm để đối chiếu):',
                       style: TextStyle(
@@ -1563,8 +1590,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                       runSpacing: 8,
                       children: [
                         ActionChip(
-                          avatar:
-                              const Icon(Icons.business_outlined, size: 16),
+                          avatar: const Icon(Icons.business_outlined, size: 16),
                           label: const Text('Giấy phép ĐKKD B2B'),
                           onPressed: () => _showKycDocumentInspectDialog(
                             context,
@@ -1572,19 +1598,22 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                             applicantName: featuredMerchant.storeName,
                             details:
                                 '• Mã đối tác: ${featuredMerchant.id}\n• Loại hình: ${featuredMerchant.businessType}\n• Người đại diện pháp luật: ${featuredMerchant.representativeName}\n• Khung giờ hoạt động: ${featuredMerchant.openHours}\n• Trạng thái hiện tại: ${featuredMerchant.approvalStatus}',
-                            onQuickApprove: canApproveDriver &&
+                            onQuickApprove:
+                                canApproveDriver &&
                                     featuredMerchant.approvalStatus !=
                                         'Đã duyệt'
                                 ? () => _store.updateMerchantApproval(
-                                      featuredMerchant.id,
-                                      'Đã duyệt',
-                                    )
+                                    featuredMerchant.id,
+                                    'Đã duyệt',
+                                  )
                                 : null,
                           ),
                         ),
                         ActionChip(
-                          avatar:
-                              const Icon(Icons.receipt_long_outlined, size: 16),
+                          avatar: const Icon(
+                            Icons.receipt_long_outlined,
+                            size: 16,
+                          ),
                           label: const Text('Chứng nhận Mã số thuế'),
                           onPressed: () => _showKycDocumentInspectDialog(
                             context,
@@ -1592,13 +1621,14 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                             applicantName: featuredMerchant.storeName,
                             details:
                                 '• Mã số thuế doanh nghiệp: ${featuredMerchant.taxCode}\n• Chủ sở hữu / SĐT: ${featuredMerchant.ownerPhone}\n• Ngành nghề đăng ký: ${featuredMerchant.businessType}',
-                            onQuickApprove: canApproveDriver &&
+                            onQuickApprove:
+                                canApproveDriver &&
                                     featuredMerchant.approvalStatus !=
                                         'Đã duyệt'
                                 ? () => _store.updateMerchantApproval(
-                                      featuredMerchant.id,
-                                      'Đã duyệt',
-                                    )
+                                    featuredMerchant.id,
+                                    'Đã duyệt',
+                                  )
                                 : null,
                           ),
                         ),
@@ -1610,17 +1640,19 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                           label: const Text('Tài khoản Đối soát COD'),
                           onPressed: () => _showKycDocumentInspectDialog(
                             context,
-                            docTitle: 'Thông tin Tài khoản Đối soát & Thanh toán COD',
+                            docTitle:
+                                'Thông tin Tài khoản Đối soát & Thanh toán COD',
                             applicantName: featuredMerchant.storeName,
                             details:
                                 '• Ngân hàng thụ hưởng: ${featuredMerchant.bankName}\n• Số tài khoản nhận COD: ${featuredMerchant.bankAccount}\n• Số dư COD hiện tại: ${CurrencyFormatter.formatVnd(featuredMerchant.codBalance)}\n• Trạng thái hồ sơ: ${featuredMerchant.approvalStatus}',
-                            onQuickApprove: canApproveDriver &&
+                            onQuickApprove:
+                                canApproveDriver &&
                                     featuredMerchant.approvalStatus !=
                                         'Đã duyệt'
                                 ? () => _store.updateMerchantApproval(
-                                      featuredMerchant.id,
-                                      'Đã duyệt',
-                                    )
+                                    featuredMerchant.id,
+                                    'Đã duyệt',
+                                  )
                                 : null,
                           ),
                         ),
@@ -1629,167 +1661,166 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                   ],
                 )
               : _selectedKycIsMerchant
-                  ? const Text(
-                      'Chưa có hồ sơ đăng ký cửa hàng B2B nào trong hệ thống.',
-                    )
-                  : featuredDriver == null
-                      ? const Text('Chưa có hồ sơ tài xế nào trong hệ thống.')
-                      : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Chi tiết Hồ sơ Pháp lý: ${featuredDriver.fullName}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 15,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          '• Mã định danh: ${featuredDriver.id} (${featuredDriver.phone})',
-                        ),
-                        Text('• Số CCCD gắn chip: ${featuredDriver.citizenId}'),
-                        Text(
-                          '• Phương tiện: ${featuredDriver.vehicleType} (${featuredDriver.licensePlate})',
-                        ),
-                        Text(
-                          '• Ngân hàng & Ký quỹ: ${featuredDriver.bankName} (${featuredDriver.bankAccount}) • Ví: ${CurrencyFormatter.formatVnd(featuredDriver.walletBalance)}',
-                        ),
-                        Text(
-                          '• Trạng thái xét duyệt: ${featuredDriver.approvalStatus}',
-                        ),
-                        if (featuredDriver.attachedKycDocs.isNotEmpty) ...[
-                          const SizedBox(height: 6),
-                          Wrap(
-                            spacing: 6,
-                            runSpacing: 6,
-                            children: featuredDriver.attachedKycDocs
-                                .map(
-                                  (doc) => ActionChip(
-                                    visualDensity: VisualDensity.compact,
-                                    avatar: const Icon(
-                                      Icons.insert_drive_file_outlined,
-                                      size: 14,
-                                    ),
-                                    label: Text(
-                                      doc,
-                                      style: const TextStyle(fontSize: 11),
-                                    ),
-                                    onPressed: () =>
-                                        _showKycDocumentInspectDialog(
-                                      context,
-                                      docTitle: 'Tệp chứng từ thực tế: $doc',
-                                      applicantName: featuredDriver.fullName,
-                                      details:
-                                          '• Tên tệp tài xế tải lên: $doc\n• Mã định danh: ${featuredDriver.id} (${featuredDriver.phone})\n• CCCD: ${featuredDriver.citizenId} • Biển số: ${featuredDriver.licensePlate}\n• Trạng thái xét duyệt: ${featuredDriver.approvalStatus}',
-                                      onQuickApprove: canApproveDriver &&
-                                              featuredDriver.approvalStatus !=
-                                                  'Đã duyệt'
-                                          ? () => _store.updateDriverApproval(
-                                                featuredDriver.id,
-                                                'Đã duyệt',
-                                              )
-                                          : null,
-                                    ),
-                                  ),
-                                )
-                                .toList(),
-                          ),
-                        ] else
-                          const Padding(
-                            padding: EdgeInsets.only(top: 4),
-                            child: Text(
-                              '• Chứng từ đính kèm từ thiết bị: Chưa tải lên tệp ảnh mới.',
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                color: AppColors.textSecondary,
+              ? const Text(
+                  'Chưa có hồ sơ đăng ký cửa hàng B2B nào trong hệ thống.',
+                )
+              : featuredDriver == null
+              ? const Text('Chưa có hồ sơ tài xế nào trong hệ thống.')
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Chi tiết Hồ sơ Pháp lý: ${featuredDriver.fullName}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      '• Mã định danh: ${featuredDriver.id} (${featuredDriver.phone})',
+                    ),
+                    Text('• Số CCCD gắn chip: ${featuredDriver.citizenId}'),
+                    Text(
+                      '• Phương tiện: ${featuredDriver.vehicleType} (${featuredDriver.licensePlate})',
+                    ),
+                    Text(
+                      '• Ngân hàng & Ký quỹ: ${featuredDriver.bankName} (${featuredDriver.bankAccount}) • Ví: ${CurrencyFormatter.formatVnd(featuredDriver.walletBalance)}',
+                    ),
+                    Text(
+                      '• Trạng thái xét duyệt: ${featuredDriver.approvalStatus}',
+                    ),
+                    if (featuredDriver.attachedKycDocs.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: featuredDriver.attachedKycDocs
+                            .map(
+                              (doc) => ActionChip(
+                                visualDensity: VisualDensity.compact,
+                                avatar: const Icon(
+                                  Icons.insert_drive_file_outlined,
+                                  size: 14,
+                                ),
+                                label: Text(
+                                  doc,
+                                  style: const TextStyle(fontSize: 11),
+                                ),
+                                onPressed: () => _showKycDocumentInspectDialog(
+                                  context,
+                                  docTitle: 'Tệp chứng từ thực tế: $doc',
+                                  applicantName: featuredDriver.fullName,
+                                  details:
+                                      '• Tên tệp tài xế tải lên: $doc\n• Mã định danh: ${featuredDriver.id} (${featuredDriver.phone})\n• CCCD: ${featuredDriver.citizenId} • Biển số: ${featuredDriver.licensePlate}\n• Trạng thái xét duyệt: ${featuredDriver.approvalStatus}',
+                                  onQuickApprove:
+                                      canApproveDriver &&
+                                          featuredDriver.approvalStatus !=
+                                              'Đã duyệt'
+                                      ? () => _store.updateDriverApproval(
+                                          featuredDriver.id,
+                                          'Đã duyệt',
+                                        )
+                                      : null,
+                                ),
                               ),
-                            ),
-                          ),
-                        const Divider(height: 20),
-                        const Text(
-                          'Tài liệu đính kèm đã tải lên (Bấm để đối chiếu):',
+                            )
+                            .toList(),
+                      ),
+                    ] else
+                      const Padding(
+                        padding: EdgeInsets.only(top: 4),
+                        child: Text(
+                          '• Chứng từ đính kèm từ thiết bị: Chưa tải lên tệp ảnh mới.',
                           style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13,
+                            fontSize: 11.5,
+                            color: AppColors.textSecondary,
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            ActionChip(
-                              avatar:
-                                  const Icon(Icons.badge_outlined, size: 16),
-                              label: const Text('CCCD Mặt trước & sau'),
-                              onPressed: () => _showKycDocumentInspectDialog(
-                                context,
-                                docTitle: 'Căn cước công dân gắn chip (2 mặt)',
-                                applicantName: featuredDriver.fullName,
-                                details:
-                                    '• Họ và tên: ${featuredDriver.fullName}\n• Số CCCD: ${featuredDriver.citizenId}\n• Số điện thoại xác thực: ${featuredDriver.phone}\n• Tệp đính kèm: ${featuredDriver.attachedKycDocs.isEmpty ? "Chưa tải tệp" : featuredDriver.attachedKycDocs.first}\n• Trạng thái eKYC: ${featuredDriver.approvalStatus == "Đã duyệt" ? "Đã xác thực bởi Quản trị viên" : featuredDriver.approvalStatus == "Từ chối" ? "Hồ sơ không đạt yêu cầu" : "Đang chờ đối chiếu nhân công"}',
-                                onQuickApprove: canApproveDriver &&
-                                        featuredDriver.approvalStatus !=
-                                            'Đã duyệt'
-                                    ? () => _store.updateDriverApproval(
-                                          featuredDriver.id,
-                                          'Đã duyệt',
-                                        )
-                                    : null,
-                              ),
-                            ),
-                            ActionChip(
-                              avatar: const Icon(Icons.credit_card, size: 16),
-                              label: const Text('Bằng lái xe A1/B2'),
-                              onPressed: () => _showKycDocumentInspectDialog(
-                                context,
-                                docTitle: 'Giấy phép lái xe (Hạng A1/B2)',
-                                applicantName: featuredDriver.fullName,
-                                details:
-                                    '• Chủ GPLX: ${featuredDriver.fullName}\n• Hạng GPLX đăng ký: Phù hợp ${featuredDriver.vehicleType}\n• Tệp GPLX: ${featuredDriver.attachedKycDocs.length >= 2 ? featuredDriver.attachedKycDocs[1] : "Chưa tải tệp"}\n• Tình trạng xét duyệt: ${featuredDriver.approvalStatus}',
-                                onQuickApprove: canApproveDriver &&
-                                        featuredDriver.approvalStatus !=
-                                            'Đã duyệt'
-                                    ? () => _store.updateDriverApproval(
-                                          featuredDriver.id,
-                                          'Đã duyệt',
-                                        )
-                                    : null,
-                              ),
-                            ),
-                            ActionChip(
-                              avatar: const Icon(Icons.two_wheeler, size: 16),
-                              label: const Text('Đăng ký xe (Cà vẹt)'),
-                              onPressed: () => _showKycDocumentInspectDialog(
-                                context,
-                                docTitle: 'Chứng nhận Đăng ký xe (Cà vẹt)',
-                                applicantName: featuredDriver.fullName,
-                                details:
-                                    '• Loại phương tiện: ${featuredDriver.vehicleType} (${featuredDriver.vehicleColor})\n• Biển kiểm soát: ${featuredDriver.licensePlate}\n• Tệp Cà vẹt: ${featuredDriver.attachedKycDocs.length >= 3 ? featuredDriver.attachedKycDocs[2] : "Chưa tải tệp"}\n• Chủ phương tiện: ${featuredDriver.fullName}',
-                                onQuickApprove: canApproveDriver &&
-                                        featuredDriver.approvalStatus !=
-                                            'Đã duyệt'
-                                    ? () => _store.updateDriverApproval(
-                                          featuredDriver.id,
-                                          'Đã duyệt',
-                                        )
-                                    : null,
-                              ),
-                            ),
-                          ],
+                      ),
+                    const Divider(height: 20),
+                    const Text(
+                      'Tài liệu đính kèm đã tải lên (Bấm để đối chiếu):',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ActionChip(
+                          avatar: const Icon(Icons.badge_outlined, size: 16),
+                          label: const Text('CCCD Mặt trước & sau'),
+                          onPressed: () => _showKycDocumentInspectDialog(
+                            context,
+                            docTitle: 'Căn cước công dân gắn chip (2 mặt)',
+                            applicantName: featuredDriver.fullName,
+                            details:
+                                '• Họ và tên: ${featuredDriver.fullName}\n• Số CCCD: ${featuredDriver.citizenId}\n• Số điện thoại xác thực: ${featuredDriver.phone}\n• Tệp đính kèm: ${featuredDriver.attachedKycDocs.isEmpty ? "Chưa tải tệp" : featuredDriver.attachedKycDocs.first}\n• Trạng thái eKYC: ${featuredDriver.approvalStatus == "Đã duyệt"
+                                    ? "Đã xác thực bởi Quản trị viên"
+                                    : featuredDriver.approvalStatus == "Từ chối"
+                                    ? "Hồ sơ không đạt yêu cầu"
+                                    : "Đang chờ đối chiếu nhân công"}',
+                            onQuickApprove:
+                                canApproveDriver &&
+                                    featuredDriver.approvalStatus != 'Đã duyệt'
+                                ? () => _store.updateDriverApproval(
+                                    featuredDriver.id,
+                                    'Đã duyệt',
+                                  )
+                                : null,
+                          ),
+                        ),
+                        ActionChip(
+                          avatar: const Icon(Icons.credit_card, size: 16),
+                          label: const Text('Bằng lái xe A1/B2'),
+                          onPressed: () => _showKycDocumentInspectDialog(
+                            context,
+                            docTitle: 'Giấy phép lái xe (Hạng A1/B2)',
+                            applicantName: featuredDriver.fullName,
+                            details:
+                                '• Chủ GPLX: ${featuredDriver.fullName}\n• Hạng GPLX đăng ký: Phù hợp ${featuredDriver.vehicleType}\n• Tệp GPLX: ${featuredDriver.attachedKycDocs.length >= 2 ? featuredDriver.attachedKycDocs[1] : "Chưa tải tệp"}\n• Tình trạng xét duyệt: ${featuredDriver.approvalStatus}',
+                            onQuickApprove:
+                                canApproveDriver &&
+                                    featuredDriver.approvalStatus != 'Đã duyệt'
+                                ? () => _store.updateDriverApproval(
+                                    featuredDriver.id,
+                                    'Đã duyệt',
+                                  )
+                                : null,
+                          ),
+                        ),
+                        ActionChip(
+                          avatar: const Icon(Icons.two_wheeler, size: 16),
+                          label: const Text('Đăng ký xe (Cà vẹt)'),
+                          onPressed: () => _showKycDocumentInspectDialog(
+                            context,
+                            docTitle: 'Chứng nhận Đăng ký xe (Cà vẹt)',
+                            applicantName: featuredDriver.fullName,
+                            details:
+                                '• Loại phương tiện: ${featuredDriver.vehicleType} (${featuredDriver.vehicleColor})\n• Biển kiểm soát: ${featuredDriver.licensePlate}\n• Tệp Cà vẹt: ${featuredDriver.attachedKycDocs.length >= 3 ? featuredDriver.attachedKycDocs[2] : "Chưa tải tệp"}\n• Chủ phương tiện: ${featuredDriver.fullName}',
+                            onQuickApprove:
+                                canApproveDriver &&
+                                    featuredDriver.approvalStatus != 'Đã duyệt'
+                                ? () => _store.updateDriverApproval(
+                                    featuredDriver.id,
+                                    'Đã duyệt',
+                                  )
+                                : null,
+                          ),
                         ),
                       ],
                     ),
+                  ],
+                ),
         );
         if (constraints.maxWidth < 860) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              colLeft,
-              const SizedBox(height: 16),
-              colRight,
-            ],
+            children: [colLeft, const SizedBox(height: 16), colRight],
           );
         }
         return Row(
@@ -1875,8 +1906,8 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
     final approvedDrivers = _store.drivers
         .where((d) => d.approvalStatus == 'Đã duyệt')
         .toList();
-    final unapprovedCount =
-        (_store.drivers.length - approvedDrivers.length).clamp(0, _store.drivers.length);
+    final unapprovedCount = (_store.drivers.length - approvedDrivers.length)
+        .clamp(0, _store.drivers.length);
     final busyDriverNames = _store.orders
         .where(
           (o) =>
@@ -1889,27 +1920,52 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
         .whereType<String>()
         .where((name) => name.isNotEmpty)
         .toSet();
-    final onlineApprovedDrivers =
-        approvedDrivers.where((d) => d.isOnline).toList();
-    final offlineApprovedDrivers =
-        approvedDrivers.where((d) => !d.isOnline).toList();
+    final onlineApprovedDrivers = approvedDrivers
+        .where((d) => d.isOnline)
+        .toList();
+    final offlineApprovedDrivers = approvedDrivers
+        .where((d) => !d.isOnline)
+        .toList();
     final busyCount = onlineApprovedDrivers
         .where((d) => busyDriverNames.contains(d.fullName))
         .length;
     final freeOnlineCount = onlineApprovedDrivers
         .where((d) => !busyDriverNames.contains(d.fullName))
         .length;
-    final focusedDriver = (_focusedFleetDriverId != null
+    final focusedDriver =
+        (_focusedFleetDriverId != null
             ? approvedDrivers
-                .where((d) => d.id == _focusedFleetDriverId)
-                .firstOrNull
+                  .where((d) => d.id == _focusedFleetDriverId)
+                  .firstOrNull
             : null) ??
         onlineApprovedDrivers.firstOrNull ??
         approvedDrivers.firstOrNull;
     final focusedLocation =
         focusedDriver?.location ?? _store.activeDriverLocation;
     final activeOrder = _store.activeOrderRecord ?? _store.orders.firstOrNull;
-    final hasFocusedActiveRoute = activeOrder != null &&
+    final roadCandidates = onlineApprovedDrivers
+        .where((driver) {
+          final vehicle = driver.vehicleType.toLowerCase();
+          final compatible =
+              activeOrder?.serviceType != DeliveryServiceType.truck ||
+              vehicle.contains('tải') ||
+              vehicle.contains('truck') ||
+              vehicle.contains('van');
+          return compatible &&
+              driver.walletBalance >= 200000 &&
+              !busyDriverNames.contains(driver.fullName) &&
+              _store.verifiedDriverLocations.containsKey(driver.id);
+        })
+        .map(
+          (driver) => RoadDispatchCandidate(
+            id: driver.id,
+            name: '${driver.fullName} (${driver.licensePlate})',
+            location: _store.verifiedDriverLocations[driver.id]!,
+          ),
+        )
+        .toList();
+    final hasFocusedActiveRoute =
+        activeOrder != null &&
         focusedDriver != null &&
         activeOrder.assignedDriverName == focusedDriver.fullName &&
         (activeOrder.status == OrderStatus.accepted ||
@@ -1918,13 +1974,13 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
             activeOrder.status == OrderStatus.returning);
     final fleetRoutePoints = hasFocusedActiveRoute
         ? (_store.activeRoutePolyline.length >= 2 &&
-                _store.activeDriverId == focusedDriver.id
-            ? _store.activeRoutePolyline
-            : SmartDispatchEngine.generateRoutePolyline(
-                activeOrder.pickupLocation,
-                activeOrder.dropoffLocation,
-                segments: 12,
-              ))
+                  _store.activeDriverId == focusedDriver.id
+              ? _store.activeRoutePolyline
+              : SmartDispatchEngine.generateRoutePolyline(
+                  activeOrder.pickupLocation,
+                  activeOrder.dropoffLocation,
+                  segments: 12,
+                ))
         : const <GeoPoint>[];
 
     return Card(
@@ -1943,9 +1999,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
               runSpacing: 8,
               children: [
                 Chip(label: Text('Đang rảnh: $freeOnlineCount xe (Xanh lá)')),
-                Chip(
-                  label: Text('Đang giao hàng: $busyCount xe (Cam)'),
-                ),
+                Chip(label: Text('Đang giao hàng: $busyCount xe (Cam)')),
                 Chip(
                   label: Text(
                     'Đã duyệt • Ngoại tuyến: ${offlineApprovedDrivers.length} xe (Xám)',
@@ -1997,7 +2051,8 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
               height: 560,
               mode: MapViewMode.fleetOverview,
               is3dMode: _store.isMap3dEnabled,
-              speedKmh: focusedDriver != null &&
+              speedKmh:
+                  focusedDriver != null &&
                       focusedDriver.isOnline &&
                       busyDriverNames.contains(focusedDriver.fullName)
                   ? _store.currentSpeedKmh
@@ -2012,16 +2067,24 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
               roadName: focusedDriver != null
                   ? 'Tâm bản đồ: ${focusedDriver.fullName} (${focusedDriver.licensePlate} • ${focusedDriver.vehicleType}) • (${focusedLocation.latitude.toStringAsFixed(4)}, ${focusedLocation.longitude.toStringAsFixed(4)})'
                   : (activeOrder != null
-                      ? 'Đơn hoạt động: ${activeOrder.trackingCode} • Tọa độ xe: (${_store.activeDriverLocation.latitude.toStringAsFixed(4)}, ${_store.activeDriverLocation.longitude.toStringAsFixed(4)})'
-                      : 'Chưa có đơn hàng hoạt động • Đội xe sẵn sàng'),
+                        ? 'Đơn hoạt động: ${activeOrder.trackingCode} • Tọa độ xe: (${_store.activeDriverLocation.latitude.toStringAsFixed(4)}, ${_store.activeDriverLocation.longitude.toStringAsFixed(4)})'
+                        : 'Chưa có đơn hàng hoạt động • Đội xe sẵn sàng'),
             ),
+            if (activeOrder?.status == OrderStatus.searching)
+              RoadDispatchComparison(
+                key: ValueKey('road-${activeOrder!.trackingCode}'),
+                pickup: activeOrder.pickupLocation,
+                candidates: roadCandidates,
+              ),
+            BatchRouteOptimizer(store: _store),
             if (approvedDrivers.isNotEmpty) ...[
               const SizedBox(height: 10),
               Wrap(
                 spacing: 8,
                 runSpacing: 6,
                 children: approvedDrivers.map((d) {
-                  final isBusy = d.isOnline && busyDriverNames.contains(d.fullName);
+                  final isBusy =
+                      d.isOnline && busyDriverNames.contains(d.fullName);
                   final isSelectedDrv = focusedDriver?.id == d.id;
                   final stateColor = !d.isOnline
                       ? AppColors.textSecondary
@@ -2074,9 +2137,8 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                   onPressed: () async {
                     final msg = await _store.syncLiveOsrmRouteForActiveOrder();
                     if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(msg)),
-                    );
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(SnackBar(content: Text(msg)));
                   },
                   icon: const Icon(Icons.alt_route_rounded, size: 16),
                   label: const Text('Đồng bộ lộ trình thực tế'),
@@ -2085,9 +2147,8 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                   onPressed: () async {
                     final msg = await _store.acquireRealHardwareGps();
                     if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(msg)),
-                    );
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(SnackBar(content: Text(msg)));
                   },
                   icon: const Icon(Icons.my_location_rounded, size: 16),
                   label: const Text('Cập nhật định vị thiết bị'),
@@ -2126,88 +2187,87 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
         dialogRouteAnim ??= ModalRoute.of(dialogCtx)?.animation;
         return StatefulBuilder(
           builder: (dialogCtx, setDialogState) => AlertDialog(
-          title: Text(
-            'Cập nhật phương tiện: ${drv.fullName} (${drv.id})',
-            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Loại phương tiện vận chuyển:',
-                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 6),
-              Wrap(
-                spacing: 8,
-                runSpacing: 6,
-                children: ['Xe Máy', 'Xe Tải 500kg']
-                    .map(
-                      (vt) => ChoiceChip(
-                        label: Text(vt),
-                        selected: selectedType == vt,
-                        onSelected: (_) =>
-                            setDialogState(() => selectedType = vt),
-                      ),
-                    )
-                    .toList(),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: plateCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Biển kiểm soát',
-                  hintText: '59-P1 123.45',
+            title: Text(
+              'Cập nhật phương tiện: ${drv.fullName} (${drv.id})',
+              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Loại phương tiện vận chuyển:',
+                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
                 ),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: ['Xe Máy', 'Xe Tải 500kg']
+                      .map(
+                        (vt) => ChoiceChip(
+                          label: Text(vt),
+                          selected: selectedType == vt,
+                          onSelected: (_) =>
+                              setDialogState(() => selectedType = vt),
+                        ),
+                      )
+                      .toList(),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: plateCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Biển kiểm soát',
+                    hintText: '59-P1 123.45',
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogCtx).pop(),
+                child: const Text('Hủy'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  final plate = plateCtrl.text.trim();
+                  if (plate.length < 5) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Vui lòng nhập biển kiểm soát hợp lệ (tối thiểu 5 ký tự)!',
+                        ),
+                      ),
+                    );
+                    return;
+                  }
+                  final ok = _store.adminUpdateDriverVehicleInfo(
+                    driverId: drv.id,
+                    vehicleType: selectedType,
+                    licensePlate: plate,
+                  );
+                  Navigator.of(dialogCtx).pop();
+                  if (ok) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Đã cập nhật phương tiện ${drv.fullName}: $selectedType ($plate)!',
+                        ),
+                      ),
+                    );
+                  }
+                },
+                child: const Text('Lưu phương tiện'),
               ),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogCtx).pop(),
-              child: const Text('Hủy'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final plate = plateCtrl.text.trim();
-                if (plate.length < 5) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Vui lòng nhập biển kiểm soát hợp lệ (tối thiểu 5 ký tự)!',
-                      ),
-                    ),
-                  );
-                  return;
-                }
-                final ok = _store.adminUpdateDriverVehicleInfo(
-                  driverId: drv.id,
-                  vehicleType: selectedType,
-                  licensePlate: plate,
-                );
-                Navigator.of(dialogCtx).pop();
-                if (ok) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Đã cập nhật phương tiện ${drv.fullName}: $selectedType ($plate)!',
-                      ),
-                    ),
-                  );
-                }
-              },
-              child: const Text('Lưu phương tiện'),
-            ),
-          ],
-        ),
         );
       },
     ).whenComplete(() {
-      SecurityAndBarcodeUtils.disposeControllersAfterDialog(
-        [plateCtrl],
-        dialogRouteAnim,
-      );
+      SecurityAndBarcodeUtils.disposeControllersAfterDialog([
+        plateCtrl,
+      ], dialogRouteAnim);
     });
   }
 }

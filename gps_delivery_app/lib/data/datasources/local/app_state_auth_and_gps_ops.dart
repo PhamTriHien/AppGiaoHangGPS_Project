@@ -215,6 +215,13 @@ extension AppStateAuthAndGpsOps on AppStateStore {
 
   /// Làm sạch phiên đăng nhập hiện tại khi người dùng nhấn Đăng xuất
   void clearAuthenticatedSession() {
+    unawaited(disconnectLiveRooms());
+    unawaited(
+      PushNotificationService.instance
+          .disable()
+          .whenComplete(() => LiveDeliveryService.instance.signOut())
+          .catchError((_) {}),
+    );
     activeAuthenticatedUser = null;
     selectedCustomerOrderCode = null;
     selectedDriverOrderCode = null;
@@ -590,8 +597,9 @@ extension AppStateAuthAndGpsOps on AppStateStore {
       existing.phone = normPhone;
       existing.citizenId = citizenId.trim();
       existing.vehicleType = vehicleType.trim();
-      existing.isElectricVehicle =
-          DriverApplicantRecord.inferElectricVehicle(vehicleType.trim());
+      existing.isElectricVehicle = DriverApplicantRecord.inferElectricVehicle(
+        vehicleType.trim(),
+      );
       existing.licensePlate = licensePlate.trim();
       if (vehicleColor.trim().isNotEmpty) {
         existing.vehicleColor = vehicleColor.trim();
@@ -1321,30 +1329,6 @@ extension AppStateAuthAndGpsOps on AppStateStore {
     return true;
   }
 
-  List<String> _splitCsvLine(String line) {
-    final fields = <String>[];
-    final buf = StringBuffer();
-    bool inQuotes = false;
-    for (var i = 0; i < line.length; i++) {
-      final ch = line[i];
-      if (ch == '"') {
-        if (inQuotes && i + 1 < line.length && line[i + 1] == '"') {
-          buf.write('"');
-          i++;
-        } else {
-          inQuotes = !inQuotes;
-        }
-      } else if (ch == ',' && !inQuotes) {
-        fields.add(buf.toString().trim());
-        buf.clear();
-      } else {
-        buf.write(ch);
-      }
-    }
-    fields.add(buf.toString().trim());
-    return fields;
-  }
-
   CsvBatchParseResult parseAndCreateBulkOrdersFromCsv(
     String csvContentOrFilePath, {
     bool commitOrders = false,
@@ -1361,10 +1345,10 @@ extension AppStateAuthAndGpsOps on AppStateStore {
       }
     } catch (_) {}
 
-    final lines = rawContent
-        .split(RegExp(r'\r?\n'))
-        .map((l) => l.trim())
-        .where((l) => l.isNotEmpty)
+    final lines = Csv(dynamicTyping: false)
+        .decode(rawContent)
+        .map((row) => row.map((field) => field.toString().trim()).toList())
+        .where((row) => row.any((field) => field.isNotEmpty))
         .toList();
 
     final parsedRows = <CsvBatchRowResult>[];
@@ -1372,26 +1356,52 @@ extension AppStateAuthAndGpsOps on AppStateStore {
     int validCount = 0;
     int invalidCount = 0;
     final phoneRegex = RegExp(r'^(?:\+84|0)[0-9]{9}$');
+    double? money(String raw) {
+      var value = raw.replaceAll('đ', '').replaceAll(' ', '').trim();
+      if (RegExp(r'^-?[0-9]{1,3}(\.[0-9]{3})+$').hasMatch(value)) {
+        value = value.replaceAll('.', '');
+      }
+      return value.isEmpty ? 0 : double.tryParse(value);
+    }
+
+    GeoPoint? point(List<String> columns, int index) {
+      if (columns.length <= index + 1) return null;
+      final lat = double.tryParse(columns[index]);
+      final lng = double.tryParse(columns[index + 1]);
+      if (lat == null ||
+          lng == null ||
+          !lat.isFinite ||
+          !lng.isFinite ||
+          lat.abs() > 90 ||
+          lng.abs() > 180) {
+        return null;
+      }
+      return GeoPoint(latitude: lat, longitude: lng);
+    }
 
     for (var i = 0; i < lines.length; i++) {
-      final line = lines[i];
+      final cols = lines[i];
       if (i == 0 &&
-          (line.toLowerCase().contains('recipient') ||
-              line.toLowerCase().contains('nguoi_nhan') ||
-              line.toLowerCase().contains('ten_nguoi_nhan'))) {
+          cols.length >= 2 &&
+          const {
+            'ten_nguoi_nhan',
+            'nguoi_nhan',
+            'recipient',
+            'recipient_name',
+          }.contains(cols[0].toLowerCase()) &&
+          const {
+            'sdt_nguoi_nhan',
+            'sdt',
+            'phone',
+            'recipient_phone',
+          }.contains(cols[1].toLowerCase())) {
         continue;
       }
-      final cols = _splitCsvLine(line);
       final name = cols.isNotEmpty ? cols[0] : '';
       final phone = cols.length > 1 ? cols[1].replaceAll(' ', '') : '';
       final address = cols.length > 2 ? cols[2] : '';
 
-      final isFourColCodFormat =
-          cols.length == 4 &&
-          double.tryParse(
-                cols[3].replaceAll('.', '').replaceAll('đ', '').trim(),
-              ) !=
-              null;
+      final isFourColCodFormat = cols.length == 4;
 
       final desc = isFourColCodFormat
           ? 'Kiện hàng thương mại điện tử'
@@ -1400,18 +1410,10 @@ extension AppStateAuthAndGpsOps on AppStateStore {
                 : 'Kiện hàng thương mại điện tử');
       final weight = isFourColCodFormat
           ? 1.5
-          : (cols.length > 4 ? (double.tryParse(cols[4]) ?? 1.5) : 1.5);
+          : (cols.length > 4 ? (double.tryParse(cols[4]) ?? double.nan) : 1.5);
       final cod = isFourColCodFormat
-          ? (double.tryParse(
-                  cols[3].replaceAll('.', '').replaceAll('đ', '').trim(),
-                ) ??
-                0.0)
-          : (cols.length > 5
-                ? (double.tryParse(
-                        cols[5].replaceAll('.', '').replaceAll('đ', '').trim(),
-                      ) ??
-                      0.0)
-                : 0.0);
+          ? (money(cols[3]) ?? double.nan)
+          : (cols.length > 5 ? (money(cols[5]) ?? double.nan) : 0.0);
       final svcStr = !isFourColCodFormat && cols.length > 6
           ? cols[6].toUpperCase()
           : 'STANDARD';
@@ -1432,32 +1434,47 @@ extension AppStateAuthAndGpsOps on AppStateStore {
           ? cols[7].trim()
           : '';
 
-      final fallbackWarehouse = merchantPersonalWarehouses.isNotEmpty
-          ? merchantPersonalWarehouses.first
-          : (merchantWarehouses.where((w) => w.isPrimary).firstOrNull ??
-                merchantWarehouses.firstOrNull);
       final resolvedPickup = rowCustomPickup.isNotEmpty
           ? rowCustomPickup
           : (customPickupAddress?.trim().isNotEmpty == true
                 ? customPickupAddress!.trim()
-                : (fallbackWarehouse?.address ?? ''));
-      final pickupPt =
-          SmartDispatchEngine.tryResolveAddressToCoordinate(resolvedPickup) ??
-          (rowCustomPickup.isEmpty &&
-                  (customPickupAddress == null ||
-                      customPickupAddress.trim().isEmpty)
-              ? fallbackWarehouse?.location
-              : null) ??
-          liveDeviceLocation;
-      final dropoffPt = SmartDispatchEngine.tryResolveAddressToCoordinate(
-        address,
-      );
+                : (merchantPersonalWarehouses.isNotEmpty
+                      ? merchantPersonalWarehouses.first.address
+                      : ''));
+      final pickupCoordinatesProvided =
+          cols.length > 8 && cols.skip(8).take(2).any((c) => c.isNotEmpty);
+      final dropoffCoordinatesProvided =
+          cols.length > 10 && cols.skip(10).take(2).any((c) => c.isNotEmpty);
+      final warehouse = merchantPersonalWarehouses
+          .where(
+            (w) =>
+                w.address.trim().toLowerCase() ==
+                resolvedPickup.trim().toLowerCase(),
+          )
+          .firstOrNull;
+      final pickupPt = pickupCoordinatesProvided
+          ? point(cols, 8)
+          : SmartDispatchEngine.tryResolveAddressToCoordinate(resolvedPickup) ??
+                warehouse?.location;
+      final dropoffPt = dropoffCoordinatesProvided
+          ? point(cols, 10)
+          : SmartDispatchEngine.tryResolveAddressToCoordinate(address);
       final restrictedZone = pickupPt != null && dropoffPt != null
           ? findActiveRestrictedZoneForRoute(pickupPt, dropoffPt)
           : null;
       final errors = <String>[];
+      if (![4, 7, 8, 12].contains(cols.length)) {
+        errors.add('Số cột không hợp lệ (cần 4, 7, 8 hoặc 12 cột)');
+      }
       if (name.isEmpty) errors.add('Thiếu tên người nhận');
       if (!phoneRegex.hasMatch(phone)) errors.add('SĐT không hợp lệ');
+      if (resolvedPickup.trim().length < 5) {
+        errors.add('Thiếu địa chỉ lấy hàng');
+      }
+      if (pickupCoordinatesProvided && pickupPt == null ||
+          dropoffCoordinatesProvided && dropoffPt == null) {
+        errors.add('Tọa độ không hợp lệ');
+      }
       if (address.trim().length < 10) {
         errors.add('Thiếu địa chỉ giao');
       } else if (pickupPt == null || dropoffPt == null) {
@@ -1470,8 +1487,15 @@ extension AppStateAuthAndGpsOps on AppStateStore {
       } else if (restrictedZone != null) {
         errors.add('Thuộc vùng cấm giao (${restrictedZone.zoneName})');
       }
-      if (weight <= 0 || weight > 500) errors.add('Khối lượng không hợp lệ');
-      if (cod < 0) errors.add('Tiền COD âm');
+      if (!weight.isFinite || weight <= 0 || weight > 500) {
+        errors.add('Khối lượng không hợp lệ');
+      }
+      if (!cod.isFinite ||
+          cod < 0 ||
+          cod > 20000000 ||
+          cod != cod.truncateToDouble()) {
+        errors.add('Tiền COD không hợp lệ');
+      }
 
       final isValid = errors.isEmpty;
       if (isValid) {
@@ -1490,6 +1514,8 @@ extension AppStateAuthAndGpsOps on AppStateStore {
             paymentMethod: feePayerMethod,
             customCustomerName:
                 activeMerchantRecord?.storeName ?? merchantStoreName,
+            customPickupLocation: pickupPt,
+            customDropoffLocation: dropoffPt,
           );
           createdCodes.add(created.trackingCode);
         }
@@ -1509,6 +1535,9 @@ extension AppStateAuthAndGpsOps on AppStateStore {
           serviceType: svc,
           isValid: isValid,
           statusNote: isValid ? 'Hợp lệ' : errors.join(', '),
+          pickupAddress: resolvedPickup,
+          pickupLocation: pickupPt,
+          dropoffLocation: dropoffPt,
         ),
       );
     }
@@ -1528,11 +1557,9 @@ extension AppStateAuthAndGpsOps on AppStateStore {
       lastSyncStatusMessage =
           'Đang ở chế độ ngoại tuyến • Các thao tác được lưu tạm chờ kết nối lại ($offlineQueueCount mục)';
     } else {
-      final drained = offlineQueueCount;
-      offlineQueueCount = 0;
-      if (wasOffline && drained > 0) {
+      if (wasOffline && offlineQueueCount > 0) {
         lastSyncStatusMessage =
-            'Đã đồng bộ $drained thao tác ngoại tuyến lên máy chủ thành công';
+            'Đang chờ máy chủ xác nhận $offlineQueueCount thao tác ngoại tuyến';
       } else if (wasOffline) {
         lastSyncStatusMessage = 'Đã khôi phục kết nối trực tuyến';
       }
@@ -2037,32 +2064,65 @@ extension AppStateAuthAndGpsOps on AppStateStore {
     if (!hasAdminPermission('Hệ thống: Bảo mật')) {
       return 'Từ chối: Chỉ vai trò có quyền "Hệ thống: Bảo mật" mới được cấu hình Cloud.';
     }
+    final uri = Uri.tryParse(url.trim());
+    final publicKey = anonKey.trim();
+    if (uri == null ||
+        !['https', 'http'].contains(uri.scheme) ||
+        uri.host.isEmpty ||
+        publicKey.isEmpty ||
+        publicKey.startsWith('sb_secret_')) {
+      return 'Cần Project URL và publishable/anon key hợp lệ. Không dùng service-role key trong app.';
+    }
+    if (publicKey.split('.').length == 3) {
+      try {
+        final claims = jsonDecode(
+          utf8.decode(
+            base64Url.decode(base64Url.normalize(publicKey.split('.')[1])),
+          ),
+        );
+        if (claims['role'] == 'service_role') {
+          return 'Không được lưu service-role key trong app.';
+        }
+      } catch (_) {
+        return 'Public API key không hợp lệ.';
+      }
+    }
+    await disconnectLiveRooms();
     EnvConfig.configureSupabaseRuntime(url: url, anonKey: anonKey);
     if (!EnvConfig.isSupabaseConfigured) {
       return 'Vui lòng nhập SUPABASE_URL hợp lệ và SUPABASE_ANON_KEY không rỗng.';
     }
     try {
       try {
+        try {
+          await Supabase.instance.dispose();
+        } catch (_) {}
         await Supabase.initialize(
           url: EnvConfig.supabaseUrl,
           publishableKey: EnvConfig.supabaseAnonKey,
         );
-      } catch (_) {}
+      } catch (_) {
+        return 'Không khởi tạo được kết nối Supabase.';
+      }
+      await saveLocalIntegrationConfig({
+        'supabaseUrl': url.trim(),
+        'supabaseAnonKey': anonKey.trim(),
+      });
       SupabasePostgisDatasource.bindRuntimeClient(
         EnvConfig.supabaseUrl,
         EnvConfig.supabaseAnonKey,
+        client: Supabase.instance.client,
       );
       final remoteDs = SupabasePostgisDatasource();
       final rows = await remoteDs.fetchTableRecords('orders', limit: 20);
       isOfflineMode = false;
-      offlineQueueCount = 0;
+      offlineQueueCount = await _sqliteDb.getPendingQueueCount();
       lastSyncStatusMessage =
           'Đã kết nối Cloud Supabase PostGIS thành công (${rows.length} bản ghi orders trên mây)';
       _notifyStoreChanged();
       return lastSyncStatusMessage;
     } catch (e) {
-      lastSyncStatusMessage =
-          'Đã lưu cấu hình Supabase. Máy chủ trả về: $e (Đang duy trì CSDL SQLite cục bộ)';
+      lastSyncStatusMessage = 'Đã lưu cấu hình Supabase; chưa truy cập được bảng orders. Dữ liệu vẫn lưu trên thiết bị.';
       _notifyStoreChanged();
       return lastSyncStatusMessage;
     }
@@ -2143,7 +2203,35 @@ extension AppStateAuthAndGpsOps on AppStateStore {
     String? smsApiKey,
     String? smsApiSecret,
     String? smsBrandname,
+    String? otpEmailWebhookUrl,
+    String? otpEmailWebhookToken,
   }) async {
+    if (activeAuthenticatedUser?.role != SubsystemRole.admin ||
+        !hasAdminPermission('Hệ thống: Bảo mật')) {
+      throw StateError('Không có quyền thay đổi cấu hình đăng nhập.');
+    }
+    final config = <String, dynamic>{
+      ..._authProviderConfigSnapshot(),
+      'smtpHost': smtpHost.trim(),
+      'smtpPort': smtpPort,
+      'smtpSenderEmail': smtpSenderEmail.trim(),
+      'smtpAppPassword': smtpAppPassword.replaceAll(' ', '').trim(),
+      'smsWebhookUrl': smsWebhookUrl.trim(),
+      'smsProvider': smsProvider ?? EnvConfig.smsProvider,
+      'smsApiKey': smsApiKey ?? EnvConfig.smsApiKey,
+      'smsApiSecret': smsApiSecret ?? EnvConfig.smsApiSecret,
+      'smsBrandname': smsBrandname ?? EnvConfig.smsBrandname,
+      'googleClientId': googleClientId.trim(),
+      'googleClientSecret': googleClientSecret.trim(),
+      'otpEmailWebhookUrl': otpEmailWebhookUrl ?? EnvConfig.otpEmailWebhookUrl,
+      'otpEmailWebhookToken':
+          otpEmailWebhookToken ?? EnvConfig.otpEmailWebhookToken,
+    };
+    await _sqliteDb.upsertEntityRecord(
+      tableName: 'auth_provider_configs',
+      recordId: 'DEFAULT',
+      payload: config,
+    );
     EnvConfig.configureAuthProvidersRuntime(
       smtpHost: smtpHost,
       smtpPort: smtpPort,
@@ -2156,32 +2244,63 @@ extension AppStateAuthAndGpsOps on AppStateStore {
       smsBrandname: smsBrandname,
       googleClientId: googleClientId,
       googleClientSecret: googleClientSecret,
-    );
-    await _sqliteDb.upsertEntityRecord(
-      tableName: 'auth_provider_configs',
-      recordId: 'DEFAULT',
-      payload: {
-        'smtpHost': EnvConfig.smtpHost,
-        'smtpPort': EnvConfig.smtpPort,
-        'smtpSenderEmail': EnvConfig.smtpSenderEmail,
-        'smtpAppPassword': EnvConfig.smtpAppPassword,
-        'smsWebhookUrl': EnvConfig.smsWebhookUrl,
-        'smsProvider': EnvConfig.smsProvider,
-        'smsApiKey': EnvConfig.smsApiKey,
-        'smsApiSecret': EnvConfig.smsApiSecret,
-        'smsBrandname': EnvConfig.smsBrandname,
-        'googleClientId': EnvConfig.googleClientId,
-        'googleClientSecret': EnvConfig.googleClientSecret,
-      },
+      otpEmailWebhookUrl: otpEmailWebhookUrl,
+      otpEmailWebhookToken: otpEmailWebhookToken,
     );
     _notifyStoreChanged();
   }
 
+  Map<String, dynamic> _authProviderConfigSnapshot() => {
+    'smtpHost': EnvConfig.smtpHost,
+    'smtpPort': EnvConfig.smtpPort,
+    'smtpSenderEmail': EnvConfig.smtpSenderEmail,
+    'smtpAppPassword': EnvConfig.smtpAppPassword,
+    'smsWebhookUrl': EnvConfig.smsWebhookUrl,
+    'smsProvider': EnvConfig.smsProvider,
+    'smsApiKey': EnvConfig.smsApiKey,
+    'smsApiSecret': EnvConfig.smsApiSecret,
+    'smsBrandname': EnvConfig.smsBrandname,
+    'googleClientId': EnvConfig.googleClientId,
+    'googleClientSecret': EnvConfig.googleClientSecret,
+    'otpEmailWebhookUrl': EnvConfig.otpEmailWebhookUrl,
+    'otpEmailWebhookToken': EnvConfig.otpEmailWebhookToken,
+  };
+
   Future<void> loadAuthProviderConfigsFromDatabase() async {
     try {
-      final rows = await _sqliteDb.getEntityRecords('auth_provider_configs');
-      if (rows.isEmpty) return;
-      final cfg = rows.first;
+      final rows = await _sqliteDb.queryRows(
+        'local_relational_entities',
+        where: 'table_name = ? AND record_id = ?',
+        whereArgs: ['auth_provider_configs', 'DEFAULT'],
+        limit: 1,
+      );
+      if (rows.isEmpty) {
+        // Preserve native provider settings when the next build omits dart-define.
+        if (!kIsWeb &&
+            (EnvConfig.isGoogleOAuthConfigured ||
+                EnvConfig.isSmtpConfigured ||
+                EnvConfig.isOtpEmailWebhookConfigured ||
+                EnvConfig.isExternalSmsGatewayConfigured)) {
+          await _sqliteDb.upsertEntityRecord(
+            tableName: 'auth_provider_configs',
+            recordId: 'DEFAULT',
+            payload: _authProviderConfigSnapshot(),
+          );
+        }
+        return;
+      }
+      final savedConfig = jsonDecode(
+        rows.single['payload_json'] as String,
+      ) as Map<String, dynamic>;
+      // Empty legacy snapshots must not erase restored native credentials.
+      final cfg = <String, dynamic>{
+        ..._authProviderConfigSnapshot(),
+        for (final entry in savedConfig.entries)
+          if (entry.value != null &&
+              (entry.value is! String ||
+                  (entry.value as String).trim().isNotEmpty))
+            entry.key: entry.value,
+      };
       EnvConfig.configureAuthProvidersRuntime(
         smtpHost: cfg['smtpHost']?.toString(),
         smtpPort: int.tryParse(cfg['smtpPort']?.toString() ?? '465'),
@@ -2194,7 +2313,17 @@ extension AppStateAuthAndGpsOps on AppStateStore {
         smsBrandname: cfg['smsBrandname']?.toString(),
         googleClientId: cfg['googleClientId']?.toString(),
         googleClientSecret: cfg['googleClientSecret']?.toString(),
+        otpEmailWebhookUrl: cfg['otpEmailWebhookUrl']?.toString(),
+        otpEmailWebhookToken: cfg['otpEmailWebhookToken']?.toString(),
       );
+      if (!kIsWeb &&
+          cfg.entries.any((entry) => savedConfig[entry.key] != entry.value)) {
+        await _sqliteDb.upsertEntityRecord(
+          tableName: 'auth_provider_configs',
+          recordId: 'DEFAULT',
+          payload: _authProviderConfigSnapshot(),
+        );
+      }
     } catch (_) {}
   }
 }

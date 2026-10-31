@@ -12,6 +12,9 @@ import '../../domain/entities/geo_point.dart';
 import '../../domain/enums/order_status.dart';
 import '../../domain/enums/service_type.dart';
 import '../widgets/animated_3d_ui_icons.dart';
+import '../widgets/bank_directory_field.dart';
+import '../widgets/delivery_weather_strip.dart';
+import '../widgets/live_order_connection.dart';
 import '../widgets/system_state_screens.dart';
 
 part 'driver_onboarding_and_dispatch_views.dart';
@@ -818,6 +821,11 @@ class _DriverSubsystemEntryState extends State<DriverSubsystemEntry> {
                   ),
                 ),
               ),
+              IconButton(
+                tooltip: 'Đơn hàng cloud',
+                onPressed: () => Navigator.of(context).pushNamed('/cloud'),
+                icon: const Icon(Icons.cloud_outlined),
+              ),
               if (showPlateBadge) ...[
                 Flexible(
                   child: Container(
@@ -879,30 +887,16 @@ class _DriverSubsystemEntryState extends State<DriverSubsystemEntry> {
                 ],
               ),
               const SizedBox(width: 6),
-              FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  backgroundColor: _store.isDriverOnline
-                      ? const Color(0xFF14B866)
-                      : AppColors.ink,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                ),
+              IconButton.filledTonal(
+                tooltip: _store.isDriverOnline
+                    ? 'Tắt nhận chuyến'
+                    : 'Bật nhận chuyến',
+                isSelected: _store.isDriverOnline,
                 onPressed: () => _handleHeaderToggleDriverOnline(context),
-                icon: Icon(
-                  _store.isDriverOnline
-                      ? Icons.sensors_rounded
-                      : Icons.power_settings_new_rounded,
-                  size: 15,
-                ),
-                label: Text(
-                  _store.isDriverOnline ? 'ĐANG ONLINE' : 'OFFLINE',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w900,
-                  ),
+                icon: const Icon(Icons.power_settings_new_rounded),
+                selectedIcon: const Icon(
+                  Icons.sensors_rounded,
+                  color: Color(0xFF14B866),
                 ),
               ),
             ],
@@ -960,6 +954,12 @@ class _DriverSubsystemEntryState extends State<DriverSubsystemEntry> {
               ],
             ),
           ),
+          IconButton(
+            tooltip: 'Đơn hàng cloud',
+            color: Colors.white,
+            onPressed: () => Navigator.of(context).pushNamed('/cloud'),
+            icon: const Icon(Icons.cloud_outlined),
+          ),
           const SizedBox(width: 4),
           InkWell(
             onTap: () => _showDriverNotificationsDialog(context),
@@ -998,45 +998,27 @@ class _DriverSubsystemEntryState extends State<DriverSubsystemEntry> {
             ),
           ),
           const SizedBox(width: 4),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: _store.isDriverOnline
-                  ? const Color(0xFF14B866)
-                  : AppColors.techLine,
-              foregroundColor: Colors.white,
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.zero,
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              minimumSize: Size.zero,
-            ),
+          IconButton(
+            tooltip: _store.isDriverOnline
+                ? 'Tắt nhận chuyến'
+                : 'Bật nhận chuyến',
+            isSelected: _store.isDriverOnline,
             onPressed: () => _handleHeaderToggleDriverOnline(context),
-            child: Text(
-              _store.isDriverOnline ? 'ONLINE' : 'OFFLINE',
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900),
+            icon: const Icon(
+              Icons.power_settings_new_rounded,
+              color: Colors.white,
+            ),
+            selectedIcon: const Icon(
+              Icons.sensors_rounded,
+              color: Color(0xFF14B866),
             ),
           ),
           if (widget.onLogout != null) ...[
             const SizedBox(width: 6),
-            OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.white,
-                backgroundColor: Colors.transparent,
-                side: const BorderSide(color: AppColors.techLine),
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.zero,
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 8,
-                ),
-                minimumSize: Size.zero,
-              ),
+            IconButton(
+              tooltip: 'Đăng xuất',
               onPressed: widget.onLogout,
-              child: const Text(
-                'Đăng xuất',
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
-              ),
+              icon: const Icon(Icons.logout, color: Colors.white),
             ),
           ],
         ],

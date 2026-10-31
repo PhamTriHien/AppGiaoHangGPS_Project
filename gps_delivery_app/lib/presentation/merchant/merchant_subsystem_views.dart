@@ -15,38 +15,14 @@ import '../../domain/enums/order_status.dart';
 import '../../domain/enums/service_type.dart';
 import '../screens/public_order_tracking_screen.dart';
 import '../widgets/animated_3d_ui_icons.dart';
+import '../widgets/bank_directory_field.dart';
+import '../widgets/photon_address_lookup.dart';
+import '../widgets/shipping_label_scanner.dart';
+import '../widgets/live_order_connection.dart';
 import '../widgets/system_state_screens.dart';
 
 part 'merchant_store_and_order_views.dart';
 part 'merchant_tracking_and_finance_views.dart';
-
-class _BatchCsvRow {
-  final int rowNumber;
-  final String recipientName;
-  final String phone;
-  final String address;
-  final String customPickupAddress;
-  final String packageDescription;
-  final double weightKg;
-  final double codAmount;
-  final DeliveryServiceType serviceType;
-  final String? validationError;
-
-  const _BatchCsvRow({
-    required this.rowNumber,
-    required this.recipientName,
-    required this.phone,
-    required this.address,
-    this.customPickupAddress = '',
-    this.packageDescription = 'Kiện hàng thương mại điện tử',
-    this.weightKg = 1.2,
-    required this.codAmount,
-    this.serviceType = DeliveryServiceType.standard,
-    this.validationError,
-  });
-
-  bool get isValid => validationError == null;
-}
 
 /// Phân hệ Cửa hàng / Đối tác B2B (Merchant Web Portal) - 11 màn hình
 /// Giao diện phân hệ nghiệp vụ.
@@ -131,7 +107,7 @@ class _MerchantSubsystemEntryState extends State<MerchantSubsystemEntry> {
 
   // Batch CSV/Excel Parser
   final TextEditingController _csvInputCtrl = TextEditingController();
-  List<_BatchCsvRow> _parsedRows = [];
+  List<CsvBatchRowResult> _parsedRows = [];
 
   // Rút tiền COD
   final TextEditingController _codWithdrawCtrl = TextEditingController();
@@ -144,8 +120,6 @@ class _MerchantSubsystemEntryState extends State<MerchantSubsystemEntry> {
   String _shopCancelReason = 'Khách hàng báo hủy đơn';
   final Set<String> _attachedMerchantDocs = <String>{};
   final List<String> _attachedShopEvidenceFiles = <String>[];
-  List<GeocodedPlaceSuggestion> _liveMerchantNominatimSuggestions = const [];
-  bool _isSearchingMerchantNominatim = false;
 
   // Thực đơn Ăn uống Đối tác B2B (GrabFood) - Screen 11
   final TextEditingController _menuDishNameCtrl = TextEditingController();
@@ -274,147 +248,21 @@ class _MerchantSubsystemEntryState extends State<MerchantSubsystemEntry> {
     setState(() {});
   }
 
-  List<String> _splitCsvLineRFC4180Ui(String line) {
-    final fields = <String>[];
-    final buf = StringBuffer();
-    bool inQuotes = false;
-    for (int i = 0; i < line.length; i++) {
-      final ch = line[i];
-      if (ch == '"') {
-        if (inQuotes && i + 1 < line.length && line[i + 1] == '"') {
-          buf.write('"');
-          i++;
-        } else {
-          inQuotes = !inQuotes;
-        }
-      } else if (ch == ',' && !inQuotes) {
-        fields.add(buf.toString().trim());
-        buf.clear();
-      } else {
-        buf.write(ch);
-      }
-    }
-    fields.add(buf.toString().trim());
-    return fields;
+  String? get _batchPickupAddress {
+    final warehouses = _store.merchantPersonalWarehouses;
+    if (warehouses.isEmpty) return null;
+    return warehouses[_selectedWarehouseIndex.clamp(0, warehouses.length - 1)]
+        .address;
   }
 
   void _parseCsvBatch() {
-    final lines = _csvInputCtrl.text.split('\n');
-    final result = <_BatchCsvRow>[];
-    for (var i = 0; i < lines.length; i++) {
-      final line = lines[i].trim();
-      if (line.isEmpty) continue;
-      final lower = line.toLowerCase();
-      if (lower.contains('nguoi_nhan') || lower.contains('recipient')) {
-        continue;
-      }
-      final parts = _splitCsvLineRFC4180Ui(line);
-      final name = parts.isNotEmpty ? parts[0] : '';
-      final phone = parts.length > 1 ? parts[1].replaceAll(' ', '') : '';
-      final addr = parts.length > 2 ? parts[2] : '';
-
-      final isFourColCodFormat =
-          parts.length == 4 &&
-          double.tryParse(
-                parts[3].replaceAll('.', '').replaceAll('đ', '').trim(),
-              ) !=
-              null;
-
-      final desc = isFourColCodFormat
-          ? 'Kiện hàng thương mại điện tử'
-          : (parts.length > 3 && parts[3].isNotEmpty
-                ? parts[3]
-                : 'Kiện hàng thương mại điện tử');
-      final weight = isFourColCodFormat
-          ? 1.5
-          : (parts.length > 4 ? (double.tryParse(parts[4]) ?? 1.5) : 1.5);
-      final cod = isFourColCodFormat
-          ? (double.tryParse(
-                  parts[3].replaceAll('.', '').replaceAll('đ', '').trim(),
-                ) ??
-                0.0)
-          : (parts.length > 5
-                ? (double.tryParse(
-                        parts[5].replaceAll('.', '').replaceAll('đ', '').trim(),
-                      ) ??
-                      0.0)
-                : 0.0);
-      final svcStr = !isFourColCodFormat && parts.length > 6
-          ? parts[6].toUpperCase()
-          : 'STANDARD';
-      final svc =
-          svcStr.contains('TRUCK') ||
-              svcStr.contains('LARGE') ||
-              svcStr.contains('TAI')
-          ? DeliveryServiceType.truck
-          : svcStr.contains('2H') || svcStr.contains('SAME_DAY')
-          ? DeliveryServiceType.sameDay2h
-          : svcStr.contains('EXPRESS')
-          ? DeliveryServiceType.express30m
-          : svcStr.contains('ECONOMY') || svcStr.contains('SAVING')
-          ? DeliveryServiceType.saving
-          : DeliveryServiceType.standard;
-      final customPickup = !isFourColCodFormat && parts.length > 7
-          ? parts[7].trim()
-          : '';
-
-      final personalWhs = _store.merchantPersonalWarehouses;
-      final defaultPickup = personalWhs.isNotEmpty
-          ? personalWhs[_selectedWarehouseIndex.clamp(
-                  0,
-                  personalWhs.length - 1,
-                )]
-                .address
-          : '';
-      final effectivePickup = customPickup.isNotEmpty
-          ? customPickup
-          : defaultPickup;
-      final pCoord = SmartDispatchEngine.resolveAddressToCoordinate(
-        effectivePickup,
-        fallback: const GeoPoint(latitude: 10.7731, longitude: 106.7012),
-      );
-      final dCoord = SmartDispatchEngine.resolveAddressToCoordinate(
-        addr,
-        fallback: const GeoPoint(latitude: 10.7850, longitude: 106.6880),
-      );
-      final restrictedZone = _store.findActiveRestrictedZoneForRoute(
-        pCoord,
-        dCoord,
-      );
-      String? err;
-      if (name.isEmpty) {
-        err = 'Thiếu tên người nhận';
-      } else if (!RegExp(r'^(?:\+84|0)[0-9]{9}$').hasMatch(phone)) {
-        err = 'SĐT không hợp lệ (Phải đủ 10 chữ số)';
-      } else if (addr.trim().length < 10) {
-        err = 'Địa chỉ giao hàng quá ngắn (cần tối thiểu 10 ký tự)';
-      } else if (effectivePickup.isNotEmpty &&
-          addr.trim().toLowerCase() == effectivePickup.trim().toLowerCase()) {
-        err = 'Địa chỉ giao trùng với kho lấy hàng';
-      } else if (restrictedZone != null) {
-        err = 'Nằm trong vùng hạn chế (${restrictedZone.zoneName})';
-      } else if (weight <= 0 || weight > 500) {
-        err = 'Khối lượng không hợp lệ';
-      } else if (cod < 0) {
-        err = 'Tiền COD không hợp lệ';
-      }
-
-      result.add(
-        _BatchCsvRow(
-          rowNumber: result.length + 1,
-          recipientName: name,
-          phone: phone,
-          address: addr,
-          customPickupAddress: customPickup,
-          packageDescription: desc,
-          weightKg: weight,
-          codAmount: cod,
-          serviceType: svc,
-          validationError: err,
-        ),
-      );
-    }
-    _parsedRows = result;
+    _parsedRows = _store
+        .parseAndCreateBulkOrdersFromCsv(
+          _csvInputCtrl.text,
+          customPickupAddress: _batchPickupAddress,
+          feePayerMethod: _batchFeePayer,
+        )
+        .rows;
   }
 
   @override
