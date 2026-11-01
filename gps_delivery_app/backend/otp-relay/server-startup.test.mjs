@@ -46,10 +46,10 @@ test('Cloud server starts without relay credentials and refuses missing authenti
   }
 });
 
-test('Cloud admin static hosting redirects root to /#/admin and allows same-origin while blocking foreign CORS', async t => {
+test('Cloud admin static hosting serves root 200 without redirect loop, injects /#/admin hash bootstrap, and enforces CORS', async t => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'ghst-admin-static-'));
   t.after(() => rm(directory, { recursive: true, force: true }));
-  await writeFile(path.join(directory, 'index.html'), '<!doctype html><title>GHST Admin</title>');
+  await writeFile(path.join(directory, 'index.html'), '<!doctype html><head><title>GHST Admin</title></head><body></body>');
 
   const child = spawn(process.execPath, ['server.mjs'], {
     cwd: new URL('.', import.meta.url),
@@ -84,8 +84,10 @@ test('Cloud admin static hosting redirects root to /#/admin and allows same-orig
     });
 
     const rootRes = await fetch(`${baseUrl}/`, { redirect: 'manual' });
-    assert.equal(rootRes.status, 302);
-    assert.equal(rootRes.headers.get('location'), '/#/admin');
+    assert.equal(rootRes.status, 200);
+    const rootHtml = await rootRes.text();
+    assert.match(rootHtml, /GHST Admin/);
+    assert.match(rootHtml, /location\.replace\("\/#\/admin"\)/);
 
     const adminRes = await fetch(`${baseUrl}/admin`);
     assert.equal(adminRes.status, 200);

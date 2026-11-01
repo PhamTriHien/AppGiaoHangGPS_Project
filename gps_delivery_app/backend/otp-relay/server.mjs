@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import './database-connection.mjs';
 import crypto from 'node:crypto';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import cors from 'cors';
@@ -188,17 +188,16 @@ const staticWebDir = process.env.STATIC_WEB_DIR?.trim()
 
 if (staticWebDir && existsSync(path.join(staticWebDir, 'index.html'))) {
   const indexHtmlPath = path.join(staticWebDir, 'index.html');
+  const rawIndexHtml = readFileSync(indexHtmlPath, 'utf8');
+  const adminHashBootstrap = '<script>if(location.pathname==="/"&&(!location.hash||location.hash==="#"||location.hash==="#/"))location.replace("/#/admin");</script>';
+  const adminPortalHtml = rawIndexHtml.includes('</head>')
+    ? rawIndexHtml.replace('</head>', `${adminHashBootstrap}</head>`)
+    : `${adminHashBootstrap}${rawIndexHtml}`;
   const sendSpaIndex = (_req, res) => {
     res.set('Cache-Control', 'no-store');
-    res.sendFile(indexHtmlPath);
+    res.type('html').send(process.env.ADMIN_PORTAL_ONLY !== 'false' ? adminPortalHtml : rawIndexHtml);
   };
-  app.get('/', (req, res) => {
-    if (process.env.ADMIN_PORTAL_ONLY !== 'false') {
-      res.redirect(302, '/#/admin');
-      return;
-    }
-    sendSpaIndex(req, res);
-  });
+  app.get('/', sendSpaIndex);
   app.use(express.static(staticWebDir, { index: false, maxAge: '1h' }));
   app.get(['/admin', '/admin/', '/cloud-admin', '/cloud-admin/', '/track', '/track/', '/share', '/share/'], sendSpaIndex);
 }
