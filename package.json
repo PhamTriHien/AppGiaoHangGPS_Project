@@ -1,0 +1,14 @@
+{
+  "name": "ghst-cloud-backend-admin",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "npm --prefix gps_delivery_app/backend/otp-relay ci --omit=dev",
+    "start": "npm --prefix gps_delivery_app/backend/otp-relay start",
+    "migrate:cloud": "npm --prefix gps_delivery_app/backend/otp-relay run migrate:cloud",
+    "test": "npm --prefix gps_delivery_app/backend/otp-relay test"
+  }
+}

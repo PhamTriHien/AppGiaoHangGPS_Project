@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: ghst-backend-admin
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: BIND_HOST
+        value: 0.0.0.0
+      - key: TRUST_PROXY
+        value: "1"
+      - key: ADMIN_PORTAL_ONLY
+        value: "true"
+      - key: SUPABASE_ENABLED
+        value: "true"
+      - key: MARKET_JOBS_ENABLED
+        value: "true"
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: WEB_ORIGINS
+        sync: false

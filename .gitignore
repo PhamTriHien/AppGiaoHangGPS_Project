@@ -1,0 +1,17 @@
+# Secrets & local runtime files
+.env
+*.env
+**/node_modules/
+gps_delivery_app/backend/otp-relay/*.traineddata*
+gps_delivery_app/backend/otp-relay/.cache/
+gps_delivery_app/backend/otp-relay/.integration-config.json
+gps_delivery_app/backend/otp-relay/.integration-config.json.*.tmp
+gps_delivery_app/backend/otp-relay/.integration-audit.log
+gps_delivery_app/backend/otp-relay/*service-account*.json
+
+# Logs & OS files
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

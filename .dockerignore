@@ -1,0 +1,13 @@
+.git
+.gitignore
+**/node_modules
+**/*.test.mjs
+**/test-support
+**/.env
+*.env
+**/.integration-config.json*
+**/.integration-audit.log
+**/*service-account*.json
+**/.cache
+*.log
+README.md
