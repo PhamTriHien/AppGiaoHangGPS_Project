@@ -126,17 +126,39 @@ export function providerConfigured(provider, env = process.env) {
   return Boolean(providerReady(provider, env) && definition.available !== false &&
     (!definition.toggle || configValue(definition.toggle, env) === 'true'));
 }
+export function maskSecretValue(raw, key = '') {
+  const text = String(raw ?? '').trim();
+  if (!text) return null;
+  if (key === 'DATABASE_URL') {
+    try {
+      const parsed = new URL(text);
+      const portPart = parsed.port ? `:${parsed.port}` : '';
+      return `${parsed.protocol}//••••••••@${parsed.hostname}${portPart}${parsed.pathname}`;
+    } catch {
+      return '••••••••••••';
+    }
+  }
+  const compact = text.replace(/\s+/g, '');
+  if (compact.length >= 12) return `••••••••••••${compact.slice(-4)}`;
+  if (compact.length >= 8) return `••••••••••${compact.slice(-2)}`;
+  return '••••••••';
+}
 export function integrationStatus(env = process.env) {
   return Object.fromEntries(Object.entries(INTEGRATION_DEFINITIONS).map(([provider, definition]) => [provider, {
     label: definition.label, available: definition.available !== false,
     configured: providerReady(provider, env), enabled: providerConfigured(provider, env),
     lastCheck: checks.get(provider) ?? null,
-    fields: Object.entries(definition.fields).map(([key, metadata]) => ({
-      key, label: metadata.label, type: metadata.type ?? 'text', secret: metadata.secret === true,
-      ...(metadata.options ? { options: metadata.options } : {}),
-      configured: Boolean(configValue(key, env)), localOnly: localOnlyKeys.has(key),
-      ...(metadata.secret ? {} : { value: configValue(key, env) }),
-    })),
+    fields: Object.entries(definition.fields).map(([key, metadata]) => {
+      const current = configValue(key, env);
+      return {
+        key, label: metadata.label, type: metadata.type ?? 'text', secret: metadata.secret === true,
+        ...(metadata.options ? { options: metadata.options } : {}),
+        configured: Boolean(current), localOnly: localOnlyKeys.has(key),
+        ...(metadata.secret
+          ? (current ? { maskedValue: maskSecretValue(current, key) } : {})
+          : { value: current }),
+      };
+    }),
   }]));
 }
 

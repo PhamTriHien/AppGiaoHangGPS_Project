@@ -150873,37 +150873,40 @@ break A}if("telegram"===a){s=B.D1
 break A}if("meilisearch"===a){s=B.a9p
 break A}s=B.a7Z
 break A}return s},
-aAl(a6,a7){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e,d=this,c="type",b=null,a="label",a0="secret",a1="configured",a2="certificate",a3=A.aY(a6.h(0,"key")),a4=J.d(a6.h(0,"localOnly"),!0)&&!d.Q,a5=!d.as&&a7&&!a4
-if(J.d(a6.h(0,c),"select")){s=d.d.h(0,a3).a.a
+aAl(a7,a8){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e,d,c=this,b="type",a=null,a0="label",a1="secret",a2="configured",a3="certificate",a4=A.aY(a7.h(0,"key")),a5=J.d(a7.h(0,"localOnly"),!0)&&!c.Q,a6=!c.as&&a8&&!a5
+if(J.d(a7.h(0,b),"select")){s=c.d.h(0,a4).a.a
 r=t.N
-q=J.iM(t.j.a(a6.h(0,"options")),r)
-p=q.n(q,s)?s:b
-o=A.dD(b,b,b,b,b,b,b,b,!0,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,J.I(a6.h(0,a)),!0,!0,!1,b,b,b,b,b,b,b,b,b,b,b,b,b,b)
+q=J.iM(t.j.a(a7.h(0,"options")),r)
+p=q.n(q,s)?s:a
+o=A.dD(a,a,a,a,a,a,a,a,!0,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,J.I(a7.h(0,a0)),!0,!0,!1,a,a,a,a,a,a,a,a,a,a,a,a,a,a)
 n=q.$ti.i("y<bz.E,bR<j>>")
 n=A.G(new A.y(q,new A.aWr(),n),n.i("a5.E"))
-return new A.Q(B.cC,A.dT(o,p,!0,n,b,a5?new A.aWs(d,a3):b,r),b)}if(J.d(a6.h(0,c),"boolean")){r=A.c(J.I(a6.h(0,a)),b,b,b,B.RT,b,b,b)
-p=d.e.h(0,a3)
-o=a5?new A.aWt(d,a3):b
-return new A.zj(p===!0,o,r,b,B.M,B.b2A,b,b)}m=J.d(a6.h(0,a0),!0)&&J.d(a6.h(0,a1),!0)&&!d.f.n(0,a3)
-r=d.d.h(0,a3)
-p=a5&&!d.f.n(0,a3)
-o=J.d(a6.h(0,a0),!0)&&!J.d(a6.h(0,c),a2)
-n=J.d(a6.h(0,c),a2)?8:1
-l=J.d(a6.h(0,c),a2)?4:1
-if(J.d(a6.h(0,c),"number"))k=B.aw
-else k=J.d(a6.h(0,c),a2)?B.kR:B.cg
-j=J.I(a6.h(0,a))
-i=m?B.iM:b
-if(a4)h="Project x\xe1c th\u1ef1c ch\u1ec9 \u0111\u1ed5i t\u1ea1i m\xe1y ch\u1ee7 backend"
-else if(d.f.n(0,a3))h="S\u1ebd x\xf3a khi l\u01b0u"
-else if(m)h=d.y==="cloud_postgres"?"Kh\xf3a b\u1ea3o m\u1eadt \u0111\xe3 \u0111\u1ed3ng b\u1ed9 Cloud PostgreSQL \u2014 \u0111\u1ec3 tr\u1ed1ng n\u1ebfu gi\u1eef nguy\xean":"Kh\xf3a b\u1ea3o m\u1eadt \u0111\xe3 l\u01b0u t\u1ea1i backend \u2014 \u0111\u1ec3 tr\u1ed1ng n\u1ebfu gi\u1eef nguy\xean"
-else h=b
-g=J.d(a6.h(0,a0),!0)&&J.d(a6.h(0,a1),!0)?"\u0110\xe3 l\u01b0u t\u1ea1i backend":b
-if(a5&&J.d(a6.h(0,a1),!0)){f=d.f
-e=f.n(0,a3)?"Gi\u1eef gi\xe1 tr\u1ecb hi\u1ec7n t\u1ea1i":"X\xf3a gi\xe1 tr\u1ecb \u0111\xe3 l\u01b0u"
-e=A.aE(b,b,b,A.bb(f.n(0,a3)?B.a7D:B.m7,b,b,b),b,b,b,new A.aWu(d,a3),b,b,b,b,e,b)
-f=e}else f=b
-return new A.Q(B.a3T,A.as(!1,B.B,!1,b,!0,B.k,b,A.at(),r,b,b,b,b,b,2,A.dD(b,b,b,b,b,b,b,b,!0,b,b,b,b,b,b,b,b,b,i,b,b,b,b,b,b,b,h,b,b,b,b,g,b,b,b,b,b,b,b,b,j,!0,!0,!1,b,b,b,b,b,b,b,b,f,b,b,b,b,b),B.u,!0,b,!1,p,!1,b,B.C,b,b,b,new A.bN("integration-field-"+a3,t.O),b,k,b,b,b,n,l,b,o,"\u2022",b,b,b,b,b,!1,b,b,!1,b,!0,b,B.A,b,b,b,b,b,b,b,b,b,b,b,b,!0,B.r,b,B.D,b,b,b,b),b)},
+return new A.Q(B.cC,A.dT(o,p,!0,n,a,a6?new A.aWs(c,a4):a,r),a)}if(J.d(a7.h(0,b),"boolean")){r=A.c(J.I(a7.h(0,a0)),a,a,a,B.RT,a,a,a)
+p=c.e.h(0,a4)
+o=a6?new A.aWt(c,a4):a
+return new A.zj(p===!0,o,r,a,B.M,B.b2A,a,a)}m=J.d(a7.h(0,a1),!0)&&J.d(a7.h(0,a2),!0)&&!c.f.n(0,a4)
+r=a7.h(0,"maskedValue")
+l=r==null?a:B.b.p(J.I(r))
+r=c.d.h(0,a4)
+p=a6&&!c.f.n(0,a4)
+o=J.d(a7.h(0,a1),!0)&&!J.d(a7.h(0,b),a3)
+n=J.d(a7.h(0,b),a3)?8:1
+k=J.d(a7.h(0,b),a3)?4:1
+if(J.d(a7.h(0,b),"number"))j=B.aw
+else j=J.d(a7.h(0,b),a3)?B.kR:B.cg
+i=J.I(a7.h(0,a0))
+h=m?B.iM:a
+if(a5)g="Project x\xe1c th\u1ef1c ch\u1ec9 \u0111\u1ed5i t\u1ea1i m\xe1y ch\u1ee7 backend"
+else if(c.f.n(0,a4))g="S\u1ebd x\xf3a khi l\u01b0u"
+else if(m)g=c.y==="cloud_postgres"?"Kh\xf3a b\u1ea3o m\u1eadt \u0111\xe3 \u0111\u1ed3ng b\u1ed9 Cloud PostgreSQL \u2014 \u0111\u1ec3 tr\u1ed1ng n\u1ebfu gi\u1eef nguy\xean":"Kh\xf3a b\u1ea3o m\u1eadt \u0111\xe3 l\u01b0u t\u1ea1i backend \u2014 \u0111\u1ec3 tr\u1ed1ng n\u1ebfu gi\u1eef nguy\xean"
+else g=a
+if(J.d(a7.h(0,a1),!0)&&J.d(a7.h(0,a2),!0))f=l!=null&&l.length!==0?l:"\u0110\xe3 l\u01b0u t\u1ea1i backend"
+else f=a
+if(a6&&J.d(a7.h(0,a2),!0)){e=c.f
+d=e.n(0,a4)?"Gi\u1eef gi\xe1 tr\u1ecb hi\u1ec7n t\u1ea1i":"X\xf3a gi\xe1 tr\u1ecb \u0111\xe3 l\u01b0u"
+d=A.aE(a,a,a,A.bb(e.n(0,a4)?B.a7D:B.m7,a,a,a),a,a,a,new A.aWu(c,a4),a,a,a,a,d,a)
+e=d}else e=a
+return new A.Q(B.a3T,A.as(!1,B.B,!1,a,!0,B.k,a,A.at(),r,a,a,a,a,a,2,A.dD(a,a,a,a,a,a,a,a,!0,a,a,a,a,a,a,a,a,a,h,a,a,a,a,a,a,a,g,a,a,a,a,f,a,a,a,a,a,a,a,a,i,!0,!0,!1,a,a,a,a,a,a,a,a,e,a,a,a,a,a),B.u,!0,a,!1,p,!1,a,B.C,a,a,a,new A.bN("integration-field-"+a4,t.O),a,j,a,a,a,n,k,a,o,"\u2022",a,a,a,a,a,!1,a,a,!1,a,!0,a,B.A,a,a,a,a,a,a,a,a,a,a,a,a,!0,B.r,a,B.D,a,a,a,a),a)},
 Rg(a,b,c,d){var s=null,r=A.dA(d),q=c.m(0,B.M)?b:new A.Q(c,b,s)
 return A.dy(!1,B.ad,!0,s,q,B.bc,B.j,0,s,s,new A.dj(r,new A.aQ(a,1,B.S,-1)),s,s,B.c9)},
 awb(a,b,c){return this.Rg(B.eP,a,b,c)},
