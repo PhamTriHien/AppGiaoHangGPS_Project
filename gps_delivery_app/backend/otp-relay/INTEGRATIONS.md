@@ -23,7 +23,10 @@ preserved. When `DATABASE_URL` is configured and migrated (`20261107_cloud_comme
 all non-bootstrap managed settings and audit entries are persisted to RLS-locked
 Cloud PostgreSQL tables (`public.delivery_backend_config` and
 `public.delivery_backend_config_audit`, with zero `public`/`anon`/`authenticated`
-PostgREST privileges) and loaded authoritatively on server startup, while
+PostgREST privileges), loaded authoritatively on server startup, and synchronized
+live across backend instances (`syncIntegrationConfig` immediately on
+`GET /admin/integrations`, `GET /integrations`, and `POST /admin/integrations/test/:provider`,
+plus a 5-second cached refresh on `/delivery/*`), while
 bootstrap/trust keys (`DATABASE_URL`, `DATABASE_CA_CERT`, `SUPABASE_URL`,
 `SUPABASE_ANON_KEY`) remain local to the backend host alongside `.integration-config.json`.
 That local file is private plaintext, not an encrypted vault: restrict Windows ACLs or Unix ownership to the
@@ -168,6 +171,6 @@ are never transmitted in push payloads.
 
 ## Validation
 
-Run `npm test` (`114/114`), `npm run test:postgres` (`22/22`) and `npm audit` for
-backend checks; run `flutter analyze --no-pub` and `flutter test --no-pub` (`277`
+Run `npm test` (`118/118`), `npm run test:postgres` (`22/22`) and `npm audit` for
+backend checks; run `flutter analyze --no-pub` and `flutter test --no-pub` (`280+`
 passed) for Flutter API/UI checks.

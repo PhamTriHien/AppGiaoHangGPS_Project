@@ -17,6 +17,7 @@ import {
   configValue,
   loadIntegrationConfig,
   providerConfigured,
+  syncIntegrationConfig,
   testIntegration,
   updateIntegrationConfig,
 } from './integration-config.mjs';
@@ -89,7 +90,7 @@ export async function recognizeLabel(buffer) {
 }
 
 export function createDeliveryIntegrations({ env = process.env, fetcher = fetch, ocr = recognizeLabel,
-  authenticate, operatorOnly, readiness = createDeploymentReadiness({env}), migrate = migrateCloud, configDb } = {}) {
+  authenticate, operatorOnly, readiness = createDeploymentReadiness({env}), migrate = migrateCloud, configDb, configPool } = {}) {
   const router = express.Router();
   const route = (fn) => (req, res, next) => Promise.resolve(fn(req, res)).catch(next);
   const configured = (key) => Boolean(env[key]?.trim());
@@ -106,16 +107,22 @@ export function createDeliveryIntegrations({ env = process.env, fetcher = fetch,
   router.use(authenticate || ((_req, _res, next) => next()));
   router.use((_req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
   router.use(createDeliveryGateway({ env, fetcher, operatorOnly: requireOperator }));
-  router.get('/integrations', requireOperator, (_req, res) => res.json({
-    ...Object.fromEntries(['photon','trackasia','google_maps','vroom','ocr','supabase','firebase','turnstile','telegram','gemini','osrm','banks','weather']
-      .map(provider => [provider, providerConfigured(provider, env)])),
-    providers: integrationStatus(env),
+  router.get('/integrations', requireOperator, route(async (_req, res) => {
+    await syncIntegrationConfig({ env, db: configDb, connectPool: configPool, maxAgeMs: 0 });
+    res.json({
+      ...Object.fromEntries(['photon','trackasia','google_maps','vroom','ocr','supabase','firebase','turnstile','telegram','gemini','osrm','banks','weather']
+        .map(provider => [provider, providerConfigured(provider, env)])),
+      providers: integrationStatus(env),
+    });
   }));
-  router.get('/admin/integrations', requireOperator, (_req, res) => res.json({
-    providers: integrationStatus(env),
-    local: _req.deliveryIdentity?.local === true,
-    storage: (configDb || configValue('DATABASE_URL', env)) ? 'cloud_postgres' : 'local_file',
-    policy: 'Secrets chỉ được lưu ở backend; để trống trường secret sẽ giữ giá trị hiện tại.',
+  router.get('/admin/integrations', requireOperator, route(async (_req, res) => {
+    await syncIntegrationConfig({ env, db: configDb, connectPool: configPool, maxAgeMs: 0 });
+    res.json({
+      providers: integrationStatus(env),
+      local: _req.deliveryIdentity?.local === true,
+      storage: (configDb || configPool || configValue('DATABASE_URL', env)) ? 'cloud_postgres' : 'local_file',
+      policy: 'Secrets chỉ được lưu ở backend; để trống trường secret sẽ giữ giá trị hiện tại.',
+    });
   }));
   router.get('/admin/integrations/usage', requireOperator, (_req,res) => res.json(integrationUsage()));
   const canMigrate = req => req.deliveryIdentity?.role === 'operator';
@@ -134,7 +141,7 @@ export function createDeliveryIntegrations({ env = process.env, fetcher = fetch,
       const result = await migrate({env:{...env}});
       if (result?.ready !== true || result.migration !== COMMERCE_MIGRATION) throw new Error('Migration not confirmed');
       if (databaseRevision(env) !== revision) throw new IntegrationError(409,'Đã kết thúc migration nhưng cấu hình database đã đổi. Kiểm tra lại đúng database.');
-      await loadIntegrationConfig({ env, db: configDb }).catch(() => {});
+      await loadIntegrationConfig({ env, db: configDb, connectPool: configPool }).catch(() => {});
       res.json({completed:true,readiness:await deploymentReport(req)});
     } catch (error) {
       if (error instanceof IntegrationError) throw error;
@@ -143,7 +150,7 @@ export function createDeliveryIntegrations({ env = process.env, fetcher = fetch,
     finally { migrating = false; }
   }));
   router.get('/admin/integrations/audit', requireOperator, route(async (_req, res) => {
-    res.json({ entries: await integrationAudit(env, { db: configDb }) });
+    res.json({ entries: await integrationAudit(env, { db: configDb, connectPool: configPool }) });
   }));
   router.post('/admin/integrations/config', requireOperator, route(async (req, res) => {
     if (migrating && ['DATABASE_URL', 'DATABASE_CA_CERT'].some(key =>
@@ -157,10 +164,12 @@ export function createDeliveryIntegrations({ env = process.env, fetcher = fetch,
       local: req.deliveryIdentity?.local === true,
       env,
       db: configDb,
+      connectPool: configPool,
     });
-    res.json({ changed: result.changed, providers: result.status });
+    res.json({ changed: result.changed, storage: result.storage, providers: result.status });
   }));
   router.post('/admin/integrations/test/:provider', requireOperator, route(async (req, res) => {
+    await syncIntegrationConfig({ env, db: configDb, connectPool: configPool, maxAgeMs: 0 });
     res.json(await testIntegration(req.params.provider, { env, fetcher }));
   }));
   router.get('/places', route(async (req, res) => {

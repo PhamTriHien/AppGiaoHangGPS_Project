@@ -12,7 +12,7 @@ import { createWeatherProxy } from './weather-proxy.mjs';
 import { createDeliveryIntegrations, createIdentity, operatorOnly, IntegrationError } from './delivery-integrations.mjs';
 import { createNotificationRouter } from './delivery-notifications.mjs';
 import { createTurnstile } from './turnstile.mjs';
-import { ConfigError, configValue, loadIntegrationConfig, providerConfigured } from './integration-config.mjs';
+import { ConfigError, configValue, loadIntegrationConfig, providerConfigured, syncIntegrationConfig } from './integration-config.mjs';
 import { createLocalAuthGateway } from './local-auth-gateway.mjs';
 import { createCloudOrders } from './cloud-orders.mjs';
 import { createPaymentGateway } from './payment-gateway.mjs';
@@ -121,6 +121,9 @@ const aiChatLimiter = rateLimit({ windowMs: 60000, limit: 20, standardHeaders: '
 app.use('/delivery/ocr', ocrLimiter);
 app.use(['/delivery/ai/chat', '/delivery/cloud/ai-chat'], aiChatLimiter);
 app.use('/delivery', deliveryLimiter);
+app.use('/delivery', (_req, _res, next) => {
+  syncIntegrationConfig({ env: process.env, maxAgeMs: 5000 }).finally(() => next());
+});
 app.use('/delivery', createPublicTracking());
 const turnstile = createTurnstile({ authenticate: authenticateDelivery });
 app.use('/delivery', turnstile.router);

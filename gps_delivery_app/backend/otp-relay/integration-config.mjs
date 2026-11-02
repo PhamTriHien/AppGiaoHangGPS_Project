@@ -11,6 +11,9 @@ const configPath = (env) => env.INTEGRATION_CONFIG_PATH?.trim()
   ? path.resolve(env.INTEGRATION_CONFIG_PATH.trim()) : path.join(directory, '.integration-config.json');
 const queues = new Map();
 const checks = new Map();
+const syncStates = new WeakMap();
+let sharedPool = null;
+let sharedPoolRevision = '';
 const bool = (label, defaultValue = 'true') => ({ label, type: 'boolean', defaultValue });
 const field = (label, options = {}) => ({ label, ...options });
 const secret = (label) => field(label, { secret: true });
@@ -140,7 +143,10 @@ export function integrationStatus(env = process.env) {
 export function assertSafeAiUrl(rawUrl, { allowLoopback = true } = {}) {
   let parsed;
   try { parsed = new URL(String(rawUrl || '').trim()); } catch { throw new ConfigError('URL AI không hợp lệ.'); }
-  if (!['https:', 'http:'].includes(parsed.protocol) || parsed.username || parsed.password || parsed.search || parsed.hash) {
+  if (parsed.search) {
+    throw new ConfigError('URL AI không được chứa tham số truy vấn (?key=...). Hãy nhập API key vào ô riêng.');
+  }
+  if (!['https:', 'http:'].includes(parsed.protocol) || parsed.username || parsed.password || parsed.hash) {
     throw new ConfigError('URL AI không hợp lệ.');
   }
   const host = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, '');
@@ -184,11 +190,11 @@ function validate(key, value) {
   if (metadata.type === 'url') {
     let parsed;
     try { parsed = new URL(value); } catch { throw new ConfigError(`URL không hợp lệ: ${key}`); }
+    if (key === 'GEMINI_BASE_URL') assertSafeAiUrl(value, { allowLoopback: true });
     const paymentRedirect = ['PAYOS_RETURN_URL', 'PAYOS_CANCEL_URL'].includes(key);
     if (!['https:', 'http:'].includes(parsed.protocol) || parsed.username || parsed.password || (!paymentRedirect && (parsed.search || parsed.hash))) throw new ConfigError(`URL không hợp lệ: ${key}`);
     if (paymentRedirect && parsed.protocol !== 'https:' && !['localhost', '127.0.0.1'].includes(parsed.hostname)) throw new ConfigError('URL thanh toán công khai yêu cầu HTTPS.');
     if (key === 'SUPABASE_URL' && parsed.protocol !== 'https:' && !['localhost', '127.0.0.1'].includes(parsed.hostname)) throw new ConfigError('Supabase yêu cầu HTTPS.');
-    if (key === 'GEMINI_BASE_URL') assertSafeAiUrl(value, { allowLoopback: true });
     if (key === 'GHN_BASE_URL' && (parsed.protocol !== 'https:' || !['dev-online-gateway.ghn.vn', 'online-gateway.ghn.vn'].includes(parsed.hostname) || parsed.port || parsed.pathname !== '/shiip/public-api/')) throw new ConfigError('Dùng endpoint GHN staging hoặc production chính thức, kết thúc bằng /shiip/public-api/.');
   }
   if (key === 'TURNSTILE_HOSTNAME' && !/^[a-zA-Z0-9.-]+$/.test(value)) throw new ConfigError('Hostname không bao gồm scheme hoặc đường dẫn.');
@@ -204,34 +210,96 @@ async function readStored(env) {
   } catch (error) { if (error.code === 'ENOENT') return {}; throw error; }
 }
 
-async function withConfigDb(env, db, operation) {
-  if (db) return operation(db);
-  if (env !== process.env || !configValue('DATABASE_URL', env)) return null;
-  const client = new pg.Client({
-    ...databaseConnectionOptions(env),
-    connectionTimeoutMillis: 8000,
-    query_timeout: 8000,
-    application_name: 'ghst-backend-config',
-  });
-  await client.connect();
-  try { return await operation(client); }
-  finally { await client.end().catch(() => {}); }
+function getSyncState(env) {
+  let state = syncStates.get(env);
+  if (!state) {
+    state = { syncedAt: 0, inflight: null };
+    syncStates.set(env, state);
+  }
+  return state;
 }
 
-export async function loadIntegrationConfig({ env = process.env, db } = {}) {
+function getSharedConfigPool(env) {
+  const revision = JSON.stringify([configValue('DATABASE_URL', env), configValue('DATABASE_CA_CERT', env)]);
+  if (sharedPool && sharedPoolRevision === revision) return sharedPool;
+  const previous = sharedPool;
+  sharedPool = new pg.Pool({
+    ...databaseConnectionOptions(env),
+    max: 2,
+    idleTimeoutMillis: 15000,
+    connectionTimeoutMillis: 8000,
+    query_timeout: 8000,
+    keepAlive: true,
+    allowExitOnIdle: true,
+    application_name: 'ghst-backend-config',
+  });
+  sharedPool.on('error', () => {});
+  sharedPoolRevision = revision;
+  if (previous) previous.end().catch(() => {});
+  return sharedPool;
+}
+
+async function withConfigDb(connEnv, db, operation, { allowLiveDb = connEnv === process.env, connectPool } = {}) {
+  if (db) return operation(db);
+  if ((!allowLiveDb && !connectPool) || !configValue('DATABASE_URL', connEnv)) return null;
+  const pool = connectPool ? connectPool(connEnv) : getSharedConfigPool(connEnv);
+  const client = await pool.connect();
+  try { return await operation(client); }
+  finally { client.release?.(); }
+}
+
+function applyCloudRowsToEnv(rows, env) {
+  const cloudValues = new Map();
+  for (const row of rows) {
+    if (!fieldsByKey.has(row.key) || cloudExcludedKeys.has(row.key)) continue;
+    const text = String(row.value ?? '');
+    validate(row.key, text);
+    cloudValues.set(row.key, text);
+  }
+  for (const [key, value] of cloudValues) {
+    if (env[key] !== value) {
+      env[key] = value;
+      checks.delete(fieldsByKey.get(key).provider);
+    }
+  }
+  return cloudValues;
+}
+
+export async function syncIntegrationConfig({ env = process.env, db, connectPool, maxAgeMs = 0 } = {}) {
+  const allowLiveDb = Boolean(db || connectPool) || env === process.env;
+  if (!db && (!allowLiveDb || !configValue('DATABASE_URL', env))) return false;
+  const state = getSyncState(env);
+  if (maxAgeMs > 0 && state.syncedAt > 0 && Date.now() - state.syncedAt < maxAgeMs) return false;
+  if (state.inflight) return state.inflight;
+  state.inflight = (async () => {
+    try {
+      let synced = false;
+      await withConfigDb(env, db, async client => {
+        const existing = await client.query('select key, value from public.delivery_backend_config');
+        applyCloudRowsToEnv(existing.rows, env);
+        state.syncedAt = Date.now();
+        synced = true;
+      }, { allowLiveDb, connectPool });
+      return synced;
+    } catch (error) {
+      if (db && error?.code !== '42P01') throw error;
+      return false;
+    } finally {
+      state.inflight = null;
+    }
+  })();
+  return state.inflight;
+}
+
+export async function loadIntegrationConfig({ env = process.env, db, connectPool } = {}) {
+  const allowLiveDb = Boolean(db || connectPool) || env === process.env;
   const values = await readStored(env);
   for (const [key, value] of Object.entries(values)) if (fieldsByKey.has(key)) validate(key, String(value ?? ''));
   for (const [key, value] of Object.entries(values)) if (fieldsByKey.has(key)) env[key] = String(value ?? '');
   try {
     await withConfigDb(env, db, async client => {
       const existing = await client.query('select key, value from public.delivery_backend_config');
-      const cloudValues = new Map();
-      for (const row of existing.rows) {
-        if (!fieldsByKey.has(row.key) || cloudExcludedKeys.has(row.key)) continue;
-        const text = String(row.value ?? '');
-        validate(row.key, text);
-        cloudValues.set(row.key, text);
-      }
+      const cloudValues = applyCloudRowsToEnv(existing.rows, env);
       for (const key of fieldsByKey.keys()) {
         if (cloudExcludedKeys.has(key) || cloudValues.has(key)) continue;
         const hasLocal = Object.hasOwn(values, key) || Object.hasOwn(env, key);
@@ -250,15 +318,17 @@ export async function loadIntegrationConfig({ env = process.env, db } = {}) {
         env[key] = value;
         values[key] = value;
       }
-    });
+      getSyncState(env).syncedAt = Date.now();
+    }, { allowLiveDb, connectPool });
   } catch (error) {
     if (db && error?.code !== '42P01') throw error;
   }
   return values;
 }
 
-export async function updateIntegrationConfig(values, { clear = [], actor = 'unknown', local = false, env = process.env, db } = {}) {
+export async function updateIntegrationConfig(values, { clear = [], actor = 'unknown', local = false, env = process.env, db, connectPool } = {}) {
   if (!values || typeof values !== 'object' || Array.isArray(values) || !Array.isArray(clear) || clear.some(key => typeof key !== 'string')) throw new ConfigError('Cấu hình phải là một object và clear là danh sách khóa.');
+  const allowLiveDb = Boolean(db || connectPool) || env === process.env;
   const patch = Object.fromEntries(Object.entries(values).map(([key, value]) => {
     if (!['string', 'number', 'boolean'].includes(typeof value) && value !== null) throw new ConfigError(`Giá trị không hợp lệ: ${key}`);
     return [key, String(value ?? '').trim()];
@@ -273,58 +343,99 @@ export async function updateIntegrationConfig(values, { clear = [], actor = 'unk
   const previous = queues.get(filename) ?? Promise.resolve();
   const operation = previous.catch(() => {}).then(async () => {
     const stored = await readStored(env);
-    const changed = Object.keys(patch).filter(key => patch[key] !== configValue(key, env));
-    if (changed.length) {
-      const candidate = { ...env, ...patch };
-      if (candidate.TURNSTILE_ENFORCE_OTP === 'true' && !providerConfigured('turnstile', candidate)) throw new ConfigError('Cần đầy đủ cấu hình Turnstile trước khi bắt buộc OTP.');
+    let cloudSnapshot = null;
+    const candidate = { ...env, ...patch };
+    const hasCloudTarget = Boolean(db || ((allowLiveDb || connectPool) && configValue('DATABASE_URL', candidate)));
+    const nonBootstrapPatchKeys = Object.keys(patch).filter(key => !cloudExcludedKeys.has(key));
+    if (hasCloudTarget && nonBootstrapPatchKeys.length > 0) {
       try {
         await withConfigDb(candidate, db, async client => {
-          const actorName = String(actor || 'unknown').slice(0, 120);
-          await client.query('begin');
-          try {
-            for (const key of changed) {
-              if (cloudExcludedKeys.has(key)) continue;
-              await client.query(
-                `insert into public.delivery_backend_config (key, value, updated_by, updated_at)
-                 values ($1, $2, $3, now())
-                 on conflict (key) do update
-                   set value = excluded.value,
-                       updated_by = excluded.updated_by,
-                       updated_at = now()`,
-                [key, patch[key], actorName],
-              );
-            }
-            await client.query(
-              'insert into public.delivery_backend_config_audit (actor, changed) values ($1, $2::jsonb)',
-              [actorName, JSON.stringify(changed)],
-            );
-            await client.query('commit');
-          } catch (innerError) {
-            await client.query('rollback').catch(() => {});
-            throw innerError;
-          }
-        });
+          const existing = await client.query('select key, value from public.delivery_backend_config');
+          cloudSnapshot = applyCloudRowsToEnv(existing.rows, env);
+        }, { allowLiveDb, connectPool });
       } catch (error) {
         if (error?.code !== '42P01') {
           if (db) throw error;
           throw new ConfigError('Không lưu được cấu hình lên database cloud. Kiểm tra kết nối PostgreSQL.', 503);
         }
       }
-      await mkdir(path.dirname(filename), { recursive: true });
-      const temporary = `${filename}.${crypto.randomUUID()}.tmp`;
-      await writeFile(temporary, `${JSON.stringify({ ...stored, ...patch }, null, 2)}\n`, { mode: 0o600 });
-      await rename(temporary, filename);
+    }
+    const changed = Object.keys(patch).filter(key => {
+      if (patch[key] !== configValue(key, env)) return true;
+      if (cloudSnapshot && !cloudExcludedKeys.has(key) && cloudSnapshot.get(key) !== patch[key]) return true;
+      return false;
+    });
+    let persistedToCloud = false;
+    if (changed.length) {
+      const nextCandidate = { ...env, ...patch };
+      if (nextCandidate.TURNSTILE_ENFORCE_OTP === 'true' && !providerConfigured('turnstile', nextCandidate)) {
+        throw new ConfigError('Cần đầy đủ cấu hình Turnstile trước khi bắt buộc OTP.');
+      }
+      const cloudChanges = changed.filter(key => !cloudExcludedKeys.has(key));
+      if (hasCloudTarget && cloudChanges.length > 0) {
+        try {
+          await withConfigDb(nextCandidate, db, async client => {
+            const actorName = String(actor || 'unknown').slice(0, 120);
+            await client.query('begin');
+            try {
+              for (const key of cloudChanges) {
+                await client.query(
+                  `insert into public.delivery_backend_config (key, value, updated_by, updated_at)
+                   values ($1, $2, $3, now())
+                   on conflict (key) do update
+                     set value = excluded.value,
+                         updated_by = excluded.updated_by,
+                         updated_at = now()`,
+                  [key, patch[key], actorName],
+                );
+              }
+              await client.query(
+                'insert into public.delivery_backend_config_audit (actor, changed) values ($1, $2::jsonb)',
+                [actorName, JSON.stringify(changed)],
+              );
+              await client.query('commit');
+              persistedToCloud = true;
+            } catch (innerError) {
+              await client.query('rollback').catch(() => {});
+              throw innerError;
+            }
+          }, { allowLiveDb, connectPool });
+        } catch (error) {
+          if (error?.code !== '42P01') {
+            if (db) throw error;
+            throw new ConfigError('Không lưu được cấu hình lên database cloud. Kiểm tra kết nối PostgreSQL.', 503);
+          }
+        }
+      }
       Object.assign(env, patch);
       for (const key of changed) checks.delete(fieldsByKey.get(key).provider);
-      await appendFile(path.join(path.dirname(filename), '.integration-audit.log'), `${JSON.stringify({ at: new Date().toISOString(), actor, changed })}\n`, { mode: 0o600 });
+      if (persistedToCloud) getSyncState(env).syncedAt = Date.now();
+      try {
+        await mkdir(path.dirname(filename), { recursive: true });
+        const temporary = `${filename}.${crypto.randomUUID()}.tmp`;
+        await writeFile(temporary, `${JSON.stringify({ ...stored, ...patch }, null, 2)}\n`, { mode: 0o600 });
+        await rename(temporary, filename);
+        await appendFile(path.join(path.dirname(filename), '.integration-audit.log'), `${JSON.stringify({ at: new Date().toISOString(), actor, changed })}\n`, { mode: 0o600 });
+      } catch (fsError) {
+        if (!persistedToCloud || !['EACCES', 'EPERM', 'EROFS'].includes(fsError?.code)) {
+          throw fsError;
+        }
+      }
+      if (Object.hasOwn(patch, 'DATABASE_URL') && configValue('DATABASE_URL', env)) {
+        await syncIntegrationConfig({ env, db, connectPool, maxAgeMs: 0 }).catch(() => {});
+      }
     }
-    return { changed, status: integrationStatus(env) };
+    const storage = (persistedToCloud || db || ((allowLiveDb || connectPool) && Boolean(configValue('DATABASE_URL', env))))
+      ? 'cloud_postgres'
+      : 'local_file';
+    return { changed, storage, status: integrationStatus(env) };
   });
   queues.set(filename, operation);
   try { return await operation; } finally { if (queues.get(filename) === operation) queues.delete(filename); }
 }
 
-export async function integrationAudit(env = process.env, { db } = {}) {
+export async function integrationAudit(env = process.env, { db, connectPool } = {}) {
+  const allowLiveDb = Boolean(db || connectPool) || env === process.env;
   try {
     const cloudEntries = await withConfigDb(env, db, async client => {
       const res = await client.query(
@@ -335,7 +446,7 @@ export async function integrationAudit(env = process.env, { db } = {}) {
         actor: row.actor,
         changed: row.changed,
       }));
-    });
+    }, { allowLiveDb, connectPool });
     if (Array.isArray(cloudEntries) && cloudEntries.length > 0) return cloudEntries;
   } catch (error) {
     if (db && error?.code !== '42P01') throw error;

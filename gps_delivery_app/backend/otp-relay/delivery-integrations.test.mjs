@@ -403,7 +403,109 @@ test('Customer AI chatbot uses backend API URL and API key for OpenAI-compatible
     'https://10.0.0.5/v1',
     'https://192.168.1.10/v1',
     'http://127.0.0.1:11434/v1',
+    'https://generativelanguage.googleapis.com/v1beta?key=leaked',
   ]) {
     await assert.rejects(updateIntegrationConfig({ GEMINI_BASE_URL: unsafeUrl }, { env, local: false }));
   }
+});
+
+test('Multi-instance pool-backed Cloud PostgreSQL sync persists candidate patch without configDb and syncs across Render and local instances', async t => {
+  const db = new PGlite();
+  t.after(() => db.close());
+  await db.exec(`
+    create table public.delivery_backend_config (
+      key text primary key check (length(key) between 1 and 120),
+      value text not null check (length(value) <= 8192),
+      updated_by text not null default 'system' check (length(updated_by) between 1 and 120),
+      updated_at timestamptz not null default now()
+    );
+    create table public.delivery_backend_config_audit (
+      id bigserial primary key,
+      at timestamptz not null default now(),
+      actor text not null check (length(actor) between 1 and 120),
+      changed jsonb not null check (jsonb_typeof(changed) = 'array')
+    );
+  `);
+  let released = 0;
+  const configPool = () => ({
+    async connect() {
+      return {
+        query: (sql, params) => db.query(sql, params),
+        release() { released++; },
+      };
+    },
+  });
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'ghst-multi-sync-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+
+  const renderEnv = {
+    INTEGRATION_CONFIG_PATH: path.join(directory, 'render.json'),
+    DATABASE_URL: 'postgresql://postgres:bootstrap-secret@db.example/postgres',
+    SUPABASE_URL: 'https://own.supabase.co',
+    SUPABASE_ANON_KEY: 'publishable',
+  };
+  const localEnv = {
+    INTEGRATION_CONFIG_PATH: path.join(directory, 'local.json'),
+    DATABASE_URL: 'postgresql://postgres:bootstrap-secret@db.example/postgres',
+    SUPABASE_URL: 'https://own.supabase.co',
+    SUPABASE_ANON_KEY: 'publishable',
+    GOOGLE_MAPS_API_KEY: 'local-only-unsynced-key',
+  };
+
+  await loadIntegrationConfig({ env: renderEnv, connectPool: configPool });
+  const renderApp = await appFor(t, createDeliveryIntegrations({
+    env: renderEnv,
+    authenticate: identity,
+    operatorOnly,
+    configPool,
+  }));
+  const localApp = await appFor(t, createDeliveryIntegrations({
+    env: localEnv,
+    authenticate: identity,
+    operatorOnly,
+    configPool,
+  }));
+
+  const saveOnRender = await renderApp.post('/admin/integrations/config', {
+    values: {
+      GEMINI_BASE_URL: 'https://api.openai.com/v1',
+      GEMINI_API_KEY: 'sk-live-cloud-synced',
+      GEMINI_MODEL: 'gpt-4o-mini',
+      GEMINI_ENABLED: 'true',
+    },
+  });
+  assert.equal(saveOnRender.status, 200);
+  const saveBody = await saveOnRender.json();
+  assert.equal(saveBody.storage, 'cloud_postgres');
+  assert.equal(saveBody.providers.gemini.configured, true);
+  assert.equal(saveBody.providers.gemini.enabled, true);
+  assert.ok(released >= 2);
+
+  const cloudRows = await db.query('select key, value, updated_by from public.delivery_backend_config order by key');
+  const cloudMap = Object.fromEntries(cloudRows.rows.map(r => [r.key, r]));
+  assert.equal(cloudMap.GEMINI_API_KEY.value, 'sk-live-cloud-synced');
+  assert.equal(cloudMap.GEMINI_API_KEY.updated_by, 'user-1');
+
+  const syncedLocalMeta = await (await localApp.get('/admin/integrations')).json();
+  assert.equal(syncedLocalMeta.storage, 'cloud_postgres');
+  assert.equal(syncedLocalMeta.providers.gemini.configured, true);
+  assert.equal(syncedLocalMeta.providers.gemini.enabled, true);
+  assert.equal(localEnv.GEMINI_API_KEY, 'sk-live-cloud-synced');
+  assert.equal(localEnv.GEMINI_BASE_URL, 'https://api.openai.com/v1');
+
+  const resyncExistingLocalSecret = await localApp.post('/admin/integrations/config', {
+    values: { GOOGLE_MAPS_API_KEY: 'local-only-unsynced-key' },
+  });
+  assert.equal(resyncExistingLocalSecret.status, 200);
+  const gmapsRow = await db.query("select value from public.delivery_backend_config where key = 'GOOGLE_MAPS_API_KEY'");
+  assert.equal(gmapsRow.rows[0]?.value, 'local-only-unsynced-key');
+
+  const clearOnLocal = await localApp.post('/admin/integrations/config', {
+    values: {},
+    clear: ['GEMINI_API_KEY'],
+  });
+  assert.equal(clearOnLocal.status, 200);
+  const syncedRenderAfterClear = await (await renderApp.get('/admin/integrations')).json();
+  assert.equal(syncedRenderAfterClear.providers.gemini.configured, false);
+  assert.equal(renderEnv.GEMINI_API_KEY, '');
 });
