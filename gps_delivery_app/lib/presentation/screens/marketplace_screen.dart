@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/integrations/cloud_account_session.dart';
+import '../customer/ghst_ai_chat_screen.dart';
 import '../customer/ghst_home_screen.dart';
 import '../customer/ghst_shipping_screen.dart';
 import '../customer/ghst_user_shell.dart';
@@ -39,9 +40,35 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
   Map<String, dynamic>? _shippingDetails;
   int _formRevision = 0, _homeRevision = 0;
   bool _recovery = false, _foreground = true;
+  String? _aiScope;
+  GhstAiChatController? _aiController;
   StreamSubscription<AuthState>? _auth;
   Timer? _poll;
   CloudAccountSession get _session => widget.session;
+
+  void _clearAiController({bool immediate = false}) {
+    final old = _aiController;
+    _aiController = null;
+    _aiScope = null;
+    if (old == null) return;
+    if (immediate) {
+      old.dispose();
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) => old.dispose());
+    }
+  }
+
+  GhstAiChatController _resolveAiController(String scope) {
+    if (_aiController == null || _aiScope != scope || !_aiController!.valid) {
+      final old = _aiController;
+      _aiScope = scope;
+      _aiController = GhstAiChatController(session: _session);
+      if (old != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => old.dispose());
+      }
+    }
+    return _aiController!;
+  }
 
   @override
   void initState() {
@@ -55,6 +82,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
       }
       if (mounted && state.event == AuthChangeEvent.signedOut) {
         setState(() {
+          _clearAiController();
           _recovery = false;
           _section = GhstUserSection.home;
           _shippingDetails = null;
@@ -62,7 +90,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
           _purchaseOrders = false;
         });
       }
-    });
+    }, onError: (Object _) {});
     _refresh();
     _poll = Timer.periodic(const Duration(seconds: 30), (_) {
       if (_foreground && _session.service.signedIn) _refresh();
@@ -73,6 +101,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
     if (mounted) {
       setState(() {
         if (_knownIdentity != _session.service.identityScope) {
+          _clearAiController();
           _knownIdentity = _session.service.identityScope;
           _address = '';
           _section = widget.initialShipping
@@ -186,6 +215,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
 
   @override
   void dispose() {
+    _clearAiController(immediate: true);
     WidgetsBinding.instance.removeObserver(this);
     _session.removeListener(_changed);
     _poll?.cancel();
@@ -299,6 +329,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
       );
     }
     final scope = '${_session.service.identityScope}:${_session.revision}';
+    final aiController = _resolveAiController(scope);
     Widget market(MarketView view) => MarketplaceView(
       key: ValueKey('$scope:$view'),
       session: _session,
@@ -315,6 +346,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
       onCatalog: () => _go(GhstUserSection.food),
       onAddresses: _addresses,
       onOrders: _openShipping,
+      onAiAssistant: () => _go(GhstUserSection.aiAssistant),
       onAddressChanged: (address) {
         if (mounted && _address != address) setState(() => _address = address);
       },
@@ -330,6 +362,11 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
       GhstUserSection.food => market(MarketView.catalog),
       GhstUserSection.profile => market(MarketView.account),
       GhstUserSection.notifications => market(MarketView.notifications),
+      GhstUserSection.aiAssistant => GhstAiChatScreen(
+        key: ValueKey('$scope:ai'),
+        session: _session,
+        controller: aiController,
+      ),
       GhstUserSection.workspace => market(MarketView.workspace),
       GhstUserSection.merchantOrders => market(MarketView.merchantOrders),
       GhstUserSection.orders => Column(
@@ -378,6 +415,13 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
       onCreateOrder: () => _createOrder({}),
       onCart: () => openMarketplaceView(context, _session, MarketView.cart),
       onLogout: _session.service.signOut,
+      floatingOverlay: _section == GhstUserSection.aiAssistant
+          ? null
+          : GhstAiFloatingBubble(
+              key: ValueKey('$scope:ai-bubble'),
+              controller: aiController,
+              onExpandFullScreen: () => _go(GhstUserSection.aiAssistant),
+            ),
       child: content,
     );
   }

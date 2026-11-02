@@ -204,4 +204,114 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'Saving Cloud PostgreSQL provider shows inline sync feedback and persistent secret helper',
+    (tester) async {
+      EnvConfig.configureDeliveryApiRuntime(
+        baseUrl: 'https://delivery.example/delivery/',
+      );
+      final config = {
+        'local': false,
+        'storage': 'cloud_postgres',
+        'providers': {
+          'google_maps': {
+            'label': 'Google Maps Platform',
+            'available': true,
+            'configured': false,
+            'enabled': false,
+            'fields': [
+              {
+                'key': 'GOOGLE_MAPS_API_KEY',
+                'label': 'Google Maps API key',
+                'type': 'text',
+                'secret': true,
+                'configured': false,
+                'localOnly': false,
+              },
+              {
+                'key': 'GOOGLE_MAPS_ENABLED',
+                'label': 'Cho phép backend sử dụng',
+                'type': 'boolean',
+                'secret': false,
+                'configured': true,
+                'value': 'false',
+                'localOnly': false,
+              },
+            ],
+          },
+        },
+      };
+      final api = BackendAdminFixture((path, body) {
+        if (path == 'admin/integrations/config' && body != null) {
+          final values = Map<String, dynamic>.from(body['values'] as Map);
+          final p =
+              (config['providers'] as Map)['google_maps']
+                  as Map<String, dynamic>;
+          final fields = (p['fields'] as List).cast<Map<String, dynamic>>();
+          if (values['GOOGLE_MAPS_API_KEY']?.toString().isNotEmpty == true) {
+            fields[0]['configured'] = true;
+            p['configured'] = true;
+          }
+          if (values['GOOGLE_MAPS_ENABLED'] != null) {
+            fields[1]['value'] = values['GOOGLE_MAPS_ENABLED'];
+            p['enabled'] = values['GOOGLE_MAPS_ENABLED'] == 'true';
+          }
+          return {
+            'changed': values.keys.toList(),
+            'storage': 'cloud_postgres',
+            'providers': config['providers'],
+          };
+        }
+        return config;
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: BackendIntegrationSettings(api: api),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Quản lý API backend'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Google Maps Platform'));
+      await tester.pumpAndSettle();
+
+      final keyInput = find.byKey(
+        const ValueKey('integration-field-GOOGLE_MAPS_API_KEY'),
+      );
+      await tester.enterText(keyInput, 'AIzaSyTestCloudKey');
+      final saveBtn = find.byKey(
+        const ValueKey('save-integration-google_maps'),
+      );
+      await tester.ensureVisible(saveBtn);
+      await tester.tap(saveBtn);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining(
+          'Đã lưu Google Maps Platform (đã đồng bộ Cloud PostgreSQL)',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('Bật "Cho phép backend sử dụng"'),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining(
+          'Khóa bảo mật đã đồng bộ Cloud PostgreSQL — để trống nếu giữ nguyên',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        tester.widget<TextField>(keyInput).decoration?.floatingLabelBehavior,
+        FloatingLabelBehavior.always,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

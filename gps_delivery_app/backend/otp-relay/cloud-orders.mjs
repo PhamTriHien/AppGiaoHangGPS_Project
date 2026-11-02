@@ -1,6 +1,7 @@
 import express from 'express';
-import { IntegrationError } from './provider-http.mjs';
+import { fetchWithRetry, IntegrationError } from './provider-http.mjs';
 import { providerConfigured } from './integration-config.mjs';
+import { createCustomerAiChatHandler } from './ai-assistant.mjs';
 import {
   createMarketMedia,
   createPrivateAttachmentUpload,
@@ -47,11 +48,11 @@ export function createCloudOrders({ env = process.env, authenticate, fetcher = f
   const rpc = async (req, name, body) => {
     let response;
     try {
-      response = await fetcher(new URL(`/rest/v1/rpc/${name}`, env.SUPABASE_URL), {
-        method: 'POST', redirect: 'error', signal: AbortSignal.timeout(15000),
+      response = await fetchWithRetry(new URL(`/rest/v1/rpc/${name}`, env.SUPABASE_URL), {
+        method: 'POST',
         headers: { apikey: env.SUPABASE_ANON_KEY, Authorization: `Bearer ${req.deliveryIdentity.token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
-      });
+      }, fetcher);
     } catch { throw new IntegrationError(502, 'Không kết nối được cơ sở dữ liệu cloud.'); }
     const chunks = []; let size = 0;
     for await (const chunk of response.body ?? []) {
@@ -64,7 +65,7 @@ export function createCloudOrders({ env = process.env, authenticate, fetcher = f
     catch { throw new IntegrationError(502, 'Phản hồi cloud không hợp lệ.'); }
     if (!response.ok) {
       if (['PGRST202', '42P01', '42883'].includes(data.code)) throw new IntegrationError(503,
-        ['delivery_marketplace','delivery_market_operations','delivery_market_browse','delivery_market_media_reserve','delivery_market_attachment_reserve','delivery_cloud_order_otp','delivery_cloud_share_manage'].includes(name)
+        ['delivery_marketplace','delivery_market_operations','delivery_market_browse','delivery_market_media_reserve','delivery_market_attachment_reserve','delivery_cloud_order_otp','delivery_cloud_share_manage','delivery_cloud_logistics'].includes(name)
           ? 'Dữ liệu mua hàng cần được cập nhật trong trang quản trị.'
           : name === 'delivery_cloud_addresses_manage'
           ? 'Chưa cài sổ địa chỉ cloud. Chạy migration 20261029_cloud_addresses.sql trên Supabase.'
@@ -115,6 +116,18 @@ export function createCloudOrders({ env = process.env, authenticate, fetcher = f
     if (req.params.action === 'tracking_share') attachShareUrl(result, env);
     res.json(result);
   }));
+  const logisticsActions = new Set([
+    'pickup_list','pickup_create','pickup_assign','recipient_trust','recipient_flag','instruction_set','stats','service_eta',
+  ]);
+  router.post('/logistics/:action', route(async (req, res) => {
+    if (!logisticsActions.has(req.params.action) || !req.body || Array.isArray(req.body) ||
+        typeof req.body !== 'object' || Buffer.byteLength(JSON.stringify(req.body)) > 4000) {
+      throw new IntegrationError(400, 'Yêu cầu vận hành không hợp lệ.');
+    }
+    res.json(await rpc(req, 'delivery_cloud_logistics', { p_action: req.params.action, p_payload: req.body }));
+  }));
+  const aiChat = createCustomerAiChatHandler({ env, fetcher, rpc });
+  router.post('/ai-chat', route(aiChat));
   router.get('/profile', route(async (req, res) => res.json(await rpc(req, 'delivery_cloud_profile', {}))));
   router.post('/profile', route(async (req, res) => res.json(await rpc(req, 'delivery_cloud_profile', { p_details: req.body }))));
   router.post('/memberships', route(async (req, res) => {

@@ -1572,7 +1572,6 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
               final recipientTrust = _store.evaluateRecipientTrust(
                 activeOrder.recipientPhone,
               );
-              final aiSla = _store.aiOperationsInsights;
               return Container(
                 margin: const EdgeInsets.fromLTRB(14, 8, 14, 8),
                 padding: const EdgeInsets.all(10),
@@ -1587,14 +1586,6 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
                       spacing: 10,
                       runSpacing: 4,
                       children: [
-                        Text(
-                          'AI Điều hướng • SLA mạng lưới: ${aiSla.predictedSlaOnTimePercent.toStringAsFixed(1)}%',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF5B33E6),
-                          ),
-                        ),
                         Text(
                           'Tín nhiệm người nhận: ${recipientTrust.trustScore}/100 (${recipientTrust.riskTier})',
                           style: TextStyle(

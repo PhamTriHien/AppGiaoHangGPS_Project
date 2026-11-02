@@ -2,11 +2,11 @@ import crypto from 'node:crypto';
 import { configValue, INTEGRATION_DEFINITIONS, providerConfigured } from './integration-config.mjs';
 import { createCommerceDatabase } from './commerce-db.mjs';
 
-export const COMMERCE_MIGRATION = '20261107_cloud_commercial_suite';
+export const COMMERCE_MIGRATION = '20261108_cloud_logistics';
 const revisionKey = crypto.randomBytes(32);
 export const databaseRevision = env => crypto.createHmac('sha256', revisionKey)
   .update(JSON.stringify([configValue('DATABASE_URL', env), configValue('DATABASE_CA_CERT', env)])).digest('hex');
-const migrations = ['20261027_delivery_integrations.sql', '20261028_cloud_orders.sql', '20261029_payments_ghn.sql', '20261029_cloud_addresses.sql', '20261030_marketplace.sql', '20261031_market_operations.sql', '20261101_partner_memberships.sql', '20261102_local_address_import.sql', '20261103_catalog_stock_versions.sql', '20261104_market_media.sql', '20261105_market_browse.sql', '20261106_catalog_configuration.sql', '20261107_cloud_commercial_suite.sql'];
+const migrations = ['20261027_delivery_integrations.sql', '20261028_cloud_orders.sql', '20261029_payments_ghn.sql', '20261029_cloud_addresses.sql', '20261030_marketplace.sql', '20261031_market_operations.sql', '20261101_partner_memberships.sql', '20261102_local_address_import.sql', '20261103_catalog_stock_versions.sql', '20261104_market_media.sql', '20261105_market_browse.sql', '20261106_catalog_configuration.sql', '20261107_cloud_commercial_suite.sql', '20261108_cloud_logistics.sql'];
 
 // Catalog-only queries: never create users, orders, provider requests or payments.
 export const DEPLOYMENT_SCHEMA_SQL = `with commerce_tables as (
@@ -28,19 +28,21 @@ select
     and to_regprocedure('public.delivery_market_record_prepaid_capture(uuid,text)') is not null
     and exists(select 1 from information_schema.columns where table_schema='public'
       and table_name='delivery_payment_transactions' and column_name='purchase_id')
-    and (select count(*)=15 and bool_and(c.relrowsecurity) from pg_class c where c.oid in (
+    and (select count(*)=17 and bool_and(c.relrowsecurity) from pg_class c where c.oid in (
       select to_regclass('public.'||n) from unnest(array[
         'delivery_market_shop_staff','delivery_market_variants','delivery_market_shipments',
         'delivery_cloud_order_secrets','delivery_cloud_shares','delivery_market_attachments',
         'delivery_partner_reviews','delivery_market_review_reports','delivery_market_shop_follows',
         'delivery_market_vouchers','delivery_market_voucher_usages','delivery_market_flash_sales',
-        'delivery_market_flash_claims','delivery_market_coin_wallets','delivery_market_coin_ledger']) n))
+        'delivery_market_flash_claims','delivery_market_coin_wallets','delivery_market_coin_ledger',
+        'delivery_backend_config','delivery_backend_config_audit']) n))
     and not exists(select 1 from unnest(array[
         'delivery_market_shop_staff','delivery_market_variants','delivery_market_shipments',
         'delivery_cloud_order_secrets','delivery_cloud_shares','delivery_market_attachments',
         'delivery_partner_reviews','delivery_market_review_reports','delivery_market_shop_follows',
         'delivery_market_vouchers','delivery_market_voucher_usages','delivery_market_flash_sales',
-        'delivery_market_flash_claims','delivery_market_coin_wallets','delivery_market_coin_ledger']) n
+        'delivery_market_flash_claims','delivery_market_coin_wallets','delivery_market_coin_ledger',
+        'delivery_backend_config','delivery_backend_config_audit']) n
       cross join (select oid from pg_roles where rolname in ('anon','authenticated')) r
       cross join unnest(array['SELECT','INSERT','UPDATE','DELETE']) p(privilege)
       where coalesce(has_table_privilege(r.oid,to_regclass('public.'||n),p.privilege),false))
@@ -50,6 +52,15 @@ select
       and policyname='delivery_private_evidence_insert' and cmd='INSERT')
     and exists(select 1 from pg_policies where schemaname='storage' and tablename='objects'
       and policyname='delivery_private_evidence_select' and cmd='SELECT') as commercial_suite_schema,
+  to_regprocedure('public.delivery_cloud_logistics(text,jsonb)') is not null
+    and exists(select 1 from information_schema.columns where table_schema='public'
+      and table_name='delivery_cloud_orders' and column_name='delivery_instruction')
+    and (select count(*)=2 and bool_and(c.relrowsecurity) from pg_class c where c.oid in (
+      to_regclass('public.delivery_cloud_pickups'),to_regclass('public.delivery_cloud_recipient_flags')))
+    and not exists(select 1 from unnest(array['delivery_cloud_pickups','delivery_cloud_recipient_flags']) n
+      cross join (select oid from pg_roles where rolname in ('anon','authenticated')) r
+      cross join unnest(array['SELECT','INSERT','UPDATE','DELETE']) p(privilege)
+      where coalesce(has_table_privilege(r.oid,to_regclass('public.'||n),p.privilege),false)) as logistics_schema,
   to_regprocedure('public.delivery_market_selection(uuid,jsonb)') is not null
     and to_regprocedure('public.delivery_market_configured_cart()') is not null
     and (select count(*)=4 from information_schema.columns where table_schema='public'
@@ -165,6 +176,8 @@ export function createDeploymentReadiness({ env = process.env, database = create
       schema?.configuration_schema ? 'Đã có giá lựa chọn tại server, giỏ theo từng dòng và giới hạn hoàn hàng.' : 'Cần migration 20261106_catalog_configuration.sql.');
     add('commercial_suite_schema','Thương mại cloud toàn diện (P1–P6)',schema ? schema.commercial_suite_schema ? 'ok' : 'missing' : 'unchecked',
       schema?.commercial_suite_schema ? 'Đã có biến thể SKU, nhân sự shop, trả trước multi-shop, bằng chứng riêng tư, voucher, flash sale và xu.' : 'Cần migration 20261107_cloud_commercial_suite.sql.');
+    add('logistics_schema','Thu gom, tín nhiệm người nhận và thống kê giao hàng',schema ? schema.logistics_schema ? 'ok' : 'missing' : 'unchecked',
+      schema?.logistics_schema ? 'Đã có phiếu thu gom, chỉ dẫn giao hàng, cờ rủi ro người nhận riêng tư và thống kê từ đơn cloud.' : 'Cần migration 20261108_cloud_logistics.sql.');
     const commerceSchema = schema?.commerce_schema && schema?.commerce_guard;
     add('address_schema','Sổ địa chỉ tài khoản',schema ? schema.address_schema ? 'ok' : 'missing' : 'unchecked',
       schema?.address_schema ? 'Đã có RPC và RLS sổ địa chỉ.' : 'Cần migration 20261029_cloud_addresses.sql.');

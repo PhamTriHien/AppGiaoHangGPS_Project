@@ -19,6 +19,14 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(process.
         const page = await context.newPage();
         activePage = page;
         const fillField = async (field, value) => {
+          await field.waitFor({ state: 'attached' });
+          for (let i = 0; i < 6; i++) {
+            const box = await field.boundingBox();
+            if (box && box.y >= 16 && box.y + box.height <= 960) break;
+            await page.mouse.move(width / 2, 600);
+            await page.mouse.wheel(0, box && box.y < 16 ? -420 : 420);
+            await page.waitForTimeout(160);
+          }
           await field.scrollIntoViewIfNeeded();
           await field.click();
           await field.press('ControlOrMeta+A');
@@ -104,6 +112,25 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(process.
             if (request.method() === 'POST') { orderCreated = true; return route.fulfill({ ...data, json: { order } }); }
             return route.fulfill({ ...data, json: { orders: role !== 'customer' || orderCreated ? [order] : [] } });
           }
+          if (url.pathname === '/delivery/places') {
+            const q = url.searchParams.get('q') || '';
+            const isPickup = q.includes('12') || q.toLowerCase().includes('nguyen hue');
+            return route.fulfill({
+              ...data,
+              json: {
+                autocomplete: true,
+                attribution: 'Google Maps',
+                places: [
+                  isPickup
+                    ? { title: '12 Nguyễn Huệ', address: '12 Nguyen Hue', latitude: 10.77, longitude: 106.7 }
+                    : { title: '20 Lê Lợi', address: '20 Le Loi', latitude: 10.78, longitude: 106.71 },
+                ],
+              },
+            });
+          }
+          if (url.pathname === '/delivery/reverse') {
+            return route.fulfill({ ...data, json: { address: '12 Nguyen Hue', attribution: 'Google Maps' } });
+          }
           return route.fulfill({ ...data, status: 403, json: { error: 'UI fixture only' } });
         });
         await page.goto(`http://127.0.0.1:8080/#/${role === 'operator' ? 'cloud-admin' : 'cloud'}`, { waitUntil: 'domcontentloaded' });
@@ -170,20 +197,27 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(process.
           await page.getByRole('button', { name: /^(Back|Quay lại)$/ }).last().click();
           await navigate('Gửi hàng');
           await page.getByRole('button', { name: 'Tạo đơn hàng', exact: true }).click();
-          const fields = [
-            ['Địa chỉ lấy hàng', '12 Nguyen Hue'], ['Địa chỉ giao hàng', '20 Le Loi'],
+          assert.equal(await page.getByRole('textbox', { name: 'Vĩ độ', exact: true }).count(), 0);
+          assert.equal(await page.getByRole('textbox', { name: 'Kinh độ', exact: true }).count(), 0);
+          await fillField(page.getByRole('textbox', { name: 'Địa chỉ lấy hàng', exact: true }), '12 Nguyen Hue');
+          const findPickup = page.getByRole('button', { name: 'Tìm điểm lấy trên Google Map', exact: true });
+          await findPickup.scrollIntoViewIfNeeded();
+          await findPickup.click();
+          const pickupOption = page.getByText('12 Nguyen Hue', { exact: true }).last();
+          await pickupOption.waitFor({ timeout: 5000 });
+          await pickupOption.click();
+          await fillField(page.getByRole('textbox', { name: 'Địa chỉ giao hàng', exact: true }), '20 Le Loi');
+          const findDropoff = page.getByRole('button', { name: 'Tìm điểm giao trên Google Map', exact: true });
+          await findDropoff.scrollIntoViewIfNeeded();
+          await findDropoff.click();
+          const dropoffOption = page.getByText('20 Le Loi', { exact: true }).last();
+          await dropoffOption.waitFor({ timeout: 5000 });
+          await dropoffOption.click();
+          for (const [name, value] of [
             ['Tên người nhận', 'UI Receiver'], ['Số điện thoại người nhận', '0912345678'],
             ['Hàng hóa', 'Documents'], ['Khối lượng (kg)', '1'], ['Tiền thu hộ (đồng)', '100000'],
-          ];
-          for (const [name, value] of fields) {
-            const field = page.getByRole('textbox', { name, exact: true });
-            await fillField(field, value);
-          }
-          for (const [name, values] of [['Vĩ độ', ['10.77', '10.78']], ['Kinh độ', ['106.7', '106.71']]]) {
-            for (let index = 0; index < 2; index++) {
-              const field = page.getByRole('textbox', { name, exact: true }).nth(index);
-              await fillField(field, values[index]);
-            }
+          ]) {
+            await fillField(page.getByRole('textbox', { name, exact: true }), value);
           }
           const quote = page.getByRole('button', { name: 'Lấy báo giá', exact: true });
           await page.mouse.move(width / 2, 800); await page.mouse.wheel(0, 1800); await page.waitForTimeout(400);

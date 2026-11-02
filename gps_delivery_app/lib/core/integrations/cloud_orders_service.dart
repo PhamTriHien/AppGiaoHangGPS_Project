@@ -152,6 +152,14 @@ class CloudOrdersService {
     Map<String, dynamic> payload = const {},
   ]) => request('marketplace/$action', body: payload);
 
+  Future<Map<String, dynamic>> logistics(
+    String action, [
+    Map<String, dynamic> payload = const {},
+  ]) => request('logistics/$action', body: payload);
+
+  Future<Map<String, dynamic>> aiChat(List<Map<String, String>> messages) =>
+      request('ai-chat', body: {'messages': messages});
+
   Future<Map<String, dynamic>> publicTracking(String token) => _api
       .publicRequest('tracking', body: {'token': token.trim()}, maxBytes: 4000);
 

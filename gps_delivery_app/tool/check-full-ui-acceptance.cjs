@@ -725,7 +725,7 @@ async function runSuite02Customer(browser, acceptanceRoot, gallery) {
         });
       }
       if (p === `/delivery/cloud/orders/${shipDeliveredId}/otp`) {
-        return route.fulfill({ headers: CORS, json: { recipient_otp: '654321' } });
+        return route.fulfill({ headers: CORS, json: { required: true, otp_code: '654321', verified_at: null } });
       }
       if (p === `/delivery/cloud/orders/${shipDeliveredId}/shares`) {
         if (req.method() === 'POST') {
@@ -1054,6 +1054,30 @@ async function runSuite02Customer(browser, acceptanceRoot, gallery) {
           return route.fulfill({ headers: CORS, json: { messages: chatMessages, next: null } });
         }
       }
+      if (p === '/delivery/places') {
+        const q = u.searchParams.get('q') || '';
+        return route.fulfill({
+          headers: CORS,
+          json: {
+            autocomplete: true,
+            attribution: 'Google Maps',
+            places: [
+              {
+                title: q || '45 Pasteur',
+                address: '45 Pasteur, Quận 1, TP.HCM',
+                latitude: 10.775,
+                longitude: 106.701,
+              },
+            ],
+          },
+        });
+      }
+      if (p === '/delivery/reverse') {
+        return route.fulfill({
+          headers: CORS,
+          json: { address: '45 Pasteur, Quận 1, TP.HCM', attribution: 'Google Maps' },
+        });
+      }
       return route.fulfill({ status: 403, headers: CORS, json: { error: 'Customer fixture denied: ' + p } });
     });
 
@@ -1124,9 +1148,9 @@ async function runSuite02Customer(browser, acceptanceRoot, gallery) {
     await s.clickNav('Yêu cầu ảnh bằng chứng giao hàng (POD)');
     await s.clickNav('Yêu cầu mã OTP 6 số người nhận');
     await s.clickButton('Thêm điểm dừng trung gian (+5.000 đ)');
-    await s.fill('Địa chỉ điểm dừng #1', '45 Pasteur, Quận 1, TP.HCM');
-    await s.fill('Vĩ độ dừng #1', '10.775');
-    await s.fill('Kinh độ dừng #1', '106.701');
+    await s.fill('Địa chỉ điểm dừng #1', '45 Pasteur, Quận 1');
+    await s.clickButton('Tìm điểm dừng #1 trên Google Map');
+    await s.clickNav('45 Pasteur, Quận 1, TP.HCM');
     await s.clickButton('Lấy báo giá');
     await s.waitText(/Phụ phí đa điểm dừng:\s*5\.000/);
     assert.equal(advancedQuoteChecked, true);
@@ -2448,7 +2472,7 @@ async function runSuite06OperatorAdmin(browser, acceptanceRoot, gallery) {
             databaseConfigured: false,
             canMigrate: true,
             liveTransactionsVerified: false,
-            migrationVersion: '20261107_cloud_commercial_suite',
+            migrationVersion: '20261108_cloud_logistics',
             databaseRevision: 'acceptance-fixture',
             checks: [
               { label: 'PostgreSQL backend', status: 'missing', detail: 'Lưu kết nối PostgreSQL tại Admin của backend đang kết nối.' },

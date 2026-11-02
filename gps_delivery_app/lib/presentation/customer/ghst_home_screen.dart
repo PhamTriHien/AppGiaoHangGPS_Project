@@ -22,11 +22,13 @@ class GhstHomeScreen extends StatefulWidget {
     required this.onAddresses,
     required this.onOrders,
     required this.onAddressChanged,
+    this.onAiAssistant,
     this.trackingOnly = false,
   });
   final CloudAccountSession session;
   final ValueChanged<Map<String, dynamic>> onCreateOrder;
   final VoidCallback onCatalog, onAddresses, onOrders;
+  final VoidCallback? onAiAssistant;
   final ValueChanged<String> onAddressChanged;
   final bool trackingOnly;
 
@@ -453,6 +455,12 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
               icon: const Icon(Icons.receipt_long_outlined, size: 15),
               label: const Text('Đơn hàng của tôi'),
             ),
+            if (widget.onAiAssistant != null)
+              OutlinedButton.icon(
+                onPressed: widget.onAiAssistant,
+                icon: const Icon(Icons.auto_awesome_outlined, size: 15),
+                label: const Text('Hỏi Trợ lý AI'),
+              ),
             if (widget.session.canCreateShippingOrder)
               FilledButton.icon(
                 onPressed: () => widget.onCreateOrder({}),

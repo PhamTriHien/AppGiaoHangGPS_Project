@@ -1,8 +1,8 @@
 # payOS and GHN cloud orders
 
-These integrations operate on real `delivery_cloud_orders`, not local SQLite
-orders. They require a verified Supabase user, a backend PostgreSQL connection
-and the delivery migrations. No sample orders or payment success records
+These integrations operate on real `delivery_cloud_orders` and `delivery_market_purchases`,
+not local SQLite orders. They require a verified Supabase user, a backend PostgreSQL
+connection and the delivery migrations. No sample orders or payment success records
 are inserted by setup. Automated tests use an isolated database and mock provider
 responses; they do not charge money or create real shipments.
 
@@ -20,14 +20,12 @@ responses; they do not charge money or create real shipments.
    restarting the backend invalidates an older confirmation. Only one UI
    migration runs at a time; database connection edits are refused during that run.
    Cloud operators can configure DATABASE_URL and apply confirmed migrations on
-   the connected backend. Alternatively run `npm ci`, then `npm run migrate:cloud`. This installs the
-   current `20261027_delivery_integrations.sql`, `20261028_cloud_orders.sql` and
-   `20261029_payments_ghn.sql` without deleting existing data. SQL Editor is an
-   alternative for installing SQL, but runtime commerce still needs DATABASE_URL.
-   The migration runner applies additive catalog/operations migrations through
-   `20261106_catalog_configuration.sql` and reports workflowVersion 12.
-   Profile schema_version 3 includes independently approved merchant/driver
-   memberships. Shipping and purchase payment workflows remain distinct.
+   the connected backend. Alternatively run `npm ci`, then `npm run migrate:cloud`.
+   The migration runner applies all additive migrations through
+   `20261107_cloud_commercial_suite.sql` and reports `workflowVersion: 13` without
+   deleting existing data. Profile `schema_version: 3` includes independently
+   approved merchant/driver memberships. Shipping (`order_id`) and multi-shop
+   purchase (`purchase_id`) payment workflows remain distinct.
 3. Restart the backend after changing `.env`; Admin saves take effect without
    restart. Remote PostgreSQL uses verified TLS.
    A missing database or migration returns an unavailable error, never a local
@@ -49,30 +47,32 @@ Deploy the backend behind a public HTTPS endpoint and register its callback in
 payOS: `https://YOUR_BACKEND/delivery/payments/webhook`. payOS cannot call
 localhost. The callback validates the official SDK's signature before writing.
 The server also verifies signed provider responses during creation, cancellation
-and refresh. Merely visiting the return URL never marks an order paid.
+and refresh. Merely visiting the return URL never marks an order or purchase paid.
 
-Open an own cloud order, select **Thanh toan cuoc** and create/open its payOS
-link. Eligibility: positive shipping fee, sender pays, searching, no internal
-driver and no carrier reservation. COD remains a separate collection amount.
-The server reads the fee from PostgreSQL and ignores caller-supplied prices.
-Links expire after 15 minutes at the provider; local time alone does not release
-a payment lock. Use refresh for provider reconciliation, or cancel the link.
+- **Standalone shipping orders**: Open an own cloud order, select **Thanh toan cuoc**
+  and create/open its payOS link. Eligibility: positive shipping fee, sender pays,
+  searching, no internal driver and no carrier reservation. COD remains a separate
+  collection amount.
+- **Prepaid Marketplace purchases**: Checkout with `payment_method = 'prepaid'`
+  creates a pending purchase (`UNPAID`) and supports `/delivery/cloud/purchases/:id/payment*`.
+  Upon verified capture, `delivery_market_record_prepaid_capture` posts an
+  immutable balanced double-entry journal (including any `promo_expense` for
+  vouchers/coins) once per transaction.
+
+The server reads amounts from PostgreSQL and ignores caller-supplied prices.
+Links expire after 15 minutes at the provider; `delivery_market_run_jobs`
+(`MARKET_JOBS_ENABLED=true`) also expires stale pending prepaid purchases.
 
 Receipts are durable and deduplicated by provider reference. Only an exact VND
-receipt total matching the saved shipping fee can produce PAID. Partial,
-overpaid, late, canceled-order or otherwise inconsistent transfers require REVIEW.
-Additional partial transfers remain REVIEW for manual investigation. Refunds and
-automatic release from REVIEW are not implemented. Never change REVIEW to PAID
-without checking actual bank receipts. A paid order canceled/returned also moves
-to REVIEW; no money is automatically refunded.
+receipt total matching the saved order/purchase payable amount can produce PAID.
+Partial, overpaid, late, canceled-order or otherwise inconsistent transfers
+require REVIEW. Refunds and automatic release from REVIEW are not automated via
+provider APIs; never change REVIEW to PAID without checking actual bank receipts.
 
-An uncertain create retries with the same saved provider_order_code. New checkout
-creation is blocked while CREATING/PENDING/REVIEW exists. Driver assignment and
-order cancellation are also blocked until those cases are settled. Disabling the
-provider blocks new checkouts but continues to accept verified receipts and
-reconcile/cancel existing links while its keys remain configured. Do not rotate
-payment-channel keys with unsettled links: this version stores one active payOS
-channel configuration, not a multi-channel key archive.
+An uncertain create retries with the same saved `provider_order_code`. New checkout
+creation is blocked while CREATING/PENDING/REVIEW exists. Disabling the provider
+blocks new checkouts but continues to accept verified receipts and reconcile/cancel
+existing links while its keys remain configured.
 
 ### GHN
 
@@ -87,7 +87,7 @@ register `https://YOUR_BACKEND/delivery/webhooks/ghn` with the custom header
 `X-GHN-Webhook-Secret` equal to your backend secret. Staging and production
 callbacks are separate. A localhost address is unreachable from GHN.
 
-In **Don hang cloud**, an operator opens **GHN**, supplies the new two-level
+In **Don hang cloud**, an operator opens **GHN**, supplies the two-level
 province/ward names, package dimensions in cm and inspection policy, then previews
 the actual provider fee. Creating the shipment requires explicit confirmation.
 The quote is valid 10 minutes and binds the order version, Shop ID and environment.
@@ -96,33 +96,25 @@ order. GHN charges the shop (`payment_type_id: 1`); that carrier cost is display
 separately and does not silently replace the customer's agreed shipping fee.
 
 Reservation durably assigns fulfillment to GHN and hides internal driver actions.
-The stable client_order_code and payload are reused after uncertain create results.
+The stable `client_order_code` and payload are reused after uncertain create results.
 Callbacks authenticate the custom header and then fetch authoritative GHN detail;
 callback status/COD fields alone cannot settle an order. Duplicate and stale
-events do not regress status or duplicate history. No carrier GPS or COD
-remittance is inferred. Cancellation checks the individual provider result and
-reloads actual status; HTTP 200 alone is not cancellation confirmation.
-
-Disabling GHN blocks new previews/shipments but allows callback, refresh and
-cancellation for existing shipments while credentials remain. Stored shipments
-must use their original Shop ID and environment. Changing a live shop/environment
-requires completing existing shipments first; simultaneous multiple shops are not
-supported by this adapter. Unknown GHN statuses stay visible without inventing
-a business transition. A reserved shipment cannot currently revert to an internal
-driver or be recreated after terminal cancellation; contact an operator.
+events do not regress status or duplicate history.
 
 ## Endpoints
 
-All paths below begin with `/delivery`. Payment/shipment order routes require a
-real Supabase JWT; public callbacks use their own signature/secret authentication.
+All paths below begin with `/delivery`. Payment/shipment routes require a real
+Supabase JWT; public callbacks use their own signature/secret authentication.
 
 | Method/path | Purpose |
 | --- | --- |
-| GET `/cloud/orders/:id/payment` | Saved intent and configuration status |
-| POST `/cloud/orders/:id/payment` | Own/order-operator link creation or retry |
-| POST `/cloud/orders/:id/payment/refresh` | Signed provider reconciliation |
-| POST `/cloud/orders/:id/payment/cancel` | Verified link cancellation |
-| POST `/payments/webhook` | Signed payment receipt |
+| GET/POST `/cloud/orders/:id/payment` | Saved shipping payment intent or link creation/retry |
+| POST `/cloud/orders/:id/payment/refresh` | Signed provider reconciliation for shipping fee |
+| POST `/cloud/orders/:id/payment/cancel` | Verified shipping link cancellation |
+| GET/POST `/cloud/purchases/:id/payment` | Saved Marketplace purchase payment intent or link creation/retry |
+| POST `/cloud/purchases/:id/payment/refresh` | Signed provider reconciliation + double-entry capture |
+| POST `/cloud/purchases/:id/payment/cancel` | Verified purchase link cancellation |
+| POST `/payments/webhook` | Signed payment receipt (shipping or purchase) |
 | GET `/cloud/orders/:id/shipment` | Saved carrier status |
 | POST `/cloud/orders/:id/shipment/preview` | Operator fee preview |
 | POST `/cloud/orders/:id/shipment` | Operator-confirmed durable reservation/create |
@@ -130,37 +122,25 @@ real Supabase JWT; public callbacks use their own signature/secret authenticatio
 | POST `/cloud/orders/:id/shipment/cancel` | Operator cancellation request |
 | POST `/webhooks/ghn` | Header-authenticated authoritative refresh |
 | GET `/admin/integrations/usage` | Operator API HTTP counters |
-| GET `/admin/integrations/readiness` | Read-only database, schema, privacy, permissions and provider prerequisites |
-| POST `/admin/integrations/migrate-cloud` | Local-only, confirmed schema migrations |
+| GET `/admin/integrations/readiness` | Read-only database, schema (`workflowVersion: 13`), worker, privacy, permissions and provider prerequisites |
+| POST `/admin/integrations/migrate-cloud` | Confirmed schema migrations |
 
-Commerce tables and identity sequence deny anon/authenticated Data API access.
+Commerce tables and identity sequence deny `anon`/`authenticated` Data API access.
 Only the backend database connection writes receipts, quotes and shipments.
-The backend repeats account/ownership checks before any commerce operation.
 
 ## Monitoring and validation
 
 **Hoat dong API** shows observed outbound HTTP requests, HTTP successes/errors,
-429 responses and latency since backend startup. It stores no full URLs, keys,
-contacts or receipt data. Counters reset on restart, are process-local and do not
-measure provider billing, SDK calls that bypass the wrapper or a semantic failure
-inside an HTTP 200 response. They are not persistent quotas or circuit breakers.
+429 responses and latency since backend startup without storing keys, contacts
+or receipt data.
 
 **San sang trien khai** distinguishes a missing connection from an unreachable
-database and a missing migration. It queries PostgreSQL catalogs for tables,
-columns, guard triggers, backend privileges and restricted public-role access;
-it does not create sample data or contact payment/carrier APIs. Callback URLs
-are offered for a nonlocal HTTPS base, preserving any reverse-proxy prefix.
-URL syntax does not prove public reachability or webhook registration. Even
-all-green prerequisites leave real transaction acceptance unverified.
+database and a missing migration. Even all-green schema/worker prerequisites
+leave real provider transaction acceptance unverified until `PAYOS_*`, `GHN_*`
+and public HTTPS `PUBLIC_BASE_URL` are configured.
 
-Run `npm test`, `flutter analyze` and `flutter test --concurrency=1`. Tests cover
-PostgreSQL migration reapplication, access denial, fee authority, duplicate and
-invalid signatures, mismatch review, timeout recovery, cancellation/expiry,
-provider reconciliation, carrier reservation guards, quote binding, webhook
-deduplication, stale carrier data and 360/1440px commerce UI/account switching.
-Live acceptance still requires configured credentials, public callbacks and
-explicit real provider transactions. Fees and provider account terms apply;
-the code does not imply free carrier delivery or unrestricted payment services.
+Run `npm test` (`111/111`), `npm run test:postgres` (`22/22`), `flutter analyze --no-pub`
+and `flutter test --no-pub` (`277` passed).
 
 References: [payOS Node SDK](https://payos.vn/docs/sdks/back-end/node/),
 [payOS webhook](https://payos.vn/docs/du-lieu-tra-ve/webhook/),

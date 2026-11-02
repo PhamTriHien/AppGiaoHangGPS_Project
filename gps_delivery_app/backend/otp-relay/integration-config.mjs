@@ -3,13 +3,17 @@ import { appendFile, mkdir, readFile, rename, stat, writeFile } from 'node:fs/pr
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import nodemailer from 'nodemailer';
-import { validateDatabaseCa } from './database-connection.mjs';
+import pg from 'pg';
+import { databaseConnectionOptions, validateDatabaseCa } from './database-connection.mjs';
 
 const directory = path.dirname(fileURLToPath(import.meta.url));
 const configPath = (env) => env.INTEGRATION_CONFIG_PATH?.trim()
   ? path.resolve(env.INTEGRATION_CONFIG_PATH.trim()) : path.join(directory, '.integration-config.json');
 const queues = new Map();
 const checks = new Map();
+const syncStates = new WeakMap();
+let sharedPool = null;
+let sharedPoolRevision = '';
 const bool = (label, defaultValue = 'true') => ({ label, type: 'boolean', defaultValue });
 const field = (label, options = {}) => ({ label, ...options });
 const secret = (label) => field(label, { secret: true });
@@ -42,6 +46,12 @@ export const INTEGRATION_DEFINITIONS = {
   photon: { label: 'Photon địa chỉ', toggle: 'PHOTON_ENABLED', required: ['PHOTON_BASE_URL'], fields: {
     PHOTON_BASE_URL: url('Base URL', 'https://photon.komoot.io/'), PHOTON_AUTOCOMPLETE: bool('Autocomplete', 'false'),
   } },
+  trackasia: { label: 'TrackAsia Maps Việt Nam (Địa chỉ / Tuyến đường / ETA)', toggle: 'TRACKASIA_ENABLED', required: ['TRACKASIA_API_KEY'], fields: {
+    TRACKASIA_API_KEY: secret('TrackAsia API key'),
+  } },
+  google_maps: { label: 'Google Maps Platform (Places / Geocoding / Routes)', toggle: 'GOOGLE_MAPS_ENABLED', required: ['GOOGLE_MAPS_API_KEY'], fields: {
+    GOOGLE_MAPS_API_KEY: secret('Google Maps API key'),
+  } },
   osrm: { label: 'OSRM tuyến đường / ETA', toggle: 'OSRM_ENABLED', required: ['OSRM_BASE_URL'], fields: {
     OSRM_BASE_URL: url('Base URL', 'https://router.project-osrm.org/'),
   } },
@@ -61,8 +71,10 @@ export const INTEGRATION_DEFINITIONS = {
   telegram: { label: 'Telegram cảnh báo', toggle: 'TELEGRAM_ALERTS_ENABLED', required: ['TELEGRAM_BOT_TOKEN', 'TELEGRAM_CHAT_ID'], fields: {
     TELEGRAM_BOT_TOKEN: secret('Bot token'), TELEGRAM_CHAT_ID: field('Chat ID'),
   } },
-  gemini: { label: 'Gemini AI', toggle: 'GEMINI_ENABLED', required: ['GEMINI_API_KEY', 'GEMINI_MODEL'], fields: {
-    GEMINI_API_KEY: secret('API key'), GEMINI_MODEL: field('Model'),
+  gemini: { label: 'AI Chatbot & Trợ lý (Gemini / OpenAI API)', toggle: 'GEMINI_ENABLED', required: ['GEMINI_BASE_URL', 'GEMINI_API_KEY', 'GEMINI_MODEL'], fields: {
+    GEMINI_BASE_URL: url('API Base URL', 'https://generativelanguage.googleapis.com/v1beta'),
+    GEMINI_API_KEY: secret('API key'),
+    GEMINI_MODEL: field('Model', { defaultValue: 'gemini-2.5-flash' }),
   } },
   ghn: { label: 'GHN vận chuyển', toggle: 'GHN_ENABLED', required: ['GHN_BASE_URL', 'GHN_TOKEN', 'GHN_SHOP_ID'], fields: {
     GHN_BASE_URL: url('Base URL', 'https://dev-online-gateway.ghn.vn/shiip/public-api/'),
@@ -83,7 +95,7 @@ export const INTEGRATION_DEFINITIONS = {
     MEILISEARCH_URL: url('Base URL'), MEILISEARCH_MASTER_KEY: secret('API key'),
   } },
 };
-const defaultOff = new Set(['ghn', 'payos', 'telegram', 'meilisearch', 'sms']);
+const defaultOff = new Set(['ghn', 'payos', 'telegram', 'meilisearch', 'sms', 'google_maps', 'trackasia']);
 for (const [id, definition] of Object.entries(INTEGRATION_DEFINITIONS)) {
   if (definition.toggle) definition.fields[definition.toggle] = bool('Cho phép backend sử dụng', defaultOff.has(id) ? 'false' : 'true');
 }
@@ -91,6 +103,8 @@ const fieldsByKey = new Map(Object.entries(INTEGRATION_DEFINITIONS).flatMap(([pr
   Object.entries(definition.fields).map(([key, value]) => [key, { ...value, provider }])));
 const identityKeys = new Set(['SUPABASE_URL', 'SUPABASE_ANON_KEY']);
 const localOnlyKeys = identityKeys;
+const cloudExcludedKeys = new Set(['DATABASE_URL', 'DATABASE_CA_CERT', 'SUPABASE_URL', 'SUPABASE_ANON_KEY']);
+
 export class ConfigError extends Error {
   constructor(message, status = 400) { super(message); this.status = status; }
 }
@@ -126,6 +140,33 @@ export function integrationStatus(env = process.env) {
   }]));
 }
 
+export function assertSafeAiUrl(rawUrl, { allowLoopback = true } = {}) {
+  let parsed;
+  try { parsed = new URL(String(rawUrl || '').trim()); } catch { throw new ConfigError('URL AI không hợp lệ.'); }
+  if (parsed.search) {
+    throw new ConfigError('URL AI không được chứa tham số truy vấn (?key=...). Hãy nhập API key vào ô riêng.');
+  }
+  if (!['https:', 'http:'].includes(parsed.protocol) || parsed.username || parsed.password || parsed.hash) {
+    throw new ConfigError('URL AI không hợp lệ.');
+  }
+  const host = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, '');
+  const isLoopback = host === 'localhost' || host === '::1' || /^127(?:\.\d{1,3}){3}$/.test(host);
+  const isPrivateOrReserved =
+    host === '0.0.0.0' || host === '::' || host.endsWith('.internal') || host.endsWith('.local') ||
+    /^0(?:\.\d{1,3}){3}$/.test(host) || /^10(?:\.\d{1,3}){3}$/.test(host) ||
+    /^192\.168(?:\.\d{1,3}){2}$/.test(host) || /^169\.254(?:\.\d{1,3}){2}$/.test(host) ||
+    /^172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2}$/.test(host) ||
+    /^100\.(?:6[4-9]|[7-9]\d|1[0-1]\d|12[0-7])(?:\.\d{1,3}){2}$/.test(host) ||
+    /^(?:fc|fd)[0-9a-f]{0,2}:/.test(host) || /^fe[89ab][0-9a-f]:/.test(host) || /^::ffff:/.test(host);
+  if (isPrivateOrReserved) throw new ConfigError('Không cho phép kết nối địa chỉ mạng nội bộ hoặc metadata.');
+  if (isLoopback) {
+    if (!allowLoopback) throw new ConfigError('URL AI trên Cloud yêu cầu HTTPS công khai.');
+  } else if (parsed.protocol !== 'https:') {
+    throw new ConfigError('URL AI công khai yêu cầu giao thức HTTPS.');
+  }
+  return { parsed, isLoopback };
+}
+
 function validate(key, value) {
   const metadata = fieldsByKey.get(key);
   if (!metadata) throw new ConfigError(`Khóa cấu hình không được hỗ trợ: ${key}`);
@@ -149,9 +190,10 @@ function validate(key, value) {
   if (metadata.type === 'url') {
     let parsed;
     try { parsed = new URL(value); } catch { throw new ConfigError(`URL không hợp lệ: ${key}`); }
-    const paymentRedirect = ['PAYOS_RETURN_URL','PAYOS_CANCEL_URL'].includes(key);
+    if (key === 'GEMINI_BASE_URL') assertSafeAiUrl(value, { allowLoopback: true });
+    const paymentRedirect = ['PAYOS_RETURN_URL', 'PAYOS_CANCEL_URL'].includes(key);
     if (!['https:', 'http:'].includes(parsed.protocol) || parsed.username || parsed.password || (!paymentRedirect && (parsed.search || parsed.hash))) throw new ConfigError(`URL không hợp lệ: ${key}`);
-    if (paymentRedirect && parsed.protocol!=='https:' && !['localhost','127.0.0.1'].includes(parsed.hostname)) throw new ConfigError('URL thanh toán công khai yêu cầu HTTPS.');
+    if (paymentRedirect && parsed.protocol !== 'https:' && !['localhost', '127.0.0.1'].includes(parsed.hostname)) throw new ConfigError('URL thanh toán công khai yêu cầu HTTPS.');
     if (key === 'SUPABASE_URL' && parsed.protocol !== 'https:' && !['localhost', '127.0.0.1'].includes(parsed.hostname)) throw new ConfigError('Supabase yêu cầu HTTPS.');
     if (key === 'GHN_BASE_URL' && (parsed.protocol !== 'https:' || !['dev-online-gateway.ghn.vn', 'online-gateway.ghn.vn'].includes(parsed.hostname) || parsed.port || parsed.pathname !== '/shiip/public-api/')) throw new ConfigError('Dùng endpoint GHN staging hoặc production chính thức, kết thúc bằng /shiip/public-api/.');
   }
@@ -159,6 +201,7 @@ function validate(key, value) {
   if (key === 'SUPABASE_ANON_KEY' && (value.startsWith('sb_secret_') || jwtRole(value) === 'service_role')) throw new ConfigError('Chỉ dùng publishable / anon key cho ứng dụng.');
 }
 function jwtRole(value) { try { return JSON.parse(Buffer.from(value.split('.')[1], 'base64url')).role; } catch { return null; } }
+
 async function readStored(env) {
   try {
     const value = JSON.parse(await readFile(configPath(env), 'utf8'));
@@ -166,14 +209,126 @@ async function readStored(env) {
     return value;
   } catch (error) { if (error.code === 'ENOENT') return {}; throw error; }
 }
-export async function loadIntegrationConfig({ env = process.env } = {}) {
+
+function getSyncState(env) {
+  let state = syncStates.get(env);
+  if (!state) {
+    state = { syncedAt: 0, inflight: null };
+    syncStates.set(env, state);
+  }
+  return state;
+}
+
+function getSharedConfigPool(env) {
+  const revision = JSON.stringify([configValue('DATABASE_URL', env), configValue('DATABASE_CA_CERT', env)]);
+  if (sharedPool && sharedPoolRevision === revision) return sharedPool;
+  const previous = sharedPool;
+  sharedPool = new pg.Pool({
+    ...databaseConnectionOptions(env),
+    max: 2,
+    idleTimeoutMillis: 15000,
+    connectionTimeoutMillis: 8000,
+    query_timeout: 8000,
+    keepAlive: true,
+    allowExitOnIdle: true,
+    application_name: 'ghst-backend-config',
+  });
+  sharedPool.on('error', () => {});
+  sharedPoolRevision = revision;
+  if (previous) previous.end().catch(() => {});
+  return sharedPool;
+}
+
+async function withConfigDb(connEnv, db, operation, { allowLiveDb = connEnv === process.env, connectPool } = {}) {
+  if (db) return operation(db);
+  if ((!allowLiveDb && !connectPool) || !configValue('DATABASE_URL', connEnv)) return null;
+  const pool = connectPool ? connectPool(connEnv) : getSharedConfigPool(connEnv);
+  const client = await pool.connect();
+  try { return await operation(client); }
+  finally { client.release?.(); }
+}
+
+function applyCloudRowsToEnv(rows, env) {
+  const cloudValues = new Map();
+  for (const row of rows) {
+    if (!fieldsByKey.has(row.key) || cloudExcludedKeys.has(row.key)) continue;
+    const text = String(row.value ?? '');
+    validate(row.key, text);
+    cloudValues.set(row.key, text);
+  }
+  for (const [key, value] of cloudValues) {
+    if (env[key] !== value) {
+      env[key] = value;
+      checks.delete(fieldsByKey.get(key).provider);
+    }
+  }
+  return cloudValues;
+}
+
+export async function syncIntegrationConfig({ env = process.env, db, connectPool, maxAgeMs = 0 } = {}) {
+  const allowLiveDb = Boolean(db || connectPool) || env === process.env;
+  if (!db && (!allowLiveDb || !configValue('DATABASE_URL', env))) return false;
+  const state = getSyncState(env);
+  if (maxAgeMs > 0 && state.syncedAt > 0 && Date.now() - state.syncedAt < maxAgeMs) return false;
+  if (state.inflight) return state.inflight;
+  state.inflight = (async () => {
+    try {
+      let synced = false;
+      await withConfigDb(env, db, async client => {
+        const existing = await client.query('select key, value from public.delivery_backend_config');
+        applyCloudRowsToEnv(existing.rows, env);
+        state.syncedAt = Date.now();
+        synced = true;
+      }, { allowLiveDb, connectPool });
+      return synced;
+    } catch (error) {
+      if (db && error?.code !== '42P01') throw error;
+      return false;
+    } finally {
+      state.inflight = null;
+    }
+  })();
+  return state.inflight;
+}
+
+export async function loadIntegrationConfig({ env = process.env, db, connectPool } = {}) {
+  const allowLiveDb = Boolean(db || connectPool) || env === process.env;
   const values = await readStored(env);
   for (const [key, value] of Object.entries(values)) if (fieldsByKey.has(key)) validate(key, String(value ?? ''));
   for (const [key, value] of Object.entries(values)) if (fieldsByKey.has(key)) env[key] = String(value ?? '');
+  try {
+    await withConfigDb(env, db, async client => {
+      const existing = await client.query('select key, value from public.delivery_backend_config');
+      const cloudValues = applyCloudRowsToEnv(existing.rows, env);
+      for (const key of fieldsByKey.keys()) {
+        if (cloudExcludedKeys.has(key) || cloudValues.has(key)) continue;
+        const hasLocal = Object.hasOwn(values, key) || Object.hasOwn(env, key);
+        if (!hasLocal) continue;
+        const seedValue = String((Object.hasOwn(values, key) ? values[key] : env[key]) ?? '').trim();
+        validate(key, seedValue);
+        await client.query(
+          `insert into public.delivery_backend_config (key, value, updated_by, updated_at)
+           values ($1, $2, 'bootstrap', now())
+           on conflict (key) do nothing`,
+          [key, seedValue],
+        );
+        cloudValues.set(key, seedValue);
+      }
+      for (const [key, value] of cloudValues) {
+        env[key] = value;
+        values[key] = value;
+      }
+      getSyncState(env).syncedAt = Date.now();
+    }, { allowLiveDb, connectPool });
+  } catch (error) {
+    if (db && error?.code !== '42P01') throw error;
+  }
   return values;
 }
-export async function updateIntegrationConfig(values, { clear = [], actor = 'unknown', local = false, env = process.env } = {}) {
+
+export async function updateIntegrationConfig(values, { clear = [], actor = 'unknown', local = false, env = process.env, db, connectPool } = {}) {
   if (!values || typeof values !== 'object' || Array.isArray(values) || !Array.isArray(clear) || clear.some(key => typeof key !== 'string')) throw new ConfigError('Cấu hình phải là một object và clear là danh sách khóa.');
+  const allowLiveDb = Boolean(db || connectPool) || env === process.env;
   const patch = Object.fromEntries(Object.entries(values).map(([key, value]) => {
     if (!['string', 'number', 'boolean'].includes(typeof value) && value !== null) throw new ConfigError(`Giá trị không hợp lệ: ${key}`);
     return [key, String(value ?? '').trim()];
@@ -181,30 +336,121 @@ export async function updateIntegrationConfig(values, { clear = [], actor = 'unk
   for (const key of clear) patch[key] = '';
   for (const [key, value] of Object.entries(patch)) {
     validate(key, value);
+    if (!local && key === 'GEMINI_BASE_URL' && value) assertSafeAiUrl(value, { allowLoopback: false });
     if (!local && localOnlyKeys.has(key) && value !== configValue(key, env)) throw new ConfigError('Chỉ thay đổi project xác thực tại máy chủ backend.', 403);
   }
   const filename = configPath(env);
   const previous = queues.get(filename) ?? Promise.resolve();
   const operation = previous.catch(() => {}).then(async () => {
     const stored = await readStored(env);
-    const changed = Object.keys(patch).filter(key => patch[key] !== configValue(key, env));
+    let cloudSnapshot = null;
+    const candidate = { ...env, ...patch };
+    const hasCloudTarget = Boolean(db || ((allowLiveDb || connectPool) && configValue('DATABASE_URL', candidate)));
+    const nonBootstrapPatchKeys = Object.keys(patch).filter(key => !cloudExcludedKeys.has(key));
+    if (hasCloudTarget && nonBootstrapPatchKeys.length > 0) {
+      try {
+        await withConfigDb(candidate, db, async client => {
+          const existing = await client.query('select key, value from public.delivery_backend_config');
+          cloudSnapshot = applyCloudRowsToEnv(existing.rows, env);
+        }, { allowLiveDb, connectPool });
+      } catch (error) {
+        if (error?.code !== '42P01') {
+          if (db) throw error;
+          throw new ConfigError('Không lưu được cấu hình lên database cloud. Kiểm tra kết nối PostgreSQL.', 503);
+        }
+      }
+    }
+    const changed = Object.keys(patch).filter(key => {
+      if (patch[key] !== configValue(key, env)) return true;
+      if (cloudSnapshot && !cloudExcludedKeys.has(key) && cloudSnapshot.get(key) !== patch[key]) return true;
+      return false;
+    });
+    let persistedToCloud = false;
     if (changed.length) {
-      const candidate = { ...env, ...patch };
-      if (candidate.TURNSTILE_ENFORCE_OTP === 'true' && !providerConfigured('turnstile', candidate)) throw new ConfigError('Cần đầy đủ cấu hình Turnstile trước khi bắt buộc OTP.');
-      await mkdir(path.dirname(filename), { recursive: true });
-      const temporary = `${filename}.${crypto.randomUUID()}.tmp`;
-      await writeFile(temporary, `${JSON.stringify({ ...stored, ...patch }, null, 2)}\n`, { mode: 0o600 });
-      await rename(temporary, filename);
+      const nextCandidate = { ...env, ...patch };
+      if (nextCandidate.TURNSTILE_ENFORCE_OTP === 'true' && !providerConfigured('turnstile', nextCandidate)) {
+        throw new ConfigError('Cần đầy đủ cấu hình Turnstile trước khi bắt buộc OTP.');
+      }
+      const cloudChanges = changed.filter(key => !cloudExcludedKeys.has(key));
+      if (hasCloudTarget && cloudChanges.length > 0) {
+        try {
+          await withConfigDb(nextCandidate, db, async client => {
+            const actorName = String(actor || 'unknown').slice(0, 120);
+            await client.query('begin');
+            try {
+              for (const key of cloudChanges) {
+                await client.query(
+                  `insert into public.delivery_backend_config (key, value, updated_by, updated_at)
+                   values ($1, $2, $3, now())
+                   on conflict (key) do update
+                     set value = excluded.value,
+                         updated_by = excluded.updated_by,
+                         updated_at = now()`,
+                  [key, patch[key], actorName],
+                );
+              }
+              await client.query(
+                'insert into public.delivery_backend_config_audit (actor, changed) values ($1, $2::jsonb)',
+                [actorName, JSON.stringify(changed)],
+              );
+              await client.query('commit');
+              persistedToCloud = true;
+            } catch (innerError) {
+              await client.query('rollback').catch(() => {});
+              throw innerError;
+            }
+          }, { allowLiveDb, connectPool });
+        } catch (error) {
+          if (error?.code !== '42P01') {
+            if (db) throw error;
+            throw new ConfigError('Không lưu được cấu hình lên database cloud. Kiểm tra kết nối PostgreSQL.', 503);
+          }
+        }
+      }
       Object.assign(env, patch);
       for (const key of changed) checks.delete(fieldsByKey.get(key).provider);
-      await appendFile(path.join(path.dirname(filename), '.integration-audit.log'), `${JSON.stringify({ at: new Date().toISOString(), actor, changed })}\n`, { mode: 0o600 });
+      if (persistedToCloud) getSyncState(env).syncedAt = Date.now();
+      try {
+        await mkdir(path.dirname(filename), { recursive: true });
+        const temporary = `${filename}.${crypto.randomUUID()}.tmp`;
+        await writeFile(temporary, `${JSON.stringify({ ...stored, ...patch }, null, 2)}\n`, { mode: 0o600 });
+        await rename(temporary, filename);
+        await appendFile(path.join(path.dirname(filename), '.integration-audit.log'), `${JSON.stringify({ at: new Date().toISOString(), actor, changed })}\n`, { mode: 0o600 });
+      } catch (fsError) {
+        if (!persistedToCloud || !['EACCES', 'EPERM', 'EROFS'].includes(fsError?.code)) {
+          throw fsError;
+        }
+      }
+      if (Object.hasOwn(patch, 'DATABASE_URL') && configValue('DATABASE_URL', env)) {
+        await syncIntegrationConfig({ env, db, connectPool, maxAgeMs: 0 }).catch(() => {});
+      }
     }
-    return { changed, status: integrationStatus(env) };
+    const storage = (persistedToCloud || db || ((allowLiveDb || connectPool) && Boolean(configValue('DATABASE_URL', env))))
+      ? 'cloud_postgres'
+      : 'local_file';
+    return { changed, storage, status: integrationStatus(env) };
   });
   queues.set(filename, operation);
   try { return await operation; } finally { if (queues.get(filename) === operation) queues.delete(filename); }
 }
-export async function integrationAudit(env = process.env) {
+
+export async function integrationAudit(env = process.env, { db, connectPool } = {}) {
+  const allowLiveDb = Boolean(db || connectPool) || env === process.env;
+  try {
+    const cloudEntries = await withConfigDb(env, db, async client => {
+      const res = await client.query(
+        'select at, actor, changed from public.delivery_backend_config_audit order by id desc limit 30',
+      );
+      return res.rows.map(row => ({
+        at: row.at instanceof Date ? row.at.toISOString() : String(row.at),
+        actor: row.actor,
+        changed: row.changed,
+      }));
+    }, { allowLiveDb, connectPool });
+    if (Array.isArray(cloudEntries) && cloudEntries.length > 0) return cloudEntries;
+  } catch (error) {
+    if (db && error?.code !== '42P01') throw error;
+  }
   try {
     const raw = await readFile(path.join(path.dirname(configPath(env)), '.integration-audit.log'), 'utf8');
     return raw.trim().split('\n').filter(Boolean).slice(-30).reverse().map(line => JSON.parse(line));
@@ -235,7 +481,57 @@ export async function testIntegration(provider, { env = process.env, fetcher = f
       try { await transport.verify(); } finally { transport.close(); }
     } else if (provider === 'photon') {
       const endpoint = new URL('api/?q=Ben%20Thanh&limit=1', `${configValue('PHOTON_BASE_URL', env).replace(/\/$/, '')}/`);
-      if (!Array.isArray((await getJson(endpoint)).features)) throw new Error('invalid');
+      if (!Array.isArray((await getJson(endpoint, { headers: { 'User-Agent': 'GHSTDelivery/1.0' } })).features)) throw new Error('invalid');
+    } else if (provider === 'trackasia') {
+      const key = env.TRACKASIA_API_KEY;
+      const autoUrl = new URL('https://maps.track-asia.com/api/v1/autocomplete');
+      autoUrl.search = new URLSearchParams({ text: 'Chợ Bến Thành', size: '1', lang: 'vi', key }).toString();
+      const geoUrl = new URL('https://maps.track-asia.com/api/v2/geocode/json');
+      geoUrl.search = new URLSearchParams({ latlng: '10.77251,106.69802', language: 'vi', key }).toString();
+      const routeUrl = new URL('https://maps.track-asia.com/route/v1/car/106.69802,10.77251;106.69902,10.77978.json');
+      routeUrl.search = new URLSearchParams({ overview: 'false', key }).toString();
+      const [placesOk, geoOk, routeOk] = await Promise.all([
+        getJson(autoUrl).then(d => Array.isArray(d.features)).catch(() => false),
+        getJson(geoUrl).then(d => ['OK', 'ZERO_RESULTS'].includes(d.status)).catch(() => false),
+        getJson(routeUrl).then(d => d.code === 'Ok').catch(() => false),
+      ]);
+      const missing = [!placesOk && 'Autocomplete', !geoOk && 'Geocoding', !routeOk && 'Routing'].filter(Boolean);
+      if (missing.length) return finish(false, `Kiểm tra TrackAsia thất bại tại: ${missing.join(', ')}.`);
+      return finish(true, 'Đã xác minh đủ 3 dịch vụ TrackAsia (Autocomplete, Geocoding, Routing).');
+    } else if (provider === 'google_maps') {
+      const geocodeUrl = new URL('https://maps.googleapis.com/maps/api/geocode/json');
+      geocodeUrl.search = new URLSearchParams({ latlng: '10.77251,106.69802', language: 'vi', key: env.GOOGLE_MAPS_API_KEY, solution_id: 'gmp_git_agentskills_v1' }).toString();
+      const commonHeaders = {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': env.GOOGLE_MAPS_API_KEY,
+        'X-Goog-Maps-Solution-ID': 'gmp_git_agentskills_v1',
+      };
+      const [geoOk, placesOk, routesOk] = await Promise.all([
+        getJson(geocodeUrl).then(d => ['OK', 'ZERO_RESULTS'].includes(d.status)).catch(() => false),
+        getJson('https://places.googleapis.com/v1/places:searchText', {
+          method: 'POST',
+          headers: { ...commonHeaders, 'X-Goog-FieldMask': 'places.id' },
+          body: JSON.stringify({ textQuery: 'Chợ Bến Thành', languageCode: 'vi', regionCode: 'VN', pageSize: 1 }),
+        }).then(d => Array.isArray(d.places) || Object.keys(d || {}).length === 0).catch(() => false),
+        getJson('https://routes.googleapis.com/directions/v2:computeRoutes', {
+          method: 'POST',
+          headers: { ...commonHeaders, 'X-Goog-FieldMask': 'routes.distanceMeters' },
+          body: JSON.stringify({
+            origin: { location: { latLng: { latitude: 10.77251, longitude: 106.69802 } } },
+            destination: { location: { latLng: { latitude: 10.77978, longitude: 106.69902 } } },
+            travelMode: 'DRIVE',
+          }),
+        }).then(d => Array.isArray(d.routes) && d.routes.length > 0).catch(() => false),
+      ]);
+      const missingApis = [
+        !placesOk && 'Places API (New)',
+        !geoOk && 'Geocoding API',
+        !routesOk && 'Routes API',
+      ].filter(Boolean);
+      if (missingApis.length) {
+        return finish(false, `Kiểm tra thất bại hoặc chưa bật đủ API trên Google Cloud: ${missingApis.join(', ')}.`);
+      }
+      return finish(true, 'Đã xác minh đủ 3 dịch vụ Google Maps (Places API New, Geocoding API, Routes API).');
     } else if (provider === 'osrm') {
       const data = await getJson(new URL('route/v1/driving/106.7,10.77;106.71,10.78?overview=false', `${configValue('OSRM_BASE_URL', env).replace(/\/$/, '')}/`));
       if (data.code !== 'Ok') throw new Error('invalid');
@@ -247,8 +543,40 @@ export async function testIntegration(provider, { env = process.env, fetcher = f
     } else if (provider === 'telegram') {
       if (!(await getJson(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/getMe`)).ok) throw new Error('invalid');
     } else if (provider === 'gemini') {
-      const model = env.GEMINI_MODEL.replace(/^models\//, '');
-      await getJson(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}`, { headers: { 'x-goog-api-key': env.GEMINI_API_KEY } });
+      const rawBase = configValue('GEMINI_BASE_URL', env).replace(/\/+$/, '');
+      const model = configValue('GEMINI_MODEL', env).replace(/^models\//, '');
+      const apiKey = configValue('GEMINI_API_KEY', env);
+      const { parsed } = assertSafeAiUrl(rawBase, { allowLoopback: env.RENDER !== 'true' && !env.RAILWAY_ENVIRONMENT });
+      const cleanPath = parsed.pathname.replace(/\/+$/, '');
+      const isNativeGemini =
+        (parsed.hostname.toLowerCase() === 'generativelanguage.googleapis.com' &&
+          !cleanPath.includes('/openai') &&
+          !cleanPath.endsWith('/chat/completions')) ||
+        cleanPath.endsWith(':generateContent');
+      if (isNativeGemini) {
+        const modelBase = rawBase.replace(/\/models\/[^/]+:generateContent$/, '');
+        await getJson(`${modelBase}/models/${encodeURIComponent(model)}`, { headers: { 'x-goog-api-key': apiKey } });
+      } else {
+        const modelsUrl = rawBase.endsWith('/chat/completions')
+          ? `${rawBase.slice(0, -'/chat/completions'.length)}/models`
+          : `${rawBase}/models`;
+        const headers = { Authorization: `Bearer ${apiKey}` };
+        const probe = await fetcher(modelsUrl, { headers, redirect: 'error', signal: AbortSignal.timeout(10000) });
+        if (probe.ok) {
+          const data = await probe.json();
+          if (!Array.isArray(data?.data) && data?.object !== 'list') throw new Error('invalid');
+        } else if (probe.status === 404 || probe.status === 405) {
+          const chatUrl = rawBase.endsWith('/chat/completions') ? rawBase : `${rawBase}/chat/completions`;
+          const chatData = await getJson(chatUrl, {
+            method: 'POST',
+            headers: { ...headers, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model, messages: [{ role: 'user', content: 'ping' }], max_tokens: 4, temperature: 0 }),
+          });
+          if (!Array.isArray(chatData?.choices)) throw new Error('invalid');
+        } else {
+          throw new Error('upstream');
+        }
+      }
     } else if (provider === 'ghn') {
       const data = await getJson(new URL('master-data/province', env.GHN_BASE_URL), { headers: { Token: env.GHN_TOKEN, ShopId: env.GHN_SHOP_ID } });
       if (data.code !== 200 || !Array.isArray(data.data)) throw new Error('invalid');

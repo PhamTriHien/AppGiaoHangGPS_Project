@@ -120,6 +120,11 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(process.
               :[];
             return route.fulfill({...data,json:{orders:list,schema_version:3}});
           }
+          if(u.pathname==='/delivery/cloud/ai-chat'){
+            assert.equal(Array.isArray(body.messages),true);
+            assert.ok(body.messages.length>=1);
+            return route.fulfill({...data,json:{reply:'Đơn hàng kiểm thử của bạn đang được theo dõi trực tuyến.',model:'gpt-4o-mini'}});
+          }
           if(u.pathname==='/delivery/tracking')return route.fulfill({...data,json:{shop_name:p.shop_name,state:'ready',delivery_status:'delivered',updated_at:'2026-10-29',expires_at:'2026-10-30',phone:'PRIVATE_TRACKING_PHONE'}});
           if(u.pathname==='/delivery/tracking/lookup'){
             assert.equal(body.tracking_code,dcode);
@@ -209,6 +214,19 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(process.
         await page.getByRole('button',{name:'Đăng nhập',exact:true}).last().click();
         await page.getByText('Bạn muốn giao hàng hay đặt món đến đâu?',{exact:true}).waitFor({timeout:15000});
         await capture(`ghst-home-${role}-${width}.png`);
+        if(role==='customer'){
+          await page.getByRole('button',{name:'Mở bong bóng Trợ lý AI',exact:true}).click();
+          await page.getByText('CHAT AI GHST',{exact:true}).waitFor({timeout:10000});
+          await page.getByRole('button',{name:'Đơn hàng gần nhất của tôi đang ở trạng thái nào?',exact:true}).click();
+          await page.getByText('Đơn hàng kiểm thử của bạn đang được theo dõi trực tuyến.',{exact:false}).waitFor({timeout:10000});
+          await capture(`ghst-ai-bubble-${width}.png`);
+          await page.getByRole('button',{name:'Mở toàn màn hình',exact:true}).click();
+          await page.getByText('TRỢ LÝ AI GHST EXPRESS',{exact:false}).waitFor({timeout:10000});
+          await page.getByText('Đơn hàng kiểm thử của bạn đang được theo dõi trực tuyến.',{exact:false}).waitFor({timeout:10000});
+          await capture(`ghst-ai-chat-${width}.png`);
+          await navigate('Trang chủ');
+          await page.getByText('Bạn muốn giao hàng hay đặt món đến đâu?',{exact:true}).waitFor({timeout:10000});
+        }
         if(role!=='shop_staff'){
           await page.getByText('Bản đồ định vị trực tiếp',{exact:true}).scrollIntoViewIfNeeded();
           const zoom=page.getByText(/^Phóng to \(hoặc cuộn chuột lên\)/).last();

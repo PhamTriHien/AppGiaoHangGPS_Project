@@ -1,5 +1,9 @@
 import 'dotenv/config';
+import './database-connection.mjs';
 import crypto from 'node:crypto';
+import { existsSync, readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import cors from 'cors';
 import express from 'express';
 import rateLimit from 'express-rate-limit';
@@ -8,7 +12,7 @@ import { createWeatherProxy } from './weather-proxy.mjs';
 import { createDeliveryIntegrations, createIdentity, operatorOnly, IntegrationError } from './delivery-integrations.mjs';
 import { createNotificationRouter } from './delivery-notifications.mjs';
 import { createTurnstile } from './turnstile.mjs';
-import { ConfigError, loadIntegrationConfig, providerConfigured } from './integration-config.mjs';
+import { ConfigError, configValue, loadIntegrationConfig, providerConfigured, syncIntegrationConfig } from './integration-config.mjs';
 import { createLocalAuthGateway } from './local-auth-gateway.mjs';
 import { createCloudOrders } from './cloud-orders.mjs';
 import { createPaymentGateway } from './payment-gateway.mjs';
@@ -18,6 +22,7 @@ import { createPublicTracking, startMarketJobs } from './market-operations.mjs';
 await loadIntegrationConfig({ env: process.env });
 
 const port = Number(process.env.PORT || 8787);
+const bindHost = process.env.BIND_HOST || '127.0.0.1';
 const relayToken = process.env.RELAY_TOKEN?.trim() || '';
 const allowedOrigins = (process.env.WEB_ORIGINS || '')
   .split(',')
@@ -30,19 +35,49 @@ if (!relayToken && !providerConfigured('supabase')) {
   );
 }
 
+function normalizeOrigin(value) {
+  try {
+    const parsed = new URL(String(value || '').trim());
+    return ['http:', 'https:'].includes(parsed.protocol) ? parsed.origin : '';
+  } catch {
+    return '';
+  }
+}
+
+function isAllowedOrigin(origin, req) {
+  if (!origin) return true;
+  if (allowedOrigins.includes(origin)) return true;
+  for (const candidate of [
+    configValue('PUBLIC_BASE_URL', process.env),
+    configValue('PUBLIC_APP_URL', process.env),
+    process.env.RENDER_EXTERNAL_URL,
+    process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : '',
+  ]) {
+    const dynamicOrigin = normalizeOrigin(candidate);
+    if (dynamicOrigin && origin === dynamicOrigin) return true;
+  }
+  const host = req.get('host');
+  return Boolean(host && origin === `${req.protocol}://${host}`);
+}
+
 const app = express();
 app.disable('x-powered-by');
+if (
+  ['1', 'true'].includes(String(process.env.TRUST_PROXY || '').trim().toLowerCase()) ||
+  process.env.RENDER === 'true' ||
+  Boolean(process.env.RAILWAY_ENVIRONMENT)
+) {
+  app.set('trust proxy', 1);
+}
 app.use((req, res, next) => ['/delivery/ocr','/delivery/cloud/media','/delivery/cloud/attachments','/delivery/cloud/pod'].includes(req.path) ? next() : express.json({ limit: '32kb' })(req, res, next));
 app.use(
-  cors({
-    origin(origin, callback) {
-      // Cho phép curl/health check không có Origin; trình duyệt phải nằm trong allowlist.
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-        return;
-      }
-      callback(new Error('Origin không được phép'));
-    },
+  cors((req, callback) => {
+    const origin = req.get('origin');
+    if (isAllowedOrigin(origin, req)) {
+      callback(null, { origin: true });
+      return;
+    }
+    callback(new Error('Origin không được phép'));
   }),
 );
 
@@ -82,8 +117,13 @@ const weatherLimiter = rateLimit({
 const authenticateDelivery = createIdentity({ tokenMatches });
 const deliveryLimiter = rateLimit({ windowMs: 60000, limit: 90, standardHeaders: 'draft-7', legacyHeaders: false });
 const ocrLimiter = rateLimit({ windowMs: 60000, limit: 5, standardHeaders: 'draft-7', legacyHeaders: false });
+const aiChatLimiter = rateLimit({ windowMs: 60000, limit: 20, standardHeaders: 'draft-7', legacyHeaders: false, message: { error: 'Bạn đang gửi tin nhắn quá nhanh. Vui lòng đợi ít phút rồi thử lại.' } });
 app.use('/delivery/ocr', ocrLimiter);
+app.use(['/delivery/ai/chat', '/delivery/cloud/ai-chat'], aiChatLimiter);
 app.use('/delivery', deliveryLimiter);
+app.use('/delivery', (_req, _res, next) => {
+  syncIntegrationConfig({ env: process.env, maxAgeMs: 5000 }).finally(() => next());
+});
 app.use('/delivery', createPublicTracking());
 const turnstile = createTurnstile({ authenticate: authenticateDelivery });
 app.use('/delivery', turnstile.router);
@@ -146,6 +186,27 @@ app.post('/otp-email', otpLimiter, authenticateDelivery, turnstile.consume, asyn
   }
 });
 
+const defaultAdminWebDir = fileURLToPath(new URL('./public-admin', import.meta.url));
+const staticWebDir = process.env.STATIC_WEB_DIR?.trim()
+  ? path.resolve(process.env.STATIC_WEB_DIR.trim())
+  : (existsSync(path.join(defaultAdminWebDir, 'index.html')) ? defaultAdminWebDir : '');
+
+if (staticWebDir && existsSync(path.join(staticWebDir, 'index.html'))) {
+  const indexHtmlPath = path.join(staticWebDir, 'index.html');
+  const rawIndexHtml = readFileSync(indexHtmlPath, 'utf8');
+  const adminHashBootstrap = '<script>if(location.pathname==="/"&&(!location.hash||location.hash==="#"||location.hash==="#/"))location.replace("/#/admin");</script>';
+  const adminPortalHtml = rawIndexHtml.includes('</head>')
+    ? rawIndexHtml.replace('</head>', `${adminHashBootstrap}</head>`)
+    : `${adminHashBootstrap}${rawIndexHtml}`;
+  const sendSpaIndex = (_req, res) => {
+    res.set('Cache-Control', 'no-store');
+    res.type('html').send(process.env.ADMIN_PORTAL_ONLY !== 'false' ? adminPortalHtml : rawIndexHtml);
+  };
+  app.get('/', sendSpaIndex);
+  app.use(express.static(staticWebDir, { index: false, maxAge: '1h' }));
+  app.get(['/admin', '/admin/', '/cloud-admin', '/cloud-admin/', '/track', '/track/', '/share', '/share/'], sendSpaIndex);
+}
+
 app.use((error, _req, res, _next) => {
   if (error instanceof IntegrationError || error instanceof ConfigError) {
     res.status(error.status).json({ error: error.message });
@@ -167,8 +228,18 @@ app.use((error, _req, res, _next) => {
   res.status(500).json({ error: 'Lỗi máy chủ relay OTP' });
 });
 
-const server = app.listen(port, process.env.BIND_HOST || '127.0.0.1', () => {
-  console.log(`GO-MAU OTP relay đang chạy tại http://127.0.0.1:${port}`);
+const server = app.listen(port, bindHost, () => {
+  const actualPort = server.address()?.port ?? port;
+  console.log(`GO-MAU OTP relay đang chạy tại http://${bindHost}:${actualPort}`);
+  if (port !== 0) {
+    if (providerConfigured('supabase')) {
+      fetch(new URL('/auth/v1/settings', process.env.SUPABASE_URL), { headers: { apikey: process.env.SUPABASE_ANON_KEY }, signal: AbortSignal.timeout(8000) }).then(r => r.arrayBuffer()).catch(() => {});
+    }
+    if (providerConfigured('photon')) {
+      const photonBase = `${configValue('PHOTON_BASE_URL', process.env).replace(/\/$/, '')}/`;
+      fetch(new URL('reverse?lat=10.77690&lon=106.70090&limit=1', photonBase), { headers: { 'User-Agent': 'GHSTDelivery/1.0' }, signal: AbortSignal.timeout(12000) }).then(r => r.arrayBuffer()).catch(() => {});
+    }
+  }
 });
 const marketJobs = startMarketJobs();
 for (const signal of ['SIGINT','SIGTERM']) process.once(signal, () => {

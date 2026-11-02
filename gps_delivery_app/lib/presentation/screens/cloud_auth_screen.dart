@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -30,17 +32,50 @@ class _CloudAuthScreenState extends State<CloudAuthScreen> {
   late _AuthMode _mode = widget.recovery ? _AuthMode.password : _AuthMode.login;
   bool _busy = false, _obscure = true, _googleAvailable = false;
   String? _error, _notice;
+  StreamSubscription<AuthState>? _authSubscription;
 
   @override
   void initState() {
     super.initState();
+    _authSubscription = widget.service.authChanges.listen(
+      (_) {},
+      onError: (Object error) {
+        if (!mounted || widget.service.signedIn) return;
+        setState(() => _error = _authErrorMessage(error));
+      },
+    );
     widget.service.googleSignInAvailable().then((enabled) {
       if (mounted) setState(() => _googleAvailable = enabled);
     });
   }
 
   @override
+  void didUpdateWidget(covariant CloudAuthScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.recovery && !oldWidget.recovery && _mode != _AuthMode.password) {
+      _mode = _AuthMode.password;
+      _code.clear();
+    }
+  }
+
+  String _authErrorMessage(Object error) {
+    if (error is! AuthException) {
+      return 'Không kết nối được dịch vụ đăng nhập. Vui lòng thử lại.';
+    }
+    return switch (error.code) {
+      'over_email_send_rate_limit' =>
+        'Vui lòng đợi ít giây trước khi yêu cầu gửi lại mã xác nhận.',
+      'same_password' => 'Mật khẩu mới phải khác mật khẩu hiện tại.',
+      'otp_expired' || 'otp_disabled' => 'Mã xác nhận email không đúng hoặc đã hết hạn. Vui lòng kiểm tra lại hoặc gửi lại mã.',
+      _ when error.statusCode == '429' =>
+        'Vui lòng đợi ít giây trước khi yêu cầu gửi lại mã xác nhận.',
+      _ => 'Không xác thực được. Kiểm tra thông tin, email xác nhận hoặc thử lại sau.',
+    };
+  }
+
+  @override
   void dispose() {
+    unawaited(_authSubscription?.cancel());
     _email.dispose();
     _password.dispose();
     _code.dispose();
@@ -100,12 +135,47 @@ class _CloudAuthScreenState extends State<CloudAuthScreen> {
       }
     } catch (error) {
       if (mounted) {
-        setState(
-          () => _error = error is AuthException
-              ? 'Không xác thực được. Kiểm tra thông tin, email xác nhận hoặc thử lại sau.'
-              : 'Không kết nối được dịch vụ đăng nhập. Vui lòng thử lại.',
-        );
+        setState(() => _error = _authErrorMessage(error));
       }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _resendCode() async {
+    final email = _email.text.trim();
+    if (_busy || !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email)) {
+      _form.currentState?.validate();
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _error = _notice = null;
+    });
+    try {
+      await widget.service.requestPasswordReset(email);
+      if (mounted) {
+        setState(() {
+          _code.clear();
+          _notice = 'Yêu cầu đã được gửi. Vui lòng kiểm tra email.';
+        });
+      }
+    } catch (error) {
+      if (mounted) setState(() => _error = _authErrorMessage(error));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _cancelRecovery() async {
+    if (_busy) return;
+    setState(() {
+      _busy = true;
+      _error = _notice = null;
+    });
+    try {
+      await widget.service.signOut();
+      widget.onRecovered?.call();
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -207,8 +277,11 @@ class _CloudAuthScreenState extends State<CloudAuthScreen> {
               TextFormField(
                 controller: _code,
                 enabled: !_busy,
+                keyboardType: TextInputType.number,
+                autofillHints: const [AutofillHints.oneTimeCode],
                 decoration: const InputDecoration(
                   labelText: 'Mã xác nhận email',
+                  prefixIcon: Icon(Icons.pin_outlined),
                 ),
                 validator: (v) =>
                     (v?.trim().length ?? 0) >= 6 ? null : 'Nhập mã xác nhận.',
@@ -299,11 +372,22 @@ class _CloudAuthScreenState extends State<CloudAuthScreen> {
                   icon: const Icon(Icons.account_circle_outlined),
                   label: const Text('Tiếp tục với Google'),
                 ),
-            ] else if (_mode != _AuthMode.password)
+            ] else if (_mode == _AuthMode.password)
+              TextButton(
+                onPressed: _busy ? null : _cancelRecovery,
+                child: const Text('Trở về đăng nhập'),
+              )
+            else ...[
+              if (_mode == _AuthMode.recover)
+                TextButton(
+                  onPressed: _busy ? null : _resendCode,
+                  child: const Text('Gửi lại mã xác nhận'),
+                ),
               TextButton(
                 onPressed: _busy ? null : () => _switch(_AuthMode.login),
                 child: const Text('Trở về đăng nhập'),
               ),
+            ],
           ],
         ),
       ),

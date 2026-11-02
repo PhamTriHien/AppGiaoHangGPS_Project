@@ -8,6 +8,7 @@ import 'package:gps_delivery_app/core/integrations/cloud_account_session.dart';
 import 'package:gps_delivery_app/core/integrations/cloud_orders_service.dart';
 import 'package:gps_delivery_app/core/integrations/cloud_session_lease.dart';
 import 'package:gps_delivery_app/presentation/screens/admin_portal_screen.dart';
+import 'package:gps_delivery_app/presentation/screens/cloud_order_details_screen.dart';
 import 'package:gps_delivery_app/presentation/screens/market_order_services_screen.dart';
 import 'package:gps_delivery_app/presentation/screens/marketplace_view.dart';
 import 'package:gps_delivery_app/presentation/widgets/cloud_order_form.dart';
@@ -136,6 +137,12 @@ class CommercialCloudFixture extends CloudOrdersService {
           'status': 'searching',
         },
       };
+    }
+    if (path == 'orders/cloud-order-truck-1/history') {
+      return {'history': <Map<String, dynamic>>[]};
+    }
+    if (path == 'orders/cloud-order-truck-1/otp') {
+      return {'required': true, 'otp_code': '482916', 'verified_at': null};
     }
     if (path == 'addresses') {
       return {
@@ -812,6 +819,53 @@ void main() {
       );
       expect(returnCall['payload']['action'], equals('receive'));
       expect(returnCall['payload']['disposition'], equals('restock'));
+    },
+  );
+
+  testWidgets(
+    'CloudOrderDetailsScreen renders 6-digit otp_code returned by PostgreSQL delivery_cloud_order_otp',
+    (tester) async {
+      final service = CommercialCloudFixture();
+      final session = CloudAccountSession(service: service)..start();
+      addTearDown(session.dispose);
+      await session.refresh();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CloudSessionBoundary(
+            session: session,
+            builder: (_, lease) => CloudOrderDetailsScreen(
+              lease: lease,
+              order: const {
+                'id': 'cloud-order-truck-1',
+                'owner_id': 'buyer-1',
+                'tracking_code': 'CL-0123456789ABCDEF0123456789ABCDEF',
+                'status': 'searching',
+                'shipping_fee': 35000,
+                'cod_amount': 120000,
+                'distance_meters': 3200,
+                'details': {
+                  'pickup_address': 'Pastel Inn Saigon, Quận 1, TP.HCM',
+                  'dropoff_address': 'Chợ Bến Thành, Quận 1, TP.HCM',
+                  'recipient_name': 'Trần Người Nhận',
+                  'recipient_phone': '0918889900',
+                  'package_description': 'Tài liệu hợp đồng',
+                  'require_otp': true,
+                },
+              },
+            ),
+          ),
+        ),
+      );
+      await settleShort(tester);
+
+      final otpBtn = find.text('Mã OTP người nhận');
+      await tester.ensureVisible(otpBtn);
+      await tester.tap(otpBtn);
+      await settleShort(tester);
+
+      expect(find.text('482916'), findsOneWidget);
+      expect(find.text('Sao chép'), findsOneWidget);
     },
   );
 }

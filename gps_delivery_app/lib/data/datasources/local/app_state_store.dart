@@ -166,7 +166,6 @@ class AppStateStore extends ChangeNotifier {
   final List<FoodMenuItemRecord> merchantMenuItems = [];
   final List<ScheduledPickupRequestRecord> scheduledPickupRequests = [];
   final Set<String> flaggedRiskPhones = {};
-  final Set<String> syncedExternalMarketplaceIds = {};
   final Map<String, String> quickDeliveryInstructionsByOrder = {};
   bool isMultiStopRouteActive = false;
   final List<Map<String, dynamic>> systemAuditLogs = [];

@@ -2,6 +2,8 @@
 # Local Graphify index and extraction caches
 graphify-out/
 .graphify_*
+.agents/
+.codex/
 
 **/build/
 **/.dart_tool/

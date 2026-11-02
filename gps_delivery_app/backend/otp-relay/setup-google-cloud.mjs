@@ -5,7 +5,29 @@ import { readFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { configValue, loadIntegrationConfig } from './integration-config.mjs';
+import { configValue, loadIntegrationConfig, providerConfigured } from './integration-config.mjs';
+
+const RECOVERY_EMAIL_SUBJECT = '[GHST EXPRESS] Mã xác thực khôi phục mật khẩu';
+const RECOVERY_EMAIL_TEMPLATE = [
+  '<div style="font-family:\'Segoe UI\',Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;border:2px solid #111111;background:#F7F5EE;color:#111111">',
+  '<div style="display:inline-block;background:#C6FF00;border:1.5px solid #111111;padding:4px 10px;font-family:Consolas,monospace;font-size:11px;font-weight:900;margin-bottom:14px">GHST • GIAO HÀNG SIÊU TỐC</div>',
+  '<h2 style="margin:0 0 10px;font-size:20px;font-weight:900">Khôi phục mật khẩu tài khoản</h2>',
+  '<p style="margin:0 0 14px;font-size:14px;line-height:1.55">Nhập mã xác nhận email gồm 6 chữ số bên dưới vào ứng dụng GHST EXPRESS để đặt mật khẩu mới:</p>',
+  '<div style="margin:16px 0;padding:14px 18px;background:#FFFFFF;border:2px solid #111111;text-align:center;font-family:Consolas,monospace;font-size:30px;font-weight:900;letter-spacing:8px;color:#6C3CE9">{{ .Token }}</div>',
+  '<p style="margin:0;font-size:12.5px;color:#4B5563">Mã có hiệu lực trong 15 phút và chỉ sử dụng một lần. Nếu bạn không yêu cầu khôi phục mật khẩu, vui lòng bỏ qua email này.</p>',
+  '</div>',
+].join('\n');
+
+const CONFIRMATION_EMAIL_SUBJECT = '[GHST EXPRESS] Xác nhận đăng ký tài khoản';
+const CONFIRMATION_EMAIL_TEMPLATE = [
+  '<div style="font-family:\'Segoe UI\',Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;border:2px solid #111111;background:#F7F5EE;color:#111111">',
+  '<div style="display:inline-block;background:#C6FF00;border:1.5px solid #111111;padding:4px 10px;font-family:Consolas,monospace;font-size:11px;font-weight:900;margin-bottom:14px">GHST • GIAO HÀNG SIÊU TỐC</div>',
+  '<h2 style="margin:0 0 10px;font-size:20px;font-weight:900">Xác nhận địa chỉ email</h2>',
+  '<p style="margin:0 0 14px;font-size:14px;line-height:1.55">Chào mừng bạn đến với GHST EXPRESS. Bấm nút bên dưới để kích hoạt tài khoản:</p>',
+  '<p style="margin:16px 0"><a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:12px 18px;background:#6C3CE9;color:#FFFFFF;text-decoration:none;font-weight:900;border:2px solid #111111">XÁC NHẬN EMAIL</a></p>',
+  '<p style="margin:12px 0 0;font-size:13px">Mã xác nhận dự phòng: <strong style="font-family:Consolas,monospace;font-size:16px;letter-spacing:2px">{{ .Token }}</strong></p>',
+  '</div>',
+].join('\n');
 
 export function googleCloudTarget(env) {
   const url = new URL(configValue('SUPABASE_URL', env));
@@ -38,20 +60,48 @@ export function googleCloudPatch(current, env) {
   redirects.add('http://127.0.0.1:8080/');
   redirects.add('http://localhost:8080/');
   redirects.add('http://127.0.0.1:8766/auth/callback');
+  redirects.add('com.giaohanggps.gpsdelivery://auth/callback');
   const publicApp = configValue('PUBLIC_APP_URL', env);
   if (publicApp) {
     const url = new URL(publicApp);
-    if (url.username || url.password || url.protocol !== 'https:') {
+    const isLoopback = ['127.0.0.1', 'localhost'].includes(url.hostname) && ['http:', 'https:'].includes(url.protocol);
+    if (url.username || url.password || (!isLoopback && url.protocol !== 'https:')) {
       throw new Error('PUBLIC_APP_URL must use HTTPS without credentials.');
     }
     redirects.add(`${url.origin}/`);
   }
-  return {
+  const patch = {
     external_google_enabled: true,
     external_google_client_id: existingIds.length ? current.external_google_client_id : clientId,
     external_google_secret: secret,
     uri_allow_list: [...redirects].join(','),
   };
+  if (providerConfigured('smtp', env)) {
+    const smtpHost = configValue('SMTP_HOST', env);
+    const smtpPort = String(configValue('SMTP_PORT', env) || '465');
+    const smtpUser = configValue('SMTP_USER', env);
+    const smtpPass = configValue('SMTP_PASS', env);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(smtpUser) || !/^\d+$/.test(smtpPort)) {
+      throw new Error('Saved SMTP user or port is invalid; no settings were changed.');
+    }
+    Object.assign(patch, {
+      smtp_host: smtpHost,
+      smtp_port: smtpPort,
+      smtp_user: smtpUser,
+      smtp_pass: smtpPass,
+      smtp_admin_email: smtpUser,
+      smtp_sender_name: 'GHST EXPRESS',
+      smtp_max_frequency: 15,
+      rate_limit_email_sent: Math.max(Number(current.rate_limit_email_sent) || 0, 30),
+      mailer_otp_length: 6,
+      mailer_otp_exp: 900,
+      mailer_subjects_recovery: RECOVERY_EMAIL_SUBJECT,
+      mailer_templates_recovery_content: RECOVERY_EMAIL_TEMPLATE,
+      mailer_subjects_confirmation: CONFIRMATION_EMAIL_SUBJECT,
+      mailer_templates_confirmation_content: CONFIRMATION_EMAIL_TEMPLATE,
+    });
+  }
+  return patch;
 }
 
 async function jsonRequest(fetcher, url, options = {}) {
@@ -110,10 +160,12 @@ export async function setupGoogleCloud({ env = process.env, token = '', apply = 
   const status = await jsonRequest(fetcher, `${target.origin}/auth/v1/settings`, {
     headers: { apikey: configValue('SUPABASE_ANON_KEY', env) },
   });
+  const smtpSaved = providerConfigured('smtp', env);
   const report = {
     project: target.project,
     clientIdSaved: Boolean(configValue('GOOGLE_CLIENT_ID', env)),
     clientSecretSaved: Boolean(configValue('GOOGLE_CLIENT_SECRET', env)),
+    smtpSaved,
     managementAccessProvided: Boolean(token.trim()),
     googleEnabled: status.external?.google === true,
     applied: false,
@@ -126,20 +178,39 @@ export async function setupGoogleCloud({ env = process.env, token = '', apply = 
   const headers = { Authorization: `Bearer ${token.trim()}`, 'Content-Type': 'application/json' };
   const current = await jsonRequest(fetcher, endpoint, { headers });
   const patch = googleCloudPatch(current, env);
-  if (!apply) return { ...report, planReady: true,
+  if (!apply) return {
+    ...report,
+    planReady: true,
     redirectsToAdd: patch.uri_allow_list.split(',').filter(value => !(current.uri_allow_list || '').split(',').map(item => item.trim()).includes(value)),
-    otherAuthSettingsPreserved: true };
+    smtpWillSync: Boolean(patch.smtp_host),
+    recoveryOtpTemplateReady: Boolean(patch.mailer_templates_recovery_content?.includes('{{ .Token }}')),
+    otherAuthSettingsPreserved: true,
+  };
   await jsonRequest(fetcher, endpoint, { method: 'PATCH', headers, body: JSON.stringify(patch) });
   const verified = await jsonRequest(fetcher, endpoint, { headers });
+  const smtpVerified = !patch.smtp_host || (
+    verified.smtp_host === patch.smtp_host &&
+    String(verified.smtp_port || '') === patch.smtp_port &&
+    verified.mailer_otp_length === patch.mailer_otp_length &&
+    String(verified.mailer_templates_recovery_content || '').includes('{{ .Token }}')
+  );
   if (verified.external_google_enabled !== true || verified.external_google_client_id !== patch.external_google_client_id ||
-      !patch.uri_allow_list.split(',').every(value => String(verified.uri_allow_list || '').split(',').includes(value))) {
+      !patch.uri_allow_list.split(',').every(value => String(verified.uri_allow_list || '').split(',').includes(value)) ||
+      !smtpVerified) {
     throw new Error('Settings were submitted but read-back verification failed. Recheck Supabase before retrying.');
   }
   const publicStatus = await jsonRequest(fetcher, `${target.origin}/auth/v1/settings`, {
     headers: { apikey: configValue('SUPABASE_ANON_KEY', env) },
   });
-  return { ...report, applied: true, managementVerified: true, googleEnabled: publicStatus.external?.google === true,
-    googleSignInVerified: false };
+  return {
+    ...report,
+    applied: true,
+    managementVerified: true,
+    smtpSynced: Boolean(patch.smtp_host),
+    recoveryOtpEnabled: Boolean(patch.smtp_host),
+    googleEnabled: publicStatus.external?.google === true,
+    googleSignInVerified: false,
+  };
 }
 
 async function main() {

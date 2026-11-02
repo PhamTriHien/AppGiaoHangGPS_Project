@@ -50,9 +50,17 @@ class EnvConfig {
     'DELIVERY_API_BASE_URL',
   );
   static String _runtimeDeliveryApiBaseUrl = '';
-  static String get deliveryApiBaseUrl => _runtimeDeliveryApiBaseUrl.isNotEmpty
-      ? _runtimeDeliveryApiBaseUrl
-      : _envDeliveryApiBaseUrl;
+  static String get deliveryApiBaseUrl {
+    final raw = _runtimeDeliveryApiBaseUrl.isNotEmpty
+        ? _runtimeDeliveryApiBaseUrl
+        : _envDeliveryApiBaseUrl;
+    if (raw.startsWith('/') &&
+        (Uri.base.scheme == 'http' || Uri.base.scheme == 'https') &&
+        Uri.base.host.isNotEmpty) {
+      return Uri.base.resolve(raw).toString();
+    }
+    return raw;
+  }
 
   static void configureDeliveryApiRuntime({required String baseUrl}) {
     _runtimeDeliveryApiBaseUrl = baseUrl.trim();

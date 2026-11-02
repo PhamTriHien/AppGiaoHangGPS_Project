@@ -156,7 +156,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(process.
               databaseConfigured: false,
               canMigrate: true,
               liveTransactionsVerified: false,
-              migrationVersion: '20261107_cloud_commercial_suite',
+              migrationVersion: '20261108_cloud_logistics',
               databaseRevision: 'ui-fixture',
               checks: [
                 { label: 'PostgreSQL backend', status: 'missing', detail: 'Lưu kết nối PostgreSQL tại Admin của backend đang kết nối.' },

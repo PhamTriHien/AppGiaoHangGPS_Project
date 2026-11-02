@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../core/config/env_config.dart';
 import '../../core/integrations/photon_address_service.dart';
+import '../../domain/entities/geo_point.dart';
 
 class PhotonAddressLookup extends StatefulWidget {
   const PhotonAddressLookup({
@@ -10,10 +12,17 @@ class PhotonAddressLookup extends StatefulWidget {
     required this.controller,
     required this.onSelected,
     this.service,
+    this.buttonLabel = 'Tìm địa chỉ · Photon',
+    this.autoSearch = false,
+    this.biasPoint,
   });
   final TextEditingController controller;
   final ValueChanged<PhotonPlace> onSelected;
   final PhotonAddressService? service;
+  final String buttonLabel;
+  final bool autoSearch;
+  final GeoPoint? biasPoint;
+
   @override
   State<PhotonAddressLookup> createState() => _PhotonAddressLookupState();
 }
@@ -23,8 +32,16 @@ class _PhotonAddressLookupState extends State<PhotonAddressLookup> {
   int _generation = 0;
   bool _enabled = false;
   bool _busy = false;
+  bool _suppressNextChange = false;
   String? _error;
+  String _attribution = 'OpenStreetMap contributors / Photon';
   List<PhotonPlace> _places = [];
+
+  bool get _canAutoSearch =>
+      _enabled ||
+      (widget.autoSearch &&
+          (widget.service != null || EnvConfig.deliveryApiBaseUrl.isNotEmpty));
+
   @override
   void initState() {
     super.initState();
@@ -42,6 +59,7 @@ class _PhotonAddressLookupState extends State<PhotonAddressLookup> {
   }
 
   void _changed() {
+    if (_suppressNextChange) return;
     _debounce?.cancel();
     _generation++;
     setState(() {
@@ -49,9 +67,12 @@ class _PhotonAddressLookupState extends State<PhotonAddressLookup> {
       _busy = false;
       _error = null;
     });
-    if (!_enabled) return;
+    if (!_canAutoSearch) return;
     if (widget.controller.text.trim().length < 3) return;
-    _debounce = Timer(const Duration(milliseconds: 1200), _search);
+    _debounce = Timer(
+      Duration(milliseconds: widget.autoSearch ? 750 : 1200),
+      _search,
+    );
   }
 
   Future<void> _search() async {
@@ -65,10 +86,11 @@ class _PhotonAddressLookupState extends State<PhotonAddressLookup> {
     });
     try {
       final service = widget.service ?? PhotonAddressService();
-      final places = await service.search(query);
+      final places = await service.search(query, bias: widget.biasPoint);
       if (!mounted || generation != _generation) return;
       setState(() {
         _enabled = service.autocomplete;
+        _attribution = service.attribution;
         _places = places;
         _error = places.isEmpty ? 'Không tìm thấy địa chỉ phù hợp.' : null;
       });
@@ -105,7 +127,7 @@ class _PhotonAddressLookupState extends State<PhotonAddressLookup> {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : const Icon(Icons.search, size: 17),
-          label: const Text('Tìm địa chỉ · Photon'),
+          label: Text(widget.buttonLabel),
         ),
       ),
       if (_error != null)
@@ -126,7 +148,13 @@ class _PhotonAddressLookupState extends State<PhotonAddressLookup> {
             _enabled = false;
             _generation++;
             _debounce?.cancel();
-            widget.onSelected(place);
+            _suppressNextChange = true;
+            try {
+              widget.onSelected(place);
+            } finally {
+              _suppressNextChange = false;
+            }
+            if (!mounted) return;
             setState(() {
               _places = [];
               _error = null;
@@ -136,9 +164,11 @@ class _PhotonAddressLookupState extends State<PhotonAddressLookup> {
         ),
       ),
       if (_places.isNotEmpty)
-        const Text(
-          '© OpenStreetMap contributors · Photon',
-          style: TextStyle(fontSize: 10),
+        Text(
+          _attribution == 'Google Maps'
+              ? 'Google Maps'
+              : '© OpenStreetMap contributors · Photon',
+          style: const TextStyle(fontSize: 10),
         ),
     ],
   );

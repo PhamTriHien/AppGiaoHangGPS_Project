@@ -1,6 +1,6 @@
 const startedAt = new Date().toISOString();
 const counters = new Map();
-const allowed = new Set(['payos','ghn','osrm','photon','banks','weather','gemini','supabase','telegram','vroom','custom']);
+const allowed = new Set(['payos','ghn','osrm','photon','trackasia','google_maps','banks','weather','gemini','supabase','telegram','vroom','custom']);
 
 export function providerName(url) {
   const host = new URL(url).hostname;
@@ -9,6 +9,8 @@ export function providerName(url) {
   if (host.endsWith('.supabase.co')) return 'supabase';
   if (host.includes('project-osrm')) return 'osrm';
   if (host.includes('photon')) return 'photon';
+  if (host.endsWith('track-asia.com')) return 'trackasia';
+  if (['places.googleapis.com', 'maps.googleapis.com', 'routes.googleapis.com'].includes(host)) return 'google_maps';
   if (host==='api.vietqr.io') return 'banks';
   if (host==='api.met.no') return 'weather';
   if (host==='generativelanguage.googleapis.com') return 'gemini';

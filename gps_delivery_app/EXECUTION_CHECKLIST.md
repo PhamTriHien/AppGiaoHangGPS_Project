@@ -1,13 +1,13 @@
 # Commercialization Execution And Acceptance
 
-Updated: 2026-10-31. This checklist records evidence, not release approval.
+Updated: 2026-11-01. This checklist records evidence, not release approval.
 The detailed scope remains in COMMERCIALIZATION_PLAN.md.
 
 | Order | Phase | Implemented & Cloud Schema Synced (`workflowVersion: 13`) | Operational & External Acceptance Gates |
 | --- | --- | --- | --- |
 | 1 | P0 | Supabase Auth + Google OAuth PKCE desktop/web, `StudioUserAuthFrame`, profile schema 3 (`delivery_cloud_memberships`), unified `/admin` Cloud Operator Portal (`AdminPortalScreen`, archive at `/legacy-admin`), explicit local address import (`delivery_cloud_imports`), account-scoped leases & offline queue v9 | Complete live one-time Google profile save & recovery email check; live two-device session/role acceptance; `/legacy` local orders/CSV/drafts/KYC remain separate & manual |
 | 2 | P1 | Cloud shops/products, cover `banner_url`, `service_radius_km` geofence, shop staff delegation (`delivery_market_shop_staff`: `manager`/`staff`), multi-SKU variants (`delivery_market_variants`), parcel dimensions (`length_cm`, `width_cm`, `height_cm`), scoped WebP gallery (`delivery_market_media`), option groups, prep time, schedules, stock audit & `terms_version` (`20261103`–`20261107` live on DB) | Live multi-device cloud catalog, WebP upload & concurrent stock acceptance on deployed target |
-| 3 | P2 | Server filters, keyset sorting, scoped shop page + follows (`delivery_market_shop_follows`), configured cloud cart lines (`line_id`), version-bound quotes, all 5 Cloud shipping modes (`standard`, `express`, `saving`, `same_day_2h`, `truck`), volumetric/multi-stop/round-trip/insurance/EV/Green Fund, `buyer_note`, `scheduled_at`, & atomic multi-shop COD/prepaid checkout | Live two-device multi-shop checkout acceptance on deployed target |
+| 3 | P2 | Server filters, keyset sorting, scoped shop page + follows (`delivery_market_shop_follows`), configured cloud cart lines (`line_id`), version-bound quotes, interactive map direct-tap (`/delivery/reverse`) + address search (`/delivery/places`) with zero manual coordinate fields in `CloudOrderForm`, all 5 Cloud shipping modes (`standard`, `express`, `saving`, `same_day_2h`, `truck`), volumetric/multi-stop/round-trip/insurance/EV/Green Fund, `buyer_note`, `scheduled_at`, & atomic multi-shop COD/prepaid checkout | Live physical two-device multi-shop checkout acceptance on deployed HTTPS target |
 | 4 | P3 | Manual COD collection, prepaid multi-shop `payOS` intents (`/delivery/cloud/purchases/:id/payment*`), double-entry capture (`delivery_market_record_prepaid_capture` with `promo_expense`), line-bounded refunds, 7-day shop payout guard, dual-actor approval & immutable balanced ledger (`20261107` live on DB) | Configure real `payOS` merchant keys (`PAYOS_*`) & public HTTPS webhook; operational finance policy sign-off; live receipt/payout reconciliation |
 | 5 | P4 | Shop accept/ready, single or split parcel shipments (`delivery_market_shipments` + `order_shipment_split`), recipient OTP (`delivery_cloud_order_secrets` + `delivery_cloud_order_otp`), mandatory POD/OTP gate on `deliver`, server GPS speed/jump guard (`<= 120 km/h`), active `MARKET_JOBS_ENABLED=true` worker, revocable `/share` & Cloud `/track` (`delivery_cloud_public_lookup` + `delivery_cloud_shares`) | Configure real `GHN` credentials (`GHN_*`) & HTTPS callbacks; live driver POD/OTP & split-parcel acceptance |
 | 6 | P5 | Order-bound chat, private evidence bucket `'delivery-private-evidence'` (`delivery_market_attachments`: `chat`, `return`, `finance`), item returns/disputes, reverse return shipments, `restock`/`writeoff` inspection disposition, separate product/shop/driver reviews (`delivery_partner_reviews`), review reply/report (`delivery_market_review_reports`), favorites/reorder & FCM push opt-in | Configure Firebase/FCM server credentials for real-device push delivery; live dispute/return shipment acceptance |
@@ -30,14 +30,14 @@ The detailed scope remains in COMMERCIALIZATION_PLAN.md.
 - [x] Recover current context and inspect current source without resetting changes.
 - [x] Main canonical account, unified `/admin` Cloud Operator portal and `/track` Cloud public lookup (code, fixture & schema sync).
 - [x] Catalog, shop cover/geofence, shop staff delegation, multi-SKU variants, parcel dimensions, stock audit and merchant editor.
-- [x] Persistent cart, fresh quote, 5 Cloud shipping modes (`standard`, `express`, `saving`, `same_day_2h`, `truck`), multi-stop/round-trip/insurance/EV/Green Fund and atomic COD/prepaid purchase submission.
-- [x] Shop accept/ready/cancel, single & split parcel shipments, mandatory POD/OTP gate, GPS jump guard and order-bound chat + private evidence attachments.
+- [x] Persistent cart, fresh quote, interactive map tap + address search without manual coordinate fields (`CloudOrderForm`), 5 Cloud shipping modes (`standard`, `express`, `saving`, `same_day_2h`, `truck`), multi-stop/round-trip/insurance/EV/Green Fund and atomic COD/prepaid purchase submission.
+- [x] Shop accept/ready/cancel, single & split parcel shipments, mandatory POD/OTP gate (`otp_code`), GPS jump guard and order-bound chat + private evidence attachments.
 - [x] Manual COD, prepaid `payOS` capture (`delivery_market_record_prepaid_capture`), partial refund/payout accounting and independent approval checks (isolated SQL/HTTP/UI fixtures).
 - [x] Durable pending-order/payment expiry (`MARKET_JOBS_ENABLED=true`), rollback/retry and revocable SHA-256 `/share` & Cloud `/track` checks.
 - [x] Item return limits/dispute/reverse shipment/`restock`|`writeoff` disposition, verified product/shop/driver reviews + reply/report, shop follows, favorites/reorder.
 - [x] Budgeted server vouchers, time-windowed flash sales, server coin wallet/ledger (20% cap, 1% earn, reversals) and `admin_analytics` (isolated SQL/HTTP/UI fixtures).
-- [x] Native PostgreSQL 17 migration/privacy (`22/22` checks), Node backend suite (`108/108` tests), Flutter analyzer (`0` issues) & test suite (`274` passed, `1` optional external skip), Web/Windows release builds and interactive desktop launch.
-- [ ] Deployed HTTPS environment, live external provider credentials (`payOS`, `GHN`, FCM), multi-device live acceptance, backup/restore drill and controlled pilot.
+- [x] Native PostgreSQL 17 migration/privacy (`22/22` checks), Node backend suite (`111/111` tests), Flutter analyzer (`0` issues) & test suite (`277` passed, `1` optional external skip), isolated Playwright suites (`check-cloud-browser.cjs` `6/6`, `check-full-ui-acceptance.cjs` `6/6` suites / `62` PNGs), single-host zero-mock live Supabase multi-role E2E (`build/verification/live-e2e/live-e2e-report.json`, `16` PNGs, clean DB baseline restored), Web/Windows release builds and interactive desktop launch.
+- [ ] Deployed HTTPS environment, live external provider credentials (`payOS`, `GHN`, FCM), physical multi-device live acceptance over public HTTPS, backup/restore drill and controlled pilot.
 
 No production seed data, commits, pushes or public deployments are implied by this
 file. External acceptance must be recorded with its actual environment.
@@ -61,11 +61,13 @@ Remaining external readiness blockers before commercial rollout:
 - `ghn`: `missing` (`GHN_TOKEN`, `GHN_SHOP_ID`, `GHN_WEBHOOK_SECRET`).
 - `public_https`: `missing` (`PUBLIC_BASE_URL` is still loopback `http://127.0.0.1:8787`, unreachable by external webhooks or separate networks).
 
-Verification summary on `2026-10-31`:
-- `npm run test:postgres`: `22/22` native PostgreSQL 17 checks passed (`0` failed).
-- `npm test`: `108/108` Node backend tests passed (`0` failed).
-- `flutter analyze --no-pub`: `No issues found!` (`0` errors, `0` warnings).
-- `flutter test --no-pub`: `274` passed, `1` optional external-service skip, `0` failed.
+Verification summary through `2026-11-01`:
+- `npm run test:postgres` (`2026-10-31`): `22/22` native PostgreSQL 17 checks passed (`0` failed).
+- `npm test` (`2026-11-01`): `111/111` Node backend tests passed (`0` failed).
+- `flutter analyze --no-pub` (`2026-11-01`): `No issues found!` (`0` errors, `0` warnings).
+- `flutter test --no-pub` (`2026-11-01`): `277` passed, `1` optional external-service skip, `0` failed.
+- `check-cloud-browser.cjs` (`2026-11-01`): `6/6` passed across `1440px` and `360px` (`0` errors).
+- Zero-mock single-host live Cloud E2E (`2026-11-01`, `build/verification/live-e2e/live-e2e-report.json`): `16` live Microsoft Edge screenshots exercising `buyer`, `merchant`, `driver`, `operator` (`/#/admin`), and public `/#/track` directly against live Supabase Auth + PostgreSQL + `:8787`, with verified exact restoration of the pre-test DB baseline (`cleanBaselineRestored: true`).
 - `flutter build windows --release --no-pub` and `flutter build web --no-pub --no-wasm-dry-run --no-web-resources-cdn`: both exited `0`.
 
 ## Operations Scope And Limits

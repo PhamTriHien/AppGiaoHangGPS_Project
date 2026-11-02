@@ -3,14 +3,27 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../core/config/env_config.dart';
+import '../../core/gps/stop_order_optimizer.dart';
 import '../../core/integrations/cloud_orders_service.dart';
 import '../../core/integrations/cloud_session_lease.dart';
+import '../../core/integrations/photon_address_service.dart';
 import '../../core/network/public_json_api.dart';
 import '../../core/utils/currency_formatter.dart';
+import '../../data/datasources/local/app_state_store.dart';
+import '../../domain/entities/geo_point.dart';
 import '../screens/cloud_address_book_screen.dart';
+import 'cloud_logistics_panels.dart';
 import 'cloud_order_labels.dart';
 import 'cloud_session_boundary.dart';
 import 'photon_address_lookup.dart';
+import 'system_state_screens.dart';
+
+class _ExtraStopField {
+  _ExtraStopField({required this.address, this.point});
+  final TextEditingController address;
+  GeoPoint? point;
+}
 
 class CloudOrderForm extends StatefulWidget {
   const CloudOrderForm({
@@ -21,6 +34,7 @@ class CloudOrderForm extends StatefulWidget {
     this.initialDetails,
     this.embedded = false,
     this.onCreated,
+    this.addressService,
   });
   final CloudOrdersService service;
   final List<Map<String, dynamic>> merchants;
@@ -28,6 +42,8 @@ class CloudOrderForm extends StatefulWidget {
   final Map<String, dynamic>? initialDetails;
   final bool embedded;
   final VoidCallback? onCreated;
+  final PhotonAddressService? addressService;
+
   @override
   State<CloudOrderForm> createState() => _CloudOrderFormState();
 }
@@ -38,10 +54,6 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
     for (final key in [
       'pickup_address',
       'dropoff_address',
-      'pickup_lat',
-      'pickup_lng',
-      'dropoff_lat',
-      'dropoff_lng',
       'recipient_name',
       'recipient_phone',
       'package_description',
@@ -56,19 +68,18 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
     ])
       key: TextEditingController(),
   };
-  final _extraStops =
-      <
-        ({
-          TextEditingController address,
-          TextEditingController lat,
-          TextEditingController lng,
-        })
-      >[];
+  final _extraStops = <_ExtraStopField>[];
   final _fieldValues = <String, String>{};
+  final _reverseGeneration = <String, int>{};
   late final _identity = widget.service.identityScope;
   StreamSubscription<AuthState>? _auth;
   bool _invalidated = false;
   late final Future<String> _draft = widget.service.startDraft();
+  GeoPoint? _pickupPoint;
+  GeoPoint? _dropoffPoint;
+  GeoPoint? _focusedMapPoint;
+  String _activeMapTarget = 'pickup';
+  bool _reverseBusy = false;
   String _serviceType = 'standard', _payment = 'sender_cash', _merchant = '';
   bool _isRoundTrip = false,
       _preferEv = false,
@@ -76,14 +87,39 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
       _requirePod = false,
       _requireOtp = false;
   Map<String, dynamic>? _quote;
+  Map<String, Map<String, dynamic>>? _serviceEta;
   bool _busy = false;
-  String? _error;
+  String? _error, _routeNotice;
 
   bool get _sameAccount =>
       !_invalidated &&
       widget.service.signedIn &&
       _identity == widget.service.identityScope &&
       (widget.lease?.valid ?? true);
+
+  bool get _canCallAddressApi =>
+      widget.addressService != null || EnvConfig.deliveryApiBaseUrl.isNotEmpty;
+
+  PhotonAddressService get _effectiveAddressService =>
+      widget.addressService ?? PhotonAddressService();
+
+  static GeoPoint? _parsePoint(Object? rawLat, Object? rawLng) {
+    final lat = rawLat is num
+        ? rawLat.toDouble()
+        : double.tryParse('${rawLat ?? ''}'.trim());
+    final lng = rawLng is num
+        ? rawLng.toDouble()
+        : double.tryParse('${rawLng ?? ''}'.trim());
+    if (lat == null ||
+        lng == null ||
+        !lat.isFinite ||
+        !lng.isFinite ||
+        lat.abs() > 90 ||
+        lng.abs() > 180) {
+      return null;
+    }
+    return GeoPoint(latitude: lat, longitude: lng);
+  }
 
   @override
   void initState() {
@@ -102,6 +138,15 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
           }
           entry.value.text = '$value';
         }
+      }
+      _pickupPoint = _parsePoint(initial['pickup_lat'], initial['pickup_lng']);
+      _dropoffPoint = _parsePoint(
+        initial['dropoff_lat'],
+        initial['dropoff_lng'],
+      );
+      _focusedMapPoint = _dropoffPoint ?? _pickupPoint;
+      if (_pickupPoint != null && _dropoffPoint == null) {
+        _activeMapTarget = 'dropoff';
       }
       if (cloudServiceTypes.containsKey(initial['service_type'])) {
         _serviceType = initial['service_type'] as String;
@@ -122,8 +167,7 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
           if (raw is Map) {
             _addStop(
               address: '${raw['address'] ?? ''}',
-              lat: '${raw['lat'] ?? ''}',
-              lng: '${raw['lng'] ?? ''}',
+              point: _parsePoint(raw['lat'], raw['lng']),
             );
           }
         }
@@ -132,6 +176,16 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
       if (merchant is String &&
           widget.merchants.any((row) => row['user_id'] == merchant)) {
         _merchant = merchant;
+      }
+      if (_dropoffPoint != null &&
+          _fields['dropoff_address']!.text.trim().isEmpty &&
+          _canCallAddressApi) {
+        unawaited(_reverseTarget('dropoff', _dropoffPoint!));
+      }
+      if (_pickupPoint != null &&
+          _fields['pickup_address']!.text.trim().isEmpty &&
+          _canCallAddressApi) {
+        unawaited(_reverseTarget('pickup', _pickupPoint!));
       }
     }
     for (final controller in _fields.values) {
@@ -153,24 +207,26 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
     widget.lease?.addListener(_invalidate);
   }
 
-  void _addStop({String address = '', String lat = '', String lng = ''}) {
+  void _addStop({String address = '', GeoPoint? point}) {
     if (_extraStops.length >= 5) return;
-    final stop = (
+    final index = _extraStops.length;
+    final stop = _ExtraStopField(
       address: TextEditingController(text: address)..addListener(_resetQuote),
-      lat: TextEditingController(text: lat)..addListener(_resetQuote),
-      lng: TextEditingController(text: lng)..addListener(_resetQuote),
+      point: point,
     );
     _extraStops.add(stop);
+    if (point == null && address.isEmpty) {
+      _activeMapTarget = 'stop:$index';
+    }
   }
 
   void _removeStop(int index) {
     final removed = _extraStops.removeAt(index);
     removed.address.removeListener(_resetQuote);
-    removed.lat.removeListener(_resetQuote);
-    removed.lng.removeListener(_resetQuote);
     removed.address.dispose();
-    removed.lat.dispose();
-    removed.lng.dispose();
+    if (_activeMapTarget.startsWith('stop:')) {
+      _activeMapTarget = _pickupPoint == null ? 'pickup' : 'dropoff';
+    }
     setState(() => _quote = null);
   }
 
@@ -182,13 +238,16 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
     if (!mounted || _invalidated) return;
     _invalidated = true;
     _quote = null;
+    _pickupPoint = null;
+    _dropoffPoint = null;
+    _focusedMapPoint = null;
+    _reverseGeneration.clear();
     for (final controller in _fields.values) {
       controller.clear();
     }
     for (final stop in _extraStops) {
       stop.address.clear();
-      stop.lat.clear();
-      stop.lng.clear();
+      stop.point = null;
     }
     setState(() => _error = 'Tài khoản đã thay đổi. Mở lại form tạo đơn.');
   }
@@ -214,13 +273,175 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
     }
     for (final stop in _extraStops) {
       stop.address.removeListener(_resetQuote);
-      stop.lat.removeListener(_resetQuote);
-      stop.lng.removeListener(_resetQuote);
       stop.address.dispose();
-      stop.lat.dispose();
-      stop.lng.dispose();
     }
     super.dispose();
+  }
+
+  List<GeoPoint> get _mapRoutePoints {
+    if (_pickupPoint == null || _dropoffPoint == null) return const [];
+    return [
+      _pickupPoint!,
+      for (final stop in _extraStops)
+        if (stop.point != null) stop.point!,
+      _dropoffPoint!,
+    ];
+  }
+
+  GeoPoint? get _singlePinnedPoint {
+    if (_pickupPoint != null) return _pickupPoint;
+    if (_dropoffPoint != null) return _dropoffPoint;
+    for (final stop in _extraStops) {
+      if (stop.point != null) return stop.point;
+    }
+    return null;
+  }
+
+  String get _singlePinnedLabel {
+    if (_pickupPoint != null) return 'Điểm lấy [A]';
+    if (_dropoffPoint != null) return 'Điểm giao [B]';
+    return 'Điểm dừng';
+  }
+
+  String get _activeTargetDescription {
+    if (_activeMapTarget == 'pickup') return 'Điểm lấy hàng [A]';
+    if (_activeMapTarget == 'dropoff') return 'Điểm giao hàng [B]';
+    if (_activeMapTarget.startsWith('stop:')) {
+      final idx = int.tryParse(_activeMapTarget.substring(5)) ?? 0;
+      return 'Điểm dừng trung gian #${idx + 1}';
+    }
+    return 'Điểm lấy hàng [A]';
+  }
+
+  TextEditingController? _controllerForTarget(String target) {
+    if (target == 'pickup') return _fields['pickup_address'];
+    if (target == 'dropoff') return _fields['dropoff_address'];
+    if (target.startsWith('stop:')) {
+      final idx = int.tryParse(target.substring(5));
+      if (idx != null && idx >= 0 && idx < _extraStops.length) {
+        return _extraStops[idx].address;
+      }
+    }
+    return null;
+  }
+
+  void _assignTargetPoint(String target, GeoPoint point) {
+    if (target == 'pickup') {
+      _pickupPoint = point;
+    } else if (target == 'dropoff') {
+      _dropoffPoint = point;
+    } else if (target.startsWith('stop:')) {
+      final idx = int.tryParse(target.substring(5));
+      if (idx != null && idx >= 0 && idx < _extraStops.length) {
+        _extraStops[idx].point = point;
+      }
+    }
+  }
+
+  Future<void> _reverseTarget(String target, GeoPoint point) async {
+    if (!_canCallAddressApi || !_sameAccount) return;
+    final gen = (_reverseGeneration[target] ?? 0) + 1;
+    _reverseGeneration[target] = gen;
+    if (mounted) setState(() => _reverseBusy = true);
+    try {
+      final address = await _effectiveAddressService.reverseGeocode(point);
+      if (!mounted || !_sameAccount || _reverseGeneration[target] != gen) {
+        return;
+      }
+      final controller = _controllerForTarget(target);
+      if (controller != null && address.isNotEmpty) {
+        controller.text = address;
+      }
+    } catch (_) {
+    } finally {
+      if (mounted && _reverseGeneration[target] == gen) {
+        setState(() => _reverseBusy = false);
+      }
+    }
+  }
+
+  void _handleMapTap(GeoPoint point) {
+    if (_busy || !_sameAccount) return;
+    final target = _activeMapTarget;
+    setState(() {
+      _assignTargetPoint(target, point);
+      _focusedMapPoint = point;
+      _quote = null;
+      _error = null;
+      if (target == 'pickup' && _dropoffPoint == null) {
+        _activeMapTarget = 'dropoff';
+      }
+    });
+    unawaited(_reverseTarget(target, point));
+  }
+
+  Future<void> _useCurrentGpsForActiveTarget() async {
+    if (_busy || !_sameAccount) return;
+    final target = _activeMapTarget;
+    final pos = await AppStateStore.instance.acquireCustomerDeviceGps();
+    if (!mounted || !_sameAccount) return;
+    if (pos == null) {
+      setState(() => _error = AppStateStore.instance.liveGpsStatusMessage);
+      return;
+    }
+    final liveAddr = AppStateStore.instance.liveDeviceAddress.trim();
+    final controller = _controllerForTarget(target);
+    setState(() {
+      _assignTargetPoint(target, pos);
+      _focusedMapPoint = pos;
+      _quote = null;
+      _error = null;
+      if (controller != null && liveAddr.isNotEmpty) {
+        controller.text = liveAddr;
+      }
+      if (target == 'pickup' && _dropoffPoint == null) {
+        _activeMapTarget = 'dropoff';
+      }
+    });
+    if (liveAddr.isEmpty) {
+      unawaited(_reverseTarget(target, pos));
+    }
+  }
+
+  Future<String?> _ensureCoordinatesResolved() async {
+    Future<GeoPoint?> resolveOne(String text) async {
+      if (!_canCallAddressApi) return null;
+      final places = await _effectiveAddressService.search(
+        text,
+        bias: _focusedMapPoint ?? _pickupPoint ?? _dropoffPoint,
+      );
+      return places.isEmpty ? null : places.first.point;
+    }
+
+    if (_pickupPoint == null) {
+      final resolved = await resolveOne(_fields['pickup_address']!.text);
+      if (!_sameAccount) return 'Tài khoản đã thay đổi. Mở lại form tạo đơn.';
+      if (resolved == null) {
+        return 'Chưa ghim được Địa chỉ lấy hàng trên Google Map. Vui lòng chọn gợi ý tìm kiếm hoặc chạm trực tiếp lên bản đồ.';
+      }
+      _pickupPoint = resolved;
+      _focusedMapPoint = resolved;
+    }
+    if (_dropoffPoint == null) {
+      final resolved = await resolveOne(_fields['dropoff_address']!.text);
+      if (!_sameAccount) return 'Tài khoản đã thay đổi. Mở lại form tạo đơn.';
+      if (resolved == null) {
+        return 'Chưa ghim được Địa chỉ giao hàng trên Google Map. Vui lòng chọn gợi ý tìm kiếm hoặc chạm trực tiếp lên bản đồ.';
+      }
+      _dropoffPoint = resolved;
+      _focusedMapPoint = resolved;
+    }
+    for (var i = 0; i < _extraStops.length; i++) {
+      if (_extraStops[i].point == null) {
+        final resolved = await resolveOne(_extraStops[i].address.text);
+        if (!_sameAccount) return 'Tài khoản đã thay đổi. Mở lại form tạo đơn.';
+        if (resolved == null) {
+          return 'Chưa ghim được Điểm dừng #${i + 1} trên Google Map. Vui lòng chọn gợi ý tìm kiếm hoặc chạm trực tiếp lên bản đồ.';
+        }
+        _extraStops[i].point = resolved;
+      }
+    }
+    return null;
   }
 
   Map<String, dynamic> _details() {
@@ -233,14 +454,11 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
         'package_description',
       ])
         key: _fields[key]!.text.trim(),
-      for (final key in [
-        'pickup_lat',
-        'pickup_lng',
-        'dropoff_lat',
-        'dropoff_lng',
-        'weight_kg',
-      ])
-        key: double.parse(_fields[key]!.text.trim()),
+      'pickup_lat': _pickupPoint!.latitude,
+      'pickup_lng': _pickupPoint!.longitude,
+      'dropoff_lat': _dropoffPoint!.latitude,
+      'dropoff_lng': _dropoffPoint!.longitude,
+      'weight_kg': double.parse(_fields['weight_kg']!.text.trim()),
       'cod_amount': int.parse(
         _fields['cod_amount']!.text.trim().isEmpty
             ? '0'
@@ -271,8 +489,8 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
         for (final s in _extraStops)
           {
             'address': s.address.text.trim(),
-            'lat': double.parse(s.lat.text.trim()),
-            'lng': double.parse(s.lng.text.trim()),
+            'lat': s.point!.latitude,
+            'lng': s.point!.longitude,
           },
       ];
     }
@@ -290,6 +508,15 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
       _error = null;
     });
     try {
+      final missingError = await _ensureCoordinatesResolved();
+      if (!mounted || !_sameAccount) return;
+      if (missingError != null) {
+        setState(() {
+          _error = missingError;
+          _quote = null;
+        });
+        return;
+      }
       final details = _details();
       if (create && _quote != null) {
         final draft = await _draft;
@@ -314,6 +541,7 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
       } else {
         final quote = await widget.service.request('quote', body: details);
         if (mounted && _sameAccount) setState(() => _quote = quote);
+        unawaited(_loadServiceEta());
       }
     } catch (error) {
       if (mounted && _sameAccount) {
@@ -325,6 +553,71 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
             _quote = null;
           }
         });
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _loadServiceEta() async {
+    if (_serviceEta != null) return;
+    try {
+      final result = await widget.service.logistics('service_eta');
+      if (!mounted || !_sameAccount) return;
+      setState(
+        () => _serviceEta = {
+          for (final row
+              in (result['services'] as List? ?? const []).whereType<Map>())
+            '${row['service_type']}': Map<String, dynamic>.from(row),
+        },
+      );
+    } catch (_) {}
+  }
+
+  Future<void> _optimizeStops() async {
+    if (_busy || !_sameAccount) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+      _routeNotice = null;
+    });
+    try {
+      final missing = await _ensureCoordinatesResolved();
+      if (!mounted || !_sameAccount) return;
+      if (missing != null) {
+        setState(() => _error = missing);
+        return;
+      }
+      final distances = await _effectiveAddressService.roadDistances([
+        _pickupPoint!,
+        for (final stop in _extraStops) stop.point!,
+        _dropoffPoint!,
+      ]);
+      if (!mounted || !_sameAccount) return;
+      final plan = bestStopOrder(distances);
+      String km(double meters) => (meters / 1000).toStringAsFixed(1);
+      setState(() {
+        if (plan.improves) {
+          final reordered = [for (final i in plan.order) _extraStops[i]];
+          _extraStops
+            ..clear()
+            ..addAll(reordered);
+          _quote = null;
+          if (_activeMapTarget.startsWith('stop:')) {
+            _activeMapTarget = 'dropoff';
+          }
+        }
+        _routeNotice = plan.improves
+            ? 'Đã sắp xếp lại điểm dừng: ${km(plan.currentMeters)} km → ${km(plan.optimizedMeters)} km đường bộ.'
+            : 'Thứ tự hiện tại đã ngắn nhất (${km(plan.currentMeters)} km đường bộ).';
+      });
+    } catch (error) {
+      if (mounted && _sameAccount) {
+        setState(
+          () => _error = error is PublicApiException
+              ? error.message
+              : 'Chưa tính được quãng đường thực tế giữa các điểm.',
+        );
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -364,13 +657,13 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
     bool optional = false,
     int max = 500,
   }) => Padding(
-    padding: const EdgeInsets.only(bottom: 14),
+    padding: const EdgeInsets.only(bottom: 10),
     child: TextFormField(
       controller: _fields[key],
       enabled: !_busy && _sameAccount,
       maxLength: max,
       keyboardType: numeric
-          ? const TextInputType.numberWithOptions(decimal: true, signed: true)
+          ? const TextInputType.numberWithOptions(decimal: true, signed: false)
           : TextInputType.text,
       decoration: InputDecoration(
         labelText: label,
@@ -418,14 +711,9 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
         if (numeric) {
           final number = double.tryParse(value);
           final maxWeight = _serviceType == 'truck' ? 500 : 30;
-          final limit = key.endsWith('_lat')
-              ? 90
-              : key.endsWith('_lng')
-              ? 180
-              : maxWeight;
           if (number == null ||
               !number.isFinite ||
-              number.abs() > limit ||
+              number.abs() > maxWeight ||
               key == 'weight_kg' && number <= 0) {
             return 'Giá trị không hợp lệ';
           }
@@ -457,52 +745,227 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
     if (!mounted || address == null || !_sameAccount) {
       return;
     }
+    final point = _parsePoint(address['latitude'], address['longitude']);
     _fields['${prefix}_address']!.text = '${address['full_address']}';
-    _fields['${prefix}_lat']!.text = '${address['latitude']}';
-    _fields['${prefix}_lng']!.text = '${address['longitude']}';
     if (prefix == 'dropoff') {
       _fields['recipient_name']!.text = '${address['recipient_name']}';
       _fields['recipient_phone']!.text = '${address['recipient_phone']}';
     }
-    setState(() => _quote = null);
+    setState(() {
+      if (point != null) {
+        if (prefix == 'pickup') {
+          _pickupPoint = point;
+        } else {
+          _dropoffPoint = point;
+        }
+        _focusedMapPoint = point;
+      }
+      _quote = null;
+      _error = null;
+    });
   }
 
-  Widget _address(String prefix, String title) => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      Align(
-        alignment: Alignment.centerRight,
-        child: IconButton(
-          tooltip: prefix == 'pickup'
-              ? 'Chọn địa chỉ lấy đã lưu'
-              : 'Chọn địa chỉ giao đã lưu',
-          onPressed: _busy || !_sameAccount
+  Widget _googleMapPicker() => Container(
+    margin: const EdgeInsets.only(bottom: 16),
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      border: Border.all(color: Theme.of(context).dividerColor),
+      borderRadius: BorderRadius.circular(10),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Row(
+          children: [
+            Icon(Icons.map_outlined, size: 19),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Chọn địa chỉ trực tiếp trên Google Map',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            ChoiceChip(
+              label: const Text('Ghim điểm lấy [A]'),
+              selected: _activeMapTarget == 'pickup',
+              onSelected: _busy || !_sameAccount
+                  ? null
+                  : (_) => setState(() {
+                      _activeMapTarget = 'pickup';
+                      if (_pickupPoint != null) _focusedMapPoint = _pickupPoint;
+                    }),
+            ),
+            ChoiceChip(
+              label: const Text('Ghim điểm giao [B]'),
+              selected: _activeMapTarget == 'dropoff',
+              onSelected: _busy || !_sameAccount
+                  ? null
+                  : (_) => setState(() {
+                      _activeMapTarget = 'dropoff';
+                      if (_dropoffPoint != null) {
+                        _focusedMapPoint = _dropoffPoint;
+                      }
+                    }),
+            ),
+            for (var i = 0; i < _extraStops.length; i++)
+              ChoiceChip(
+                label: Text('Ghim điểm dừng #${i + 1}'),
+                selected: _activeMapTarget == 'stop:$i',
+                onSelected: _busy || !_sameAccount
+                    ? null
+                    : (_) => setState(() {
+                        _activeMapTarget = 'stop:$i';
+                        if (_extraStops[i].point != null) {
+                          _focusedMapPoint = _extraStops[i].point;
+                        }
+                      }),
+              ),
+            ActionChip(
+              avatar: const Icon(Icons.my_location_outlined, size: 16),
+              label: const Text('Vị trí hiện tại (GPS)'),
+              onPressed: _busy || !_sameAccount
+                  ? null
+                  : _useCurrentGpsForActiveTarget,
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          _reverseBusy
+              ? 'Đang tự động nhận diện tên đường trên Google Map...'
+              : 'Đang chọn: $_activeTargetDescription — Chạm lên bản đồ Google Map bên dưới để ghim vị trí.',
+          style: TextStyle(
+            fontSize: 12,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Map3dPerspectiveWidget(
+          key: const ValueKey('cloud-order-google-map'),
+          height: 270,
+          showTopBanner: false,
+          mode: MapViewMode.customerPreview,
+          customFleetDrivers: const [],
+          useGlobalFallbackRoute: false,
+          routePoints: _mapRoutePoints,
+          singlePinPoint: _mapRoutePoints.length >= 2
               ? null
-              : () => _chooseAddress(prefix),
-          icon: const Icon(Icons.contact_mail_outlined),
+              : _singlePinnedPoint,
+          singlePinLabel: _singlePinnedLabel,
+          focusedCenterPoint: _focusedMapPoint,
+          pickupLabel: 'Điểm lấy [A]',
+          dropoffLabel: 'Điểm giao [B]',
+          onTapGeoPoint: _busy || !_sameAccount ? null : _handleMapTap,
         ),
-      ),
-      _text('${prefix}_address', title),
-      if (!_busy && _sameAccount)
-        PhotonAddressLookup(
-          controller: _fields['${prefix}_address']!,
-          onSelected: (place) {
-            if (!_sameAccount) return;
-            _fields['${prefix}_address']!.text = place.address;
-            _fields['${prefix}_lat']!.text = '${place.point.latitude}';
-            _fields['${prefix}_lng']!.text = '${place.point.longitude}';
-          },
-        ),
-      const SizedBox(height: 8),
-      Row(
+      ],
+    ),
+  );
+
+  Widget _address(String prefix, String title) {
+    final pinned = prefix == 'pickup'
+        ? _pickupPoint != null
+        : _dropoffPoint != null;
+    final active = _activeMapTarget == prefix;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(child: _text('${prefix}_lat', 'Vĩ độ', numeric: true)),
-          const SizedBox(width: 12),
-          Expanded(child: _text('${prefix}_lng', 'Kinh độ', numeric: true)),
+          Row(
+            children: [
+              Icon(
+                pinned ? Icons.where_to_vote_rounded : Icons.touch_app_outlined,
+                size: 17,
+                color: pinned
+                    ? Colors.green.shade700
+                    : Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  pinned
+                      ? 'Đã ghim vị trí trên Google Map'
+                      : 'Chạm lên Google Map hoặc nhập địa chỉ tìm kiếm',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: pinned ? FontWeight.w600 : FontWeight.w500,
+                    color: pinned
+                        ? Colors.green.shade700
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              TextButton.icon(
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                onPressed: _busy || !_sameAccount
+                    ? null
+                    : () => setState(() {
+                        _activeMapTarget = prefix;
+                        final targetPt = prefix == 'pickup'
+                            ? _pickupPoint
+                            : _dropoffPoint;
+                        if (targetPt != null) _focusedMapPoint = targetPt;
+                      }),
+                icon: Icon(
+                  active ? Icons.gps_fixed : Icons.pin_drop_outlined,
+                  size: 15,
+                ),
+                label: Text(prefix == 'pickup' ? 'Ghim [A]' : 'Ghim [B]'),
+              ),
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                tooltip: prefix == 'pickup'
+                    ? 'Chọn địa chỉ lấy đã lưu'
+                    : 'Chọn địa chỉ giao đã lưu',
+                onPressed: _busy || !_sameAccount
+                    ? null
+                    : () => _chooseAddress(prefix),
+                icon: const Icon(Icons.contact_mail_outlined, size: 20),
+              ),
+            ],
+          ),
+          _text('${prefix}_address', title),
+          if (!_busy && _sameAccount)
+            PhotonAddressLookup(
+              controller: _fields['${prefix}_address']!,
+              service: widget.addressService,
+              buttonLabel: prefix == 'pickup'
+                  ? 'Tìm điểm lấy trên Google Map'
+                  : 'Tìm điểm giao trên Google Map',
+              autoSearch: true,
+              biasPoint: _focusedMapPoint ?? _pickupPoint ?? _dropoffPoint,
+              onSelected: (place) {
+                if (!_sameAccount) return;
+                _fields['${prefix}_address']!.text = place.address;
+                setState(() {
+                  if (prefix == 'pickup') {
+                    _pickupPoint = place.point;
+                    if (_dropoffPoint == null) _activeMapTarget = 'dropoff';
+                  } else {
+                    _dropoffPoint = place.point;
+                  }
+                  _focusedMapPoint = place.point;
+                  _quote = null;
+                  _error = null;
+                });
+              },
+            ),
         ],
       ),
-    ],
-  );
+    );
+  }
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -520,11 +983,18 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  _googleMapPicker(),
                   _address('pickup', 'Địa chỉ lấy hàng'),
                   _address('dropoff', 'Địa chỉ giao hàng'),
                   const Divider(height: 24),
                   _text('recipient_name', 'Tên người nhận', max: 120),
                   _text('recipient_phone', 'Số điện thoại người nhận', max: 10),
+                  CloudRecipientTrust(
+                    service: widget.service,
+                    phone: _fields['recipient_phone']!,
+                    lease: widget.lease,
+                    enabled: !_busy && _sameAccount,
+                  ),
                   _text('package_description', 'Hàng hóa', max: 1000),
                   _text('weight_kg', 'Khối lượng (kg)', numeric: true),
                   _text('cod_amount', 'Tiền thu hộ (đồng)', numeric: true),
@@ -752,21 +1222,60 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
                             children: [
                               Row(
                                 children: [
+                                  Icon(
+                                    _extraStops[i].point != null
+                                        ? Icons.where_to_vote_rounded
+                                        : Icons.pin_drop_outlined,
+                                    size: 16,
+                                    color: _extraStops[i].point != null
+                                        ? Colors.green.shade700
+                                        : null,
+                                  ),
+                                  const SizedBox(width: 6),
                                   Expanded(
                                     child: Text(
-                                      'Điểm dừng trung gian #${i + 1}',
+                                      _extraStops[i].point != null
+                                          ? 'Điểm dừng #${i + 1} · Đã ghim trên Google Map'
+                                          : 'Điểm dừng trung gian #${i + 1}',
                                       style: const TextStyle(
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                   ),
+                                  TextButton.icon(
+                                    style: TextButton.styleFrom(
+                                      visualDensity: VisualDensity.compact,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                      ),
+                                      minimumSize: Size.zero,
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                    onPressed: _busy || !_sameAccount
+                                        ? null
+                                        : () => setState(() {
+                                            _activeMapTarget = 'stop:$i';
+                                            if (_extraStops[i].point != null) {
+                                              _focusedMapPoint =
+                                                  _extraStops[i].point;
+                                            }
+                                          }),
+                                    icon: const Icon(
+                                      Icons.pin_drop_outlined,
+                                      size: 15,
+                                    ),
+                                    label: const Text('Ghim Map'),
+                                  ),
                                   IconButton(
+                                    visualDensity: VisualDensity.compact,
                                     tooltip: 'Xóa điểm dừng',
                                     onPressed: _busy || !_sameAccount
                                         ? null
                                         : () => _removeStop(i),
                                     icon: const Icon(
                                       Icons.remove_circle_outline,
+                                      size: 20,
                                     ),
                                   ),
                                 ],
@@ -778,66 +1287,55 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
                                   labelText: 'Địa chỉ điểm dừng #${i + 1}',
                                   border: const OutlineInputBorder(),
                                 ),
-                                validator: (v) =>
-                                    (v?.trim().length ?? 0) < 3
-                                        ? 'Nhập địa chỉ điểm dừng'
-                                        : null,
+                                validator: (v) => (v?.trim().length ?? 0) < 3
+                                    ? 'Nhập địa chỉ điểm dừng'
+                                    : null,
                               ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: TextFormField(
-                                      controller: _extraStops[i].lat,
-                                      enabled: !_busy && _sameAccount,
-                                      keyboardType:
-                                          const TextInputType.numberWithOptions(
-                                            decimal: true,
-                                            signed: true,
-                                          ),
-                                      decoration: InputDecoration(
-                                        labelText: 'Vĩ độ dừng #${i + 1}',
-                                        border: const OutlineInputBorder(),
-                                      ),
-                                      validator: (v) {
-                                        final n = double.tryParse(
-                                          v?.trim() ?? '',
-                                        );
-                                        return n == null || n.abs() > 90
-                                            ? 'Vĩ độ không hợp lệ'
-                                            : null;
-                                      },
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: TextFormField(
-                                      controller: _extraStops[i].lng,
-                                      enabled: !_busy && _sameAccount,
-                                      keyboardType:
-                                          const TextInputType.numberWithOptions(
-                                            decimal: true,
-                                            signed: true,
-                                          ),
-                                      decoration: InputDecoration(
-                                        labelText: 'Kinh độ dừng #${i + 1}',
-                                        border: const OutlineInputBorder(),
-                                      ),
-                                      validator: (v) {
-                                        final n = double.tryParse(
-                                          v?.trim() ?? '',
-                                        );
-                                        return n == null || n.abs() > 180
-                                            ? 'Kinh độ không hợp lệ'
-                                            : null;
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              ),
+                              if (!_busy && _sameAccount)
+                                PhotonAddressLookup(
+                                  controller: _extraStops[i].address,
+                                  service: widget.addressService,
+                                  buttonLabel:
+                                      'Tìm điểm dừng #${i + 1} trên Google Map',
+                                  autoSearch: true,
+                                  biasPoint:
+                                      _focusedMapPoint ??
+                                      _pickupPoint ??
+                                      _dropoffPoint,
+                                  onSelected: (place) {
+                                    if (!_sameAccount) return;
+                                    _extraStops[i].address.text = place.address;
+                                    setState(() {
+                                      _extraStops[i].point = place.point;
+                                      _focusedMapPoint = place.point;
+                                      _quote = null;
+                                      _error = null;
+                                    });
+                                  },
+                                ),
                             ],
                           ),
                         ),
+                      if (_extraStops.length >= 2) ...[
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: OutlinedButton.icon(
+                            onPressed: _busy || !_sameAccount
+                                ? null
+                                : _optimizeStops,
+                            icon: const Icon(Icons.alt_route_outlined),
+                            label: const Text(
+                              'Tối ưu thứ tự điểm dừng theo đường bộ',
+                            ),
+                          ),
+                        ),
+                        if (_routeNotice != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: Text(_routeNotice!),
+                          ),
+                        const SizedBox(height: 8),
+                      ],
                       if (_extraStops.length < 5)
                         Align(
                           alignment: Alignment.centerLeft,
@@ -875,6 +1373,11 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
                     if ((_quote!['estimated_co2_saved_grams'] as num? ?? 0) > 0)
                       Text(
                         'Ước tính giảm phát thải EV: ${_quote!['estimated_co2_saved_grams']} g CO2',
+                      ),
+                    if (_serviceEta?[_serviceType] case final eta?)
+                      Text(
+                        'Thời gian giao thực tế trung bình 30 ngày (${cloudServiceTypes[_serviceType]}): '
+                        '${cloudMinutes(eta['avg_delivery_minutes'])} · ${eta['samples']} đơn',
                       ),
                     if (_quote!['breakdown'] is Map) ...[
                       for (final entry in const {

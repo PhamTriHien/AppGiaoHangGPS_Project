@@ -25,6 +25,7 @@ test('Google patch preserves existing client IDs and redirects without changing 
   assert.ok(patch.uri_allow_list.split(',').includes('https://live.example/callback'));
   assert.equal(patch.uri_allow_list.split(',').filter(url => url === 'http://127.0.0.1:8080/').length, 1);
   assert.ok(patch.uri_allow_list.includes('http://127.0.0.1:8766/auth/callback'));
+  assert.ok(patch.uri_allow_list.includes('com.giaohanggps.gpsdelivery://auth/callback'));
   assert.deepEqual(Object.keys(patch).sort(), ['external_google_client_id', 'external_google_enabled', 'external_google_secret', 'uri_allow_list']);
   assert.equal(current.external_github_enabled, true);
 });
@@ -34,6 +35,46 @@ test('Conflicting Google IDs, missing credentials and malformed redirects abort 
   assert.throws(() => googleCloudPatch({ ...current, external_google_client_id: 'other.apps.googleusercontent.com' }, env), /different Google/);
   assert.throws(() => googleCloudPatch(current, { ...env, GOOGLE_CLIENT_SECRET: '' }), /Client Secret/);
   assert.throws(() => googleCloudPatch({ ...current, uri_allow_list: ['unexpected'] }, env), /redirect configuration/);
+  assert.throws(() => googleCloudPatch(current, { ...env, PUBLIC_APP_URL: 'http://live.example' }), /PUBLIC_APP_URL must use HTTPS/);
+  const loopbackPatch = googleCloudPatch(current, { ...env, PUBLIC_APP_URL: 'http://127.0.0.1:8080' });
+  assert.ok(loopbackPatch.uri_allow_list.split(',').includes('http://127.0.0.1:8080/'));
+});
+
+test('Saved SMTP settings sync custom Supabase Auth SMTP and 6-digit recovery OTP templates without leaking secrets', async () => {
+  const smtpEnv = {
+    ...env,
+    SMTP_ENABLED: 'true',
+    SMTP_HOST: 'smtp.gmail.com',
+    SMTP_PORT: '465',
+    SMTP_USER: 'relay-sender@example.com',
+    SMTP_PASS: 'secret-app-pass-16',
+  };
+  let state = { external_google_enabled: false, uri_allow_list: '', rate_limit_email_sent: 2 };
+  const report = await setupGoogleCloud({
+    env: smtpEnv,
+    token: 'management-test-token',
+    apply: true,
+    fetcher: async (url, options) => {
+      if (url.endsWith('/auth/v1/settings')) return json({ external: { google: true } });
+      if (options.method === 'PATCH') {
+        const body = JSON.parse(options.body);
+        assert.equal(body.smtp_host, 'smtp.gmail.com');
+        assert.equal(body.smtp_port, '465');
+        assert.equal(body.smtp_admin_email, 'relay-sender@example.com');
+        assert.equal(body.mailer_otp_length, 6);
+        assert.ok(body.mailer_templates_recovery_content.includes('{{ .Token }}'));
+        assert.ok(body.mailer_templates_confirmation_content.includes('{{ .Token }}'));
+        assert.equal(body.rate_limit_email_sent, 30);
+        state = { ...state, ...body };
+      }
+      return json(state);
+    },
+  });
+  assert.equal(report.applied, true);
+  assert.equal(report.smtpSynced, true);
+  assert.equal(report.recoveryOtpEnabled, true);
+  assert.equal(JSON.stringify(report).includes(smtpEnv.SMTP_PASS), false);
+  assert.equal(JSON.stringify(report).includes(smtpEnv.SMTP_USER), false);
 });
 
 test('Check mode only reads public status and never returns saved secrets', async () => {
@@ -61,7 +102,12 @@ test('Authenticated check previews the exact redirect additions without a write'
   assert.equal(calls.some(([, options]) => options.method === 'PATCH'), false);
   assert.equal(report.planReady, true);
   assert.equal(report.applied, false);
-  assert.deepEqual(report.redirectsToAdd, ['http://127.0.0.1:8080/', 'http://localhost:8080/', 'http://127.0.0.1:8766/auth/callback']);
+  assert.deepEqual(report.redirectsToAdd, [
+    'http://127.0.0.1:8080/',
+    'http://localhost:8080/',
+    'http://127.0.0.1:8766/auth/callback',
+    'com.giaohanggps.gpsdelivery://auth/callback',
+  ]);
   assert.equal(JSON.stringify(report).includes(env.GOOGLE_CLIENT_SECRET), false);
 });
 

@@ -10,6 +10,7 @@ import '../../core/network/public_json_api.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/utils/market_options.dart';
 import '../widgets/cloud_commerce_dialog.dart';
+import '../widgets/cloud_logistics_panels.dart';
 import '../widgets/cloud_profile_form.dart';
 import '../widgets/cloud_session_boundary.dart';
 import '../widgets/market_catalog_fields.dart';
@@ -18,7 +19,9 @@ import '../widgets/market_product_details.dart';
 import '../widgets/marketplace_editor.dart';
 import 'cloud_address_book_screen.dart';
 import 'cloud_local_import_screen.dart';
+import 'cloud_order_import_screen.dart';
 import 'cloud_orders_screen.dart';
+import 'cloud_pickup_screen.dart';
 import 'market_order_services_screen.dart';
 
 enum MarketView {
@@ -1671,6 +1674,35 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                   ],
                 ),
               ),
+        ],
+        if (!moderation && _session.hasRole('merchant')) ...[
+          const Divider(height: 32),
+          Text(
+            'Vận hành giao hàng',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: _busy
+                    ? null
+                    : () => openCloudPickups(context, _session),
+                icon: const Icon(Icons.local_shipping_outlined),
+                label: const Text('Lịch xe thu gom'),
+              ),
+              OutlinedButton.icon(
+                onPressed: _busy
+                    ? null
+                    : () => openCloudOrderImport(context, _session),
+                icon: const Icon(Icons.upload_file_outlined),
+                label: const Text('Nhập đơn từ CSV'),
+              ),
+            ],
+          ),
+          CloudDeliveryStatsCard(service: _session.service, lease: _lease),
         ],
       ],
     );

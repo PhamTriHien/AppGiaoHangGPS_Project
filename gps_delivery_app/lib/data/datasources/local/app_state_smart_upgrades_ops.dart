@@ -34,8 +34,9 @@ extension AppStateSmartUpgradesOps on AppStateStore {
     return true;
   }
 
-  /// UC36: Tạo lịch hẹn xe tải/xe van thu gom hàng loạt tại kho B2B
-  ScheduledPickupRequestRecord createScheduledPickupRequest({
+  /// UC36: Tạo lịch hẹn xe tải/xe van thu gom hàng loạt tại kho B2B.
+  /// Trả về null khi chưa có hồ sơ cửa hàng hoặc kho đã đăng ký.
+  ScheduledPickupRequestRecord? createScheduledPickupRequest({
     required String warehouseId,
     required String vehicleType,
     required String timeSlot,
@@ -45,32 +46,32 @@ extension AppStateSmartUpgradesOps on AppStateStore {
   }) {
     final activeMer = activeMerchantRecord;
     final personalWhs = merchantPersonalWarehouses;
-    final wh =
-        personalWhs.where((w) => w.id == warehouseId).firstOrNull ??
-        personalWhs.firstOrNull;
-    final merId = activeMer?.id ?? 'MER-LOCAL';
-    final store = (activeMer?.storeName ?? merchantStoreName).trim().isNotEmpty
-        ? (activeMer?.storeName ?? merchantStoreName).trim()
-        : 'Cửa hàng đối tác B2B';
+    final wh = personalWhs.where((w) => w.id == warehouseId).firstOrNull;
+    if (activeMer == null ||
+        wh == null ||
+        packageCount < 1 ||
+        !totalWeightKg.isFinite ||
+        totalWeightKg <= 0) {
+      return null;
+    }
     final now = DateTime.now();
     final hh = now.hour.toString().padLeft(2, '0');
     final mm = now.minute.toString().padLeft(2, '0');
     final stamp =
         '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year} $hh:$mm';
-    final reqId =
-        'PKP-${(1000 + scheduledPickupRequests.length + (now.millisecond % 899)).toString()}';
+    final reqId = 'PKP-${now.microsecondsSinceEpoch}';
 
     final record = ScheduledPickupRequestRecord(
       id: reqId,
-      merchantId: merId,
-      storeName: store,
-      warehouseId: wh?.id ?? 'WH-DEFAULT',
-      warehouseName: wh?.name ?? 'Kho chính',
-      warehouseAddress: wh?.address ?? 'Kho trung tâm cửa hàng',
+      merchantId: activeMer.id,
+      storeName: activeMer.storeName,
+      warehouseId: wh.id,
+      warehouseName: wh.name,
+      warehouseAddress: wh.address,
       vehicleType: vehicleType,
       timeSlot: timeSlot,
-      packageCount: math.max(1, packageCount),
-      totalWeightKg: math.max(0.5, totalWeightKg),
+      packageCount: packageCount,
+      totalWeightKg: totalWeightKg,
       note: note.trim(),
       status: 'Chờ điều xe thu gom',
       createdAt: stamp,
@@ -90,7 +91,7 @@ extension AppStateSmartUpgradesOps on AppStateStore {
             'Đã đặt lịch thu gom lô hàng ${record.id} (${record.timeSlot} • ${record.vehicleType} • ${record.packageCount} kiện)',
         timeAgo: stamp,
         targetGroup: 'Cửa hàng B2B',
-        recipientKey: merId,
+        recipientKey: activeMer.id,
       ),
     );
     _notifyStoreChanged();
@@ -179,24 +180,25 @@ extension AppStateSmartUpgradesOps on AppStateStore {
       quickDeliveryInstructionsByOrder[trackingCode.trim()] ?? '';
 
   /// Pillar 2: Tính toán lộ trình ghép đơn đa điểm (Nearest-Neighbor + 2-Opt TSP)
-  MultiStopRoutePlan computeMultiStopPlanForWarehouse([GeoPoint? customOrigin]) {
+  /// Trả về null khi cửa hàng chưa có kho để làm điểm xuất phát.
+  MultiStopRoutePlan? computeMultiStopPlanForWarehouse([
+    GeoPoint? customOrigin,
+  ]) {
     final personalWhs = merchantPersonalWarehouses;
     final primaryWh =
         personalWhs.where((w) => w.isPrimary).firstOrNull ??
         personalWhs.firstOrNull;
-    final origin =
-        customOrigin ??
-        primaryWh?.location ??
-        const GeoPoint(latitude: 10.7769, longitude: 106.7009);
+    final origin = customOrigin ?? primaryWh?.location;
+    if (origin == null) return null;
     return SmartLogisticsUpgradeEngine.optimizeMultiStopRoute(
       originWarehouse: origin,
       candidateOrders: merchantPersonalOrders,
     );
   }
 
-  MultiStopRoutePlan applyMultiStopRouteOptimization() {
+  MultiStopRoutePlan? applyMultiStopRouteOptimization() {
     final plan = computeMultiStopPlanForWarehouse();
-    if (plan.orderedStops.isNotEmpty) {
+    if (plan != null && plan.orderedStops.isNotEmpty) {
       activeRoutePolyline = plan.chainedPolyline;
       isMultiStopRouteActive = true;
       final stopIds = plan.orderedStops.map((o) => o.id).toSet();
@@ -209,75 +211,4 @@ extension AppStateSmartUpgradesOps on AppStateStore {
     }
     return plan;
   }
-
-  /// Pillar 3: Trợ lý AI Phân tích Vận hành & Dự báo SLA (Toàn mạng lưới & Cửa hàng)
-  AiSlaInsightReport get aiOperationsInsights =>
-      SmartLogisticsUpgradeEngine.analyzeOperationsAndSla(
-        orders: orders,
-        drivers: drivers,
-        isPeakActive: isPeakSurchargeActive,
-        isWeatherActive: isWeatherSurchargeActive,
-      );
-
-  AiSlaInsightReport get merchantAiInsights =>
-      SmartLogisticsUpgradeEngine.analyzeOperationsAndSla(
-        orders: merchantPersonalOrders,
-        drivers: drivers,
-        isPeakActive: isPeakSurchargeActive,
-        isWeatherActive: isWeatherSurchargeActive,
-      );
-
-  /// Pillar 1b: Đồng bộ đơn tự động 1-Click từ Sàn TMĐT / POS (Shopee Mall, TikTok Shop, Sapo POS)
-  List<String> syncMarketplaceOrders(String channel) {
-    final seeds = SmartLogisticsUpgradeEngine.buildMarketplaceSyncBatch(
-      channel,
-    );
-    final personalWhs = merchantPersonalWarehouses;
-    final primaryWh =
-        personalWhs.where((w) => w.isPrimary).firstOrNull ??
-        personalWhs.firstOrNull;
-    final pickupAddr =
-        primaryWh?.address ?? '125 Lê Lợi, Phường Bến Thành, Quận 1, TP. HCM';
-    final pickupCoord =
-        primaryWh?.location ??
-        const GeoPoint(latitude: 10.7731, longitude: 106.6983);
-    final storeLabel =
-        (activeMerchantRecord?.storeName ?? merchantStoreName).trim().isNotEmpty
-        ? (activeMerchantRecord?.storeName ?? merchantStoreName).trim()
-        : 'Cửa hàng đối tác B2B';
-
-    final createdCodes = <String>[];
-    for (final seed in seeds) {
-      if (syncedExternalMarketplaceIds.contains(seed.externalOrderCode)) {
-        continue;
-      }
-      final dropoffCoord = SmartDispatchEngine.resolveAddressToCoordinate(
-        seed.dropoffAddress,
-        fallback: const GeoPoint(latitude: 10.7798, longitude: 106.6990),
-      );
-      final created = createNewOrder(
-        pickupAddress: pickupAddr,
-        dropoffAddress: seed.dropoffAddress,
-        recipientName: seed.recipientName,
-        recipientPhone: seed.recipientPhone,
-        packageDescription: seed.packageDescription,
-        weightKg: seed.weightKg,
-        dimensionsCm: '30 x 20 x 15 cm',
-        serviceType: seed.serviceType,
-        codAmount: seed.codAmount,
-        paymentMethod: 'Người gửi trả phí',
-        isFragileTag: seed.packageDescription.contains('Dễ vỡ'),
-        customCustomerName: storeLabel,
-        customPickupLocation: pickupCoord,
-        customDropoffLocation: dropoffCoord,
-      );
-      syncedExternalMarketplaceIds.add(seed.externalOrderCode);
-      createdCodes.add(created.trackingCode);
-    }
-    if (createdCodes.isNotEmpty) {
-      _notifyStoreChanged();
-    }
-    return createdCodes;
-  }
 }
-

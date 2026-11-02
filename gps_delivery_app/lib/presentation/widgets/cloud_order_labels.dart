@@ -22,7 +22,37 @@ const cloudActions = {
   'return': 'Hoàn hàng',
   'complete_return': 'Đã trả hàng cho người gửi',
   'cancel': 'Hủy đơn',
+  'instruction': 'Cập nhật chỉ dẫn giao hàng',
 };
+
+const cloudPickupVehicles = {
+  'tricycle_300kg': 'Xe ba gác 300kg',
+  'van_500kg': 'Xe tải van 500kg',
+  'box_truck_1500kg': 'Xe tải thùng kín 1.5 tấn',
+};
+
+const cloudPickupVehicleCapacityKg = {
+  'tricycle_300kg': 300,
+  'van_500kg': 500,
+  'box_truck_1500kg': 1500,
+};
+
+const cloudPickupSlots = {
+  'morning': '09:00 - 11:00 (Ca sáng)',
+  'afternoon': '14:00 - 16:00 (Ca chiều)',
+  'evening': '18:00 - 20:00 (Ca tối)',
+};
+
+const cloudPickupStatuses = {
+  'requested': 'Chờ điều xe thu gom',
+  'assigned': 'Đã điều xe',
+};
+
+const cloudQuickInstructions = [
+  'Gọi trước 5 phút',
+  'Gửi lễ tân tầng trệt',
+  'Không bấm chuông',
+];
 
 const cloudServiceTypes = {
   'standard': 'Tiêu chuẩn',

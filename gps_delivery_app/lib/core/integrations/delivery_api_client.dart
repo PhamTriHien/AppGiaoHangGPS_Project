@@ -83,7 +83,12 @@ class DeliveryApiClient {
                       headers: headers,
                       body: jsonEncode(body),
                     ))
-              .timeout(timeout);
+              .timeout(
+                (path == 'cloud/ai-chat' || path == 'ai/chat') &&
+                        timeout == const Duration(seconds: 20)
+                    ? const Duration(seconds: 30)
+                    : timeout,
+              );
       final value = jsonDecode(utf8.decode(response.bodyBytes));
       if (response.statusCode != 200 || value is! Map<String, dynamic>) {
         final message = value is Map ? value['error'] : null;

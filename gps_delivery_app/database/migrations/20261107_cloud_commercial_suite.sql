@@ -2720,5 +2720,30 @@ to authenticated;
 revoke all on function public.delivery_market_public_tracking(text), public.delivery_cloud_public_lookup(text,text) from public;
 grant execute on function public.delivery_market_public_tracking(text), public.delivery_cloud_public_lookup(text,text) to anon,authenticated;
 
+create table if not exists public.delivery_backend_config (
+  key text primary key check (length(key) between 1 and 120),
+  value text not null check (length(value) <= 8192),
+  updated_by text not null default 'system' check (length(updated_by) between 1 and 120),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.delivery_backend_config_audit (
+  id bigserial primary key,
+  at timestamptz not null default now(),
+  actor text not null check (length(actor) between 1 and 120),
+  changed jsonb not null check (jsonb_typeof(changed) = 'array')
+);
+
+alter table public.delivery_backend_config enable row level security;
+alter table public.delivery_backend_config_audit enable row level security;
+
+revoke all on table
+  public.delivery_backend_config,
+  public.delivery_backend_config_audit
+from public,anon,authenticated;
+
+revoke all on sequence public.delivery_backend_config_audit_id_seq
+from public,anon,authenticated;
+
 notify pgrst,'reload schema';
 commit;

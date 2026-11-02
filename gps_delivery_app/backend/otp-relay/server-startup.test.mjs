@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -43,5 +43,67 @@ test('Cloud server starts without relay credentials and refuses missing authenti
         }
       }
     });
+  }
+});
+
+test('Cloud admin static hosting serves root 200 without redirect loop, injects /#/admin hash bootstrap, and enforces CORS', async t => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'ghst-admin-static-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  await writeFile(path.join(directory, 'index.html'), '<!doctype html><head><title>GHST Admin</title></head><body></body>');
+
+  const child = spawn(process.execPath, ['server.mjs'], {
+    cwd: new URL('.', import.meta.url),
+    windowsHide: true,
+    env: {
+      ...process.env,
+      INTEGRATION_CONFIG_PATH: path.join(directory, 'config.json'),
+      STATIC_WEB_DIR: directory,
+      TRUST_PROXY: '1',
+      PORT: '0',
+      BIND_HOST: '127.0.0.1',
+      RELAY_TOKEN: '',
+      WEB_ORIGINS: '',
+      DATABASE_URL: '',
+      SUPABASE_URL: 'https://project.supabase.co',
+      SUPABASE_ANON_KEY: 'public-key',
+      SUPABASE_ENABLED: 'true',
+    },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  try {
+    const baseUrl = await new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error('Startup timed out')), 10000);
+      child.stdout.on('data', chunk => {
+        const match = chunk.toString().match(/http:\/\/127\.0\.0\.1:(\d+)/);
+        if (match) {
+          clearTimeout(timeout);
+          resolve(`http://127.0.0.1:${match[1]}`);
+        }
+      });
+      child.once('error', reject);
+    });
+
+    const rootRes = await fetch(`${baseUrl}/`, { redirect: 'manual' });
+    assert.equal(rootRes.status, 200);
+    const rootHtml = await rootRes.text();
+    assert.match(rootHtml, /GHST Admin/);
+    assert.match(rootHtml, /location\.replace\("\/#\/admin"\)/);
+
+    const adminRes = await fetch(`${baseUrl}/admin`);
+    assert.equal(adminRes.status, 200);
+    assert.match(await adminRes.text(), /GHST Admin/);
+
+    const sameOriginRes = await fetch(`${baseUrl}/health`, { headers: { Origin: baseUrl } });
+    assert.equal(sameOriginRes.status, 200);
+    assert.equal(sameOriginRes.headers.get('access-control-allow-origin'), baseUrl);
+
+    const foreignRes = await fetch(`${baseUrl}/health`, { headers: { Origin: 'https://evil.example' } });
+    assert.equal(foreignRes.status, 403);
+  } finally {
+    if (child.exitCode === null && child.signalCode === null) {
+      const exited = once(child, 'exit');
+      child.kill();
+      await exited;
+    }
   }
 });

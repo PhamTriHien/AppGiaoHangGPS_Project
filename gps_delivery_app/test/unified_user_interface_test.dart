@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gps_delivery_app/core/auth/cloud_oauth_io.dart';
 import 'package:gps_delivery_app/core/integrations/cloud_account_session.dart';
 import 'package:gps_delivery_app/core/theme/app_theme.dart';
 import 'package:gps_delivery_app/main.dart';
@@ -10,6 +11,7 @@ import 'package:gps_delivery_app/presentation/screens/marketplace_screen.dart';
 import 'package:gps_delivery_app/presentation/screens/marketplace_view.dart';
 import 'package:gps_delivery_app/presentation/widgets/studio_user_auth_frame.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'marketplace_test.dart' show MarketFixture;
 
@@ -349,6 +351,100 @@ void main() {
       expect(find.byType(CloudOrdersScreen), findsOneWidget);
       expect(find.text('Chuyến của tôi'), findsOneWidget);
       expect(find.text('Chờ nhận'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets(
+    'Signed-out auth screen surfaces async OAuth stream AuthException without unhandled errors',
+    (tester) async {
+      final (api, session) = await setup(tester, 360.0);
+      api.authenticated = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: MarketplaceScreen(session: session),
+        ),
+      );
+      await tester.pumpAndSettle();
+      api.changes.addError(const AuthException('OAuth callback rejected'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text(
+          'Không xác thực được. Kiểm tra thông tin, email xác nhận hoặc thử lại sau.',
+        ),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  test(
+    'Google OAuth PKCE URL always requests account chooser prompt=select_account',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final client = SupabaseClient(
+        'https://example.supabase.co',
+        'publishable-test-key',
+        authOptions: AuthClientOptions(
+          authFlowType: AuthFlowType.pkce,
+          pkceAsyncStorage: SharedPreferencesGotrueAsyncStorage(),
+        ),
+      );
+      try {
+        final oauth = await client.auth.getOAuthSignInUrl(
+          provider: OAuthProvider.google,
+          redirectTo: desktopGoogleRedirectUri,
+          queryParams: googleOAuthQueryParams,
+        );
+        final uri = Uri.parse(oauth.url);
+        expect(uri.queryParameters['provider'], 'google');
+        expect(uri.queryParameters['prompt'], 'select_account');
+        expect(uri.queryParameters['code_challenge_method'], 's256');
+      } finally {
+        await client.dispose();
+      }
+    },
+  );
+
+  testWidgets(
+    'Password recovery supports code resend and transitions to new-password mode on recovery session',
+    (tester) async {
+      final (api, session) = await setup(tester, 360.0);
+      api.authenticated = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: MarketplaceScreen(session: session),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Quên mật khẩu?'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Email'),
+        'member@example.com',
+      );
+      await tester.tap(find.text('Gửi email khôi phục'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Yêu cầu đã được gửi. Vui lòng kiểm tra email.'),
+        findsOneWidget,
+      );
+      expect(find.text('Gửi lại mã xác nhận'), findsOneWidget);
+      await tester.tap(find.text('Gửi lại mã xác nhận'));
+      await tester.pumpAndSettle();
+      expect(
+        api.calls.where((c) => c['action'] == 'reset').length,
+        2,
+      );
+      api.authenticated = true;
+      api.changes.add(const AuthState(AuthChangeEvent.passwordRecovery, null));
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(TextFormField, 'Mã xác nhận email'), findsNothing);
+      expect(find.widgetWithText(TextFormField, 'Mật khẩu mới'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
     },

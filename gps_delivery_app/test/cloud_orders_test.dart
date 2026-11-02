@@ -4,11 +4,18 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gps_delivery_app/core/config/env_config.dart';
 import 'package:gps_delivery_app/core/integrations/cloud_orders_service.dart';
+import 'package:gps_delivery_app/core/integrations/delivery_api_client.dart';
+import 'package:gps_delivery_app/core/integrations/photon_address_service.dart';
 import 'package:gps_delivery_app/core/network/public_json_api.dart';
+import 'package:gps_delivery_app/domain/entities/geo_point.dart';
 import 'package:gps_delivery_app/presentation/screens/cloud_orders_screen.dart';
 import 'package:gps_delivery_app/presentation/widgets/cloud_order_form.dart';
 import 'package:gps_delivery_app/presentation/widgets/cloud_pricing_dialog.dart';
+import 'package:gps_delivery_app/presentation/widgets/system_state_screens.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -665,22 +672,25 @@ void main() {
     },
   );
 
-  test('Command IDs survive retries, are scoped per identity and change for a new order draft', () async {
-    final api = CloudFixture();
-    final draft = await api.startDraft();
-    expect(await api.startDraft(), draft);
-    await api.command('orders', {'draft_id': draft, 'details': 'same-details'});
-    final first = api.calls.last['body']['request_key'];
-    await api.command('orders', {'draft_id': draft, 'details': 'same-details'});
-    expect(api.calls.last['body']['request_key'], first);
-    api.identity = 'another-identity';
-    await api.command('orders', {'draft_id': draft, 'details': 'same-details'});
-    expect(api.calls.last['body']['request_key'], isNot(first));
-    api.identity = '00000000-0000-0000-0000-000000000001';
-    await api.completeDraft(draft);
-    expect(await api.startDraft(), isNot(draft));
-    await api.changes.close();
-  });
+  test(
+    'Command IDs survive retries, are scoped per identity and change for a new order draft',
+    () async {
+      final api = CloudFixture();
+      final draft = await api.startDraft();
+      expect(await api.startDraft(), draft);
+      await api.command('orders', {'draft_id': draft, 'details': 'same-details'});
+      final first = api.calls.last['body']['request_key'];
+      await api.command('orders', {'draft_id': draft, 'details': 'same-details'});
+      expect(api.calls.last['body']['request_key'], first);
+      api.identity = 'another-identity';
+      await api.command('orders', {'draft_id': draft, 'details': 'same-details'});
+      expect(api.calls.last['body']['request_key'], isNot(first));
+      api.identity = '00000000-0000-0000-0000-000000000001';
+      await api.completeDraft(draft);
+      expect(await api.startDraft(), isNot(draft));
+      await api.changes.close();
+    },
+  );
 
   test(
     'Retries after an upgrade reuse the previously persisted command key',
@@ -736,14 +746,12 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      expect(find.widgetWithText(TextFormField, 'Vĩ độ'), findsNothing);
+      expect(find.widgetWithText(TextFormField, 'Kinh độ'), findsNothing);
       final fields = find.byType(TextFormField);
       final values = [
         '12 Nguyen Hue',
-        '10.77',
-        '106.7',
         '20 Le Loi',
-        '10.78',
-        '106.71',
         'Receiver',
         '0912345678',
         'Documents',
@@ -751,21 +759,189 @@ void main() {
         '100000',
       ];
       for (var i = 0; i < values.length; i++) {
+        await tester.ensureVisible(fields.at(i));
         await tester.enterText(fields.at(i), values[i]);
       }
-      await tester.ensureVisible(find.text('Lấy báo giá'));
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.widgetWithText(FilledButton, 'Lấy báo giá'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Lấy báo giá'));
+      await tester.pumpAndSettle();
+      expect(find.text('Xác nhận tạo đơn'), findsNothing);
+      expect(
+        find.textContaining('Chưa ghim được Địa chỉ lấy hàng trên Google Map'),
+        findsOneWidget,
+      );
+      expect(api.calls.where((c) => c['path'] == 'quote'), isEmpty);
+
+      tester
+          .widget<Map3dPerspectiveWidget>(
+            find.byKey(const ValueKey('cloud-order-google-map')),
+          )
+          .onTapGeoPoint!(const GeoPoint(latitude: 10.77, longitude: 106.7));
+      await tester.pumpAndSettle();
+      tester
+          .widget<Map3dPerspectiveWidget>(
+            find.byKey(const ValueKey('cloud-order-google-map')),
+          )
+          .onTapGeoPoint!(const GeoPoint(latitude: 10.78, longitude: 106.71));
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.widgetWithText(FilledButton, 'Lấy báo giá'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Lấy báo giá'));
       await tester.pumpAndSettle();
       expect(find.text('Xác nhận tạo đơn'), findsOneWidget);
       expect(api.calls.where((c) => c['path'] == 'orders'), isEmpty);
-      final weight = tester.widget<TextFormField>(fields.at(9)).controller!;
+      final weight = tester.widget<TextFormField>(fields.at(5)).controller!;
       weight.selection = const TextSelection(baseOffset: 0, extentOffset: 1);
       await tester.pumpAndSettle();
       expect(find.text('Xác nhận tạo đơn'), findsOneWidget);
-      await tester.ensureVisible(fields.at(9));
-      await tester.enterText(fields.at(9), '2');
+      await tester.ensureVisible(fields.at(5));
+      await tester.enterText(fields.at(5), '2');
       await tester.pumpAndSettle();
       expect(find.text('Xác nhận tạo đơn'), findsNothing);
+      await finish(tester, api);
+    },
+  );
+
+  testWidgets(
+    'Order form searches addresses on Google Map and reverse-geocodes direct map taps without manual coordinate inputs',
+    (tester) async {
+      EnvConfig.configureDeliveryApiRuntime(
+        baseUrl: 'http://127.0.0.1:8787/delivery/',
+      );
+      EnvConfig.configureAuthProvidersRuntime(
+        otpEmailWebhookToken: 'test-backend-token',
+      );
+      addTearDown(() {
+        EnvConfig.configureDeliveryApiRuntime(baseUrl: '');
+        EnvConfig.configureAuthProvidersRuntime(otpEmailWebhookToken: '');
+      });
+      final addressService = PhotonAddressService(
+        api: DeliveryApiClient(
+          client: MockClient((request) async {
+            if (request.url.path.endsWith('/reverse')) {
+              return http.Response.bytes(
+                utf8.encode(
+                  jsonEncode({
+                    'address': 'Chợ Bến Thành, Quận 1, TP.HCM',
+                    'attribution': 'Google Maps',
+                  }),
+                ),
+                200,
+                headers: {'content-type': 'application/json; charset=utf-8'},
+              );
+            }
+            if (request.url.path.endsWith('/places')) {
+              expect(request.url.queryParameters['q'], 'Landmark 81');
+              expect(request.url.queryParameters['lat'], '10.77250');
+              expect(request.url.queryParameters['lon'], '106.69800');
+              return http.Response.bytes(
+                utf8.encode(
+                  jsonEncode({
+                    'autocomplete': true,
+                    'attribution': 'Google Maps',
+                    'places': [
+                      {
+                        'title': 'Landmark 81',
+                        'address':
+                            'Vinhomes Central Park, Bình Thạnh, TP.HCM',
+                        'latitude': 10.795,
+                        'longitude': 106.7218,
+                      },
+                    ],
+                  }),
+                ),
+                200,
+                headers: {'content-type': 'application/json; charset=utf-8'},
+              );
+            }
+            return http.Response('{}', 404);
+          }),
+        ),
+      );
+
+      final api = CloudFixture();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CloudOrderForm(
+            service: api,
+            merchants: const [],
+            addressService: addressService,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      tester
+          .widget<Map3dPerspectiveWidget>(
+            find.byKey(const ValueKey('cloud-order-google-map')),
+          )
+          .onTapGeoPoint!(
+            const GeoPoint(latitude: 10.7725, longitude: 106.698),
+          );
+      await tester.pumpAndSettle();
+      final pickupField = tester.widget<TextFormField>(
+        find.widgetWithText(TextFormField, 'Địa chỉ lấy hàng'),
+      );
+      expect(
+        pickupField.controller!.text,
+        'Chợ Bến Thành, Quận 1, TP.HCM',
+      );
+
+      final dropoffFinder = find.widgetWithText(
+        TextFormField,
+        'Địa chỉ giao hàng',
+      );
+      await tester.ensureVisible(dropoffFinder);
+      await tester.enterText(dropoffFinder, 'Landmark 81');
+      final searchBtn = find.text('Tìm điểm giao trên Google Map');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(searchBtn);
+      await tester.pumpAndSettle();
+      await tester.tap(searchBtn);
+      await tester.pumpAndSettle();
+      expect(find.text('Google Maps'), findsOneWidget);
+      final suggestion = find.text('Vinhomes Central Park, Bình Thạnh, TP.HCM');
+      await tester.ensureVisible(suggestion);
+      await tester.pumpAndSettle();
+      await tester.tap(suggestion);
+      await tester.pumpAndSettle();
+
+      for (final entry in {
+        'Tên người nhận': 'Receiver',
+        'Số điện thoại người nhận': '0912345678',
+        'Hàng hóa': 'Documents',
+        'Khối lượng (kg)': '1',
+        'Tiền thu hộ (đồng)': '100000',
+      }.entries) {
+        final f = find.widgetWithText(TextFormField, entry.key);
+        await tester.ensureVisible(f);
+        await tester.pumpAndSettle();
+        await tester.enterText(f, entry.value);
+      }
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.widgetWithText(FilledButton, 'Lấy báo giá'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Lấy báo giá'));
+      await tester.pumpAndSettle();
+      expect(find.text('Xác nhận tạo đơn'), findsOneWidget);
+      final quoteBody =
+          api.calls.lastWhere((c) => c['path'] == 'quote')['body']
+              as Map<String, dynamic>;
+      expect(quoteBody['pickup_address'], 'Chợ Bến Thành, Quận 1, TP.HCM');
+      expect(quoteBody['pickup_lat'], 10.7725);
+      expect(quoteBody['pickup_lng'], 106.698);
+      expect(
+        quoteBody['dropoff_address'],
+        'Vinhomes Central Park, Bình Thạnh, TP.HCM',
+      );
+      expect(quoteBody['dropoff_lat'], 10.795);
+      expect(quoteBody['dropoff_lng'], 106.7218);
       await finish(tester, api);
     },
   );

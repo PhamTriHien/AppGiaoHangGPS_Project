@@ -29,9 +29,11 @@ All paths below are relative to this repository root.
 | App and routes | `gps_delivery_app/lib/main.dart` |
 | Original shared user login presentation | `gps_delivery_app/lib/presentation/widgets/studio_user_auth_frame.dart` |
 | Default canonical app and shopping | `gps_delivery_app/lib/presentation/screens/marketplace_screen.dart`, `marketplace_view.dart` |
-| Original customer layout adapted to verified cloud data | `gps_delivery_app/lib/presentation/customer/ghst_user_shell.dart`, `ghst_home_screen.dart`, `ghst_shipping_screen.dart` |
+| Original customer layout adapted to verified cloud data | `gps_delivery_app/lib/presentation/customer/ghst_user_shell.dart`, `ghst_home_screen.dart`, `ghst_shipping_screen.dart`, `ghst_ai_chat_screen.dart` |
+| Customer AI chatbot & backend AI proxy | `gps_delivery_app/lib/presentation/customer/ghst_ai_chat_screen.dart`, `gps_delivery_app/backend/otp-relay/ai-assistant.mjs` |
 | Purchase aftersales and financial operations | `gps_delivery_app/lib/presentation/screens/market_order_services_screen.dart` |
 | Commercial vouchers, flash sales and coins | `gps_delivery_app/lib/presentation/widgets/market_commercial_sheets.dart` |
+| Cloud logistics (bulk pickups, recipient trust, delivery instructions, 30-day stats, CSV order import, stop ordering) | `gps_delivery_app/database/migrations/20261108_cloud_logistics.sql`, `gps_delivery_app/lib/presentation/screens/cloud_pickup_screen.dart`, `cloud_order_import_screen.dart`, `gps_delivery_app/lib/presentation/widgets/cloud_logistics_panels.dart`, `gps_delivery_app/lib/core/gps/stop_order_optimizer.dart` |
 | Public and token-shared cloud tracking | `gps_delivery_app/lib/presentation/screens/public_order_tracking_screen.dart`, `shared_tracking_screen.dart` |
 | Private operations, commercial suite, expiry and share projection | `gps_delivery_app/database/migrations/20261031_market_operations.sql`, `20261107_cloud_commercial_suite.sql`, `gps_delivery_app/backend/otp-relay/market-operations.mjs` |
 | Legacy consumer and admin archives | `gps_delivery_app/lib/presentation/screens/architecture_dashboard_screen.dart`, `legacy_admin_portal_screen.dart` |
@@ -87,10 +89,24 @@ All paths below are relative to this repository root.
   client; Supabase's app redirect allow list does not configure Google.
   The setup-google-cloud backend helper preserves other Auth configuration and
   adds the local web/desktop redirects. Management credentials stay out of app.
-  Native Google uses PKCE with callback `http://127.0.0.1:8766/auth/callback`.
-  Legacy Google/Gmail settings remain intact. Desktop recovery code entry needs
-  the Supabase Auth recovery template's Token; the relay's Gmail configuration
-  does not configure Supabase Auth SMTP. See MARKETPLACE.md before rollout.
+  Native Google uses PKCE with callback `http://127.0.0.1:8766/auth/callback`
+  across Windows desktop and Android (`OAuthKeepAliveService` `shortService`
+  prevents Android's Cached-Apps Freezer from freezing the `:8766` loopback
+  listener during external Chrome sign-in, parameterless `/auth/callback`
+  reloads and `/auth/done` history replacement prevent stale-tab collisions, and
+  `intent://auth/return#Intent;scheme=com.giaohanggps.gpsdelivery;...` returns
+  Chrome directly to `MainActivity` in `singleTop` mode with
+  `flutter_deeplinking_enabled=false`; iOS declares
+  `com.giaohanggps.gpsdelivery://auth/callback`, also included in
+  `setup-google-cloud.mjs`). Verified hands-free end-to-end on Android `Pixel_10_Pro`
+  on 2026-11-02.
+  Legacy Google/Gmail settings remain intact. When `SMTP_*` is configured in the
+  backend, `setup-google-cloud.mjs` (`./setup-google-cloud.ps1 -Apply`) also syncs
+  Supabase Auth Custom SMTP (`smtp.gmail.com`) and 6-digit OTP templates
+  (`mailer_otp_length: 6`, `{{ .Token }}` in recovery/confirmation HTML) — applied
+  and verified live (`POST /auth/v1/recover` -> `200 OK` + `auth.one_time_tokens`
+  `recovery_token`) on 2026-11-02; Google OAuth URLs pass `prompt=select_account`
+  so browsers always show the account chooser. See MARKETPLACE.md before rollout.
 - Canonical cloud business data uses `delivery_cloud_*`, authenticated backend
   routes, fixed RPCs, and server-side ownership/pricing/state checks. Do not
   expose caller-selected tables/RPCs or move service-role keys into the app.
@@ -110,7 +126,13 @@ All paths below are relative to this repository root.
   unbound commands are retained rather than assigned to the next login. Keep
   persisted command/draft key compatibility so retries do not duplicate orders.
 - Cloud address book, shipping quotes/orders/transitions, and payOS/GHN gateways
-  exist. Cloud shipping supports all five service modes (`standard`, `express`,
+  exist. `CloudOrderForm` selects pickup, dropoff, and intermediate stops directly
+  by tapping the embedded interactive map (`/delivery/reverse`) or searching addresses
+  (`/delivery/places`), with manual latitude/longitude text fields removed; backend
+  `trackasia` (`TRACKASIA_ENABLED`, `TRACKASIA_API_KEY`) and `google_maps`
+  (`GOOGLE_MAPS_ENABLED`, `GOOGLE_MAPS_API_KEY`) are managed server-side proxies covering
+  `/places`, `/reverse`, `/route`, and `/matrix` so Photon and OSRM can both be disabled
+  when running on TrackAsia or Google Maps Platform. Cloud shipping supports all five service modes (`standard`, `express`,
   `saving`, `same_day_2h`, `truck`), volumetric weight (`L*W*H/5000`), multi-stop
   waypoints (`extra_stops`, `+5,000 VND/stop`), round-trip (`+60%`), cargo insurance
   (`declared_value`, `0.5%` clamped `2,000..150,000 VND` up to `30M`), Green Fund
@@ -142,7 +164,7 @@ All paths below are relative to this repository root.
   and schedule slots. Product uploads decode/re-encode to WebP, remove metadata
   and use scoped Supabase Storage inserts; private chat/return/finance attachments
   use the RLS-locked `'delivery-private-evidence'` bucket (`delivery_market_attachments`).
-  Target migration is `20261107_cloud_commercial_suite`, workflow 13. Isolated tests
+  Target migration is `20261108_cloud_logistics`, workflow 14. Isolated tests
   do not certify deployed transactions.
   Quotes optionally bind the client's displayed cart/address versions and reject
   stale data; current Flutter sends both available versions. Confirmation renders
@@ -186,7 +208,19 @@ All paths below are relative to this repository root.
   excludes open/unrefunded returns. See MARKETPLACE.md before commercial use.
 - Additive cloud migrations through `20261107_cloud_commercial_suite.sql`
   (workflow 13, profile schema 3) were applied to the configured Supabase
-  PostgreSQL project on 2026-10-31 (`npm run migrate:cloud`).
+  PostgreSQL project on 2026-10-31, and `20261108_cloud_logistics.sql`
+  (workflow 14) on 2026-11-02 (`npm run migrate:cloud`).
+- `delivery_cloud_logistics(action,payload)` (route `/delivery/cloud/logistics/:action`)
+  owns bulk pickups (`delivery_cloud_pickups`: approved merchant, address-book
+  snapshot, vehicle capacity, slot within 14 days, operator dispatch with version
+  and audit), private recipient trust flags (`delivery_cloud_recipient_flags`,
+  counting only the caller's own shipments), owner delivery instructions
+  (`delivery_cloud_orders.delivery_instruction`, versioned with history), and
+  30-day stats/service ETA derived from transition history. CSV import reuses
+  quote/order creation; stop ordering uses `/delivery/matrix?full=1`.
+  Nhan's merged legacy UC30-UC40 code (`1b98207`) stays SQLite-only at `/legacy`;
+  its seeded marketplace orders, fixed "AI SLA" figures, placeholder share link
+  and invented route/fee factors were removed.
   `MARKET_JOBS_ENABLED=true` is active on the local backend; `payOS`, `GHN`, and
   public non-loopback `PUBLIC_BASE_URL` HTTPS remain unconfigured until real
   merchant credentials and public hosting are supplied. Do not infer live
@@ -218,9 +252,13 @@ Check that services/processes still exist; recorded ports are not live evidence.
 
 - Workspace on this machine: `C:/baiTap_LTDiDongDaNenTang/DoAn_PhatTrienUngDungDiDongDaNenTang`.
 - Flutter: `C:/src/flutter/bin/flutter.bat`; Dart: `C:/src/flutter/bin/dart.bat`.
-- Backend settings: ignored `gps_delivery_app/backend/otp-relay/.integration-config.json`
-  and environment variables. Use the existing configuration loader and database
-  helper. Never print their contents into handoffs or test output.
+- Backend settings: ignored `gps_delivery_app/backend/otp-relay/.integration-config.json`,
+  environment variables, and RLS-locked Cloud PostgreSQL tables
+  (`public.delivery_backend_config` and `public.delivery_backend_config_audit`) for
+  non-bootstrap managed settings when `DATABASE_URL` is configured (`DATABASE_URL`,
+  `DATABASE_CA_CERT`, `SUPABASE_URL`, and `SUPABASE_ANON_KEY` remain local bootstrap
+  keys). Use the existing configuration loader and database helper. Never print
+  their contents into handoffs or test output.
 - Native saved settings: `%LOCALAPPDATA%/GHST/auth-providers.json`.
 - Backend health: `http://127.0.0.1:8787/health`; API base:
   `http://127.0.0.1:8787/delivery/`.
@@ -251,7 +289,8 @@ all non-loopback requests can prevent the UI from loading.
 
 ## Working Tree
 
-At the latest handoff, HEAD was `d78880e` on `main` with extensive staged,
+At the latest handoff, HEAD was `1b98207` on `main` (fast-forwarded to Nhan's
+latest `origin/main` commit on 2026-11-02) with extensive staged,
 unstaged, and untracked implementation. Nhan's earlier feature work has been
 combined with local changes; do not reset or restore files from HEAD to resume.
 Inspect the live tree and diffs. Commit/push only when requested for the current

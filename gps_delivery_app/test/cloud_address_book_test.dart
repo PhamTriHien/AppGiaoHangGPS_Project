@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gps_delivery_app/core/integrations/cloud_orders_service.dart';
 import 'package:gps_delivery_app/core/network/public_json_api.dart';
+import 'package:gps_delivery_app/domain/entities/geo_point.dart';
 import 'package:gps_delivery_app/presentation/screens/cloud_address_book_screen.dart';
 import 'package:gps_delivery_app/presentation/widgets/cloud_order_form.dart';
+import 'package:gps_delivery_app/presentation/widgets/system_state_screens.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -184,15 +186,15 @@ void main() {
         .widgetList<TextFormField>(find.byType(TextFormField))
         .map((field) => field.controller!.text)
         .toList();
+    expect(values, containsAll(['12 Nguyen Hue', 'Nguyen An', '0901234567']));
+    expect(find.widgetWithText(TextFormField, 'Vĩ độ'), findsNothing);
+    expect(find.widgetWithText(TextFormField, 'Kinh độ'), findsNothing);
+    final map = tester.widget<Map3dPerspectiveWidget>(
+      find.byKey(const ValueKey('cloud-order-google-map')),
+    );
     expect(
-      values,
-      containsAll([
-        '12 Nguyen Hue',
-        '10.77',
-        '106.7',
-        'Nguyen An',
-        '0901234567',
-      ]),
+      map.singlePinPoint,
+      equals(const GeoPoint(latitude: 10.77, longitude: 106.7)),
     );
     await finish(tester, api);
   });

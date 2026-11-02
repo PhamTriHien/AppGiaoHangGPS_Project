@@ -4,15 +4,15 @@
 
 # GO-MAU Delivery • Giao Hàng Siêu Tốc (GHST)
 
-**Hệ Thống Ứng Dụng Giao Hàng Định Vị GPS Thời Gian Thực & Siêu Ứng Dụng Đa Dịch Vụ Đa Nền Tảng**
+**Hệ Thống Ứng Dụng Giao Hàng Định Vị GPS Thời Gian Thực & Thương Mại Đa Cửa Hàng Đa Nền Tảng**
 
 [![Flutter](https://img.shields.io/badge/Flutter-3.x_Multi--Platform-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev)
 [![Dart](https://img.shields.io/badge/Dart-%5E3.13.2-0175C2?style=for-the-badge&logo=dart&logoColor=white)](https://dart.dev)
-[![PostGIS](https://img.shields.io/badge/PostgreSQL_16-PostGIS_4326-336791?style=for-the-badge&logo=postgresql&logoColor=white)](database_schema.sql)
-[![Offline First](https://img.shields.io/badge/SQLite_v8-Offline--First-00B14F?style=for-the-badge&logo=sqlite&logoColor=white)](gps_delivery_app/lib/data/datasources/local/sqlite_offline_queue_datasource.dart)
-[![Tests](https://img.shields.io/badge/Automated_Tests-30%2F30_Passing-EE4D2D?style=for-the-badge&logo=checkmarx&logoColor=white)](gps_delivery_app/test/)
+[![Supabase Cloud](https://img.shields.io/badge/Supabase_PostgreSQL-Workflow_v13_RLS-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](gps_delivery_app/database/migrations/)
+[![Offline Queue](https://img.shields.io/badge/SQLite_v9-Scoped_Queue-00B14F?style=for-the-badge&logo=sqlite&logoColor=white)](gps_delivery_app/lib/data/datasources/local/sqlite_offline_queue_datasource.dart)
+[![Tests](https://img.shields.io/badge/Automated_Tests-277_Flutter_%7C_111_Node_%7C_22_PG-EE4D2D?style=for-the-badge&logo=checkmarx&logoColor=white)](gps_delivery_app/test/)
 
-[**Tổng quan**](#-1-tổng-quan-dự-án) · [**Hệ sinh thái tính năng**](#-2-hệ-sinh-thái-tính-năng-nổi-bật) · [**4 Phân hệ nghiệp vụ**](#-3-kiến-trúc-4-phân-hệ-người-dùng) · [**Sơ đồ kiến trúc & FSM**](#-4-kiến-trúc-kỹ-thuật--vòng-đời-đơn-hàng) · [**Thuật toán cốt lõi**](#-5-các-thuật-toán-cốt-lõi-tại-tầng-edge) · [**Cài đặt & Chạy ngay**](#-6-hướng-dẫn-cài-đặt--khởi-chạy) · [**Kiểm thử**](#-7-kiểm-thử-tự-động--đảm-bảo-chất-lượng)
+[**Tổng quan**](#-1-tổng-quan-dự-án) · [**Hệ sinh thái tính năng**](#-2-hệ-sinh-thái-tính-năng-nổi-bật) · [**4 Phân hệ nghiệp vụ**](#-3-kiến-trúc-4-phân-hệ-người-dùng) · [**Kiến trúc & Vòng đời đơn**](#-4-kiến-trúc-kỹ-thuật--vòng-đời-đơn-hàng) · [**Thuật toán cốt lõi**](#-5-các-thuật-toán-cốt-lõi-tại-tầng-edge--server) · [**Cài đặt & Khởi chạy**](#-7-hướng-dẫn-cài-đặt--khởi-chạy) · [**Kiểm thử**](#-8-kiểm-thử-tự-động--kiểm-chứng-thực-tế)
 
 </div>
 
@@ -20,14 +20,14 @@
 
 ## 📌 1. Tổng Quan Dự Án
 
-**GO-MAU Delivery (GHST Express)** là nền tảng giao nhận chặng cuối (*Last-mile Logistics*) kết hợp mô hình siêu ứng dụng (*Super-App*) được phát triển từ một cơ sở mã nguồn **Flutter & Dart** duy nhất cho **Web, Android, iOS và Windows Desktop**.
+**GO-MAU Delivery (GHST Express)** là nền tảng giao nhận chặng cuối (*Last-mile Logistics*) kết hợp sàn thương mại & đặt món đa cửa hàng (*Multi-Shop Marketplace*), phát triển từ một cơ sở mã nguồn **Flutter & Dart** duy nhất cho **Web, Android, iOS và Windows Desktop**, đi kèm cổng **Node.js Backend Gateway** (`backend/otp-relay`) và cơ sở dữ liệu đám mây **Supabase Auth + PostgreSQL (`workflowVersion: 13`)**.
 
-Hệ thống giải quyết trọn vẹn 5 bài toán cốt lõi của giao vận đô thị mật độ cao tại Việt Nam:
-1. **Minh bạch lộ trình & định giá động**: Tự động bóc tách cước theo khoảng cách thực tế, khung giờ cao điểm, thời tiết, vùng hàng rào địa lý (*Geofence*) và mã khuyến mãi.
-2. **Chống nhiễu & gian lận tín hiệu GPS**: Kết hợp bộ lọc **Kalman 2D** làm mượt quỹ đạo giữa nhà cao tầng và bộ kiểm định **3 lớp chống Fake GPS**.
-3. **Vận hành bền bỉ khi mất mạng (*Offline-First*)**: Lưu trữ cục bộ toàn vẹn bằng SQLite / Web `localStorage` kèm hàng đợi đồng bộ **FIFO Idempotency UUIDv4** lên đám mây **Supabase PostgreSQL + PostGIS** khi có mạng trở lại.
-4. **An toàn bàn giao & dòng tiền thu hộ (*COD*)**: Khóa xác nhận giao hàng (**POD**) trong bán kính `<= 100m` kết hợp mã OTP 4 chữ số, tự động hạch toán tỷ lệ **80% Tài xế / 20% Nền tảng** và đối soát công nợ B2B.
-5. **Khởi tạo dữ liệu sạch (*Clean-Start Production*)**: Không nạp sẵn tài khoản ảo, số dư giả hay đơn hàng mẫu khi cài mới; tách biệt hoàn toàn cổng người dùng (`/`) và cổng quản trị viên độc lập (`/admin`).
+Hệ thống giải quyết 5 bài toán cốt lõi của giao vận và thương mại điện tử đô thị:
+1. **Định danh thống nhất & phân quyền server (`Profile Schema 3`)**: Đăng nhập chính bằng **Supabase Auth** (Email/Mật khẩu & Google OAuth PKCE). Một khung giao diện **GHST EXPRESS** duy nhất phục vụ Khách hàng, Chủ shop, Nhân sự shop (`manager`/`staff`) và Tài xế theo quyền đã được server phê duyệt; cổng **Cloud Operator (`/admin`)** tách biệt hoàn toàn.
+2. **Đặt đơn trực tiếp trên bản đồ & định giá phía server**: Người dùng chạm trực tiếp trên bản đồ tương tác hoặc nhập tìm kiếm địa chỉ để ghim điểm lấy `[A]`, điểm giao `[B]` và các điểm dừng trung gian (`#1..#5`) mà không cần nhập tọa độ thủ công; toàn bộ phí vận chuyển, phụ phí, voucher, Flash Sale và xu đều do PostgreSQL tính toán và khóa phiên bản.
+3. **Chống nhiễu & gian lận tín hiệu GPS**: Kết hợp bộ lọc **Kalman 2D**, bộ kiểm định **3 lớp chống Fake GPS** trên thiết bị và chặn bước nhảy vận tốc `<= 120 km/h` phía server PostgreSQL.
+4. **An toàn bàn giao, đối soát bút toán kép & hậu mãi**: Cổng bắt buộc tải ảnh bằng chứng (**POD**) và/hoặc xác thực **mã OTP 6 chữ số của người nhận** khi giao hàng; sổ cái kế toán kép bất biến (`delivery_market_journals` / `delivery_market_ledger`) tách biệt hoàn toàn trạng thái giao hàng với quyết toán COD/trả trước `payOS`, hoàn tiền theo dòng sản phẩm và chi trả shop sau 7 ngày.
+5. **Khởi tạo sạch & cô lập dữ liệu lưu trữ (`/legacy`)**: Không nạp tài khoản ảo, số dư giả hay đơn mẫu; hàng đợi offline SQLite `v9` gắn chặt phạm vi `project + Auth ID + local ID`, giữ các màn hình SQLite cũ độc lập tại `/legacy` và `/legacy-admin` mà không tự động trộn dữ liệu local vào danh tính Cloud.
 
 ### Thông tin Học thuật & Nhóm phát triển
 
@@ -38,22 +38,19 @@ Hệ thống giải quyết trọn vẹn 5 bài toán cốt lõi của giao vậ
 | **Đề tài** | Xây dựng hệ thống ứng dụng giao hàng định vị GPS thời gian thực đa nền tảng |
 | **Giảng viên hướng dẫn** | **Võ Văn Lên** |
 | **Nhóm thực hiện (Nhóm 14)** | **Phạm Trí Hiển** · **Nguyễn Phương Nam** · **Nguyễn Minh Nhân** |
-| **Quy mô nghiệp vụ** | **4 phân hệ độc lập** · **50+ màn hình** · **46+ Use Case** · **18 bảng CSDL không gian** |
+| **Quy mô hệ thống** | **4 phân hệ Cloud + lưu trữ `/legacy`** · **12 bản di trú SQL (`workflowVersion: 13`)** · **35+ bảng RLS Cloud & 18 bảng cục bộ** |
 
 ---
 
 ## 🚀 2. Hệ Sinh Thái Tính Năng Nổi Bật
 
-Bên cạnh lõi giao nhận GPS chuẩn thương mại, dự án tích hợp các mô hình nghiệp vụ hiện đại lấy cảm hứng từ **Grab, Shopee, Xanh SM và Be**:
-
 | Nhóm tính năng | Mô tả kỹ thuật & Nghiệp vụ thực tế |
 | :--- | :--- |
-| ⚡ **Đa gói cước & Ghép đơn 2H**<br>*(GrabExpress / Ahamove)* | Hỗ trợ 5 gói vận chuyển: **Hỏa tốc 30 phút**, **Ghép đơn thông minh 2H** (giảm 25% cước nhờ gom các đơn cùng hướng lệch góc `< 38°`), **Tiêu chuẩn 2h**, **Tiết kiệm 4h** và **Xe tải nhẹ / Van**. |
-| 🗺️ **Giao Đa Điểm & Khứ Hồi**<br>*(Nearest-Neighbor + 2-Opt TSP)* | Cho phép thêm nhiều điểm trả hàng trên cùng một chuyến, tự động sắp xếp lại thứ tự trạm tối ưu để cắt giảm quãng đường vòng, hỗ trợ **quay lại điểm gửi (2 chiều)** và xác nhận hoàn tất từng trạm. |
-| 🍜 **Gợi Ý Ăn Uống Thông Minh**<br>*(GrabFood Discovery & B2B Menu)* | Đề xuất quán ngon quanh vị trí khách theo khung giờ bữa ăn (*Sáng, Trưa, Trà chiều, Tối, Đêm*), tự động gắn nhãn bảo quản lạnh & phụ phí túi giữ nhiệt cho món đá/kem, đồng bộ trực tiếp với trình quản lý thực đơn của Cửa hàng B2B. |
-| 🌱 **Giao Hàng Xanh EV & Quỹ Xanh**<br>*(Xanh SM × GrabEco)* | Tùy chọn ưu tiên tài xế **Xe máy điện không khói (EV)** trong thuật toán điều phối, đo lường lượng phát thải $\text{CO}_2$ tiết kiệm được (`95g/km`) và cho phép đóng góp Quỹ Xanh trồng cây. |
-| 🎡 **Sự Kiện Săn Sale, Vòng Xoay & Hộp Mù**<br>*(Shopee × Grab Gamification)* | Trung tâm săn thưởng gồm **Điểm danh 7 ngày** nhận `GHST Xu`, **Khung Giờ Vàng Flash Sale** (`00:00 / 09:00 / 12:00 / 18:00 / 21:00`), **Nhiệm vụ GrabChallenges**, **Vòng Xoay May Mắn 8 ô** (`CustomPainter` 100% trúng quà) và **Bàn Gacha 6 Hộp Mù Bí Ẩn** phân hạng `R / SR / SSR` cấp Voucher thật dùng ngay cho cả Ship & GrabFood. |
-| 🔗 **Chia Sẻ Hành Trình Trực Tiếp**<br>*(Live Share Tracking + Safety PIN)* | Tạo liên kết theo dõi công khai kèm **mã an toàn 4 chữ số** cho người nhận xem trực tiếp vị trí tài xế, lộ trình nhiều trạm và tiến độ đơn mà không cần đăng nhập tài khoản. |
+| 🗺️ **Chọn & Tìm Địa Chỉ Trực Tiếp Trên Bản Đồ**<br>*(Interactive Map Picker + Reverse Geocode)* | Trên form **Tạo đơn hàng (`CloudOrderForm`)**, người dùng ghim điểm lấy `[A]`, điểm giao `[B]` và tối đa 5 điểm dừng trung gian trực tiếp bằng thao tác chạm trên bản đồ (`/delivery/reverse`), nút `Vị trí hiện tại (GPS)`, hoặc tìm kiếm địa chỉ trực tiếp (`/delivery/places`) kèm xem trước lộ trình thực tế — loại bỏ hoàn toàn việc nhập tay Vĩ độ / Kinh độ. |
+| ⚡ **5 Chế Độ Giao Hàng Cloud & Đa Điểm Dừng** | Hỗ trợ đầy đủ trên PostgreSQL: **Tiêu chuẩn (`standard`)**, **Giao nhanh (`express`)**, **Tiết kiệm 4h (`saving`)**, **Ghép đơn 2H (`same_day_2h`)** và **Xe tải nhẹ (`truck`)**; tính trọng lượng quy đổi `D×R×C / 5000`, đa điểm dừng (`+5.000đ/điểm`), khứ hồi (`+60%`), bảo hiểm khai giá (`0,5%`, kẹp `2.000đ..150.000đ`), ưu tiên xe điện EV (`48g CO₂/km`) và Quỹ Xanh (`+1.000đ`). |
+| 🛍️ **Sàn Đặt Món & Mua Sắm Đa Cửa Hàng (`delivery_market_*`)** | Gian hàng có ảnh bìa, bán kính phục vụ (`service_radius_km`), lịch mở cửa theo múi giờ `Asia/Ho_Chi_Minh`, phân quyền nhân sự (`manager` / `staff`), biến thể đa SKU, nhóm tùy chọn/topping, giỏ hàng khóa phiên bản và đặt mua nguyên tử nhiều cửa hàng cùng lúc (COD hoặc trả trước `payOS`). |
+| 🎟️ **Voucher Ngân Sách, Flash Sale & Ví Xu Server** | Quản lý ngân sách Voucher nền tảng/cửa hàng (`delivery_market_vouchers`), khung giờ & hạn mức Flash Sale nguyên tử (`delivery_market_flash_sales`), và sổ cái Xu phía server (`delivery_market_coin_ledger`: đổi tối đa `20%`, tích `1%` sau quyết toán, tự động thu hồi khi hủy/hoàn). |
+| 🔒 **Xác Thực POD / OTP 6 Số, Tệp Riêng Tư & Tra Cứu `/track`** | Lưu mật khẩu OTP 6 số người nhận trong bảng bảo mật riêng (`delivery_cloud_order_secrets`), đính kèm chứng từ riêng tư (`chat`, `return`, `finance`) vào kho RLS `'delivery-private-evidence'`, tạo link chia sẻ thu hồi được (`SHA-256` token 256-bit tại `/share` & `delivery_cloud_shares`) và tra cứu vận đơn công khai tại `/track` không lộ địa chỉ/SĐT/tiền. |
 
 ---
 
@@ -63,48 +60,44 @@ Bên cạnh lõi giao nhận GPS chuẩn thương mại, dự án tích hợp c�
   <tr>
     <td width="50%" valign="top">
       <img src="gps_delivery_app/assets/icons_3d/scooter_express_3d.png" width="44" align="left" style="margin-right:10px" />
-      <h4>1. Phân hệ Khách hàng (Customer App)</h4>
+      <h4>1. Khách hàng / Người mua (Buyer & Sender)</h4>
       <ul>
-        <li>Đăng ký / Đăng nhập mật khẩu, Google OAuth, OTP.</li>
-        <li>Sổ địa chỉ GPS & ghim vị trí trực tiếp trên bản đồ.</li>
-        <li>Đặt đơn giao hàng đa điểm, đặt món <b>GrabFood</b>, chọn xe điện EV.</li>
-        <li>Đấu trường <b>Flash Sale, Vòng Xoay May Mắn & Hộp Mù Gacha</b>.</li>
-        <li>Theo dõi xe 3D thời gian thực, Chat nội bộ, gọi ẩn số (<code>0912***678</code>), đánh giá 5 sao & gửi khiếu nại có bằng chứng.</li>
+        <li>Đăng ký / Đăng nhập <b>Supabase Auth</b> (Email/Mật khẩu & Google OAuth PKCE trên Web/Windows Desktop).</li>
+        <li>Sổ địa chỉ Cloud (tối đa 25 địa chỉ, khóa phiên bản) & công cụ nhập có xác nhận từ địa chỉ local.</li>
+        <li>Tạo đơn giao hàng chọn trực tiếp & tìm kiếm trên bản đồ, hẹn giờ lấy, khai giá, chọn EV, POD & OTP 6 số.</li>
+        <li>Đặt hàng đa shop, áp dụng Voucher / Flash Sale / Xu server, chat đính kèm ảnh, đổi trả theo dòng SKU và đánh giá sản phẩm / shop / tài xế.</li>
       </ul>
     </td>
     <td width="50%" valign="top">
       <img src="gps_delivery_app/assets/icons_3d/gps_pin_radar_3d.png" width="44" align="left" style="margin-right:10px" />
-      <h4>2. Phân hệ Tài xế (Driver / Shipper App)</h4>
+      <h4>2. Đối tác Tài xế (Approved Driver)</h4>
       <ul>
-        <li>Nộp & duyệt hồ sơ pháp lý điện tử (<b>eKYC</b>, biển số, loại xe Xăng / Điện EV / Xe tải).</li>
-        <li>Gạt <b>Online</b> có kiểm tra ký quỹ tối thiểu <code>200.000đ</code> và toàn vẹn tín hiệu GPS.</li>
-        <li>Nhận cuốc thông minh đếm ngược <code>28 giây</code>, hỗ trợ nhận cuốc nối tiếp & ghép đơn 2H.</li>
-        <li>Bản đồ dẫn đường nghiêng 3D <code>55°</code>, khóa xác nhận POD <code>&lt;= 100m</code> + mã OTP 4 số.</li>
-        <li>Ví thu nhập tự động chia <code>80/20</code>, quản lý tiền thu hộ COD và biểu đồ hiệu suất.</li>
+        <li>Gửi yêu cầu đăng ký đối tác tài xế độc lập ngay trong hồ sơ Cloud, kích hoạt khi Operator phê duyệt.</li>
+        <li>Xem hàng đợi <b>Chờ nhận</b> đã ẩn thông tin nhạy cảm trước khi nhận chuyến; khóa nhận chuyến nguyên tử chống trùng.</li>
+        <li>Thực hiện chu trình <code>Đã đến lấy hàng -> Đã lấy hàng -> Giao thành công</code> kèm tải ảnh POD và nhập mã OTP 6 số từ người nhận.</li>
+        <li>Xử lý giao thất bại có lý do, giao lại, hoàn hàng về người gửi và đề xuất thu tiền COD có chứng từ.</li>
       </ul>
     </td>
   </tr>
   <tr>
     <td width="50%" valign="top">
       <img src="gps_delivery_app/assets/icons_3d/parcel_box_3d.png" width="44" align="left" style="margin-right:10px" />
-      <h4>3. Phân hệ Cửa hàng B2B (Merchant Portal)</h4>
+      <h4>3. Đối tác Cửa hàng & Nhân sự Shop (Merchant & Staff)</h4>
       <ul>
-        <li>Quản lý hồ sơ doanh nghiệp, cấu hình đa kho lấy hàng GPS & Webhook đồng bộ trạng thái.</li>
-        <li>Tạo đơn lẻ hoặc <b>nhập đơn hàng loạt bằng tệp CSV</b> chuẩn RFC-4180 có kiểm lỗi từng dòng.</li>
-        <li>Quản lý <b>Thực đơn Ăn uống Đối tác B2B</b> (món nóng/lạnh, giá bán, tồn kho tức thì).</li>
-        <li>Kết xuất <b>tem vận đơn nhiệt chuẩn A6</b> tích hợp mã vạch <code>Code-128B</code> và mã QR.</li>
-        <li>Đặt lịch xe gom hàng định kỳ, đối soát phiên COD minh bạch và rút tiền về ngân hàng.</li>
+        <li>Quản lý gian hàng, ảnh bìa, bán kính phục vụ, lịch mở cửa và ủy quyền nhân sự (<code>manager</code> / <code>staff</code>).</li>
+        <li>Biên tập sản phẩm đa biến thể SKU, kích thước kiện hàng, nhóm topping, ảnh WebP đã xóa metadata và sổ kiểm toán tồn kho.</li>
+        <li>Xác nhận đơn mua trong hạn 15 phút, bấm <b>Sẵn sàng giao</b> sinh vận đơn nội bộ hoặc <b>tách nhiều kiện hàng</b> (<code>order_shipment_split</code>).</li>
+        <li>Xử lý yêu cầu trả hàng, kiểm định kho (<code>restock</code> / <code>writeoff</code>), phản hồi đánh giá và theo dõi đối soát.</li>
       </ul>
     </td>
     <td width="50%" valign="top">
       <img src="gps_delivery_app/assets/icons_3d/wallet_vault_3d.png" width="44" align="left" style="margin-right:10px" />
-      <h4>4. Cổng Quản trị viên (Admin CMS — <code>/admin</code>)</h4>
+      <h4>4. Cổng Quản trị Cloud Operator (<code>/admin</code>)</h4>
       <ul>
-        <li>Tách biệt hoàn toàn tại đường dẫn <code>/admin</code> (hoặc <code>/#/admin</code>) với luồng <b>Thiết lập Quản trị viên đầu tiên</b>.</li>
-        <li>Dashboard KPI toàn sàn, bản đồ giám sát đội xe trực tuyến & nhật ký kiểm toán (Audit Log).</li>
-        <li>Duyệt hồ sơ eKYC tài xế, gán/điều phối đơn thủ công và xử lý trọng tài khiếu nại đền bù.</li>
-        <li>Cấu hình bảng giá động, vẽ vùng phụ phí đa giác <b>Geofence</b>, phát hành gói <b>Flash Sale Shopee × Grab</b> 1 chạm.</li>
-        <li>Ma trận phân quyền <b>RBAC</b> chi tiết theo vai trò và cấu hình nóng kết nối Cloud / API.</li>
+        <li>Tách biệt hoàn toàn tại <code>/admin</code> (hoặc <code>/#/admin</code>), yêu cầu phiên Supabase có quyền <code>operator</code> từ server.</li>
+        <li>Bảng phân tích <code>admin_analytics</code> thời gian thực (tách bạch GMV ước tính và doanh thu đã quyết toán).</li>
+        <li>Phê duyệt / thu hồi tư cách Merchant & Driver, duyệt gian hàng, kiểm duyệt báo cáo đánh giá vi phạm.</li>
+        <li>Đối soát tài chính phê duyệt chéo 2 người (COD, hoàn tiền, quyết toán shop), quản lý Voucher / Flash Sale, chạy tiến trình <code>market_jobs</code> và cấu hình khóa API phía backend.</li>
       </ul>
     </td>
   </tr>
@@ -114,200 +107,167 @@ Bên cạnh lõi giao nhận GPS chuẩn thương mại, dự án tích hợp c�
 
 ## 🏗️ 4. Kiến Trúc Kỹ Thuật & Vòng Đời Đơn Hàng
 
-### 4.1. Kiến trúc Offline-First & Đồng bộ Đám mây (Cloud-Optional)
+### 4.1. Kiến trúc Cloud-Authoritative & Lưu trữ phân tách
 
 ```mermaid
 flowchart TD
-    subgraph Client["Tầng Giao diện Đa nền tảng (Flutter Web / Mobile / Desktop)"]
-        UserPortal["Cổng Người dùng (/): Khách hàng · Tài xế · Cửa hàng B2B"]
-        AdminPortal["Cổng Quản trị độc lập (/admin & /#/admin): Admin CMS"]
-        Render3D["Bản đồ 3D Pitch 55° · CustomPainter Vòng Xoay · Huy hiệu 3D 60 FPS"]
+    subgraph Client["Ứng dụng Đa nền tảng Flutter (Web / Mobile / Windows Desktop)"]
+        UserShell["Cổng chính (/ & /#/cloud): GhstUserShell (Buyer · Merchant · Staff · Driver)"]
+        AdminPortal["Cổng Quản trị riêng (/admin): AdminPortalScreen (Cloud Operator)"]
+        PublicViews["Tra cứu không cần đăng nhập: /track & /share"]
+        LegacyArchive["Lưu trữ cục bộ biệt lập: /legacy & /legacy-admin (SQLite v9)"]
     end
 
-    subgraph Core["Tầng Nghiệp vụ & Thuật toán Tại Biên (Edge Core)"]
-        StateStore["AppStateStore (Mô-đun hóa trạng thái hợp nhất)"]
-        GpsCore["GeoMath + KalmanGpsFilter 2D + GpsIntegrityValidator 3 lớp"]
-        DispatchCore["SmartDispatchEngine (Bán kính 3-5-8km · 2-Opt TSP · Batching 2H)"]
-        PromoCore["PromoEventGamificationEngine (Flash Sale · Spin Wheel · Blind Box)"]
-        GrabFoodCore["GrabFoodRecommendationEngine (Xếp hạng quán theo bữa & GPS)"]
+    subgraph Gateway["Node.js Backend Gateway (gps_delivery_app/backend/otp-relay)"]
+        AuthGuard["createIdentity (Xác minh Supabase JWT & quyền Operator)"]
+        CloudApi["Routes /delivery/cloud/* · /marketplace/* · /market-ops/* · /tracking/lookup"]
+        GeoProxy["/delivery/places & /reverse (OSM Photon mặc định | Google Places/Geocoding tùy chọn)"]
+        Commerce["payOS Payment Gateway · GHN Carrier Adapter · Market Expiry Worker (15s)"]
     end
 
-    subgraph Infra["Tầng Lưu trữ Quan hệ & Dịch vụ Tích hợp"]
-        LocalEngine["SqliteOfflineQueueDatasource v8 (SQLite FFI / Web localStorage + Hàng đợi FIFO)"]
-        PostgisCloud["Supabase PostgreSQL 16 + PostGIS (SRID 4326 · 8 GIST Index)"]
-        MapFallback["Chuỗi định tuyến 3 tầng: Google Maps -> OSM Nominatim / OSRM -> Haversine"]
-        OtpBackend["Node.js OTP Email Relay (backend/otp-relay/server.mjs)"]
+    subgraph CloudDB["Supabase Auth · PostgreSQL 17 · Storage RLS"]
+        RpcCore["RPC cố định: delivery_cloud_* · delivery_marketplace · delivery_market_operations"]
+        Ledger["Sổ cái bút toán kép · Khóa tồn kho · Kiểm tra POD/OTP 6 số & Vận tốc GPS"]
+        Buckets["Storage: Sản phẩm WebP công khai & 'delivery-private-evidence' riêng tư"]
     end
 
-    UserPortal --> StateStore
-    AdminPortal --> StateStore
-    UserPortal --> Render3D
-    StateStore --> GpsCore
-    StateStore --> DispatchCore
-    StateStore --> PromoCore
-    StateStore --> GrabFoodCore
-    StateStore --> LocalEngine
-    LocalEngine -. "Đồng bộ tự động (Idempotency UUIDv4)" .-> PostgisCloud
-    DispatchCore --> MapFallback
-    StateStore --> OtpBackend
+    UserShell --> CloudApi
+    UserShell --> GeoProxy
+    AdminPortal --> CloudApi
+    PublicViews --> CloudApi
+    CloudApi --> AuthGuard --> RpcCore
+    Commerce --> RpcCore
+    RpcCore --> Ledger
+    RpcCore --> Buckets
 ```
 
-### 4.2. Máy Trạng Thái Hữu Hạn (FSM) 9 Trạng Thái Đơn Hàng
+### 4.2. Chu trình Trạng thái Vận đơn Cloud (`delivery_cloud_orders`)
 
 ```mermaid
 stateDiagram-v2
-    [*] --> DRAFT
-    DRAFT --> SEARCHING: Khách hàng / Cửa hàng xác nhận tạo đơn
-    SEARCHING --> ACCEPTED: Tài xế nhận cuốc (<= 28s) hoặc Admin điều phối
-    SEARCHING --> CANCELLED: Hủy hợp lệ trước khi nhận hàng
-    ACCEPTED --> ARRIVING_PICKUP: Tài xế di chuyển đến điểm lấy
-    ACCEPTED --> CANCELLED: Hủy trước khi lấy kiện hàng
-    ARRIVING_PICKUP --> IN_TRANSIT: Quét nhận kiện hàng thành công
-    IN_TRANSIT --> DELIVERED: Cách điểm giao <= 100m + Đúng OTP 4 số + Ảnh POD
-    IN_TRANSIT --> FAILED: Giao không thành công / Không liên lạc được
-    FAILED --> RETURNING: Lập luồng chuyển hoàn về kho gửi (50% cước hoàn)
+    [*] --> searching: Tạo đơn (Khách / Cửa hàng Sẵn sàng giao)
+    searching --> accepted: Tài xế Nhận chuyến (claim)
+    searching --> cancelled: Hủy trước khi lấy hàng (kèm lý do)
+    accepted --> arrivingPickup: Đã đến lấy hàng (arrive)
+    accepted --> cancelled: Hủy hợp lệ trước khi lấy kiện
+    arrivingPickup --> inTransit: Đã lấy hàng (pickup)
+    inTransit --> delivered: Giao thành công (Đủ ảnh POD + Đúng OTP 6 số)
+    inTransit --> failed: Giao thất bại (bắt buộc nhập lý do)
+    failed --> inTransit: Giao lại (retry)
+    failed --> returning: Hoàn hàng về người gửi (return)
+    returning --> returned: Đã trả hàng cho người gửi (complete_return)
 ```
 
 ---
 
-## 🧠 5. Các Thuật Toán Cốt Lõi Tại Tầng Edge
+## 🧠 5. Các Thuật Toán Cốt Lõi Tại Tầng Edge & Server
 
-1. **Lọc nhiễu tín hiệu vệ tinh Kalman 2D** ([`kalman_gps_filter.dart`](gps_delivery_app/lib/core/gps/kalman_gps_filter.dart))
-   - Triệt tiêu hiện tượng nhảy tọa độ do phản xạ đa đường (*Urban Multipath*) dựa trên phương sai dự đoán $P_{k|k-1} = P_{k-1} + \Delta t \cdot q^2$ ($q = 3.0\text{ m/s}$) và hệ số lợi ích Kalman $K_k$. Tự động tái khởi tạo khi tín hiệu ngắt quãng quá `60 giây`.
-2. **Kiểm định chống gian lận vị trí 3 lớp & Thích ứng Pin** ([`gps_integrity_validator.dart`](gps_delivery_app/lib/core/gps/gps_integrity_validator.dart))
-   - Kiểm tra cờ `isMockFlaggedByOs` của hệ điều hành (`RULE-GEO-01`), chặn bước nhảy vận tốc phi vật lý `> 120 km/h` (`RULE-GEO-02`), đối chiếu chéo gia tốc kế IMU khi di chuyển `> 30 km/h` (`RULE-GEO-03`), và tự động hạ góc nghiêng 3D + giãn chu kỳ ping khi pin dưới `50% / 20% / 10%`.
-3. **Điều phối đa trọng số & Tối ưu lộ trình 2-Opt TSP** ([`smart_dispatch_engine.dart`](gps_delivery_app/lib/core/gps/smart_dispatch_engine.dart))
-   - Quét mở rộng 3 tầng bán kính (`3km -> 5km -> 8km`), chấm điểm tài xế theo khoảng cách (`50%`), điểm sao (`30%`), tỷ lệ nhận chuyến (`20%`) kèm điểm cộng ưu tiên xe máy điện EV.
-   - Giải bài toán giao hàng nhiều điểm dừng bằng khởi tạo **Nearest-Neighbor** kết hợp hoán vị đảo cung **2-Opt** loại bỏ các đoạn đường tự cắt nhau.
-4. **Hàng rào địa lý Ray-Casting & Lượng giác WGS84** ([`geo_math.dart`](gps_delivery_app/lib/core/utils/geo_math.dart))
-   - Kiểm tra điểm nằm trong vùng đa giác phụ phí/cấm giao ngay trên thiết bị với độ phức tạp $O(N)$, kết hợp công thức Haversine và góc phương vị *Bearing* điều khiển hướng xoay mô hình xe 3D.
+1. **Định giá, Khóa phiên bản & Bút toán kép trên PostgreSQL** ([`20261107_cloud_commercial_suite.sql`](gps_delivery_app/database/migrations/20261107_cloud_commercial_suite.sql))
+   - Mọi báo giá vận chuyển và giỏ hàng đều gắn phiên bản dữ liệu (`pricing_version`, `cart_version`, `address_version`, `terms_version`) và thời hạn hiệu lực; sổ cái `delivery_market_ledger` kiểm tra cân bằng Nợ/Có cho từng giao dịch COD, trả trước `payOS`, tài trợ khuyến mãi (`promo_expense`), hoàn tiền và chi trả cửa hàng.
+2. **Lọc nhiễu tín hiệu vệ tinh Kalman 2D** ([`kalman_gps_filter.dart`](gps_delivery_app/lib/core/gps/kalman_gps_filter.dart))
+   - Triệt tiêu hiện tượng nhảy tọa độ do phản xạ đa đường dựa trên phương sai dự đoán $P_{k|k-1} = P_{k-1} + \Delta t \cdot q^2$ ($q = 3.0\text{ m/s}$) và hệ số lợi ích Kalman $K_k$.
+3. **Kiểm định chống gian lận vị trí 3 lớp & Chặn nhảy GPS phía Server** ([`gps_integrity_validator.dart`](gps_delivery_app/lib/core/gps/gps_integrity_validator.dart))
+   - Kiểm tra cờ giả lập hệ điều hành, đối chiếu gia tốc kế IMU trên thiết bị và xác thực khoảng cách/vận tốc `<= 120 km/h` (`<= 30m` khi $\Delta t \le 0$) ngay trong PostgreSQL.
+4. **Điều phối đa trọng số, 2-Opt TSP & Đề xuất VROOM** ([`smart_dispatch_engine.dart`](gps_delivery_app/lib/core/gps/smart_dispatch_engine.dart))
+   - Tối ưu thứ tự trạm giao đa điểm bằng **Nearest-Neighbor + 2-Opt** và hỗ trợ bộ giải phân tuyến đội xe `VROOM` qua OSRM ma trận đường bộ.
 5. **Chuẩn mã hóa thanh toán EMVCo VietQR & Vận đơn Code-128B** ([`security_and_barcode_utils.dart`](gps_delivery_app/lib/core/utils/security_and_barcode_utils.dart))
-   - Sinh chuỗi TLV chuẩn Napas247 kèm mã kiểm tra dư vòng **CRC-16/CCITT-FALSE** (`0x1021`) và vẽ mã vạch tuyến tính chuẩn `Code-128B` trực tiếp trên tem nhiệt A6.
+   - Sinh chuỗi TLV chuẩn Napas247 kèm mã kiểm tra dư vòng **CRC-16/CCITT-FALSE** (`0x1021`) và vẽ mã vạch tuyến tính chuẩn `Code-128B` trên tem nhiệt A6.
 
 ---
 
-## 📂 6. Cấu Trúc Thư Mục Dự Án
+## 📂 6. Cấu Trúc Thư Mục Trọng Tâm
 
 ```text
-AppGiaoHangGPS_Project/
-├── database_schema.sql                       # Lược đồ PostgreSQL 16 + PostGIS (18 bảng, 8 chỉ mục R-Tree GIST)
-├── Bao_Cao_Tieu_Luan_Nhom14.docx             # Báo cáo thuyết minh học phần (Nhóm 14 - TDMU)
+DoAn_PhatTrienUngDungDiDongDaNenTang/
+├── PROJECT_CONTEXT.md                        # Kiến trúc chuẩn, phạm vi phiên bản & vận hành local
+├── WORKLOG.md                                # Nhật ký bàn giao kỹ thuật & bằng chứng kiểm thử
 ├── README.md                                 # Tài liệu tổng quan dự án
-└── gps_delivery_app/                         # Mã nguồn ứng dụng đa nền tảng Flutter
-    ├── assets/icons_3d/                      # Mô hình & biểu tượng 3D Isometric (GLB, BIN, PNG)
-    ├── backend/otp-relay/                    # Dịch vụ Node.js gửi Email OTP qua SMTP cho Flutter Web
-    ├── database/schema.sql                   # Bản sao lược đồ CSDL đồng bộ cùng gói ứng dụng
+├── Bao_Cao_Tieu_Luan_Nhom14.docx             # Báo cáo thuyết minh học phần (Nhóm 14 - TDMU)
+└── gps_delivery_app/                         # Ứng dụng Flutter & Backend Gateway
+    ├── COMMERCIALIZATION_PLAN.md             # Lộ trình thương mại hóa P0–P7
+    ├── EXECUTION_CHECKLIST.md                # Tiến độ thực thi & các cổng nghiệm thu triển khai
+    ├── P0_SYNC_MATRIX.md                     # Ma trận đồng bộ dữ liệu & phân tách Cloud / Legacy
+    ├── backend/otp-relay/                    # Node.js Backend Gateway (Express, PostgreSQL TLS, OCR, Jobs)
+    │   ├── server.mjs                        # Điểm khởi chạy API (:8787) & tiến trình nền market_jobs
+    │   ├── CLOUD_ORDERS.md                   # Đặc tả API & quy trình vận đơn Cloud
+    │   ├── MARKETPLACE.md                    # Đặc tả Marketplace, đối soát kế toán & bộ thương mại v13
+    │   ├── COMMERCE.md                       # Đặc tả tích hợp payOS, GHN & kiểm tra sẵn sàng
+    │   └── INTEGRATIONS.md                   # Quản lý tích hợp tập trung (Photon/Google Maps, OSRM, SMTP, FCM)
+    ├── database/migrations/                  # 12 bản di trú SQL bổ sung (20261027 -> 20261107, workflow 13)
     ├── lib/
-    │   ├── main.dart                         # Điểm khởi chạy & định tuyến tách biệt (/ và /admin)
-    │   ├── core/
-    │   │   ├── gps/                          # Kalman 2D, Anti-Fake GPS, Smart Dispatch, 2-Opt, GrabFood Engine
-    │   │   ├── promotions/                   # Động cơ Gamification Shopee x Grab, Vòng Xoay & Hộp Mù Gacha
-    │   │   ├── services/                     # Dịch vụ xác thực thực tế, Google OAuth & OTP
-    │   │   ├── theme/                        # Hệ thống thiết kế Neo-Brutalist & bảng màu thương hiệu
-    │   │   └── utils/                        # Toán học địa lý WGS84, định dạng tiền tệ, VietQR CRC-16, Code-128B
-    │   ├── domain/                           # Thực thể nghiệp vụ (Entities), Enums & giao diện Repositories
-    │   ├── data/
-    │   │   ├── datasources/local/            # AppStateStore (5 part-files) & SQLite v8 / Web localStorage Engine
-    │   │   ├── datasources/remote/           # Đồng bộ đám mây Supabase PostGIS (EWKT SRID 4326)
-    │   │   └── models/                       # Các bản ghi dữ liệu bất biến & tuần tự hóa JSON/SQL
-    │   └── presentation/
-    │       ├── customer/                     # 14 màn hình Khách hàng + GrabFood + Vòng Xoay & Hộp Mù
-    │       ├── driver/                       # 9 màn hình Tài xế + Dẫn đường 3D + POD OTP + Ví 80/20
-    │       ├── merchant/                     # 12 màn hình Cửa hàng B2B + CSV Batch + Tem A6 + Thực đơn món
-    │       ├── admin/                        # 12 màn hình Quản trị viên CMS + Geofence + RBAC
-    │       ├── screens/                      # Cổng điều hướng chính, Cổng Admin & Trang Live Share công khai
-    │       └── widgets/                      # Bản đồ tương tác 3D, Huy hiệu 3D 60 FPS & Banner Offline Queue
-    └── test/
-        ├── clean_start_test.dart             # Kiểm thử khởi tạo sạch, tách biệt /admin & di trú dữ liệu
-        ├── competitor_features_test.dart     # Kiểm thử GrabFood, 2-Opt TSP, Xanh EV, Vòng Xoay & Hộp Mù
-        ├── widget_test.dart                  # Kiểm thử 22 kịch bản nghiệp vụ liên vai trò & chống tràn 50+ màn hình
-        └── fixtures/                         # Dữ liệu mẫu phục vụ riêng cho môi trường kiểm thử tự động
+    │   ├── main.dart                         # Định tuyến chung phiên Cloud (/, /cloud, /admin, /track, /share, /legacy)
+    │   ├── core/                             # Supabase Auth/OAuth PKCE, CloudAccountSession, GPS, GeoMath
+    │   ├── data/                             # CloudOrdersRepository & SQLite Offline Queue v9
+    │   └── presentation/                     # GhstUserShell, CloudOrderForm (Map Picker), Marketplace, AdminPortal
+    ├── test/                                 # 277 kịch bản kiểm thử đơn vị & Widget đa khung hình
+    └── tool/                                 # Script kiểm chứng PostgreSQL 17 & trình duyệt Playwright/Edge
 ```
 
 ---
 
 ## ⚡ 7. Hướng Dẫn Cài Đặt & Khởi Chạy
 
-### 7.1. Yêu cầu môi trường
-- **Flutter SDK**: `>= 3.13.0` (kèm trình duyệt **Google Chrome** hoặc **Microsoft Edge** nếu chạy bản Web, hoặc Visual Studio C++ workload nếu chạy bản Windows Desktop).
-- Không bắt buộc cài đặt PostgreSQL hay khóa API bên ngoài để chạy thử: chế độ **Offline-First** hoạt động đầy đủ 100% tính năng ngay trên máy cục bộ.
+### 7.1. Khởi chạy Backend Gateway (`http://127.0.0.1:8787`)
 
-### 7.2. Chạy nhanh trên trình duyệt Web (Khuyên dùng)
-
-```powershell
-# 1. Di chuyển vào thư mục mã nguồn Flutter
-cd gps_delivery_app
-
-# 2. Tải các gói thư viện phụ thuộc
-flutter pub get
-
-# 3. Khởi chạy trực tiếp trên Chrome với cổng cố định 8080
-flutter run -d chrome --web-port=8080
-```
-
-> **Mẹo chạy dưới dạng máy chủ Web nền (`web-server`)**:
-> ```powershell
-> flutter run -d web-server --web-hostname=localhost --web-port=8080
-> ```
-
-Sau khi khởi chạy thành công, mở trình duyệt tại 2 địa chỉ độc lập:
-- 📱 **Ứng dụng Khách hàng / Tài xế / Cửa hàng B2B**: `http://localhost:8080/`
-- 🛡️ **Cổng Quản trị viên (Admin CMS)**: `http://localhost:8080/admin` *(hoặc `http://localhost:8080/#/admin` — lần đầu truy cập sẽ mở màn hình **Thiết lập quản trị viên đầu tiên**)*
-
-### 7.3. Cấu hình nâng cao (Tùy chọn: Supabase PostGIS & Gmail OTP Relay)
-
-<details>
-<summary><b>Nhấn để xem hướng dẫn kết nối Cloud Supabase PostGIS & Dịch vụ gửi Email OTP thật</b></summary>
-
-#### A. Khởi tạo CSDL không gian trên Supabase / PostgreSQL 16
-1. Tạo dự án mới trên Supabase (hoặc PostgreSQL 16 cục bộ có bật tiện ích mở rộng `postgis` và `uuid-ossp`).
-2. Mở **SQL Editor** và thực thi toàn bộ nội dung tệp [`database_schema.sql`](database_schema.sql).
-
-#### B. Chạy dịch vụ Node.js gửi Email OTP cho Flutter Web (`backend/otp-relay`)
 ```powershell
 cd gps_delivery_app/backend/otp-relay
-npm install
+npm ci
 Copy-Item .env.example .env
-# Điền SMTP_USER, SMTP_PASS (Gmail App Password 16 ký tự), RELAY_TOKEN vào tệp .env
+# Cấu hình SUPABASE_URL, SUPABASE_ANON_KEY và DATABASE_URL trong .env (hoặc qua trang /#/admin)
+npm run migrate:cloud
 npm start
 ```
 
-#### C. Khởi chạy Flutter kèm biến môi trường `--dart-define`
+Kiểm tra trạng thái dịch vụ: `Invoke-RestMethod http://127.0.0.1:8787/health`
+
+### 7.2. Khởi chạy Ứng dụng Flutter (Web & Windows Desktop)
+
 ```powershell
 cd gps_delivery_app
-flutter run -d chrome --web-port=8080 `
-  --dart-define=SUPABASE_URL=https://your-project.supabase.co `
-  --dart-define=SUPABASE_ANON_KEY=your-anon-key `
-  --dart-define=OTP_EMAIL_WEBHOOK_URL=http://127.0.0.1:8787/otp-email `
-  --dart-define=OTP_EMAIL_WEBHOOK_TOKEN=your-relay-token
+flutter pub get
+
+# Biên dịch bản Web kết nối tới Backend Gateway local
+flutter build web --no-wasm-dry-run --no-web-resources-cdn `
+  --dart-define=DELIVERY_API_BASE_URL=http://127.0.0.1:8787/delivery/
+
+# Hoặc biên dịch bản Windows Desktop Release
+flutter build windows --release `
+  --dart-define=DELIVERY_API_BASE_URL=http://127.0.0.1:8787/delivery/
 ```
 
-</details>
+Các đường dẫn truy cập trên trình duyệt (`http://127.0.0.1:8080/`):
+- 📱 **Ứng dụng chính (Khách hàng / Cửa hàng / Tài xế)**: `http://127.0.0.1:8080/` (hoặc `/#/cloud` mở thẳng mục đơn giao hàng)
+- 🛡️ **Cổng Quản trị Cloud Operator**: `http://127.0.0.1:8080/#/admin`
+- 🔍 **Tra cứu vận đơn công khai**: `http://127.0.0.1:8080/#/track`
+- 🗄️ **Lưu trữ cục bộ SQLite cũ (tách biệt)**: `http://127.0.0.1:8080/#/legacy` và `/#/legacy-admin`
 
 ---
 
-## 🧪 8. Kiểm Thử Tự Động & Đảm Bảo Chất Lượng
+## 🧪 8. Kiểm Thử Tự Động & Kiểm Chứng Thực Tế
 
-Dự án duy trì tiêu chuẩn **0 lỗi phân tích tĩnh** và **30/30 kịch bản kiểm thử tự động đạt 100%**:
+Dự án duy trì kiểm chứng nhiều lớp từ PostgreSQL gốc, Node.js Gateway, Flutter Analyzer/Test đến trình duyệt thực tế:
 
 ```powershell
-cd gps_delivery_app
+# 1. Kiểm thử Backend (111/111 bài kiểm thử SQL/Gateway/Security) & PostgreSQL 17 độc lập (22/22 nhóm)
+cd gps_delivery_app/backend/otp-relay
+npm test
+npm run test:postgres
 
-# Phân tích mã nguồn tĩnh theo chuẩn flutter_lints 6.0
-flutter analyze
+# 2. Phân tích tĩnh (0 lỗi) & 277 kịch bản kiểm thử Flutter
+cd ../..
+flutter analyze --no-pub
+flutter test --no-pub
 
-# Chạy toàn bộ 30 kịch bản kiểm thử đơn vị, nghiệp vụ liên vai trò & giao diện đa khung hình
-flutter test --reporter compact
-
-# Biên dịch bản phát hành Web Production
-flutter build web
+# 3. Kiểm thử trình duyệt hồi quy đa khung hình (360px & 1440px)
+node tool/check-cloud-browser.cjs
+node tool/check-marketplace-browser.cjs
+node tool/check-admin-browser.cjs
+node tool/check-full-ui-acceptance.cjs
 ```
 
-| Bộ kiểm thử | Nội dung xác minh trọng tâm |
-| :--- | :--- |
-| [`clean_start_test.dart`](gps_delivery_app/test/clean_start_test.dart) | Đảm bảo CSDL khởi tạo mới sạch 100% (0 đơn ảo, 0 số dư mẫu), tách biệt hoàn toàn vai trò người dùng với cổng `/admin`, và bảo toàn dữ liệu thật qua cơ chế di trú `remove_demo_v1`. |
-| [`competitor_features_test.dart`](gps_delivery_app/test/competitor_features_test.dart) | Kiểm thử chuyên sâu định tuyến đa điểm `2-Opt TSP`, ghép đơn `2H`, ưu tiên xe điện `EV` & giảm phát thải $\text{CO}_2$, gợi ý ăn uống `GrabFood`, cùng toàn bộ luồng **Flash Sale, Điểm danh 7 ngày, Vòng Xoay May Mắn & Hộp Mù Gacha**. |
-| [`widget_test.dart`](gps_delivery_app/test/widget_test.dart) | Kiểm toán 22 bộ quy tắc nghiệp vụ (Kalman 2D, chống Fake GPS, ký quỹ `200k`, chia doanh thu `80/20`, khóa bán kính POD `100m`, đối soát COD, CSV RFC-4180, PostGIS EWKT) và quét chống tràn giao diện (`RenderFlex = 0`) trên toàn bộ **50+ màn hình** từ Mobile `360x800` đến Desktop `1920x1080`. |
+- **Kiểm thử cô lập & Hồi quy giao diện**: `22/22` nhóm PostgreSQL 17 gốc, `111/111` bài test Node backend, `0` lỗi phân tích tĩnh, `277` bài test Flutter và `62` ảnh chụp nghiệm thu giao diện đa vai trò (`build/verification/acceptance/`).
+- **Kiểm thử thực chiến Zero-Mock trên Cloud thật (`2026-11-01`)**: Đã xác minh luồng đa vai trò trực tiếp trên Microsoft Edge + Backend `:8787` + Supabase Auth/PostgreSQL thật (`buyer`, `merchant`, `driver`, `operator`, `/#/track`, chọn & tìm địa chỉ trực tiếp trên bản đồ không nhập tọa độ tay, xác thực OTP 6 số khi giao và khôi phục nguyên trạng CSDL sau kiểm thử tại `build/verification/live-e2e/live-e2e-report.json`).
+- **Giới hạn trước mở bán thương mại**: Các nhà cung cấp bên thứ ba (`payOS`, `GHN`, FCM) và tên miền `PUBLIC_BASE_URL` HTTPS công khai cần được cấp khóa thật và nghiệm thu trên thiết bị vật lý độc lập theo [`EXECUTION_CHECKLIST.md`](gps_delivery_app/EXECUTION_CHECKLIST.md).
 
 ---
 

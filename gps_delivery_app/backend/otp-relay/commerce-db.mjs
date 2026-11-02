@@ -11,7 +11,8 @@ export function createCommerceDatabase(env = process.env) {
     const options = databaseConnectionOptions(env);
     if (pool) pool.end().catch(() => {});
     pool = new pg.Pool({ ...options,
-      max: 4, connectionTimeoutMillis: 15000, query_timeout: 10000, idleTimeoutMillis: 10000 });
+      max: 4, connectionTimeoutMillis: 15000, query_timeout: 10000, idleTimeoutMillis: 10000, keepAlive: true });
+    pool.on('error', () => {});
     source = revision;
     return pool;
   }

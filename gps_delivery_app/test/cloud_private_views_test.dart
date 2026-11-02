@@ -6,6 +6,7 @@ import 'package:gps_delivery_app/core/integrations/cloud_account_session.dart';
 import 'package:gps_delivery_app/core/integrations/cloud_orders_service.dart';
 import 'package:gps_delivery_app/core/integrations/cloud_session_lease.dart';
 import 'package:gps_delivery_app/core/network/public_json_api.dart';
+import 'package:gps_delivery_app/domain/entities/geo_point.dart';
 import 'package:gps_delivery_app/main.dart';
 import 'package:gps_delivery_app/presentation/screens/cloud_address_book_screen.dart';
 import 'package:gps_delivery_app/presentation/screens/cloud_orders_screen.dart';
@@ -14,6 +15,7 @@ import 'package:gps_delivery_app/presentation/widgets/cloud_commerce_dialog.dart
 import 'package:gps_delivery_app/presentation/widgets/cloud_order_form.dart';
 import 'package:gps_delivery_app/presentation/widgets/cloud_profile_form.dart';
 import 'package:gps_delivery_app/presentation/widgets/cloud_session_boundary.dart';
+import 'package:gps_delivery_app/presentation/widgets/system_state_screens.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -165,22 +167,30 @@ void main() {
   Future<void> fillOrder(WidgetTester tester) async {
     for (final entry in <int, String>{
       0: '12 Nguyen Hue',
-      1: '10.77',
-      2: '106.7',
-      3: '20 Le Loi',
-      4: '10.78',
-      5: '106.71',
-      6: 'Private recipient',
-      7: '0912345678',
-      8: 'Private documents',
-      9: '1',
-      10: '100000',
+      1: '20 Le Loi',
+      2: 'Private recipient',
+      3: '0912345678',
+      4: 'Private documents',
+      5: '1',
+      6: '100000',
     }.entries) {
       await tester.enterText(
         find.byType(TextFormField).at(entry.key),
         entry.value,
       );
     }
+    tester
+        .widget<Map3dPerspectiveWidget>(
+          find.byKey(const ValueKey('cloud-order-google-map')),
+        )
+        .onTapGeoPoint!(const GeoPoint(latitude: 10.77, longitude: 106.7));
+    await tester.pump();
+    tester
+        .widget<Map3dPerspectiveWidget>(
+          find.byKey(const ValueKey('cloud-order-google-map')),
+        )
+        .onTapGeoPoint!(const GeoPoint(latitude: 10.78, longitude: 106.71));
+    await tester.pump();
   }
 
   Session fixtureAuthSession() => Session(

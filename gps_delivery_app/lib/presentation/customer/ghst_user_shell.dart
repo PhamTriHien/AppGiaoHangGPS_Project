@@ -12,6 +12,7 @@ enum GhstUserSection {
   profile,
   notifications,
   tracking,
+  aiAssistant,
   workspace,
   merchantOrders,
 }
@@ -29,6 +30,7 @@ class GhstUserShell extends StatelessWidget {
     required this.onLogout,
     required this.name,
     this.onDriverOrders,
+    this.floatingOverlay,
     this.address = '',
     this.merchant = false,
     this.driver = false,
@@ -36,6 +38,7 @@ class GhstUserShell extends StatelessWidget {
 
   final GhstUserSection section;
   final Widget child;
+  final Widget? floatingOverlay;
   final ValueChanged<GhstUserSection> onNavigate;
   final VoidCallback onCreateOrder, onAddresses, onCart, onLogout;
   final VoidCallback? onDriverOrders;
@@ -50,6 +53,7 @@ class GhstUserShell extends StatelessWidget {
     GhstUserSection.profile => 'Hồ sơ cá nhân',
     GhstUserSection.notifications => 'Trung tâm thông báo',
     GhstUserSection.tracking => 'Theo dõi hành trình',
+    GhstUserSection.aiAssistant => 'Trợ lý AI',
     GhstUserSection.workspace => 'Cửa hàng của tôi',
     GhstUserSection.merchantOrders => 'Đơn của cửa hàng',
   };
@@ -59,6 +63,7 @@ class GhstUserShell extends StatelessWidget {
     GhstUserSection.shipping => 1,
     GhstUserSection.food => 2,
     GhstUserSection.orders || GhstUserSection.tracking => 3,
+    GhstUserSection.aiAssistant => -1,
     _ => 4,
   };
 
@@ -99,6 +104,7 @@ class GhstUserShell extends StatelessWidget {
                   ),
                 ],
               ),
+              ?floatingOverlay,
             ],
           ),
         ),
@@ -203,6 +209,11 @@ class GhstUserShell extends StatelessWidget {
                       Icons.restaurant_menu_rounded,
                       'Ăn uống & Mua sắm',
                       GhstUserSection.food,
+                    ),
+                    item(
+                      Icons.auto_awesome_outlined,
+                      'Trợ lý AI',
+                      GhstUserSection.aiAssistant,
                     ),
                   ]),
                   group('ĐƠN HÀNG & BẢN ĐỒ', [
@@ -367,6 +378,17 @@ class GhstUserShell extends StatelessWidget {
               icon: const Icon(Icons.add_box_outlined),
             ),
           IconButton(
+            key: const ValueKey('ghst-header-ai'),
+            tooltip: 'Trợ lý AI',
+            onPressed: () => onNavigate(GhstUserSection.aiAssistant),
+            icon: Icon(
+              Icons.auto_awesome_outlined,
+              color: section == GhstUserSection.aiAssistant
+                  ? AppColors.violet
+                  : AppColors.ink,
+            ),
+          ),
+          IconButton(
             tooltip: 'Giỏ hàng',
             onPressed: onCart,
             icon: const Icon(Icons.shopping_cart_outlined),
@@ -434,6 +456,7 @@ class GhstUserShell extends StatelessWidget {
       children: [
         if (section == GhstUserSection.notifications ||
             section == GhstUserSection.tracking ||
+            section == GhstUserSection.aiAssistant ||
             section == GhstUserSection.workspace ||
             section == GhstUserSection.merchantOrders)
           IconButton(
@@ -486,7 +509,21 @@ class GhstUserShell extends StatelessWidget {
           ),
         ),
         IconButton(
+          key: const ValueKey('ghst-mobile-header-ai'),
+          tooltip: 'Trợ lý AI',
+          visualDensity: VisualDensity.compact,
+          onPressed: () => onNavigate(GhstUserSection.aiAssistant),
+          icon: Icon(
+            Icons.auto_awesome_outlined,
+            color: section == GhstUserSection.aiAssistant
+                ? AppColors.acid
+                : Colors.white,
+            size: 20,
+          ),
+        ),
+        IconButton(
           tooltip: 'Giỏ hàng',
+          visualDensity: VisualDensity.compact,
           onPressed: onCart,
           icon: const Icon(
             Icons.shopping_cart_outlined,
@@ -496,6 +533,7 @@ class GhstUserShell extends StatelessWidget {
         ),
         IconButton(
           tooltip: 'Trung tâm thông báo',
+          visualDensity: VisualDensity.compact,
           onPressed: () => onNavigate(GhstUserSection.notifications),
           icon: const Icon(
             Icons.notifications_none_rounded,

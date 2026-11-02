@@ -188,7 +188,7 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
         '${_order['id']}',
       );
       if (!mounted || !_allowed) return;
-      final otp = '${res['recipient_otp'] ?? ''}';
+      final otp = '${res['otp_code'] ?? res['recipient_otp'] ?? ''}'.trim();
       await showDialog<void>(
         context: context,
         builder: (_) => CloudSessionBoundary(
@@ -631,6 +631,10 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
                         'Khai giá bảo hiểm': _money(_details['declared_value']),
                       if ((_details['buyer_note'] as String? ?? '').isNotEmpty)
                         'Ghi chú': '${_details['buyer_note']}',
+                      if ((_order['delivery_instruction'] as String? ?? '')
+                          .isNotEmpty)
+                        'Chỉ dẫn giao hàng':
+                            '${_order['delivery_instruction']}',
                     }),
                     const Divider(height: 32),
                     _section('Cước và thu hộ', {

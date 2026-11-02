@@ -2,12 +2,12 @@
 
 ## Central backend management
 
-Open `http://127.0.0.1:8080/#/admin`, sign in to the separate admin portal,
+Open `http://127.0.0.1:8080/#/admin`, sign in to the separate Cloud Operator portal,
 then select **API & Dich vu** in the sidebar. **Tai khoan cloud** shows the
 Supabase project, email, Auth UUID and installation ID. Web admin calls require
 a real Supabase operator session. Native local management accepts the private
-relay token only on loopback. A SQLite admin login does not grant a cloud role.
-The old RBAC screen links to this single management page.
+relay token only on loopback. A SQLite admin login (`/legacy-admin`) does not
+grant a cloud role.
 
 **Quan ly API backend** loads metadata for the managed providers. Each service
 has its own save, enable toggle and connection check. Secret fields are masked,
@@ -19,16 +19,24 @@ reports the real result. Checks do not send SMS, charge cards or create orders.
 
 Run `npm run setup:central` once to copy existing native Google/SMTP/SMS settings
 into the backend without overwriting values already present. Google/Gmail are
-preserved. Admin changes are persisted by atomic file replacement in the ignored
-`.integration-config.json` and loaded after `.env` on restart. That file is private
-plaintext, not an encrypted vault: restrict Windows ACLs or Unix ownership to the
+preserved. When `DATABASE_URL` is configured and migrated (`20261107_cloud_commercial_suite`),
+all non-bootstrap managed settings and audit entries are persisted to RLS-locked
+Cloud PostgreSQL tables (`public.delivery_backend_config` and
+`public.delivery_backend_config_audit`, with zero `public`/`anon`/`authenticated`
+PostgREST privileges), loaded authoritatively on server startup, and synchronized
+live across backend instances (`syncIntegrationConfig` immediately on
+`GET /admin/integrations`, `GET /integrations`, and `POST /admin/integrations/test/:provider`,
+plus a 5-second cached refresh on `/delivery/*`), while
+bootstrap/trust keys (`DATABASE_URL`, `DATABASE_CA_CERT`, `SUPABASE_URL`,
+`SUPABASE_ANON_KEY`) remain local to the backend host alongside `.integration-config.json`.
+That local file is private plaintext, not an encrypted vault: restrict Windows ACLs or Unix ownership to the
 backend service account and protect backups. `.integration-audit.log` needs normal
 log retention. Supabase identity URL/public-key changes are local-only to prevent
 a remote operator replacing the authentication trust source. Reconfigure the
 client and sign in again when switching projects.
 
-**Trien khai backend** also stores DATABASE_URL as a masked operator-managed secret and
-PUBLIC_BASE_URL for provider callbacks. Native Admin on loopback uses the local
+**Trien khai backend** also stores `DATABASE_URL` as a masked operator-managed secret and
+`PUBLIC_BASE_URL` for provider callbacks. Native Admin on loopback uses the local
 relay identity for backend management even with a cloud session active. Web and
 remote Admin require a verified Supabase operator to edit the database connection
 or apply confirmed migrations. **San sang trien khai** checks catalog state and
@@ -37,68 +45,88 @@ Admin displays the connected backend address so local and remote configuration
 are distinguishable. SMTP App Password, database and provider credentials are
 saved on that backend, never returned to Flutter or copied to a different server.
 
-For a cloud host, bootstrap SUPABASE_URL and SUPABASE_ANON_KEY in the host's
+For a cloud host, bootstrap `SUPABASE_URL` and `SUPABASE_ANON_KEY` in the host's
 private environment and provision the first operator using SQL Editor as below.
-The server then starts without RELAY_TOKEN: cloud Admin uses Supabase sessions.
-RELAY_TOKEN is only for native loopback management, is never exposed in the Admin
-API and must not be sent to a remote host. Infrastructure deployment still needs
-to happen once outside the app; Admin configures an already running backend.
-Mount persistent storage and set INTEGRATION_CONFIG_PATH to a file there before
-editing cloud settings. Without it, an ephemeral host discards file changes on
-restart/redeploy. Keep existing configuration privately when migrating servers;
-do not commit secret files. SMTP also requires a host that allows SMTP egress.
+The server then starts without `RELAY_TOKEN`: cloud Admin uses Supabase sessions.
+`RELAY_TOKEN` is only for native loopback management, is never exposed in the Admin
+API and must not be sent to a remote host. Mount persistent storage and set
+`INTEGRATION_CONFIG_PATH` to a file there before editing cloud settings.
 
-App delivery calls now go through authenticated backend routes:
+App delivery calls go through authenticated backend routes:
 
 | Route under `/delivery` | Purpose |
 | --- | --- |
-| `GET /places`, `GET /reverse` | Managed Photon lookup |
-| `GET /route`, `GET /matrix` | OSRM road routing and ETA |
+| `GET /places`, `GET /reverse` | Managed TrackAsia / Google Maps / Photon address lookup & reverse geocoding |
+| `GET /route`, `GET /matrix` | Managed TrackAsia / Google Routes API / OSRM road routing and ETA; `matrix?full=1` returns the all-pairs table used to order intermediate stops |
 | `GET /banks`, `GET /weather` | VietQR directory and MET forecast |
-| `POST /ocr`, `/optimize`, `/support-summary` | OCR, VROOM and Gemini |
+| `POST /ocr`, `/optimize`, `/support-summary` | OCR, VROOM and Operator AI summary (`GEMINI_BASE_URL` + `GEMINI_API_KEY`) |
+| `POST /cloud/ai-chat`, `POST /ai/chat` | Authenticated customer AI chatbot using backend-managed `GEMINI_BASE_URL`, `GEMINI_API_KEY` and `GEMINI_MODEL` (supports both Google Gemini `:generateContent` and OpenAI-compatible `/chat/completions`, with read-only RLS-scoped customer order context) |
 | `GET /admin/integrations` | Masked provider metadata |
 | `POST /admin/integrations/config` | Save validated configuration |
 | `POST /admin/integrations/test/:provider` | Bounded connectivity checks |
 | `GET /admin/integrations/audit` | Last 30 configuration changes |
 | `GET /admin/integrations/usage` | Process-lifetime outbound HTTP counters |
-| `GET /admin/integrations/readiness` | Schema, privacy, permissions and provider prerequisites |
+| `GET /admin/integrations/readiness` | Schema (`workflowVersion: 13`), worker, privacy, permissions and provider prerequisites |
 | `POST /admin/integrations/migrate-cloud` | Confirmed operator schema upgrade |
 | `GET /admin/ghn/provinces`, `POST /admin/ghn/quote` | GHN legacy catalogue and fee preview |
 | `POST /admin/search` | Search existing Meilisearch orders/merchants/drivers indexes |
 | `/local-auth/config`, `/local-auth/google/exchange` | Private desktop Google settings and PKCE exchange |
 | `/local-auth/sms`, `/local-auth/sms/verify` | Private SMS adapters / Twilio Verify |
 
-Provider secrets and SMTP/SMS/Google token exchange run on the server. Google
-authorization still opens the system browser. Supabase Auth/Realtime/private
-Storage SDK connections and map tiles still use their native client protocols
-and access controls; they are not arbitrary proxies through the backend.
+Provider secrets and SMTP/SMS/Google token exchange run on the server. `createIdentity`
+verifies Supabase bearer tokens in parallel with `delivery_api_profiles`, caches
+verified claims briefly (20s), and preserves upstream connectivity/rate-limit errors
+as `502`/`429` rather than `401` so transient network glitches do not invalidate
+active client sessions. On Windows/PPPoE networks, `database-connection.mjs` uses
+an IPv4-first DNS resolver (`1.1.1.1`, `8.8.8.8` plus system IPv4), fastest-IP
+TCP `:443` probing, and classical TLS 1.3 ECDH curves (`X25519:prime256v1:secp384r1`)
+to prevent Post-Quantum `ClientHello` fragmentation over 1492-byte MTU links.
 
-SMS supports TextBee, eSMS, SpeedSMS and Twilio with fixed upstream URLs. SMS
-acceptance is not handset delivery confirmation. Legacy client-issued OTP and
-local account verification remain a local compatibility flow, not cloud login.
-Do not expose these local-auth/OTP routes publicly or embed the relay token in a
-web build. Desktop Google adds state and S256 PKCE; it has not been exercised with
-a real interactive Google login in automated checks. OAuth client redirect must
-allow `http://127.0.0.1:8765/oauth2callback`.
+### TrackAsia, Photon & optional Google Maps Platform proxy (`trackasia` / `google_maps`)
+
+- **TrackAsia Maps Vietnam (`TRACKASIA_ENABLED=true`)**: When `TRACKASIA_API_KEY` is
+  configured in backend `.env` or Admin **Quan ly API backend**, `/delivery/places`
+  proxies to `maps.track-asia.com/api/v1/autocomplete` (with `api/v2/place/textsearch/json`
+  fallback and Vietnam coordinate focus), `/delivery/reverse` proxies to
+  `api/v2/geocode/json`, `/delivery/route` proxies to `route/v1/car`, and
+  `/delivery/matrix` proxies to `distance-matrix/v1/car` — allowing both
+  `PHOTON_ENABLED=false` and `OSRM_ENABLED=false` with zero credit-card requirement
+  and zero client-side key exposure.
+- **OpenStreetMap fallback (`TRACKASIA_ENABLED=false`, `GOOGLE_MAPS_ENABLED=false`)**: `/delivery/places` and `/delivery/reverse`
+  query OpenStreetMap / Photon with required `User-Agent: GHSTDelivery/1.0`,
+  Vietnam location bias, shared caching and lookup rate limiting. Set an owned
+  `PHOTON_BASE_URL` and `PHOTON_AUTOCOMPLETE=true` for high-volume production typing
+  suggestions.
+- **Optional server-side Google Maps proxy (`GOOGLE_MAPS_ENABLED=true`)**: When
+  `GOOGLE_MAPS_API_KEY` is configured in backend `.env` or Admin **Quan ly API backend**,
+  `/delivery/places` proxies to **Places API (New)** (`places:searchText` with
+  explicit `X-Goog-FieldMask`, `regionCode: 'VN'`, `languageCode: 'vi'`),
+  `/delivery/reverse` proxies to **Geocoding API**, and `/delivery/route` +
+  `/delivery/matrix` proxy to **Routes API** (`directions/v2:computeRoutes` and
+  `distanceMatrix/v2:computeRouteMatrix`) without exposing the API key to the
+  browser/app — allowing `PHOTON_ENABLED=false` and `OSRM_ENABLED=false` when
+  running exclusively on Google Maps Platform. Restrict `GOOGLE_MAPS_API_KEY` by
+  server IP and limit API access strictly to Places API (New), Geocoding API, and
+  Routes API, and review Google Maps Platform Terms of Service / Prohibited
+  Territories (including regional applicability for Vietnam) before enabling in
+  commercial production.
+
+### Other managed providers
+
+SMS supports TextBee, eSMS, SpeedSMS and Twilio with fixed upstream URLs. Legacy
+client-issued OTP and local account verification remain a `/legacy` compatibility
+flow, not cloud login. Native Supabase Google OAuth PKCE uses callback
+`http://127.0.0.1:8766/auth/callback` (while legacy local Google uses
+`http://127.0.0.1:8765/oauth2callback`).
 
 GHN defaults to staging. Cloud-order shipment preview, creation, refresh,
-cancellation and callbacks now have a durable backend workflow supporting
-two-level address names. payOS links, signed receipts and reconciliation also
-operate on cloud orders; see [COMMERCE.md](COMMERCE.md) for database, credentials,
-HTTPS callbacks and operating limits. The older catalogue/quote endpoints still
-use district/ward codes. Meilisearch requires server-curated indexes; automatic
-indexing is not implemented. MoMo/VNPAY remain unavailable adapters. No payment
-is reported successful from configuration alone.
+cancellation and callbacks have a durable backend workflow supporting two-level
+address names. `payOS` links, signed receipts and reconciliation operate on both
+standalone cloud orders and prepaid multi-shop purchases; see [COMMERCE.md](COMMERCE.md).
 
 `node build-local-web.mjs` builds web with only public Supabase settings and the
 local backend URL. Never add provider keys or `RELAY_TOKEN` as Dart defines.
-`npm run configure:desktop` updates native connection settings; restart the
-desktop app to reload public backend auth policy. Provider saves take effect
-without restarting Node. Client public catalogue caches may remain visible until
-their normal expiry; the backend checks enable flags before its own cache.
-
-The complete setup, provider limits, SQL migration, security boundaries and live
-verification commands are documented here. The short version for local Windows:
+`npm run configure:desktop` updates native connection settings.
 
 ```powershell
 npm ci
@@ -108,110 +136,41 @@ npm start
 node check-integrations.mjs ../../build/verification/ocr-label.png
 ```
 
-`setup:integrations` preserves the existing Gmail/Google configuration, downloads
-the Vietnamese and English OCR models, and configures manual Photon lookup. OCR is
-limited to one in-memory PNG/JPEG job at a time, 5 MB and 16 megapixels; recognized
-fields are shown for confirmation before being copied into an order.
+`setup:integrations` preserves existing Gmail/Google configuration, downloads
+Vietnamese/English OCR models, and configures Photon lookup. OCR is limited to
+one in-memory PNG/JPEG job at a time (5 MB, 16 megapixels); recognized fields
+require user confirmation before copying into an order.
 
-The customer and merchant order screens now include Photon address lookup and OCR
-label scanning. Live order connection adds order-scoped Supabase Realtime events,
-chat/status/GPS synchronization, private delivery evidence storage and optional
-FCM notifications. The SQL migration is
-`database/migrations/20261027_delivery_integrations.sql`. This integration migration can run on its own;
-do not deploy the legacy business schema with real data before adding RLS and
-removing public password-hash access. It enables RLS, membership checks, immutable event validation and private
-evidence storage. Local SQLite accounts are not automatically Supabase Auth users.
-Create cloud users, mark the first operator in `delivery_api_profiles`, then grant
-each order member from Admin > API & Dich vu. No public or anon event access is enabled.
-
-VROOM is an optional self-hosted route proposal service. Configure `VROOM_BASE_URL`
-only after running the official Docker image with an owned OSRM/Valhalla/ORS router.
-The UI proposes routes for at most 30 waiting orders and 10 idle verified drivers;
-it does not silently assign them. Docker installation was attempted on this host
-but Windows rejected the administrator installer step, so VROOM is not running here.
-
-Turnstile, Firebase FCM, Telegram and Gemini are optional. Their secrets stay in
-the backend `.env` and are shown as unavailable until configured. FCM is not enabled
-for Windows. Gemini support summaries require a redacted operator-reviewed request
-and never authorize refunds. Telegram is restricted to internal failed/returning
-order alerts. Turnstile protects OTP relay requests only.
+VROOM is an optional self-hosted route proposal service (`VROOM_BASE_URL`)
+proposing routes for at most 30 waiting orders and 10 idle verified drivers.
+Turnstile, Firebase FCM, Telegram and Gemini remain optional server-managed
+providers; unconfigured providers report unavailable rather than fabricating data.
 
 Provider references: [Supabase Realtime](https://supabase.com/docs/reference/dart/stream),
 [Firebase Cloud Messaging](https://firebase.google.com/docs/cloud-messaging/flutter/get-started),
 [Photon](https://github.com/komoot/photon),
+[Google Maps Platform Terms](https://cloud.google.com/maps-platform/terms),
 [VROOM Docker](https://github.com/VROOM-Project/vroom-docker),
 [Turnstile validation](https://developers.cloudflare.com/turnstile/get-started/server-side-validation/),
 [Gemini pricing](https://ai.google.dev/gemini-api/docs/pricing).
 
-## Cloud configuration
+## Cloud configuration & push webhooks
 
-The new account/transactional order workflow is documented in
-[CLOUD_ORDERS.md](CLOUD_ORDERS.md). Install its additional migration before using
-the cloud order screens. The legacy integration below remains for device-local
-orders connected to manually provisioned event rooms.
+The transactional Cloud order and Marketplace workflows are documented in
+[CLOUD_ORDERS.md](CLOUD_ORDERS.md) and [MARKETPLACE.md](MARKETPLACE.md).
 
-Set `SUPABASE_URL` and the public `SUPABASE_ANON_KEY` in `.env`, then run
-`npm run configure:desktop`. Create real Supabase Auth email/password users.
-Bootstrap the first cloud operator in SQL Editor with the actual Auth UUID:
+For push notifications, supply actual platform configuration through FlutterFire,
+set `GOOGLE_APPLICATION_CREDENTIALS` to the server Firebase service-account JSON
+path, and set `SUPABASE_SERVICE_ROLE_KEY` plus `DELIVERY_WEBHOOK_SECRET` in
+backend `.env` only. Configure Supabase Database Webhooks to POST to the public
+HTTPS endpoints `/delivery/order-webhook` (`delivery_live_events`) and
+`/delivery/market-notification-webhook` (`delivery_market_notifications`) using
+`Authorization: Bearer <DELIVERY_WEBHOOK_SECRET>`. Webhook recipients are
+re-read from Supabase and sanitized so private chat text and customer addresses
+are never transmitted in push payloads.
 
-```sql
-insert into public.delivery_api_profiles(user_id,role)
-values ('00000000-0000-0000-0000-000000000000','operator')
-on conflict(user_id) do update set role='operator';
-```
+## Validation
 
-Sign into this cloud account in Admin > API & Dich vu > Tai khoan cloud. Grant the
-real tracking code and participant Auth UUID a customer/merchant/driver role.
-Open the corresponding order on each device and connect its cloud session.
-The integration currently synchronizes events for orders already on the device;
-it does not yet provide cloud order creation or complete database migration.
-GPS is limited to one recent hardware fix per 15 seconds. The event query loads
-the most recent 100 records per order. Failed cloud chat sends remain local and
-are marked as unsent; automatic offline chat retries are not implemented.
-Status events do not execute settlement or refund accounting.
-
-For push, supply actual platform configuration through FlutterFire, and set
-`GOOGLE_APPLICATION_CREDENTIALS` to the absolute path of the server Firebase
-service-account JSON. Also set `SUPABASE_SERVICE_ROLE_KEY` and a random
-`DELIVERY_WEBHOOK_SECRET` in backend `.env` only. Configure a Supabase Database
-Webhook on INSERT into `delivery_live_events`, POST to the public HTTPS endpoint
-`/delivery/order-webhook`, using `Authorization: Bearer <DELIVERY_WEBHOOK_SECRET>`.
-Supabase cloud cannot reach this computer's localhost. Webhook recipients are
-resolved from actual room membership, never from caller-supplied tokens.
-Retry deduplication is in-memory for 24 hours and at most 500 tokens are processed
-per event; persistent deduplication and larger broadcast batches need further work.
-
-For Turnstile, set real `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`,
-`TURNSTILE_HOSTNAME`, `PUBLIC_BASE_URL`, then `TURNSTILE_ENFORCE_OTP=true`.
-The app opens a system-browser challenge, checks a short-lived session and submits
-a single-use grant. Server verification checks the hostname and `otp` action.
-For Telegram, set an authorized internal `TELEGRAM_CHAT_ID`, `TELEGRAM_BOT_TOKEN`,
-and `TELEGRAM_ALERTS_ENABLED=true`. Tests and setup never send Telegram messages.
-For Gemini, set `GEMINI_API_KEY` and an available free-tier `GEMINI_MODEL`.
-The operator must remove names/addresses from the preview; automatic masking only
-covers emails and phone patterns. Free-tier content may improve Google's products.
-
-## Operating limits
-
-The backend binds to loopback by default. Local desktop integration calls accept
-the existing relay token from loopback only; remote integration requests require
-Supabase authentication and operator roles from server-controlled profiles.
-The legacy SMTP route still requires its relay token and must stay private until
-OTP issuance and verification are migrated to server-owned sessions.
-
-Photon's public demo is for limited manual development use, with shared caching
-and lookup rate limiting. Set an owned `PHOTON_BASE_URL` and explicitly enable
-`PHOTON_AUTOCOMPLETE=true` for typing suggestions. Public demo availability is not
-guaranteed. There are no paid credentials or unlimited-production assumptions.
-
-The VROOM screen displays proposals with conservative 30 kg motorbike / 500 kg
-truck-or-van capacity and pickup-before-delivery constraints. It uses car routing,
-not live traffic. The HTTP adapter supports delivery time windows, but this UI
-does not yet expose shift/window editors or apply multiple active assignments.
-
-Run `npm test` and `npm audit` for backend checks; run
-`flutter test test/advanced_delivery_api_test.dart` for API/UI checks.
-The migration and RLS rules are exercised with PGlite PostgreSQL, including an
-outsider, customer, driver and operator, invalid state transitions and private
-evidence. Actual Supabase websocket connectivity and device push delivery still
-require real project credentials and have not been validated live on this machine.
+Run `npm test` (`118/118`), `npm run test:postgres` (`22/22`) and `npm audit` for
+backend checks; run `flutter analyze --no-pub` and `flutter test --no-pub` (`280+`
+passed) for Flutter API/UI checks.

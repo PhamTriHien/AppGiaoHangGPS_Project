@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gps_delivery_app/data/datasources/local/app_state_store.dart';
 import 'package:gps_delivery_app/data/datasources/local/sqlite_offline_queue_datasource.dart';
 import 'package:gps_delivery_app/domain/entities/geo_point.dart';
+import 'package:gps_delivery_app/domain/enums/service_type.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -46,16 +47,47 @@ void main() {
     expect(wh1.isPrimary, isTrue);
     expect(store.setPrimaryMerchantWarehouse(wh2.id), isTrue);
     expect(
-      store.merchantPersonalWarehouses.singleWhere((w) => w.id == wh2.id).isPrimary,
+      store.merchantPersonalWarehouses
+          .singleWhere((w) => w.id == wh2.id)
+          .isPrimary,
       isTrue,
     );
 
-    // 2. Pillar 1b: Omnichannel sync (Shopee Mall & TikTok Shop, idempotent deduplication)
-    final shopeeCodes = store.syncMarketplaceOrders('Shopee Mall');
-    expect(shopeeCodes.length, 2);
-    expect(store.syncMarketplaceOrders('Shopee Mall'), isEmpty);
-    final tiktokCodes = store.syncMarketplaceOrders('TikTok Shop');
-    expect(tiktokCodes.length, 2);
+    // 2. Shop orders created through the regular local order flow
+    final shopCodes = [
+      for (final (address, point) in const [
+        (
+          '215 Điện Biên Phủ, Quận Bình Thạnh, TP. HCM',
+          GeoPoint(latitude: 10.7990, longitude: 106.7090),
+        ),
+        (
+          '68 Nguyễn Huệ, Quận 1, TP. HCM',
+          GeoPoint(latitude: 10.7740, longitude: 106.7030),
+        ),
+        (
+          '190 Pasteur, Quận 3, TP. HCM',
+          GeoPoint(latitude: 10.7800, longitude: 106.6950),
+        ),
+      ])
+        store
+            .createNewOrder(
+              pickupAddress: wh2.address,
+              dropoffAddress: address,
+              recipientName: 'Người nhận kiểm thử',
+              recipientPhone: '0903556677',
+              packageDescription: 'Kiện kiểm thử ghép tuyến',
+              weightKg: 1.5,
+              dimensionsCm: '30 x 20 x 15 cm',
+              serviceType: DeliveryServiceType.standard,
+              codAmount: 0,
+              paymentMethod: 'Người gửi trả phí',
+              isFragileTag: false,
+              customCustomerName: mer.storeName,
+              customPickupLocation: wh2.location,
+              customDropoffLocation: point,
+            )
+            .trackingCode,
+    ];
 
     // 3. Pillar 1: CRM Recipient Trust Score & Blacklist Flagging
     const testPhone = '0903556677';
@@ -67,25 +99,33 @@ void main() {
     expect(afterFlag.isHighRisk, isTrue);
 
     // 4. Pillar 2: Multi-stop 2-Opt TSP Route Optimization
-    final plan = store.applyMultiStopRouteOptimization();
+    final plan = store.applyMultiStopRouteOptimization()!;
     expect(plan.orderedStops.length, greaterThanOrEqualTo(3));
-    expect(plan.optimizedDistanceMeters, lessThanOrEqualTo(plan.naiveDistanceMeters));
+    expect(
+      plan.optimizedDistanceMeters,
+      lessThanOrEqualTo(plan.inputOrderDistanceMeters),
+    );
     expect(store.isMultiStopRouteActive, isTrue);
 
-    // 5. Pillar 3: AI SLA & Operations Insights
-    final aiInsights = store.aiOperationsInsights;
-    expect(aiInsights.predictedSlaOnTimePercent, inInclusiveRange(78.0, 100.0));
-    expect(aiInsights.actionRecommendations, isNotEmpty);
-
-    // 6. Pillar 4: Customer 1-tap Quick Delivery Instruction synced to Driver
-    final firstOrderCode = shopeeCodes.first;
+    // 5. Pillar 4: Customer 1-tap Quick Delivery Instruction synced to Driver
+    final firstOrderCode = shopCodes.first;
     store.setQuickDeliveryInstruction(firstOrderCode, 'Gửi lễ tân tầng trệt');
     expect(
       store.quickDeliveryInstructionFor(firstOrderCode),
       'Gửi lễ tân tầng trệt',
     );
 
-    // 7. UC36 Scheduled Bulk Pickup + Admin Driver Dispatch
+    // 6. UC36 Scheduled Bulk Pickup + Admin Driver Dispatch
+    expect(
+      store.createScheduledPickupRequest(
+        warehouseId: 'WH-UNKNOWN',
+        vehicleType: 'Xe tải van 500kg',
+        timeSlot: '14:00 - 16:00 (Ca chiều)',
+        packageCount: 25,
+        totalWeightKg: 48.5,
+      ),
+      isNull,
+    );
     final pickupReq = store.createScheduledPickupRequest(
       warehouseId: wh2.id,
       vehicleType: 'Xe tải van 500kg',
@@ -93,7 +133,8 @@ void main() {
       packageCount: 25,
       totalWeightKg: 48.5,
       note: 'Hàng gốm dễ vỡ đóng thùng gỗ',
-    );
+    )!;
+    expect(pickupReq.warehouseName, wh2.name);
     expect(pickupReq.id, startsWith('PKP-'));
     final drv = DriverApplicantRecord(
       id: 'DRV-PKP-01',
@@ -118,4 +159,3 @@ void main() {
     expect(pickupReq.assignedDriverName, 'Nguyễn Văn Tài');
   });
 }
-

@@ -12,6 +12,7 @@ import '../../data/repositories/cloud_orders_repository.dart';
 import '../widgets/cloud_order_form.dart';
 import '../widgets/cloud_pricing_dialog.dart';
 import '../widgets/cloud_commerce_dialog.dart';
+import '../widgets/cloud_logistics_panels.dart';
 import '../widgets/cloud_profile_form.dart';
 import '../widgets/cloud_membership_panel.dart';
 import '../widgets/cloud_membership_decision_dialog.dart';
@@ -19,6 +20,7 @@ import '../widgets/cloud_session_boundary.dart';
 import '../widgets/cloud_order_labels.dart';
 import 'cloud_address_book_screen.dart';
 import 'cloud_order_details_screen.dart';
+import 'cloud_pickup_screen.dart';
 import 'marketplace_view.dart';
 import 'market_order_services_screen.dart';
 
@@ -749,6 +751,11 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
           ),
           if (order['cancel_reason'] != null)
             Text('Lý do hủy: ${order['cancel_reason']}'),
+          if ('${order['delivery_instruction'] ?? ''}'.isNotEmpty)
+            Text(
+              'Chỉ dẫn giao: ${order['delivery_instruction']}',
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -780,6 +787,17 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
                   onPressed: _busy ? null : () => _history(order),
                   icon: const Icon(Icons.receipt_long_outlined),
                   label: const Text('Chi tiết'),
+                ),
+              if (!_queue &&
+                  !carrier &&
+                  order['owner_id'] == _api.userId &&
+                  CloudDeliveryInstructionButton.editableStatuses.contains(
+                    status,
+                  ))
+                CloudDeliveryInstructionButton(
+                  service: _api,
+                  order: order,
+                  onUpdated: () => unawaited(_load()),
                 ),
             ],
           ),
@@ -1316,6 +1334,26 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
                         onPressed: _busy ? null : _create,
                         icon: const Icon(Icons.add),
                         label: const Text('Tạo đơn hàng'),
+                      ),
+                    if (_operator || _session.hasRole('driver'))
+                      IconButton(
+                        tooltip: 'Lịch xe thu gom',
+                        onPressed: _busy
+                            ? null
+                            : () => openCloudPickups(
+                                context,
+                                _session,
+                                operator: _operator,
+                              ),
+                        icon: const Icon(Icons.local_shipping_outlined),
+                      ),
+                    if (!widget.admin && _session.hasRole('driver'))
+                      IconButton(
+                        tooltip: 'Thống kê giao hàng',
+                        onPressed: _busy
+                            ? null
+                            : () => openCloudDeliveryStats(context, _session),
+                        icon: const Icon(Icons.insights_outlined),
                       ),
                     if (_session.hasRole('driver'))
                       SegmentedButton<bool>(

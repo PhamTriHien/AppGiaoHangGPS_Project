@@ -221,16 +221,19 @@ void main() {
         await tester.ensureVisible(field);
         await tester.enterText(field, entry.value);
       }
-      for (final entry in {
-        'Vĩ độ': ['10.77', '10.78'],
-        'Kinh độ': ['106.7', '106.71'],
-      }.entries) {
-        for (var i = 0; i < 2; i++) {
-          final field = find.widgetWithText(TextFormField, entry.key).at(i);
-          await tester.ensureVisible(field);
-          await tester.enterText(field, entry.value[i]);
-        }
-      }
+      expect(find.widgetWithText(TextFormField, 'Vĩ độ'), findsNothing);
+      expect(find.widgetWithText(TextFormField, 'Kinh độ'), findsNothing);
+      final orderMap = tester.widget<Map3dPerspectiveWidget>(
+        find.byKey(const ValueKey('cloud-order-google-map')),
+      );
+      orderMap.onTapGeoPoint!(const GeoPoint(latitude: 10.77, longitude: 106.7));
+      await tester.pumpAndSettle();
+      tester
+          .widget<Map3dPerspectiveWidget>(
+            find.byKey(const ValueKey('cloud-order-google-map')),
+          )
+          .onTapGeoPoint!(const GeoPoint(latitude: 10.78, longitude: 106.71));
+      await tester.pumpAndSettle();
       await tester.testTextInput.receiveAction(TextInputAction.done);
       await tester.pumpAndSettle();
       await tester.ensureVisible(find.widgetWithText(FilledButton, 'Lấy báo giá'));

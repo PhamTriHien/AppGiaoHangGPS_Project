@@ -93,7 +93,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
         Builder(
           builder: (context) {
             final multiPlan = _store.computeMultiStopPlanForWarehouse();
-            if (multiPlan.orderedStops.length < 2) {
+            if (multiPlan == null || multiPlan.orderedStops.length < 2) {
               return const SizedBox.shrink();
             }
             return Container(
@@ -123,7 +123,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        'Quãng đường tối ưu: ${(multiPlan.optimizedDistanceMeters / 1000).toStringAsFixed(1)} km (giảm ${multiPlan.savedPercent.toStringAsFixed(1)}%) • Ước tính tiết kiệm ~${multiPlan.savedFeeVnd.toStringAsFixed(0)}đ phí ship',
+                        'Quãng đường tối ưu: ${(multiPlan.optimizedDistanceMeters / 1000).toStringAsFixed(1)} km (giảm ${multiPlan.savedPercent.toStringAsFixed(1)}% so với thứ tự hiện tại)',
                         style: const TextStyle(
                           fontSize: 11.5,
                           color: Color(0xFF047857),
@@ -139,6 +139,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                     ),
                     onPressed: () {
                       final applied = _store.applyMultiStopRouteOptimization();
+                      if (applied == null) return;
                       final seq = applied.orderedStops
                           .map((o) => o.trackingCode)
                           .join(' → ');
@@ -713,17 +714,29 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                     );
                     return;
                   }
-                  final qty = int.tryParse(_pickupQtyCtrl.text.trim()) ?? 10;
-                  final weight =
-                      double.tryParse(_pickupWeightCtrl.text.trim()) ?? 20.0;
-                  final created = _store.createScheduledPickupRequest(
-                    warehouseId: selectedWh?.id ?? '',
-                    vehicleType: _pickupVehicleType,
-                    timeSlot: _pickupTimeSlot,
-                    packageCount: qty,
-                    totalWeightKg: weight,
-                    note: _pickupNoteCtrl.text,
-                  );
+                  final qty = int.tryParse(_pickupQtyCtrl.text.trim());
+                  final weight = double.tryParse(_pickupWeightCtrl.text.trim());
+                  final created = qty == null || weight == null
+                      ? null
+                      : _store.createScheduledPickupRequest(
+                          warehouseId: selectedWh?.id ?? '',
+                          vehicleType: _pickupVehicleType,
+                          timeSlot: _pickupTimeSlot,
+                          packageCount: qty,
+                          totalWeightKg: weight,
+                          note: _pickupNoteCtrl.text,
+                        );
+                  if (created == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        backgroundColor: AppColors.danger,
+                        content: Text(
+                          'Chọn kho đã đăng ký và nhập số kiện, khối lượng lớn hơn 0.',
+                        ),
+                      ),
+                    );
+                    return;
+                  }
                   _pickupNoteCtrl.clear();
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -1916,68 +1929,6 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
             ],
           ),
           const SizedBox(height: 12),
-          Builder(
-            builder: (context) {
-              final aiReport = _store.merchantAiInsights;
-              return Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF5F3FF),
-                  border: Border.all(color: const Color(0xFF5B33E6)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Wrap(
-                      alignment: WrapAlignment.spaceBetween,
-                      spacing: 10,
-                      runSpacing: 4,
-                      children: [
-                        Text(
-                          'Trợ lý AI Dự báo SLA: ${aiReport.predictedSlaOnTimePercent.toStringAsFixed(1)}% đúng hẹn',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 13,
-                            color: Color(0xFF5B33E6),
-                          ),
-                        ),
-                        Text(
-                          'Điểm nóng: ${aiReport.hotspotZoneName}',
-                          style: const TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF4A4754),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      aiReport.peakWindowAdvice,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    ...aiReport.actionRecommendations.take(2).map(
-                      (tip) => Padding(
-                        padding: const EdgeInsets.only(bottom: 3),
-                        child: Text(
-                          '• $tip',
-                          style: const TextStyle(
-                            fontSize: 11.5,
-                            color: Color(0xFF4A4754),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
           const SizedBox(height: 12),
           LayoutBuilder(
             builder: (context, kpiConstraints) {

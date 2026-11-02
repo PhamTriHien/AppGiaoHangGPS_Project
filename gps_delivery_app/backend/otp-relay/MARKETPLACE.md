@@ -159,7 +159,8 @@ the public tracking RPC exposes a separately whitelisted projection.
   after 24 hours and can be revoked. Up to five active links per order. The public
   projection contains shop name, workflow/delivery status and timestamps only;
   no recipient details, amount, GPS, OTP or proof files. PUBLIC_APP_URL optionally
-  produces an HTTPS app link at /#/share?token=...; /track remains legacy.
+  produces an HTTPS app link at `/#/share?token=...`, while `/#/track` provides
+  public Cloud shipping lookup (`delivery_cloud_public_lookup` + `delivery_cloud_shares`).
 - Operator financial/dispute lists use timestamp+ID pagination. Per-order financial
   and return requests are capped at 100; active share reads are bounded. These are
   initial operational policies to review before accepting commercial transactions.
@@ -182,11 +183,15 @@ The native PKCE callback is `http://127.0.0.1:8766/auth/callback`; add this exac
 redirect to the project's allowed redirects. Web Google returns to the site root.
 No native Google client secret or provider token is used as a Supabase identity.
 
-Password recovery uses Supabase email recovery, not the legacy relay OTP. Configure
-the Auth recovery template to include `{{ .Token }}` for code entry in the desktop
-form; web recovery links must use a correctly configured Site URL/redirect. Gmail
-SMTP settings saved in the relay do not configure Supabase Auth SMTP automatically.
-Real recovery email delivery and Google login have not been certified here.
+Password recovery uses Supabase email recovery (`verifyOTP` with `OtpType.recovery`),
+not the legacy relay OTP. When saved backend `SMTP_*` settings are enabled,
+`setup-google-cloud.mjs` (`./setup-google-cloud.ps1 -Apply`) synchronizes Supabase
+Auth Custom SMTP (`smtp_host`, `smtp_port`, `smtp_user`, `smtp_pass`, `smtp_admin_email`)
+and 6-digit OTP templates (`mailer_otp_length: 6`, `{{ .Token }}` in recovery and
+confirmation templates) — applied and verified live (`POST /auth/v1/recover` -> `200 OK`)
+on 2026-11-02. Editing `SMTP_*` in the relay alone still requires rerunning
+`./setup-google-cloud.ps1 -Apply` (or updating Supabase Dashboard SMTP) to push changes
+to Supabase Auth.
 
 `npm run setup:google-cloud -- --check` reads public provider status and reports
 whether the saved backend/native Google fields exist, without printing secrets.
@@ -220,14 +225,17 @@ The Google Web client's authorized callback must include the hosted project's
 `marketplace.test.mjs`, `market-operations.test.mjs`, and `commercial-suite.test.mjs`
 exercise SQL/RPC permissions, stale prices, replay, multi-shop rollback, prepaid
 double-entry capture, split shipments, POD/OTP gates, vouchers/flash sales/coins,
-and HTTP boundaries (108/108 backend tests passing). `postgres-acceptance.mjs`
-(`npm run test:postgres`) verifies 22/22 native PostgreSQL 17 checks including
+and HTTP boundaries (`111/111` backend tests passing). `postgres-acceptance.mjs`
+(`npm run test:postgres`) verifies `22/22` native PostgreSQL 17 checks including
 concurrent stock/checkout/claim/import and Storage/table RLS privacy without
 touching saved cloud credentials. Flutter static analysis (`0` issues) and widget/
-unit suites (`274` passed, `1` optional external skip) use isolated fixtures;
-production records are untouched.
+unit suites (`277` passed, `1` optional external skip) use isolated fixtures, and
+on `2026-11-01` a zero-mock single-host browser E2E run verified live `buyer`,
+`merchant`, `driver`, `operator` (`/#/admin`), and `/#/track` workflows against
+Supabase Auth + PostgreSQL before restoring the exact pre-test DB baseline
+(`build/verification/live-e2e/live-e2e-report.json`).
 
 Still required before commercial launch: configure real `payOS`, `GHN`, FCM and
-public non-loopback `PUBLIC_BASE_URL` HTTPS credentials, run live two-device
-Auth/checkout/provider webhook acceptance, execute backup/restore drills, and
-complete controlled pilot sign-off.
+public non-loopback `PUBLIC_BASE_URL` HTTPS credentials, run physical multi-device
+Auth/checkout/provider webhook acceptance over HTTPS, execute backup/restore drills,
+and complete controlled pilot sign-off.
