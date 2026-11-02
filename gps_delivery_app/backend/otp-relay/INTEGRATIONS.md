@@ -10,8 +10,10 @@ relay token only on loopback. A SQLite admin login (`/legacy-admin`) does not
 grant a cloud role.
 
 **Quan ly API backend** loads metadata for the managed providers. Each service
-has its own save, enable toggle and connection check. Secret fields are masked,
-never returned by the API, and cleared from the input after a successful save.
+has its own save, enable toggle and connection check. Secret fields never return
+raw values; configured secrets expose only a one-way `maskedValue` preview (such as
+`••••••••••••4x9A` for API keys >= 12 chars or `postgresql://••••••••@host/db` for
+`DATABASE_URL`) and clear the input after a successful save.
 Leaving a secret blank preserves it; the delete icon schedules an explicit clear.
 History records actor, timestamp and changed field names, never their values.
 Configured/enabled does not mean a connection has been verified; the last check

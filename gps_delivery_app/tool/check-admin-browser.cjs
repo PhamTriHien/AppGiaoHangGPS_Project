@@ -100,6 +100,26 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(process.
             },
           });
         }
+        if (pathname === '/delivery/cloud/logistics/stats') {
+          return route.fulfill({
+            headers: cors,
+            json: {
+              scope: 'network',
+              summary: {
+                total: 12,
+                delivered: 7,
+                failed_or_returned: 1,
+                cancelled: 0,
+                active: 4,
+                avg_delivery_minutes: 34,
+                avg_transit_minutes: 21,
+                by_service: [{ service_type: 'express', total: 7, delivered: 7, avg_delivery_minutes: 28 }],
+              },
+              pickups: { requested: 1, assigned: 2 },
+              drivers: { approved: 3, on_trip: 1 },
+            },
+          });
+        }
         if (pathname === '/delivery/cloud/marketplace/workspace') {
           return route.fulfill({
             headers: cors,
@@ -185,7 +205,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(process.
                   enabled: true,
                   fields: [
                     { key: 'SMTP_HOST', label: 'SMTP host', value: 'smtp.gmail.com', type: 'text', secret: false, configured: true },
-                    { key: 'SMTP_PASS', label: 'App Password', secret: true, configured: true, type: 'text' },
+                    { key: 'SMTP_PASS', label: 'App Password', secret: true, configured: true, maskedValue: '••••••••••••abcd', type: 'text' },
                     { key: 'SMTP_ENABLED', label: 'Cho phép backend sử dụng', value: 'true', type: 'boolean' },
                   ],
                 },

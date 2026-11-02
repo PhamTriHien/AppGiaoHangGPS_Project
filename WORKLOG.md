@@ -1,5 +1,14 @@
 # Current Handoff
 
+## One-Way Masked Secret Previews in Backend Admin (`9883eeb`) - 2026-11-03
+
+- Added safe one-way masked secret previews (`maskedValue`) so Cloud Operators clearly see which secret API keys are saved in `/#/admin` -> `Tích hợp` without ever returning raw secret values over the network:
+  - `gps_delivery_app/backend/otp-relay/integration-config.mjs` (`maskSecretValue`, `integrationStatus`) & `INTEGRATIONS.md`: omits `value` for all `secret: true` fields while returning `maskedValue` (`••••••••••••` + last 4 chars for secrets `>= 12` chars, `••••••••••` + last 2 chars for `8..11` chars, `••••••••` with 0 chars exposed for `< 8` chars, and `postgresql://••••••••@host:port/db` for `DATABASE_URL`).
+  - `gps_delivery_app/lib/presentation/widgets/backend_integration_settings.dart`: displays `maskedValue` directly inside `InputDecoration.hintText` with `FloatingLabelBehavior.always` while keeping `controller.text` empty (preserving `obscureText: true` and leave-blank-to-preserve semantics).
+  - Updated `gps_delivery_app/backend/otp-relay/delivery-integrations.test.mjs`, `gps_delivery_app/test/backend_integration_settings_test.dart`, and `gps_delivery_app/tool/check-admin-browser.cjs` (including `/delivery/cloud/logistics/stats` fixture for `_AdminAnalyticsPanel`).
+- Checks run: `npm test` (`119/119` passed), `flutter analyze --no-pub` (`0` issues), `flutter test --no-pub test/backend_integration_settings_test.dart` (`5/5` passed), `node tool/check-admin-browser.cjs` (`2/2` at `1440px` & `360px`, `errors: 0`), portable Web Admin deployed to `origin/backend-admin` (`9883eeb`) and verified `live` on Render (`dep-dbkcedlg1s2s738v8pb0`, `/health` `200`, `/admin` `200`), restarted local `:8787` + `:8080`, rebuilt & relaunched Windows Desktop (`gps_delivery_app.exe`, `SessionId: 1`) and Android Emulator (`Pixel_10_Pro` `emulator-5554`), and ran `graphify update .` (`5452` nodes, `8779` edges).
+- Remaining limits & next step: Configure `GEMINI_*` / `PAYOS_*` / `GHN_*` / `FCM` credentials in `/#/admin` -> `Tích hợp` when ready and run live two-device + signed webhook acceptance per `EXECUTION_CHECKLIST.md`.
+
 ## Merge Nhan `1b98207` & Cloud Logistics Suite (`20261108_cloud_logistics`, workflow 14) - 2026-11-02
 
 - Fast-forwarded `main` to Nhan's latest `origin/main` commit `1b98207` (UC30-UC40 legacy merchant workflows, 2 report `.docx`); no file overlapped the uncommitted working tree.

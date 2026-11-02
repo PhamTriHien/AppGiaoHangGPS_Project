@@ -263,6 +263,7 @@ class _BackendIntegrationSettingsState
         field['secret'] == true &&
         field['configured'] == true &&
         !_clear.contains(key);
+    final maskedPreview = field['maskedValue']?.toString().trim();
     return Padding(
       padding: const EdgeInsets.only(bottom: 12, top: 4),
       child: TextField(
@@ -294,7 +295,9 @@ class _BackendIntegrationSettingsState
                     : 'Khóa bảo mật đã lưu tại backend — để trống nếu giữ nguyên')
               : null,
           hintText: field['secret'] == true && field['configured'] == true
-              ? 'Đã lưu tại backend'
+              ? (maskedPreview != null && maskedPreview.isNotEmpty
+                    ? maskedPreview
+                    : 'Đã lưu tại backend')
               : null,
           suffixIcon: enabled && field['configured'] == true
               ? IconButton(

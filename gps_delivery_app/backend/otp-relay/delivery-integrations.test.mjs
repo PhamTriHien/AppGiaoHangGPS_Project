@@ -7,7 +7,7 @@ import express from 'express';
 import { PGlite } from '@electric-sql/pglite';
 import { buildOptimization, coordinate, createDeliveryIntegrations, createIdentity,
   extractLabelFields, IntegrationError, operatorOnly, providerJson } from './delivery-integrations.mjs';
-import { loadIntegrationConfig, testIntegration, updateIntegrationConfig } from './integration-config.mjs';
+import { loadIntegrationConfig, maskSecretValue, testIntegration, updateIntegrationConfig } from './integration-config.mjs';
 import { createCloudOrders } from './cloud-orders.mjs';
 import { createTurnstile } from './turnstile.mjs';
 import { createNotificationRouter } from './delivery-notifications.mjs';
@@ -139,6 +139,13 @@ test('Admin integration config persists backend values without returning secrets
   const tokenField = body.providers.ghn.fields.find(field => field.key === 'GHN_TOKEN');
   assert.equal(tokenField.configured, true);
   assert.equal(Object.prototype.hasOwnProperty.call(tokenField, 'value'), false);
+  assert.equal(tokenField.maskedValue, '••••••••••••oken');
+  assert.equal(maskSecretValue('short6'), '••••••••');
+  assert.equal(maskSecretValue('medium89'), '••••••••••89');
+  assert.equal(
+    maskSecretValue('postgresql://postgres:private-db-password@db.example:5432/postgres', 'DATABASE_URL'),
+    'postgresql://••••••••@db.example:5432/postgres',
+  );
   const persisted = JSON.parse(await readFile(env.INTEGRATION_CONFIG_PATH, 'utf8'));
   assert.equal(persisted.GHN_TOKEN, 'ghn-secret-token');
   assert.equal((await app.get('/admin/integrations')).status, 200);

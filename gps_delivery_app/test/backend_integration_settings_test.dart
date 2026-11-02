@@ -250,7 +250,10 @@ void main() {
                   as Map<String, dynamic>;
           final fields = (p['fields'] as List).cast<Map<String, dynamic>>();
           if (values['GOOGLE_MAPS_API_KEY']?.toString().isNotEmpty == true) {
+            final raw = values['GOOGLE_MAPS_API_KEY'].toString();
             fields[0]['configured'] = true;
+            fields[0]['maskedValue'] =
+                '••••••••••••${raw.substring(raw.length - 4)}';
             p['configured'] = true;
           }
           if (values['GOOGLE_MAPS_ENABLED'] != null) {
@@ -311,6 +314,11 @@ void main() {
         tester.widget<TextField>(keyInput).decoration?.floatingLabelBehavior,
         FloatingLabelBehavior.always,
       );
+      expect(
+        tester.widget<TextField>(keyInput).decoration?.hintText,
+        '••••••••••••dKey',
+      );
+      expect(tester.widget<TextField>(keyInput).controller!.text, isEmpty);
       expect(tester.takeException(), isNull);
     },
   );
