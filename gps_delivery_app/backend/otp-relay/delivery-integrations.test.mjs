@@ -7,7 +7,8 @@ import express from 'express';
 import { PGlite } from '@electric-sql/pglite';
 import { buildOptimization, coordinate, createDeliveryIntegrations, createIdentity,
   extractLabelFields, IntegrationError, operatorOnly, providerJson } from './delivery-integrations.mjs';
-import { loadIntegrationConfig } from './integration-config.mjs';
+import { loadIntegrationConfig, testIntegration, updateIntegrationConfig } from './integration-config.mjs';
+import { createCloudOrders } from './cloud-orders.mjs';
 import { createTurnstile } from './turnstile.mjs';
 import { createNotificationRouter } from './delivery-notifications.mjs';
 
@@ -308,4 +309,101 @@ test('Managed integration config syncs non-bootstrap settings and audit to RLS-l
   assert.equal(restartedEnv.TRACKASIA_ENABLED, 'true');
   assert.equal(restartedEnv.MARKET_JOBS_ENABLED, 'true');
   assert.equal(restartedEnv.PHOTON_ENABLED, 'false');
+});
+
+test('Customer AI chatbot uses backend API URL and API key for OpenAI-compatible and Gemini endpoints with RLS user context', async t => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'delivery-ai-chat-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const env = {
+    INTEGRATION_CONFIG_PATH: path.join(directory, 'ai.json'),
+    SUPABASE_URL: 'https://own.supabase.co',
+    SUPABASE_ANON_KEY: 'publishable',
+    GEMINI_ENABLED: 'true',
+    GEMINI_BASE_URL: 'https://api.openai.com/v1',
+    GEMINI_API_KEY: 'sk-backend-secret-key',
+    GEMINI_MODEL: 'gpt-4o-mini',
+  };
+  let capturedAiRequest = null;
+  const fetcher = async (url, options = {}) => {
+    const u = new URL(String(url));
+    if (u.hostname === 'own.supabase.co') {
+      if (u.pathname === '/rest/v1/rpc/delivery_cloud_profile') {
+        return json({ account: { full_name: 'Nguyễn Văn A', coin_balance: 2500, approved_roles: [] } });
+      }
+      if (u.pathname === '/rest/v1/rpc/delivery_cloud_list') {
+        return json({ orders: [{ tracking_code: 'CL-AI-001', status: 'inTransit', shipping_fee: 28000, cod_amount: 150000, details: { service_type: 'express', pickup_address: '12 Nguyễn Huệ', dropoff_address: '20 Lê Lợi' }, otp_code: '999999' }] });
+      }
+      if (u.pathname === '/rest/v1/rpc/delivery_marketplace') {
+        return json({ orders: [] });
+      }
+    }
+    if (u.hostname === 'api.openai.com' && u.pathname === '/v1/chat/completions') {
+      capturedAiRequest = { headers: options.headers, body: JSON.parse(options.body) };
+      return json({ choices: [{ message: { content: 'Đơn CL-AI-001 của bạn đang trên đường giao đến 20 Lê Lợi.' } }] });
+    }
+    if (u.hostname === 'api.openai.com' && u.pathname === '/v1/models') {
+      assert.equal(options.headers.Authorization, 'Bearer sk-backend-secret-key');
+      return json({ object: 'list', data: [{ id: 'gpt-4o-mini' }] });
+    }
+    if (u.hostname === 'generativelanguage.googleapis.com' && u.pathname === '/v1beta/models/gemini-2.5-flash:generateContent') {
+      assert.equal(options.headers['x-goog-api-key'], 'sk-backend-secret-key');
+      return json({ candidates: [{ content: { parts: [{ text: 'GHST hỗ trợ 5 gói giao hàng Cloud.' }] } }] });
+    }
+    throw new Error(`Unexpected URL: ${url}`);
+  };
+
+  const probe = await testIntegration('gemini', { env, fetcher });
+  assert.equal(probe.ok, true);
+
+  let currentIdentity = { id: 'customer-uuid-1', role: 'user', token: 'user-jwt', local: false };
+  const router = express.Router();
+  router.use('/cloud', createCloudOrders({ env, authenticate: (req, _res, next) => { req.deliveryIdentity = currentIdentity; next(); }, fetcher }));
+  router.use(createDeliveryIntegrations({ env, authenticate: (req, _res, next) => { req.deliveryIdentity = currentIdentity; next(); }, operatorOnly, fetcher }));
+  const app = await appFor(t, router);
+
+  const chatRes = await app.post('/cloud/ai-chat', {
+    messages: [
+      { role: 'user', content: 'Xin chào' },
+      { role: 'assistant', content: 'Chào bạn, tôi có thể giúp gì?' },
+      { role: 'user', content: 'Đơn hàng của tôi đang ở đâu?' },
+    ],
+  });
+  assert.equal(chatRes.status, 200);
+  const chatBody = await chatRes.json();
+  assert.match(chatBody.reply, /CL-AI-001/);
+  assert.equal(chatBody.model, 'gpt-4o-mini');
+  assert.equal(JSON.stringify(chatBody).includes('sk-backend-secret-key'), false);
+  assert.equal(capturedAiRequest.headers.Authorization, 'Bearer sk-backend-secret-key');
+  assert.equal(capturedAiRequest.body.model, 'gpt-4o-mini');
+  assert.match(capturedAiRequest.body.messages[0].content, /CL-AI-001/);
+  assert.equal(capturedAiRequest.body.messages[0].content.includes('999999'), false);
+
+  env.GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta';
+  env.GEMINI_MODEL = 'gemini-2.5-flash';
+  const geminiRes = await app.post('/ai/chat', {
+    messages: [{ role: 'user', content: 'Các gói giao hàng là gì?' }],
+  });
+  assert.equal(geminiRes.status, 200);
+  assert.match((await geminiRes.json()).reply, /5 gói giao hàng/);
+
+  assert.equal((await app.post('/cloud/ai-chat', { messages: [] })).status, 400);
+  assert.equal((await app.post('/cloud/ai-chat', { messages: [{ role: 'assistant', content: 'sai vai tro cuoi' }] })).status, 400);
+
+  currentIdentity = { id: 'local', role: 'operator', token: 'relay', local: true };
+  assert.equal((await app.post('/cloud/ai-chat', { messages: [{ role: 'user', content: 'test' }] })).status, 401);
+  assert.equal((await app.post('/ai/chat', { messages: [{ role: 'user', content: 'test' }] })).status, 401);
+
+  currentIdentity = { id: 'customer-uuid-1', role: 'user', token: 'user-jwt', local: false };
+  env.GEMINI_ENABLED = 'false';
+  assert.equal((await app.post('/cloud/ai-chat', { messages: [{ role: 'user', content: 'test' }] })).status, 503);
+
+  for (const unsafeUrl of [
+    'http://api.openai.com/v1',
+    'https://169.254.169.254/latest/meta-data',
+    'https://10.0.0.5/v1',
+    'https://192.168.1.10/v1',
+    'http://127.0.0.1:11434/v1',
+  ]) {
+    await assert.rejects(updateIntegrationConfig({ GEMINI_BASE_URL: unsafeUrl }, { env, local: false }));
+  }
 });

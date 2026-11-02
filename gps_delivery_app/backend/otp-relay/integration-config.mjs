@@ -68,8 +68,10 @@ export const INTEGRATION_DEFINITIONS = {
   telegram: { label: 'Telegram cảnh báo', toggle: 'TELEGRAM_ALERTS_ENABLED', required: ['TELEGRAM_BOT_TOKEN', 'TELEGRAM_CHAT_ID'], fields: {
     TELEGRAM_BOT_TOKEN: secret('Bot token'), TELEGRAM_CHAT_ID: field('Chat ID'),
   } },
-  gemini: { label: 'Gemini AI', toggle: 'GEMINI_ENABLED', required: ['GEMINI_API_KEY', 'GEMINI_MODEL'], fields: {
-    GEMINI_API_KEY: secret('API key'), GEMINI_MODEL: field('Model'),
+  gemini: { label: 'AI Chatbot & Trợ lý (Gemini / OpenAI API)', toggle: 'GEMINI_ENABLED', required: ['GEMINI_BASE_URL', 'GEMINI_API_KEY', 'GEMINI_MODEL'], fields: {
+    GEMINI_BASE_URL: url('API Base URL', 'https://generativelanguage.googleapis.com/v1beta'),
+    GEMINI_API_KEY: secret('API key'),
+    GEMINI_MODEL: field('Model', { defaultValue: 'gemini-2.5-flash' }),
   } },
   ghn: { label: 'GHN vận chuyển', toggle: 'GHN_ENABLED', required: ['GHN_BASE_URL', 'GHN_TOKEN', 'GHN_SHOP_ID'], fields: {
     GHN_BASE_URL: url('Base URL', 'https://dev-online-gateway.ghn.vn/shiip/public-api/'),
@@ -135,6 +137,30 @@ export function integrationStatus(env = process.env) {
   }]));
 }
 
+export function assertSafeAiUrl(rawUrl, { allowLoopback = true } = {}) {
+  let parsed;
+  try { parsed = new URL(String(rawUrl || '').trim()); } catch { throw new ConfigError('URL AI không hợp lệ.'); }
+  if (!['https:', 'http:'].includes(parsed.protocol) || parsed.username || parsed.password || parsed.search || parsed.hash) {
+    throw new ConfigError('URL AI không hợp lệ.');
+  }
+  const host = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, '');
+  const isLoopback = host === 'localhost' || host === '::1' || /^127(?:\.\d{1,3}){3}$/.test(host);
+  const isPrivateOrReserved =
+    host === '0.0.0.0' || host === '::' || host.endsWith('.internal') || host.endsWith('.local') ||
+    /^0(?:\.\d{1,3}){3}$/.test(host) || /^10(?:\.\d{1,3}){3}$/.test(host) ||
+    /^192\.168(?:\.\d{1,3}){2}$/.test(host) || /^169\.254(?:\.\d{1,3}){2}$/.test(host) ||
+    /^172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2}$/.test(host) ||
+    /^100\.(?:6[4-9]|[7-9]\d|1[0-1]\d|12[0-7])(?:\.\d{1,3}){2}$/.test(host) ||
+    /^(?:fc|fd)[0-9a-f]{0,2}:/.test(host) || /^fe[89ab][0-9a-f]:/.test(host) || /^::ffff:/.test(host);
+  if (isPrivateOrReserved) throw new ConfigError('Không cho phép kết nối địa chỉ mạng nội bộ hoặc metadata.');
+  if (isLoopback) {
+    if (!allowLoopback) throw new ConfigError('URL AI trên Cloud yêu cầu HTTPS công khai.');
+  } else if (parsed.protocol !== 'https:') {
+    throw new ConfigError('URL AI công khai yêu cầu giao thức HTTPS.');
+  }
+  return { parsed, isLoopback };
+}
+
 function validate(key, value) {
   const metadata = fieldsByKey.get(key);
   if (!metadata) throw new ConfigError(`Khóa cấu hình không được hỗ trợ: ${key}`);
@@ -162,6 +188,7 @@ function validate(key, value) {
     if (!['https:', 'http:'].includes(parsed.protocol) || parsed.username || parsed.password || (!paymentRedirect && (parsed.search || parsed.hash))) throw new ConfigError(`URL không hợp lệ: ${key}`);
     if (paymentRedirect && parsed.protocol !== 'https:' && !['localhost', '127.0.0.1'].includes(parsed.hostname)) throw new ConfigError('URL thanh toán công khai yêu cầu HTTPS.');
     if (key === 'SUPABASE_URL' && parsed.protocol !== 'https:' && !['localhost', '127.0.0.1'].includes(parsed.hostname)) throw new ConfigError('Supabase yêu cầu HTTPS.');
+    if (key === 'GEMINI_BASE_URL') assertSafeAiUrl(value, { allowLoopback: true });
     if (key === 'GHN_BASE_URL' && (parsed.protocol !== 'https:' || !['dev-online-gateway.ghn.vn', 'online-gateway.ghn.vn'].includes(parsed.hostname) || parsed.port || parsed.pathname !== '/shiip/public-api/')) throw new ConfigError('Dùng endpoint GHN staging hoặc production chính thức, kết thúc bằng /shiip/public-api/.');
   }
   if (key === 'TURNSTILE_HOSTNAME' && !/^[a-zA-Z0-9.-]+$/.test(value)) throw new ConfigError('Hostname không bao gồm scheme hoặc đường dẫn.');
@@ -239,6 +266,7 @@ export async function updateIntegrationConfig(values, { clear = [], actor = 'unk
   for (const key of clear) patch[key] = '';
   for (const [key, value] of Object.entries(patch)) {
     validate(key, value);
+    if (!local && key === 'GEMINI_BASE_URL' && value) assertSafeAiUrl(value, { allowLoopback: false });
     if (!local && localOnlyKeys.has(key) && value !== configValue(key, env)) throw new ConfigError('Chỉ thay đổi project xác thực tại máy chủ backend.', 403);
   }
   const filename = configPath(env);
@@ -404,8 +432,40 @@ export async function testIntegration(provider, { env = process.env, fetcher = f
     } else if (provider === 'telegram') {
       if (!(await getJson(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/getMe`)).ok) throw new Error('invalid');
     } else if (provider === 'gemini') {
-      const model = env.GEMINI_MODEL.replace(/^models\//, '');
-      await getJson(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}`, { headers: { 'x-goog-api-key': env.GEMINI_API_KEY } });
+      const rawBase = configValue('GEMINI_BASE_URL', env).replace(/\/+$/, '');
+      const model = configValue('GEMINI_MODEL', env).replace(/^models\//, '');
+      const apiKey = configValue('GEMINI_API_KEY', env);
+      const { parsed } = assertSafeAiUrl(rawBase, { allowLoopback: env.RENDER !== 'true' && !env.RAILWAY_ENVIRONMENT });
+      const cleanPath = parsed.pathname.replace(/\/+$/, '');
+      const isNativeGemini =
+        (parsed.hostname.toLowerCase() === 'generativelanguage.googleapis.com' &&
+          !cleanPath.includes('/openai') &&
+          !cleanPath.endsWith('/chat/completions')) ||
+        cleanPath.endsWith(':generateContent');
+      if (isNativeGemini) {
+        const modelBase = rawBase.replace(/\/models\/[^/]+:generateContent$/, '');
+        await getJson(`${modelBase}/models/${encodeURIComponent(model)}`, { headers: { 'x-goog-api-key': apiKey } });
+      } else {
+        const modelsUrl = rawBase.endsWith('/chat/completions')
+          ? `${rawBase.slice(0, -'/chat/completions'.length)}/models`
+          : `${rawBase}/models`;
+        const headers = { Authorization: `Bearer ${apiKey}` };
+        const probe = await fetcher(modelsUrl, { headers, redirect: 'error', signal: AbortSignal.timeout(10000) });
+        if (probe.ok) {
+          const data = await probe.json();
+          if (!Array.isArray(data?.data) && data?.object !== 'list') throw new Error('invalid');
+        } else if (probe.status === 404 || probe.status === 405) {
+          const chatUrl = rawBase.endsWith('/chat/completions') ? rawBase : `${rawBase}/chat/completions`;
+          const chatData = await getJson(chatUrl, {
+            method: 'POST',
+            headers: { ...headers, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model, messages: [{ role: 'user', content: 'ping' }], max_tokens: 4, temperature: 0 }),
+          });
+          if (!Array.isArray(chatData?.choices)) throw new Error('invalid');
+        } else {
+          throw new Error('upstream');
+        }
+      }
     } else if (provider === 'ghn') {
       const data = await getJson(new URL('master-data/province', env.GHN_BASE_URL), { headers: { Token: env.GHN_TOKEN, ShopId: env.GHN_SHOP_ID } });
       if (data.code !== 200 || !Array.isArray(data.data)) throw new Error('invalid');

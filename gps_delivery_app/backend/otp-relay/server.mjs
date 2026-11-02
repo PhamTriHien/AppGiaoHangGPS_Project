@@ -117,7 +117,9 @@ const weatherLimiter = rateLimit({
 const authenticateDelivery = createIdentity({ tokenMatches });
 const deliveryLimiter = rateLimit({ windowMs: 60000, limit: 90, standardHeaders: 'draft-7', legacyHeaders: false });
 const ocrLimiter = rateLimit({ windowMs: 60000, limit: 5, standardHeaders: 'draft-7', legacyHeaders: false });
+const aiChatLimiter = rateLimit({ windowMs: 60000, limit: 20, standardHeaders: 'draft-7', legacyHeaders: false, message: { error: 'Bạn đang gửi tin nhắn quá nhanh. Vui lòng đợi ít phút rồi thử lại.' } });
 app.use('/delivery/ocr', ocrLimiter);
+app.use(['/delivery/ai/chat', '/delivery/cloud/ai-chat'], aiChatLimiter);
 app.use('/delivery', deliveryLimiter);
 app.use('/delivery', createPublicTracking());
 const turnstile = createTurnstile({ authenticate: authenticateDelivery });

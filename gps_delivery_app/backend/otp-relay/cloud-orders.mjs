@@ -1,6 +1,7 @@
 import express from 'express';
 import { fetchWithRetry, IntegrationError } from './provider-http.mjs';
 import { providerConfigured } from './integration-config.mjs';
+import { createCustomerAiChatHandler } from './ai-assistant.mjs';
 import {
   createMarketMedia,
   createPrivateAttachmentUpload,
@@ -115,6 +116,8 @@ export function createCloudOrders({ env = process.env, authenticate, fetcher = f
     if (req.params.action === 'tracking_share') attachShareUrl(result, env);
     res.json(result);
   }));
+  const aiChat = createCustomerAiChatHandler({ env, fetcher, rpc });
+  router.post('/ai-chat', route(aiChat));
   router.get('/profile', route(async (req, res) => res.json(await rpc(req, 'delivery_cloud_profile', {}))));
   router.post('/profile', route(async (req, res) => res.json(await rpc(req, 'delivery_cloud_profile', { p_details: req.body }))));
   router.post('/memberships', route(async (req, res) => {
