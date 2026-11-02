@@ -126,4 +126,54 @@ test('Independent partner memberships preserve buyer rights and enforce each app
     const audit=await db.query("select count(*)::int n from delivery_cloud_admin_audit where action like 'membership_%'");
     assert.ok(audit.rows[0].n>=8);
   });
+
+  await t.test('Operator account governance RPC manages incomplete Auth accounts, profile edits, direct grants and self-lockout guards',async()=>{
+    await db.exec('reset role');
+    for (const extra of ['20261102_local_address_import','20261103_catalog_stock_versions','20261104_market_media',
+      '20261105_market_browse','20261106_catalog_configuration','20261107_cloud_commercial_suite','20261108_cloud_logistics','20261109_admin_account_management']) {
+      await db.exec(await readFile(new URL(`../../database/migrations/${extra}.sql`,import.meta.url),'utf8'));
+    }
+    const incompleteId=randomUUID();
+    await db.query('insert into auth.users values($1)',[incompleteId]);
+    const adminAcc=(action,payload={})=>rpc('delivery_cloud_admin_accounts',[action,payload]);
+
+    await as('buyer');
+    await assert.rejects(adminAcc('list'),/quản trị/);
+    await assert.rejects(member('driver','grant',ids.other,0,'Illegal grant'),/quản trị/);
+
+    await as('operator');
+    const listed=await adminAcc('list');
+    assert.equal(listed.summary.total_accounts,5);
+    assert.equal(listed.summary.incomplete_profiles,1);
+    assert.equal(listed.summary.operators,1);
+    assert.equal(listed.accounts.find(a=>a.user_id===incompleteId).has_profile,false);
+
+    // Initialize incomplete Auth profile and fix full_name/phone
+    const initialized=await adminAcc('update_profile',{user_id:incompleteId,full_name:'Tài khoản Hoàn thiện',phone:'0987654321',reason:'Bổ sung hồ sơ'});
+    assert.equal(initialized.account.has_profile,true);
+    assert.equal(initialized.account.full_name,'Tài khoản Hoàn thiện');
+
+    // Direct partner grant without user pre-request (version=0 -> 1)
+    const granted=await member('driver','grant',incompleteId,0,'Cấp trực tiếp tài xế');
+    assert.equal(granted.membership.state,'active');
+    assert.equal(granted.membership.version,1);
+    await assert.rejects(member('driver','grant',incompleteId,0,'Stale version'),/thay đổi/);
+
+    // Self-lockout & self-demotion protection
+    await assert.rejects(adminAcc('set_blocked',{user_id:ids.operator,blocked:true,reason:'Self lock'}),/tự khóa/);
+    await assert.rejects(adminAcc('set_operator',{user_id:ids.operator,operator:false,reason:'Self demote'}),/tự thu hồi/);
+
+    // Grant & revoke secondary operator with audit trail
+    const opGranted=await adminAcc('set_operator',{user_id:incompleteId,operator:true,reason:'Bổ nhiệm điều hành ca đêm'});
+    assert.equal(opGranted.account.is_operator,true);
+    const opRevoked=await adminAcc('set_operator',{user_id:incompleteId,operator:false,reason:'Kết thúc ca trực'});
+    assert.equal(opRevoked.account.is_operator,false);
+
+    // Detail returns shops and targeted audit entries
+    const detail=await adminAcc('detail',{user_id:incompleteId});
+    assert.ok(detail.audit.some(e=>e.action==='account_profile'));
+    assert.ok(detail.audit.some(e=>e.action==='membership_grant'));
+    assert.ok(detail.audit.some(e=>e.action==='operator_grant'));
+    assert.ok(detail.audit.some(e=>e.action==='operator_revoke'));
+  });
 });

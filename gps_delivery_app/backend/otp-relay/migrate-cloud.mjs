@@ -30,13 +30,15 @@ export async function migrateCloud({ env = process.env } = {}) {
     await client.query(await readFile(new URL('../../database/migrations/20261106_catalog_configuration.sql', import.meta.url), 'utf8'));
     await client.query(await readFile(new URL('../../database/migrations/20261107_cloud_commercial_suite.sql', import.meta.url), 'utf8'));
     await client.query(await readFile(new URL('../../database/migrations/20261108_cloud_logistics.sql', import.meta.url), 'utf8'));
+    await client.query(await readFile(new URL('../../database/migrations/20261109_admin_account_management.sql', import.meta.url), 'utf8'));
     const result = await client.query("select to_regprocedure('public.delivery_cloud_create(jsonb,uuid,integer,integer)') is not null and to_regprocedure('public.delivery_cloud_addresses_manage(uuid,jsonb,boolean,integer)') is not null and to_regprocedure('public.delivery_marketplace(text,jsonb)') is not null as ready");
     const operations = await client.query("select to_regprocedure('public.delivery_market_operations(text,jsonb)') is not null and to_regprocedure('public.delivery_market_run_jobs(integer)') is not null as ready");
     const memberships = await client.query("select to_regprocedure('public.delivery_cloud_membership(text,text,uuid,integer,text)') is not null as ready");
     const commercial = await client.query("select to_regprocedure('public.delivery_market_attachment_reserve(uuid,text,text,integer)') is not null and to_regprocedure('public.delivery_cloud_public_lookup(text,text)') is not null and to_regprocedure('public.delivery_market_record_prepaid_capture(uuid,text)') is not null as ready");
     const logistics = await client.query("select to_regprocedure('public.delivery_cloud_logistics(text,jsonb)') is not null as ready");
-    return { ready: result.rows[0].ready && operations.rows[0].ready && memberships.rows[0].ready && commercial.rows[0].ready && logistics.rows[0].ready,
-      migration: '20261108_cloud_logistics', workflowVersion: 14 };
+    const adminAccounts = await client.query("select to_regprocedure('public.delivery_cloud_admin_accounts(text,jsonb)') is not null as ready");
+    return { ready: result.rows[0].ready && operations.rows[0].ready && memberships.rows[0].ready && commercial.rows[0].ready && logistics.rows[0].ready && adminAccounts.rows[0].ready,
+      migration: '20261109_admin_account_management', workflowVersion: 15 };
   } finally { await client.end(); }
 }
 
