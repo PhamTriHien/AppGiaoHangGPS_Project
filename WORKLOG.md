@@ -1,5 +1,16 @@
 # Current Handoff
 
+## Consumer Google Login Button Cold-Start Resilience & Register-Tab Visibility - 2026-11-03
+
+- Diagnosed why `'Tiếp tục với Google'` intermittently disappeared on `CloudAuthScreen` (`Pixel_10_Pro` cold-start screenshot right after APK install vs Hosted Supabase `GET /auth/v1/settings` returning `external.google = true`):
+  1. **One-shot unretried 5s probe**: `CloudOrdersService.googleSignInAvailable()` (`gps_delivery_app/lib/core/integrations/cloud_orders_service.dart`) performed a single 5-second `http.get` to `${_cloud.cloudUrl}/auth/v1/settings` and returned `false` on any cold-start network/DNS/TLS timeout, while `CloudAuthScreen.initState()` (`gps_delivery_app/lib/presentation/screens/cloud_auth_screen.dart`) only probed once at mount and never retried.
+  2. **Hidden on Register tab**: `CloudAuthScreen` only rendered `'Tiếp tục với Google'` under `_AuthMode.login` (`Đăng nhập`), hiding it whenever the user switched to `_AuthMode.register` (`Đăng ký tài khoản`).
+- Implemented production fix in `cloud_orders_service.dart`, `cloud_auth_screen.dart`, and `test/unified_user_interface_test.dart` (keeping `/#/admin` `AdminPortalScreen` completely separate without Google login):
+  - Added `cachedGoogleSignInAvailable` + `probeGoogleSignIn()` (`2` attempts, `8s` timeout + `800ms` backoff, caching authoritative HTTP `200` per Supabase project scope while marking transient timeouts/`5xx` as `authoritative: false`).
+  - Added `WidgetsBindingObserver` + `_checkGoogleAvailability()` on `CloudAuthScreen` with automatic 3-second background retry when non-authoritative, re-check on `AppLifecycleState.resumed` and tab switches, and `'Tiếp tục với Google'` rendered on both `Đăng nhập` and `Đăng ký tài khoản`.
+- Checks run: `flutter analyze --no-pub` (`0` issues), `flutter test --no-pub test/unified_user_interface_test.dart test/auth_configuration_test.dart test/clean_start_test.dart` (`33/33` passed, incl. transient cold-start recovery + Login/Register visibility test), rebuilt & cold-started `x86_64` Release APK on `Pixel_10_Pro` (`emulator-5554`, verified via cold-start screenshot with `'Tiếp tục với Google'` visibly rendered), rebuilt & launched Windows Desktop (`gps_delivery_app.exe`, `SessionId: 1`, `Responding: True`), rebuilt local Web preview (`:8080`), and ran `graphify update .` (`5563` nodes, `8953` edges, `213` communities).
+- Remaining limits & next step: Configure `GEMINI_*` / `PAYOS_*` / `GHN_*` / `FCM` credentials in `/#/admin` -> `Tích hợp` when ready and run live two-device + signed webhook acceptance per `EXECUTION_CHECKLIST.md`.
+
 ## Cloud Account Governance Workspace Redesign (`20261109_admin_account_management`, workflow 15) - 2026-11-03
 
 - Redesigned Cloud Account Management in `/#/admin` (`AdminPortalScreen`) from the old 3-line toggle inside `CloudOrdersScreen` into a dedicated **Tài khoản** module (`AdminAccountsPanel`, `gps_delivery_app/lib/presentation/widgets/admin_accounts_panel.dart`) backed 100% by real Cloud PostgreSQL data (`0` mock/static numbers):

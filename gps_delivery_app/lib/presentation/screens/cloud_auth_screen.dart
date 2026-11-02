@@ -24,19 +24,29 @@ class CloudAuthScreen extends StatefulWidget {
   State<CloudAuthScreen> createState() => _CloudAuthScreenState();
 }
 
-class _CloudAuthScreenState extends State<CloudAuthScreen> {
+class _CloudAuthScreenState extends State<CloudAuthScreen>
+    with WidgetsBindingObserver {
   final _form = GlobalKey<FormState>();
   final _email = TextEditingController(),
       _password = TextEditingController(),
       _code = TextEditingController();
   late _AuthMode _mode = widget.recovery ? _AuthMode.password : _AuthMode.login;
-  bool _busy = false, _obscure = true, _googleAvailable = false;
+  late bool _googleAvailable = widget.service.cachedGoogleSignInAvailable;
+  bool _busy = false,
+      _obscure = true,
+      _googleAuthoritative = false,
+      _probingGoogle = false;
   String? _error, _notice;
   StreamSubscription<AuthState>? _authSubscription;
+  Timer? _googleRetryTimer;
+
+  bool get _testing =>
+      WidgetsBinding.instance.runtimeType.toString().contains('Test');
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _authSubscription = widget.service.authChanges.listen(
       (_) {},
       onError: (Object error) {
@@ -44,9 +54,41 @@ class _CloudAuthScreenState extends State<CloudAuthScreen> {
         setState(() => _error = _authErrorMessage(error));
       },
     );
-    widget.service.googleSignInAvailable().then((enabled) {
-      if (mounted) setState(() => _googleAvailable = enabled);
-    });
+    unawaited(_checkGoogleAvailability());
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && !_googleAuthoritative) {
+      unawaited(_checkGoogleAvailability());
+    }
+  }
+
+  Future<void> _checkGoogleAvailability() async {
+    if (_probingGoogle || !mounted || widget.service.signedIn) return;
+    _googleRetryTimer?.cancel();
+    _probingGoogle = true;
+    try {
+      final res = await widget.service.probeGoogleSignIn();
+      if (!mounted) return;
+      if (_googleAvailable != res.enabled ||
+          _googleAuthoritative != res.authoritative) {
+        setState(() {
+          _googleAvailable = res.enabled;
+          _googleAuthoritative = res.authoritative;
+        });
+      } else {
+        _googleAuthoritative = res.authoritative;
+      }
+      if (!res.authoritative && !_testing && !widget.service.signedIn) {
+        _googleRetryTimer = Timer(
+          const Duration(seconds: 3),
+          _checkGoogleAvailability,
+        );
+      }
+    } finally {
+      _probingGoogle = false;
+    }
   }
 
   @override
@@ -55,6 +97,10 @@ class _CloudAuthScreenState extends State<CloudAuthScreen> {
     if (widget.recovery && !oldWidget.recovery && _mode != _AuthMode.password) {
       _mode = _AuthMode.password;
       _code.clear();
+    }
+    if (!identical(widget.service, oldWidget.service)) {
+      _googleAuthoritative = false;
+      unawaited(_checkGoogleAvailability());
     }
   }
 
@@ -75,6 +121,8 @@ class _CloudAuthScreenState extends State<CloudAuthScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _googleRetryTimer?.cancel();
     unawaited(_authSubscription?.cancel());
     _email.dispose();
     _password.dispose();
@@ -82,12 +130,17 @@ class _CloudAuthScreenState extends State<CloudAuthScreen> {
     super.dispose();
   }
 
-  void _switch(_AuthMode mode) => setState(() {
-    _mode = mode;
-    _password.clear();
-    _code.clear();
-    _error = _notice = null;
-  });
+  void _switch(_AuthMode mode) {
+    setState(() {
+      _mode = mode;
+      _password.clear();
+      _code.clear();
+      _error = _notice = null;
+    });
+    if (!_googleAuthoritative) {
+      unawaited(_checkGoogleAvailability());
+    }
+  }
 
   Future<void> _submit({bool google = false}) async {
     if (_busy || !google && !_form.currentState!.validate()) return;
@@ -378,6 +431,15 @@ class _CloudAuthScreenState extends State<CloudAuthScreen> {
                 child: const Text('Trở về đăng nhập'),
               )
             else ...[
+              if (_mode == _AuthMode.register && _googleAvailable)
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: OutlinedButton.icon(
+                    onPressed: _busy ? null : () => _submit(google: true),
+                    icon: const Icon(Icons.account_circle_outlined),
+                    label: const Text('Tiếp tục với Google'),
+                  ),
+                ),
               if (_mode == _AuthMode.recover)
                 TextButton(
                   onPressed: _busy ? null : _resendCode,

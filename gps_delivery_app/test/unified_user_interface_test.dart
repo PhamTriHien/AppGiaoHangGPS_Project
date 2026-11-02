@@ -18,6 +18,18 @@ import 'marketplace_test.dart' show MarketFixture;
 class UnifiedUserFixture extends MarketFixture {
   Set<String> roles = {};
   bool incomplete = false;
+  List<({bool enabled, bool authoritative})> googleProbes = const [];
+  int googleProbeCalls = 0;
+
+  @override
+  Future<({bool enabled, bool authoritative})> probeGoogleSignIn() async {
+    googleProbeCalls++;
+    if (googleProbes.isNotEmpty) {
+      final idx = (googleProbeCalls - 1).clamp(0, googleProbes.length - 1);
+      return googleProbes[idx];
+    }
+    return super.probeGoogleSignIn();
+  }
 
   @override
   Future<Map<String, dynamic>> request(
@@ -445,6 +457,38 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.widgetWithText(TextFormField, 'Mã xác nhận email'), findsNothing);
       expect(find.widgetWithText(TextFormField, 'Mật khẩu mới'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets(
+    'Google login button recovers from transient cold-start probe failure and appears on both login and register tabs',
+    (tester) async {
+      final (api, session) = await setup(tester, 360.0);
+      api.authenticated = false;
+      api.googleProbes = const [
+        (enabled: false, authoritative: false),
+        (enabled: true, authoritative: true),
+      ];
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: MarketplaceScreen(session: session),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Tiếp tục với Google'), findsNothing);
+
+      await tester.tap(find.text('Đăng ký tài khoản'));
+      await tester.pumpAndSettle();
+      expect(api.googleProbeCalls, 2);
+      expect(find.text('Tiếp tục với Google'), findsOneWidget);
+
+      await tester.tap(find.text('Đăng nhập').first);
+      await tester.pumpAndSettle();
+      expect(api.googleProbeCalls, 2);
+      expect(find.text('Tiếp tục với Google'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
     },

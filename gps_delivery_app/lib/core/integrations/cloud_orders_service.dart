@@ -93,24 +93,53 @@ class CloudOrdersService {
     await signInCloudGoogle(client);
   }
 
-  Future<bool> googleSignInAvailable() async {
-    if (_cloud.client == null) return false;
-    try {
-      final response = await http
-          .get(
-            Uri.parse('${_cloud.cloudUrl}/auth/v1/settings'),
-            headers: {'apikey': EnvConfig.supabaseAnonKey},
-          )
-          .timeout(const Duration(seconds: 5));
-      if (response.statusCode != 200 || response.bodyBytes.length > 100000) {
-        return false;
-      }
-      final settings = jsonDecode(response.body) as Map;
-      return (settings['external'] as Map?)?['google'] == true;
-    } catch (_) {
-      return false;
+  static String? _cachedGoogleScope;
+  static bool? _cachedGoogleEnabled;
+
+  bool get cachedGoogleSignInAvailable =>
+      _cloud.client != null &&
+      _cachedGoogleScope == '${_cloud.cloudUrl}:${EnvConfig.supabaseAnonKey}' &&
+      _cachedGoogleEnabled == true;
+
+  Future<({bool enabled, bool authoritative})> probeGoogleSignIn() async {
+    if (_cloud.client == null) {
+      return (enabled: false, authoritative: true);
     }
+    final scope = '${_cloud.cloudUrl}:${EnvConfig.supabaseAnonKey}';
+    final fallback = _cachedGoogleScope == scope
+        ? (_cachedGoogleEnabled ?? false)
+        : false;
+    for (var attempt = 0; attempt < 2; attempt++) {
+      try {
+        final response = await http
+            .get(
+              Uri.parse('${_cloud.cloudUrl}/auth/v1/settings'),
+              headers: {'apikey': EnvConfig.supabaseAnonKey},
+            )
+            .timeout(const Duration(seconds: 8));
+        if (response.statusCode == 200 && response.bodyBytes.length <= 100000) {
+          final settings = jsonDecode(response.body) as Map;
+          final enabled = (settings['external'] as Map?)?['google'] == true;
+          _cachedGoogleScope = scope;
+          _cachedGoogleEnabled = enabled;
+          return (enabled: enabled, authoritative: true);
+        }
+        if (response.statusCode >= 400 &&
+            response.statusCode < 500 &&
+            response.statusCode != 408 &&
+            response.statusCode != 429) {
+          return (enabled: false, authoritative: true);
+        }
+      } catch (_) {}
+      if (attempt == 0) {
+        await Future<void>.delayed(const Duration(milliseconds: 800));
+      }
+    }
+    return (enabled: fallback, authoritative: false);
   }
+
+  Future<bool> googleSignInAvailable() async =>
+      (await probeGoogleSignIn()).enabled;
 
   Future<void> requestPasswordReset(String email) async {
     final client = _cloud.client;
