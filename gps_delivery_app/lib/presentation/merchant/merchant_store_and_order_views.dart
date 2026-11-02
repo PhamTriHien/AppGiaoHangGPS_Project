@@ -656,7 +656,44 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                                       ),
                                     ),
                                   ),
-                                ],
+                                ] else
+                                  TextButton.icon(
+                                    style: TextButton.styleFrom(
+                                      visualDensity: VisualDensity.compact,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
+                                    ),
+                                    onPressed: () {
+                                      _store.setPrimaryMerchantWarehouse(w.id);
+                                      _rebuildMerchantUi(() {
+                                        _warehouseIsPrimary = true;
+                                      });
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'Đã đặt "${w.name}" làm kho lấy hàng mặc định!',
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    icon: const Icon(
+                                      Icons.star_border_rounded,
+                                      size: 15,
+                                      color: Color(0xFF5B33E6),
+                                    ),
+                                    label: const Text(
+                                      'Đặt mặc định',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF5B33E6),
+                                      ),
+                                    ),
+                                  ),
                                 if (personalWhs.length > 1)
                                   IconButton(
                                     visualDensity: VisualDensity.compact,
@@ -1477,8 +1514,104 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                         );
                         final phoneField = TextField(
                           controller: _singlePhoneCtrl,
+                          onChanged: (_) => _rebuildMerchantUi(() {}),
                           decoration: const InputDecoration(labelText: 'SĐT'),
                         );
+                        final trustProfile = _store.evaluateRecipientTrust(
+                          _singlePhoneCtrl.text,
+                        );
+                        final crmTrustBanner = _singlePhoneCtrl.text
+                                    .trim()
+                                    .length <
+                                9
+                            ? const SizedBox.shrink()
+                            : Container(
+                                margin: const EdgeInsets.only(top: 8),
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: trustProfile.isHighRisk
+                                      ? const Color(0xFFFEF2F2)
+                                      : const Color(0xFFECFDF5),
+                                  border: Border.all(
+                                    color: trustProfile.isHighRisk
+                                        ? AppColors.danger
+                                        : const Color(0xFF14B866),
+                                  ),
+                                ),
+                                child: Wrap(
+                                  alignment: WrapAlignment.spaceBetween,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  spacing: 8,
+                                  runSpacing: 6,
+                                  children: [
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          trustProfile.isHighRisk
+                                              ? Icons.warning_amber_rounded
+                                              : Icons.verified_user_rounded,
+                                          size: 18,
+                                          color: trustProfile.isHighRisk
+                                              ? AppColors.danger
+                                              : const Color(0xFF14B866),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Flexible(
+                                          child: Text(
+                                            'CRM Tín nhiệm SĐT: ${trustProfile.trustScore}/100 (${trustProfile.riskTier}) • ${trustProfile.recommendation}',
+                                            style: TextStyle(
+                                              fontSize: 11.5,
+                                              fontWeight: FontWeight.w700,
+                                              color: trustProfile.isHighRisk
+                                                  ? AppColors.danger
+                                                  : const Color(0xFF065F46),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    OutlinedButton.icon(
+                                      style: OutlinedButton.styleFrom(
+                                        visualDensity: VisualDensity.compact,
+                                        foregroundColor: trustProfile.isBlacklisted
+                                            ? const Color(0xFF14B866)
+                                            : AppColors.danger,
+                                      ),
+                                      onPressed: () {
+                                        final flagged = _store
+                                            .toggleRecipientRiskFlag(
+                                              _singlePhoneCtrl.text,
+                                            );
+                                        _rebuildMerchantUi(() {});
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              flagged
+                                                  ? 'Đã gắn cờ cảnh báo rủi ro hoàn hàng cho SĐT ${_singlePhoneCtrl.text.trim()}!'
+                                                  : 'Đã gỡ cờ cảnh báo rủi ro cho SĐT ${_singlePhoneCtrl.text.trim()}.',
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      icon: Icon(
+                                        trustProfile.isBlacklisted
+                                            ? Icons.lock_open_rounded
+                                            : Icons.flag_outlined,
+                                        size: 14,
+                                      ),
+                                      label: Text(
+                                        trustProfile.isBlacklisted
+                                            ? 'Gỡ cảnh báo'
+                                            : 'Cảnh báo bom hàng',
+                                        style: const TextStyle(fontSize: 11),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
                         final addrField = TextField(
                           controller: _singleAddrCtrl,
                           onChanged: (_) => _rebuildMerchantUi(() {
@@ -1521,6 +1654,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                               nameField,
                               const SizedBox(height: 10),
                               phoneField,
+                              crmTrustBanner,
                               const SizedBox(height: 10),
                               addrField,
                               const SizedBox(height: 8),
@@ -1539,6 +1673,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                                 Expanded(child: phoneField),
                               ],
                             ),
+                            crmTrustBanner,
                             const SizedBox(height: 12),
                             addrField,
                             photon,
@@ -2279,6 +2414,92 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 14),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F3FF),
+                    border: Border.all(color: const Color(0xFF5B33E6)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Đồng bộ đơn tự động Đa kênh TMĐT / POS (Omnichannel Sync)',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13,
+                          color: Color(0xFF5B33E6),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Kéo tự động các đơn mới từ Shopee Mall, TikTok Shop hoặc Sapo POS về kho mặc định chỉ với 1 chạm (chống trùng lặp mã đơn ngoại vi).',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: Color(0xFF4A4754),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: ['Shopee Mall', 'TikTok Shop', 'Sapo POS']
+                            .map(
+                              (channel) => OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  visualDensity: VisualDensity.compact,
+                                  foregroundColor: const Color(0xFF5B33E6),
+                                  side: const BorderSide(
+                                    color: Color(0xFF5B33E6),
+                                  ),
+                                ),
+                                onPressed: () {
+                                  final activeMer = _store.activeMerchantRecord;
+                                  if (activeMer == null ||
+                                      activeMer.approvalStatus != 'Đã duyệt') {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        backgroundColor: AppColors.danger,
+                                        content: Text(
+                                          'Cửa hàng cần được Admin duyệt hồ sơ pháp lý B2B trước khi đồng bộ đơn từ sàn TMĐT!',
+                                        ),
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  final created = _store.syncMarketplaceOrders(
+                                    channel,
+                                  );
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        created.isEmpty
+                                            ? 'Toàn bộ đơn mới từ $channel đã được đồng bộ trước đó (không trùng lặp).'
+                                            : 'Đã đồng bộ ${created.length} đơn từ $channel: ${created.join(", ")}!',
+                                      ),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(
+                                  Icons.cloud_download_outlined,
+                                  size: 15,
+                                ),
+                                label: Text(
+                                  'Đồng bộ $channel',
+                                  style: const TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ],
+                  ),
+                ),
                 Wrap(
                   spacing: 12,
                   runSpacing: 12,

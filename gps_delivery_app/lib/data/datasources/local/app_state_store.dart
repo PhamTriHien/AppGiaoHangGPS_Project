@@ -16,6 +16,7 @@ import '../../../core/gps/gps_integrity_validator.dart';
 import '../../../core/gps/grab_food_recommendation_engine.dart';
 import '../../../core/gps/kalman_gps_filter.dart';
 import '../../../core/gps/smart_dispatch_engine.dart';
+import '../../../core/gps/smart_logistics_upgrade_engine.dart';
 import '../../../core/promotions/promo_event_gamification_engine.dart';
 import '../../../core/integrations/live_delivery_service.dart';
 import '../../../core/integrations/push_notification_service.dart';
@@ -32,6 +33,7 @@ import 'sqlite_offline_queue_datasource.dart';
 
 import '../../models/app_state_records.dart';
 export '../../../core/gps/grab_food_recommendation_engine.dart';
+export '../../../core/gps/smart_logistics_upgrade_engine.dart';
 export '../../../core/promotions/promo_event_gamification_engine.dart';
 export '../../models/app_state_records.dart';
 
@@ -42,6 +44,7 @@ part 'app_state_demo_cleanup.dart';
 part 'app_state_commercial_ops.dart';
 part 'app_state_live_delivery_ops.dart';
 part 'app_state_customer_ops.dart';
+part 'app_state_smart_upgrades_ops.dart';
 
 class AppStateStore extends ChangeNotifier {
   static final AppStateStore instance = AppStateStore._internal();
@@ -161,6 +164,11 @@ class AppStateStore extends ChangeNotifier {
   final List<GeofenceZoneRecord> geofenceZones = [];
   final List<RbacRoleRecord> rbacRoles = [];
   final List<FoodMenuItemRecord> merchantMenuItems = [];
+  final List<ScheduledPickupRequestRecord> scheduledPickupRequests = [];
+  final Set<String> flaggedRiskPhones = {};
+  final Set<String> syncedExternalMarketplaceIds = {};
+  final Map<String, String> quickDeliveryInstructionsByOrder = {};
+  bool isMultiStopRouteActive = false;
   final List<Map<String, dynamic>> systemAuditLogs = [];
 
   AppStateStore._internal() {

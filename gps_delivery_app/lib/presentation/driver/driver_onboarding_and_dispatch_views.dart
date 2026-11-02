@@ -1564,6 +1564,74 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
                   : activeOrder.dropoffLocation,
             ),
           ),
+          Builder(
+            builder: (context) {
+              final quickNote = _store.quickDeliveryInstructionFor(
+                activeOrder.trackingCode,
+              );
+              final recipientTrust = _store.evaluateRecipientTrust(
+                activeOrder.recipientPhone,
+              );
+              final aiSla = _store.aiOperationsInsights;
+              return Container(
+                margin: const EdgeInsets.fromLTRB(14, 8, 14, 8),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F3FF),
+                  border: Border.all(color: const Color(0xFF5B33E6)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 4,
+                      children: [
+                        Text(
+                          'AI Điều hướng • SLA mạng lưới: ${aiSla.predictedSlaOnTimePercent.toStringAsFixed(1)}%',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF5B33E6),
+                          ),
+                        ),
+                        Text(
+                          'Tín nhiệm người nhận: ${recipientTrust.trustScore}/100 (${recipientTrust.riskTier})',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: recipientTrust.isHighRisk
+                                ? AppColors.danger
+                                : const Color(0xFF065F46),
+                          ),
+                        ),
+                        if (_store.isMultiStopRouteActive)
+                          const Text(
+                            '• Đang chạy lộ trình ghép tuyến 2-Opt',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF14B866),
+                            ),
+                          ),
+                      ],
+                    ),
+                    if (quickNote.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        '📌 Chỉ dẫn giao nhanh từ Khách: "$quickNote"',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF15131E),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              );
+            },
+          ),
           // Dark Navy Turn-by-Turn Instruction Banner (#0F172A)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

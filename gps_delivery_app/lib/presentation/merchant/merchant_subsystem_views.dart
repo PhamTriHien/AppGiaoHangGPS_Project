@@ -142,6 +142,17 @@ class _MerchantSubsystemEntryState extends State<MerchantSubsystemEntry> {
   bool _menuDishPromo = false;
   String? _editingMenuItemId;
 
+  // UC36: Đặt lịch gọi xe thu gom số lượng lớn
+  String _pickupVehicleType = 'Xe tải van 500kg';
+  String _pickupTimeSlot = '14:00 - 16:00 (Ca chiều)';
+  final TextEditingController _pickupQtyCtrl = TextEditingController(
+    text: '15',
+  );
+  final TextEditingController _pickupWeightCtrl = TextEditingController(
+    text: '25.0',
+  );
+  final TextEditingController _pickupNoteCtrl = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -300,6 +311,9 @@ class _MerchantSubsystemEntryState extends State<MerchantSubsystemEntry> {
     _menuDishPriceCtrl.dispose();
     _menuDishDescCtrl.dispose();
     _menuDishPrepCtrl.dispose();
+    _pickupQtyCtrl.dispose();
+    _pickupWeightCtrl.dispose();
+    _pickupNoteCtrl.dispose();
     super.dispose();
   }
 

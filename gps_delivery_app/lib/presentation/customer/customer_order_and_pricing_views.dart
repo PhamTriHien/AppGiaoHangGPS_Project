@@ -2478,6 +2478,112 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
               key: ValueKey('live-${activeOrder.trackingCode}'),
               room: activeOrder.trackingCode,
             ),
+            Builder(
+              builder: (context) {
+                final aiReport = _store.aiOperationsInsights;
+                final smartEta = etaMinutes + aiReport.extraCongestionMinutes;
+                final currentNote = _store.quickDeliveryInstructionFor(
+                  activeOrder.trackingCode,
+                );
+                const quickNotes = [
+                  'Gọi trước 5 phút',
+                  'Gửi lễ tân tầng trệt',
+                  'Không bấm chuông',
+                ];
+                return Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F3FF),
+                    border: Border.all(color: const Color(0xFF5B33E6)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 10,
+                        runSpacing: 6,
+                        children: [
+                          Text(
+                            'AI Dự báo ETA thông minh: ~$smartEta phút • SLA đúng hẹn ${aiReport.predictedSlaOnTimePercent.toStringAsFixed(1)}%',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 12.5,
+                              color: Color(0xFF5B33E6),
+                            ),
+                          ),
+                          OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              visualDensity: VisualDensity.compact,
+                            ),
+                            onPressed: () {
+                              final shareUrl =
+                                  'https://ghst-gps.app/track/${activeOrder.trackingCode.replaceAll("#", "")}';
+                              Clipboard.setData(ClipboardData(text: shareUrl));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Đã sao chép Link theo dõi GPS thời gian thực: $shareUrl',
+                                  ),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.share_location, size: 15),
+                            label: const Text(
+                              'Chia sẻ Link GPS',
+                              style: TextStyle(fontSize: 11.5),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          const Text(
+                            'Chỉ dẫn giao nhanh 1-chạm:',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          ...quickNotes.map((note) {
+                            final selected = currentNote == note;
+                            return ChoiceChip(
+                              visualDensity: VisualDensity.compact,
+                              label: Text(
+                                note,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: selected
+                                      ? Colors.white
+                                      : const Color(0xFF15131E),
+                                ),
+                              ),
+                              selected: selected,
+                              selectedColor: const Color(0xFF5B33E6),
+                              onSelected: (_) {
+                                _store.setQuickDeliveryInstruction(
+                                  activeOrder.trackingCode,
+                                  selected ? '' : note,
+                                );
+                                _rebuildCustomerUi(() {});
+                              },
+                            );
+                          }),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
             Wrap(
               alignment: WrapAlignment.spaceBetween,
               crossAxisAlignment: WrapCrossAlignment.center,

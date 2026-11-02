@@ -90,6 +90,78 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                     )]
                     .trackingCode,
           ),
+        Builder(
+          builder: (context) {
+            final multiPlan = _store.computeMultiStopPlanForWarehouse();
+            if (multiPlan.orderedStops.length < 2) {
+              return const SizedBox.shrink();
+            }
+            return Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFECFDF5),
+                border: Border.all(color: const Color(0xFF14B866)),
+              ),
+              child: Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 12,
+                runSpacing: 8,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Ghép đơn Đa điểm thông minh 2-Opt TSP (${multiPlan.orderedStops.length} điểm giao)',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13,
+                          color: Color(0xFF065F46),
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        'Quãng đường tối ưu: ${(multiPlan.optimizedDistanceMeters / 1000).toStringAsFixed(1)} km (giảm ${multiPlan.savedPercent.toStringAsFixed(1)}%) • Ước tính tiết kiệm ~${multiPlan.savedFeeVnd.toStringAsFixed(0)}đ phí ship',
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          color: Color(0xFF047857),
+                        ),
+                      ),
+                    ],
+                  ),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF14B866),
+                      foregroundColor: Colors.white,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    onPressed: () {
+                      final applied = _store.applyMultiStopRouteOptimization();
+                      final seq = applied.orderedStops
+                          .map((o) => o.trackingCode)
+                          .join(' → ');
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Đã kích hoạt lộ trình ghép tuyến 2-Opt: $seq',
+                          ),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.alt_route_rounded, size: 16),
+                    label: Text(
+                      _store.isMultiStopRouteActive
+                          ? 'Đã bật lộ trình 2-Opt'
+                          : 'Tối ưu ghép tuyến 2-Opt',
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
         Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -487,44 +559,268 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
   }
 
   /// UC36: Sửa / Hủy đơn hàng & Yêu cầu Giao lại / Hoàn hàng (Chuẩn uc36_sua_huy_don_v2)
+  Widget _buildBulkPickupSchedulerCard() {
+    final personalWhs = _store.merchantPersonalWarehouses;
+    final pickupList = _store.merchantPersonalPickupRequests;
+    final selectedWh = personalWhs.isEmpty
+        ? null
+        : personalWhs[_selectedWarehouseIndex.clamp(0, personalWhs.length - 1)];
+    const vehicleOptions = [
+      'Xe ba gác 300kg',
+      'Xe tải van 500kg',
+      'Xe tải thùng kín 1.5 tấn',
+    ];
+    const slotOptions = [
+      '09:00 - 11:00 (Ca sáng)',
+      '14:00 - 16:00 (Ca chiều)',
+      '18:00 - 20:00 (Ca tối)',
+    ];
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Đặt lịch gọi xe thu gom số lượng lớn tại Kho (UC36)',
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Hẹn xe tải van / xe thùng kín đến kho gom nhiều kiện B2B cùng lúc theo khung giờ cố định.',
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 12,
+            runSpacing: 10,
+            children: [
+              SizedBox(
+                width: 230,
+                child: DropdownButtonFormField<String>(
+                  initialValue: vehicleOptions.contains(_pickupVehicleType)
+                      ? _pickupVehicleType
+                      : vehicleOptions[1],
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    isDense: true,
+                    labelText: 'Loại xe thu gom',
+                  ),
+                  items: vehicleOptions
+                      .map(
+                        (v) => DropdownMenuItem(
+                          value: v,
+                          child: Text(v, style: const TextStyle(fontSize: 12.5)),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (v) {
+                    if (v != null) {
+                      _rebuildMerchantUi(() => _pickupVehicleType = v);
+                    }
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 230,
+                child: DropdownButtonFormField<String>(
+                  initialValue: slotOptions.contains(_pickupTimeSlot)
+                      ? _pickupTimeSlot
+                      : slotOptions[1],
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    isDense: true,
+                    labelText: 'Khung giờ hẹn lấy',
+                  ),
+                  items: slotOptions
+                      .map(
+                        (s) => DropdownMenuItem(
+                          value: s,
+                          child: Text(s, style: const TextStyle(fontSize: 12.5)),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (v) {
+                    if (v != null) {
+                      _rebuildMerchantUi(() => _pickupTimeSlot = v);
+                    }
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 130,
+                child: TextField(
+                  controller: _pickupQtyCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    isDense: true,
+                    labelText: 'Số lượng kiện',
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 150,
+                child: TextField(
+                  controller: _pickupWeightCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    isDense: true,
+                    labelText: 'Tổng KL (kg)',
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 12,
+            runSpacing: 10,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              SizedBox(
+                width: 320,
+                child: TextField(
+                  controller: _pickupNoteCtrl,
+                  decoration: InputDecoration(
+                    isDense: true,
+                    labelText:
+                        'Ghi chú kho (${selectedWh?.name ?? "Kho mặc định"})',
+                    hintText: 'VD: Có xe nâng hỗ trợ tại cửa kho số 2',
+                  ),
+                ),
+              ),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF5B33E6),
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () {
+                  final activeMer = _store.activeMerchantRecord;
+                  if (activeMer == null ||
+                      activeMer.approvalStatus != 'Đã duyệt') {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        backgroundColor: AppColors.danger,
+                        content: Text(
+                          'Vui lòng hoàn tất đăng ký & chờ Admin duyệt hồ sơ cửa hàng B2B trước khi đặt lịch xe thu gom!',
+                        ),
+                      ),
+                    );
+                    return;
+                  }
+                  final qty = int.tryParse(_pickupQtyCtrl.text.trim()) ?? 10;
+                  final weight =
+                      double.tryParse(_pickupWeightCtrl.text.trim()) ?? 20.0;
+                  final created = _store.createScheduledPickupRequest(
+                    warehouseId: selectedWh?.id ?? '',
+                    vehicleType: _pickupVehicleType,
+                    timeSlot: _pickupTimeSlot,
+                    packageCount: qty,
+                    totalWeightKg: weight,
+                    note: _pickupNoteCtrl.text,
+                  );
+                  _pickupNoteCtrl.clear();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Đã tạo phiếu hẹn xe thu gom ${created.id} (${created.vehicleType} • ${created.timeSlot})!',
+                      ),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.local_shipping_outlined, size: 17),
+                label: const Text('Đặt lịch xe thu gom'),
+              ),
+            ],
+          ),
+          if (pickupList.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            const Divider(height: 1),
+            const SizedBox(height: 8),
+            ...pickupList.take(4).map(
+              (req) => Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    Text(
+                      '${req.id} • ${req.vehicleType} • ${req.timeSlot} (${req.packageCount} kiện ~ ${req.totalWeightKg.toStringAsFixed(1)} kg)',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      req.status,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w800,
+                        color: req.assignedDriverName != null
+                            ? const Color(0xFF14B866)
+                            : const Color(0xFF5B33E6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildScheduledPickupRequestView() {
     final shopOrders = _store.merchantPersonalOrders;
     if (shopOrders.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.all(Radius.zero),
-          border: Border.all(color: AppColors.divider),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Chưa có đơn hàng nào để chỉnh sửa hoặc hủy',
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildBulkPickupSchedulerCard(),
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.all(Radius.zero),
+              border: Border.all(color: AppColors.divider),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Cửa hàng "${_store.merchantStoreName}" hiện chưa có vận đơn nào. Vui lòng tạo đơn hàng trước khi thực hiện sửa thông tin người nhận, hủy đơn hoặc yêu cầu hoàn hàng.',
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 13,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Chưa có đơn hàng nào để chỉnh sửa hoặc hủy',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Cửa hàng "${_store.merchantStoreName}" hiện chưa có vận đơn nào. Vui lòng tạo đơn hàng trước khi thực hiện sửa thông tin người nhận, hủy đơn hoặc yêu cầu hoàn hàng.',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF5E83),
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () =>
+                      _rebuildMerchantUi(() => _selectedScreenIndex = 2),
+                  icon: const Icon(Icons.add_box_outlined, size: 18),
+                  label: const Text('Mở Tạo đơn gửi hàng'),
+                ),
+              ],
             ),
-            const SizedBox(height: 14),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF5E83),
-                foregroundColor: Colors.white,
-              ),
-              onPressed: () =>
-                  _rebuildMerchantUi(() => _selectedScreenIndex = 2),
-              icon: const Icon(Icons.add_box_outlined, size: 18),
-              label: const Text('Mở Tạo đơn gửi hàng'),
-            ),
-          ],
-        ),
+          ),
+        ],
       );
     }
     final safeIdx = _selectedWaybillOrderIndex.clamp(0, shopOrders.length - 1);
@@ -924,15 +1220,26 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
         if (constraints.maxWidth < 760) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [colLeft, const SizedBox(height: 16), colRight],
+            children: [
+              _buildBulkPickupSchedulerCard(),
+              colLeft,
+              const SizedBox(height: 16),
+              colRight,
+            ],
           );
         }
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(child: colLeft),
-            const SizedBox(width: 16),
-            Expanded(child: colRight),
+            _buildBulkPickupSchedulerCard(),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: colLeft),
+                const SizedBox(width: 16),
+                Expanded(child: colRight),
+              ],
+            ),
           ],
         );
       },
@@ -1607,6 +1914,69 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                 label: const Text('Xuất báo cáo ↗'),
               ),
             ],
+          ),
+          const SizedBox(height: 12),
+          Builder(
+            builder: (context) {
+              final aiReport = _store.merchantAiInsights;
+              return Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F3FF),
+                  border: Border.all(color: const Color(0xFF5B33E6)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      spacing: 10,
+                      runSpacing: 4,
+                      children: [
+                        Text(
+                          'Trợ lý AI Dự báo SLA: ${aiReport.predictedSlaOnTimePercent.toStringAsFixed(1)}% đúng hẹn',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13,
+                            color: Color(0xFF5B33E6),
+                          ),
+                        ),
+                        Text(
+                          'Điểm nóng: ${aiReport.hotspotZoneName}',
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF4A4754),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      aiReport.peakWindowAdvice,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    ...aiReport.actionRecommendations.take(2).map(
+                      (tip) => Padding(
+                        padding: const EdgeInsets.only(bottom: 3),
+                        child: Text(
+                          '• $tip',
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            color: Color(0xFF4A4754),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
           const SizedBox(height: 12),
           LayoutBuilder(

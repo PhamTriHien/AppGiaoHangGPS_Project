@@ -789,3 +789,73 @@ class FoodMenuItemRecord {
     );
   }
 }
+
+class ScheduledPickupRequestRecord {
+  final String id;
+  final String merchantId;
+  final String storeName;
+  final String warehouseId;
+  final String warehouseName;
+  final String warehouseAddress;
+  final String vehicleType;
+  final String timeSlot;
+  final int packageCount;
+  final double totalWeightKg;
+  final String note;
+  String status;
+  String? assignedDriverName;
+  final String createdAt;
+
+  ScheduledPickupRequestRecord({
+    required this.id,
+    required this.merchantId,
+    required this.storeName,
+    required this.warehouseId,
+    required this.warehouseName,
+    required this.warehouseAddress,
+    required this.vehicleType,
+    required this.timeSlot,
+    required this.packageCount,
+    required this.totalWeightKg,
+    this.note = '',
+    this.status = 'Chờ điều xe thu gom',
+    this.assignedDriverName,
+    required this.createdAt,
+  });
+
+  Map<String, Object?> toSqlRow() => <String, Object?>{
+    'id': id,
+    'merchantId': merchantId,
+    'storeName': storeName,
+    'warehouseId': warehouseId,
+    'warehouseName': warehouseName,
+    'warehouseAddress': warehouseAddress,
+    'vehicleType': vehicleType,
+    'timeSlot': timeSlot,
+    'packageCount': packageCount,
+    'totalWeightKg': totalWeightKg,
+    'note': note,
+    'status': status,
+    'assignedDriverName': assignedDriverName,
+    'createdAt': createdAt,
+  };
+
+  static ScheduledPickupRequestRecord fromSqlRow(Map<String, dynamic> row) {
+    return ScheduledPickupRequestRecord(
+      id: (row['id'] ?? '').toString(),
+      merchantId: (row['merchantId'] ?? '').toString(),
+      storeName: (row['storeName'] ?? '').toString(),
+      warehouseId: (row['warehouseId'] ?? '').toString(),
+      warehouseName: (row['warehouseName'] ?? '').toString(),
+      warehouseAddress: (row['warehouseAddress'] ?? '').toString(),
+      vehicleType: (row['vehicleType'] ?? 'Xe tải van 500kg').toString(),
+      timeSlot: (row['timeSlot'] ?? '14:00 - 16:00 (Ca chiều)').toString(),
+      packageCount: (row['packageCount'] as num?)?.toInt() ?? 10,
+      totalWeightKg: (row['totalWeightKg'] as num?)?.toDouble() ?? 15.0,
+      note: (row['note'] ?? '').toString(),
+      status: (row['status'] ?? 'Chờ điều xe thu gom').toString(),
+      assignedDriverName: row['assignedDriverName']?.toString(),
+      createdAt: (row['createdAt'] ?? '').toString(),
+    );
+  }
+}

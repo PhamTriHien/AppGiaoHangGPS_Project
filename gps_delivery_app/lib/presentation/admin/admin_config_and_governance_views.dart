@@ -1496,6 +1496,107 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                 ),
               ],
             ),
+            const SizedBox(height: 12),
+            Builder(
+              builder: (context) {
+                final aiReport = _store.aiOperationsInsights;
+                final pendingPickups = _store.scheduledPickupRequests;
+                return Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F3FF),
+                    border: Border.all(color: AppColors.violet),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        spacing: 12,
+                        runSpacing: 4,
+                        children: [
+                          Text(
+                            'AI Điều phối Mạng lưới • Dự báo SLA: ${aiReport.predictedSlaOnTimePercent.toStringAsFixed(1)}% (${aiReport.peakWindowAdvice})',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 12.5,
+                              color: Color(0xFF5B33E6),
+                            ),
+                          ),
+                          Text(
+                            'Phiếu hẹn xe thu gom B2B: ${pendingPickups.length}',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (pendingPickups.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        ...pendingPickups.take(3).map(
+                          (req) => Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: Wrap(
+                              alignment: WrapAlignment.spaceBetween,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              spacing: 8,
+                              runSpacing: 6,
+                              children: [
+                                Text(
+                                  '${req.id} • ${req.storeName} (${req.warehouseName}) • ${req.vehicleType} • ${req.timeSlot} • ${req.status}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                if (req.assignedDriverName == null)
+                                  OutlinedButton.icon(
+                                    style: OutlinedButton.styleFrom(
+                                      visualDensity: VisualDensity.compact,
+                                    ),
+                                    onPressed:
+                                        !canEditOrder ||
+                                            selectedDispatchDriver == null
+                                        ? null
+                                        : () {
+                                            _store
+                                                .dispatchScheduledPickupByAdmin(
+                                                  requestId: req.id,
+                                                  driver:
+                                                      selectedDispatchDriver,
+                                                );
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Đã điều tài xế ${selectedDispatchDriver.fullName} nhận lô thu gom ${req.id}!',
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                    icon: const Icon(
+                                      Icons.local_shipping_outlined,
+                                      size: 14,
+                                    ),
+                                    label: const Text(
+                                      'Điều xe thu gom',
+                                      style: TextStyle(fontSize: 11.5),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                );
+              },
+            ),
             const SizedBox(height: 8),
             if (eligibleDrivers.isNotEmpty) ...[
               const Text(
