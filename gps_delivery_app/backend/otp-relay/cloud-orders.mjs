@@ -65,7 +65,7 @@ export function createCloudOrders({ env = process.env, authenticate, fetcher = f
     catch { throw new IntegrationError(502, 'Phản hồi cloud không hợp lệ.'); }
     if (!response.ok) {
       if (['PGRST202', '42P01', '42883'].includes(data.code)) throw new IntegrationError(503,
-        ['delivery_marketplace','delivery_market_operations','delivery_market_browse','delivery_market_media_reserve','delivery_market_attachment_reserve','delivery_cloud_order_otp','delivery_cloud_share_manage','delivery_cloud_logistics'].includes(name)
+        ['delivery_marketplace','delivery_market_operations','delivery_market_browse','delivery_market_media_reserve','delivery_market_attachment_reserve','delivery_cloud_order_otp','delivery_cloud_share_manage','delivery_cloud_logistics','delivery_cloud_admin_accounts'].includes(name)
           ? 'Dữ liệu mua hàng cần được cập nhật trong trang quản trị.'
           : name === 'delivery_cloud_addresses_manage'
           ? 'Chưa cài sổ địa chỉ cloud. Chạy migration 20261029_cloud_addresses.sql trên Supabase.'
@@ -126,6 +126,16 @@ export function createCloudOrders({ env = process.env, authenticate, fetcher = f
     }
     res.json(await rpc(req, 'delivery_cloud_logistics', { p_action: req.params.action, p_payload: req.body }));
   }));
+  const adminAccountActions = new Set([
+    'list','detail','update_profile','set_blocked','set_operator',
+  ]);
+  router.post('/admin-accounts/:action', route(async (req, res) => {
+    if (!adminAccountActions.has(req.params.action) || !req.body || Array.isArray(req.body) ||
+        typeof req.body !== 'object' || Buffer.byteLength(JSON.stringify(req.body)) > 4000) {
+      throw new IntegrationError(400, 'Yêu cầu quản trị tài khoản không hợp lệ.');
+    }
+    res.json(await rpc(req, 'delivery_cloud_admin_accounts', { p_action: req.params.action, p_payload: req.body }));
+  }));
   const aiChat = createCustomerAiChatHandler({ env, fetcher, rpc });
   router.post('/ai-chat', route(aiChat));
   router.get('/profile', route(async (req, res) => res.json(await rpc(req, 'delivery_cloud_profile', {}))));
@@ -138,11 +148,12 @@ export function createCloudOrders({ env = process.env, authenticate, fetcher = f
   }));
   router.post('/accounts/:id/memberships/:role', route(async (req, res) => {
     const body = req.body;
+    const minVersion = body?.decision === 'grant' ? 0 : 1;
     if (!body || Object.keys(body).some(key => !['decision','version','reason'].includes(key)) ||
-        !['merchant','driver'].includes(req.params.role) || !['approve','reject','revoke'].includes(body.decision) ||
-        !Number.isSafeInteger(body.version) || body.version < 1 || body.version > 2147483646 ||
+        !['merchant','driver'].includes(req.params.role) || !['grant','approve','reject','revoke'].includes(body.decision) ||
+        !Number.isSafeInteger(body.version) || body.version < minVersion || body.version > 2147483646 ||
         typeof body.reason !== 'string' || body.reason.length > 500 ||
-        (body.decision !== 'approve' && body.reason.trim().length < 3)) {
+        (['reject','revoke'].includes(body.decision) && body.reason.trim().length < 3)) {
       throw new IntegrationError(400, 'Quyết định đối tác không hợp lệ.');
     }
     res.json(await rpc(req, 'delivery_cloud_membership', { p_user: uuid(req.params.id), p_role: req.params.role,

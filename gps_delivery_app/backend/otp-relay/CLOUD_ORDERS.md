@@ -10,7 +10,7 @@ The public/publishable key cannot execute migrations. Use either:
 
 1. In Supabase SQL Editor, run `database/migrations/20261028_cloud_orders.sql`
    (after `20261027_delivery_integrations.sql`) and subsequent additive migrations
-   through `20261108_cloud_logistics.sql`. Do not install the legacy
+   through `20261109_admin_account_management.sql`. Do not install the legacy
    `database/schema.sql` as a prerequisite.
 2. Put the real PostgreSQL connection string from Supabase **Connect** in backend
    `.env` as `DATABASE_URL`, then run `npm run migrate:cloud`. Use the direct or
@@ -28,10 +28,10 @@ or orders are inserted. Its default tariff is 25,000 VND for the first 2 km,
 5,000 per additional started km, 10,000 express surcharge, and 3,000 per started
 kg over 5 kg. Admin can change these values in **Bang gia cloud**.
 
-### Workflow version 14 & profile schema 3
+### Workflow version 15 & profile schema 3
 
 `npm run migrate:cloud` applies all additive migrations through
-`database/migrations/20261108_cloud_logistics.sql` (`workflowVersion: 14`),
+`database/migrations/20261109_admin_account_management.sql` (`workflowVersion: 15`),
 preserving accounts, tariffs, existing orders, history and login sessions.
 `GET /delivery/cloud/profile` reports `schema_version: 3` with independently
 approved `merchant` and `driver` memberships (`delivery_cloud_memberships`).
@@ -98,14 +98,15 @@ values ('REPLACE_WITH_REAL_AUTH_USER_UUID'::uuid,'operator')
 on conflict(user_id) do update set role='operator';
 ```
 
-In admin **Don hang cloud > Tai khoan**, approve driver/merchant memberships or
-block business profiles. This does not grant/revoke the separate operator role.
-Role, membership, block and tariff changes have an immutable operator audit trail.
-The current UI lists the most recent 200 business profiles; it is not a full
-identity directory. Search and role/pending/blocked filters apply to those loaded
-profiles. Approval, rejection, role changes and blocking each require confirmation.
-Blocking or unblocking preserves a pending role request; explicit approval/rejection
-clears it. Revoking a partner membership cannot strand an unfinished active trip.
+In Admin **Tài khoản** (`/#/admin` -> `AdminAccountsPanel`), verified Cloud
+Operators inspect the unified Auth + profile directory (`delivery_cloud_admin_accounts`),
+including Auth providers (`google` / `email`), incomplete Auth sign-ups, profile
+edits (`update_profile`), direct partner grants (`grant`) or pending request
+approvals/rejections/revocations (`merchant` / `driver`), business lock/unlock
+(`set_blocked`, with self-lock guard), and Operator privilege grant/revoke
+(`set_operator`, requiring audit reason and self-demote guard). Every mutation
+records an immutable entry in `delivery_cloud_admin_audit`. Revoking a partner
+membership cannot strand an unfinished active trip.
 
 ## Complete workflow
 
@@ -160,9 +161,10 @@ authorization checks even when called through Supabase Data API directly.
 | Method/path | Action |
 | --- | --- |
 | GET/POST `/profile` | Read/save own profile, view/request independent memberships (`schema_version: 3`) |
-| POST `/memberships/:role`, POST `/accounts/:id/memberships/:role` | Request or operator-decide `merchant` / `driver` membership |
+| POST `/memberships/:role`, POST `/accounts/:id/memberships/:role` | Request or operator-decide (`approve`, `reject`, `revoke`, `grant`) `merchant` / `driver` membership |
 | GET `/merchants` | Approved merchant IDs/names only |
-| GET `/accounts`, POST `/accounts/:id` | Operator account directory and business blocking |
+| GET `/accounts`, POST `/accounts/:id` | Legacy operator business profile list and blocking |
+| POST `/admin-accounts/:action` | Operator identity governance (`list`, `detail`, `update_profile`, `set_blocked`, `set_operator`) |
 | GET/POST `/pricing`, GET `/audit` | Operator tariff and audit |
 | POST `/quote` | Server-computed estimate (5 service modes, volumetric weight, extra stops, round-trip, insurance, EV/Green Fund) |
 | GET `/orders?queue=true` | Redacted queue for approved drivers |
@@ -203,8 +205,6 @@ sanitizing the OTP out of `delivery_cloud_order_events.reason`. Document/KYC
 review remains an operator process.
 
 The localhost backend must be deployed over HTTPS before separate physical
-devices or external provider webhooks can reach it. Validation: `npm test` (`111/111`),
-`npm run test:postgres` (`22/22`), `flutter analyze --no-pub` (`0` issues) and
-`flutter test --no-pub` (`277` passed). Confirm `schema_version: 3` and
-`workflowVersion: 13` using Admin readiness before accepting rollout on a new
+devices or external provider webhooks can reach it. Confirm `schema_version: 3`
+and `workflowVersion: 15` using Admin readiness before accepting rollout on a new
 environment.

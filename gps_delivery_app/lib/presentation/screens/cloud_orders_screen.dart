@@ -35,11 +35,13 @@ class CloudOrdersScreen extends StatefulWidget {
     this.session,
     this.admin = false,
     this.embedded = false,
+    this.showAccountsToggle = true,
   });
   final CloudOrdersService? service;
   final CloudAccountSession? session;
   final bool admin;
   final bool embedded;
+  final bool showAccountsToggle;
   @override
   State<CloudOrdersScreen> createState() => _CloudOrdersScreenState();
 }
@@ -1375,7 +1377,7 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
                                 _load();
                               },
                       ),
-                    if (_operator)
+                    if (_operator && widget.showAccountsToggle)
                       SegmentedButton<bool>(
                         segments: const [
                           ButtonSegment(value: false, label: Text('Đơn hàng')),

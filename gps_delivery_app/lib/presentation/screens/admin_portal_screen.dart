@@ -9,6 +9,7 @@ import '../../core/integrations/cloud_session_lease.dart';
 import '../../core/integrations/delivery_api_client.dart';
 import '../../core/network/public_json_api.dart';
 import '../../core/utils/currency_formatter.dart';
+import '../widgets/admin_accounts_panel.dart';
 import '../widgets/backend_integration_settings.dart';
 import '../widgets/cloud_logistics_panels.dart';
 import '../widgets/cloud_order_labels.dart';
@@ -60,6 +61,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
   bool _busy = false;
   String? _error;
   int _tab = 0;
+  String _accountsFilter = 'all';
 
   static const _destinations = [
     (
@@ -67,30 +69,42 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
       Icons.space_dashboard_rounded,
       'Tổng quan',
       'Giám sát vận đơn, thương mại điện tử và sổ cái thời gian thực',
+      'Tổng quan',
+    ),
+    (
+      Icons.manage_accounts_outlined,
+      Icons.manage_accounts_rounded,
+      'Tài khoản',
+      'Quản trị danh tính Cloud, phân quyền Operator/Đối tác và bảo mật tài khoản',
+      'Tài khoản',
     ),
     (
       Icons.local_shipping_outlined,
       Icons.local_shipping_rounded,
-      'Đơn & Tài khoản',
-      'Điều phối chuyến giao, hãng vận chuyển GHN và xét duyệt hồ sơ đối tác',
+      'Vận đơn',
+      'Điều phối chuyến giao, lịch thu gom và hãng vận chuyển GHN',
+      'Vận đơn',
     ),
     (
       Icons.storefront_outlined,
       Icons.storefront_rounded,
       'Cửa hàng & Đánh giá',
       'Phê duyệt gian hàng đối tác và xử lý báo cáo vi phạm đánh giá',
+      'Cửa hàng',
     ),
     (
       Icons.account_balance_outlined,
       Icons.account_balance_rounded,
       'Khuyến mãi & Đối soát',
       'Ngân sách voucher toàn sàn, tiến trình nền và đối soát kế toán kép',
+      'Đối soát',
     ),
     (
       Icons.hub_outlined,
       Icons.hub_rounded,
       'Tích hợp',
       'Quản lý khóa dịch vụ Cloud PostgreSQL, kiểm tra kết nối và schema',
+      'Tích hợp',
     ),
   ];
 
@@ -912,7 +926,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
                         border: Border.all(color: _kAdminBorder),
                       ),
                       child: SelectableText(
-                        '${e['action']} · ${e['target_id'] ?? ''}\n${cloudDate(e['created_at'])} · ${e['actor_id']}',
+                        '${adminAuditActionLabel(e['action'])} (${e['action']}) · ${e['target_id'] ?? ''}\n${cloudDate(e['created_at'])} · ${e['actor_id']}',
                         style: const TextStyle(fontSize: 12.5, height: 1.45),
                       ),
                     ),
@@ -1003,7 +1017,10 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
                   borderRadius: BorderRadius.circular(12),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(12),
-                    onTap: () => setState(() => _tab = index),
+                    onTap: () => setState(() {
+                      _tab = index;
+                      if (index == 1) _accountsFilter = 'all';
+                    }),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
@@ -1187,11 +1204,24 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
       0 => _AdminAnalyticsPanel(
         session: _session,
         lease: lease,
-        onNavigateTab: (index) => setState(() => _tab = index),
+        onNavigateTab: (index, {accountsFilter}) => setState(() {
+          _tab = index;
+          if (accountsFilter != null) _accountsFilter = accountsFilter;
+        }),
       ),
-      1 => CloudOrdersScreen(session: _session, admin: true, embedded: true),
-      2 => _AdminModerationPanel(session: _session, lease: lease),
-      3 => _AdminFinancePromoPanel(session: _session, lease: lease),
+      1 => AdminAccountsPanel(
+        session: _session,
+        lease: lease,
+        initialFilter: _accountsFilter,
+      ),
+      2 => CloudOrdersScreen(
+        session: _session,
+        admin: true,
+        embedded: true,
+        showAccountsToggle: false,
+      ),
+      3 => _AdminModerationPanel(session: _session, lease: lease),
+      4 => _AdminFinancePromoPanel(session: _session, lease: lease),
       _ => SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Center(
@@ -1266,20 +1296,84 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
               ],
             ),
           ),
-          bottomNavigationBar: NavigationBar(
-            height: 66,
-            backgroundColor: Colors.white,
-            indicatorColor: const Color(0xFFD3F9D8),
-            selectedIndex: _tab,
-            onDestinationSelected: (i) => setState(() => _tab = i),
-            destinations: [
-              for (final d in _destinations)
-                NavigationDestination(
-                  icon: Icon(d.$1),
-                  selectedIcon: Icon(d.$2, color: _kAdminPrimary),
-                  label: d.$3,
+          bottomNavigationBar: Material(
+            color: Colors.white,
+            child: SafeArea(
+              top: false,
+              child: Container(
+                height: 64,
+                decoration: const BoxDecoration(
+                  border: Border(top: BorderSide(color: _kAdminBorder)),
                 ),
-            ],
+                child: Row(
+                  children: [
+                    for (var i = 0; i < _destinations.length; i++)
+                      Expanded(
+                        child: Semantics(
+                          button: true,
+                          selected: _tab == i,
+                          label: _destinations[i].$3,
+                          excludeSemantics: true,
+                          child: InkWell(
+                            onTap: () => setState(() {
+                              _tab = i;
+                              if (i == 1) _accountsFilter = 'all';
+                            }),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 2,
+                                vertical: 6,
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 3,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: _tab == i
+                                          ? const Color(0xFFD3F9D8)
+                                          : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                    child: Icon(
+                                      _tab == i
+                                          ? _destinations[i].$2
+                                          : _destinations[i].$1,
+                                      size: 20,
+                                      color: _tab == i
+                                          ? _kAdminPrimary
+                                          : _kAdminMuted,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    _destinations[i].$5,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: _tab == i
+                                          ? FontWeight.w700
+                                          : FontWeight.w500,
+                                      color: _tab == i
+                                          ? _kAdminPrimary
+                                          : _kAdminMuted,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
           ),
         );
       },
@@ -1296,7 +1390,7 @@ class _AdminAnalyticsPanel extends StatefulWidget {
 
   final CloudAccountSession session;
   final CloudSessionLease lease;
-  final ValueChanged<int> onNavigateTab;
+  final void Function(int index, {String? accountsFilter}) onNavigateTab;
 
   @override
   State<_AdminAnalyticsPanel> createState() => _AdminAnalyticsPanelState();
@@ -1714,7 +1808,10 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
                               label: Text(
                                 'Xét duyệt đối tác ($membershipsPending)',
                               ),
-                              onPressed: () => widget.onNavigateTab(1),
+                              onPressed: () => widget.onNavigateTab(
+                                1,
+                                accountsFilter: 'pending',
+                              ),
                             ),
                           if (shopsPending > 0 || reportedReviews > 0)
                             ActionChip(
@@ -1726,7 +1823,7 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
                               label: Text(
                                 'Kiểm duyệt gian hàng & báo cáo (${shopsPending + reportedReviews})',
                               ),
-                              onPressed: () => widget.onNavigateTab(2),
+                              onPressed: () => widget.onNavigateTab(3),
                             ),
                           if (finPending > 0)
                             ActionChip(
@@ -1736,7 +1833,7 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
                                 color: _kAdminPrimary,
                               ),
                               label: Text('Duyệt đối soát ($finPending)'),
-                              onPressed: () => widget.onNavigateTab(3),
+                              onPressed: () => widget.onNavigateTab(4),
                             ),
                         ],
                       ),

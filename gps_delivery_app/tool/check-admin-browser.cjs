@@ -46,6 +46,14 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(process.
       let shopStatus = 'pending';
       let shopVersion = 1;
       let reviewHidden = false;
+      const candidateId = '00000000-0000-0000-0000-000000000088';
+      let candidateName = 'Ứng Viên Tài Xế Cloud';
+      let candidatePhone = '0977888999';
+      let candidateBlocked = false;
+      let driverState = 'pending';
+      let driverVersion = 1;
+      let merchantState = null;
+      let merchantVersion = 0;
 
       await page.route('**/*.supabase.co/**', route => {
         const req = route.request();
@@ -120,6 +128,102 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(process.
             },
           });
         }
+        const buildCandidateRow = () => ({
+          user_id: candidateId,
+          email: 'driver-candidate@example.com',
+          email_confirmed: true,
+          auth_providers: ['google'],
+          created_at: '2026-11-01T08:00:00Z',
+          last_sign_in_at: '2026-11-02T14:30:00Z',
+          has_profile: true,
+          full_name: candidateName,
+          phone: candidatePhone,
+          role: driverState === 'active' ? 'driver' : 'customer',
+          blocked: candidateBlocked,
+          updated_at: '2026-11-02T14:30:00Z',
+          is_operator: false,
+          approved_roles: [
+            ...(driverState === 'active' ? ['driver'] : []),
+            ...(merchantState === 'active' ? ['merchant'] : []),
+          ],
+          requested_role: driverState === 'pending' ? 'driver' : null,
+          memberships: [
+            ...(driverState ? [{ role: 'driver', state: driverState, version: driverVersion, reason: '' }] : []),
+            ...(merchantState ? [{ role: 'merchant', state: merchantState, version: merchantVersion, reason: '' }] : []),
+          ],
+          coin_balance: 1200,
+          shops_count: 0,
+          orders_count: 3,
+          driver_orders_count: 5,
+          active_driver_trips: 0,
+        });
+        if (pathname === '/delivery/cloud/admin-accounts/list') {
+          return route.fulfill({
+            headers: cors,
+            json: {
+              accounts: [
+                {
+                  user_id: adminId,
+                  email: adminUser.email,
+                  email_confirmed: true,
+                  auth_providers: ['email'],
+                  created_at: '2026-10-30T08:00:00Z',
+                  last_sign_in_at: '2026-11-03T00:00:00Z',
+                  has_profile: true,
+                  full_name: 'Quản trị Cloud',
+                  phone: '0901234567',
+                  role: 'customer',
+                  blocked: false,
+                  updated_at: '2026-11-03T00:00:00Z',
+                  is_operator: true,
+                  approved_roles: [],
+                  requested_role: null,
+                  memberships: [],
+                  coin_balance: 0,
+                  shops_count: 0,
+                  orders_count: 0,
+                  driver_orders_count: 0,
+                  active_driver_trips: 0,
+                },
+                buildCandidateRow(),
+              ],
+              summary: {
+                total_accounts: 2,
+                completed_profiles: 2,
+                incomplete_profiles: 0,
+                operators: 1,
+                active_drivers: driverState === 'active' && !candidateBlocked ? 1 : 0,
+                active_merchants: merchantState === 'active' && !candidateBlocked ? 1 : 0,
+                pending_memberships: driverState === 'pending' ? 1 : 0,
+                blocked_accounts: candidateBlocked ? 1 : 0,
+              },
+            },
+          });
+        }
+        if (pathname === '/delivery/cloud/admin-accounts/update_profile') {
+          assert.equal(body.user_id, candidateId);
+          candidateName = body.full_name;
+          candidatePhone = body.phone;
+          return route.fulfill({ headers: cors, json: { account: buildCandidateRow() } });
+        }
+        if (pathname === '/delivery/cloud/admin-accounts/set_blocked') {
+          assert.equal(body.user_id, candidateId);
+          candidateBlocked = Boolean(body.blocked);
+          return route.fulfill({ headers: cors, json: { account: buildCandidateRow() } });
+        }
+        if (pathname === `/delivery/cloud/accounts/${candidateId}/memberships/driver`) {
+          assert.equal(body.decision, 'approve');
+          driverState = 'active';
+          driverVersion++;
+          return route.fulfill({ headers: cors, json: { membership: { role: 'driver', state: 'active', version: driverVersion } } });
+        }
+        if (pathname === `/delivery/cloud/accounts/${candidateId}/memberships/merchant`) {
+          assert.equal(body.decision, 'grant');
+          assert.equal(body.version, 0);
+          merchantState = 'active';
+          merchantVersion = 1;
+          return route.fulfill({ headers: cors, json: { membership: { role: 'merchant', state: 'active', version: 1 } } });
+        }
         if (pathname === '/delivery/cloud/marketplace/workspace') {
           return route.fulfill({
             headers: cors,
@@ -176,7 +280,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(process.
               databaseConfigured: false,
               canMigrate: true,
               liveTransactionsVerified: false,
-              migrationVersion: '20261108_cloud_logistics',
+              migrationVersion: '20261109_admin_account_management',
               databaseRevision: 'ui-fixture',
               checks: [
                 { label: 'PostgreSQL backend', status: 'missing', detail: 'Lưu kết nối PostgreSQL tại Admin của backend đang kết nối.' },
@@ -221,6 +325,39 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(process.
         await page.waitForFunction(() => document.querySelector('flt-semantics-placeholder') || document.querySelector('flt-semantics'), { timeout: 30000 });
         await page.locator('flt-semantics-placeholder').evaluateAll(nodes => nodes.forEach(e => e.click()));
       };
+      const waitText = async pattern => {
+        const src = pattern instanceof RegExp ? pattern.source : String(pattern);
+        const isRx = pattern instanceof RegExp;
+        await page.waitForFunction(
+          ({ pat, rx }) => {
+            const re = rx ? new RegExp(pat) : null;
+            const hit = v => (v ? (re ? re.test(v) : v.includes(pat)) : false);
+            for (const el of document.querySelectorAll('flt-semantics, input, textarea')) {
+              if (hit(el.textContent) || hit(el.getAttribute('aria-label')) || hit(el.value)) return true;
+            }
+            return false;
+          },
+          { pat: src, rx: isRx },
+          { timeout: 15000 },
+        );
+      };
+      const scrollFlutterIntoView = async locator => {
+        const cx = width >= 960 ? Math.round(width * 0.6) : Math.round(width * 0.5);
+        const cy = 500;
+        for (let i = 0; i < 10; i++) {
+          if ((await locator.count()) > 0) {
+            const box = await locator.first().boundingBox();
+            if (box && box.y >= 20 && box.y + box.height <= 920) break;
+            await page.mouse.move(cx, cy);
+            await page.mouse.wheel(0, box && box.y < 20 ? -420 : 420);
+          } else {
+            await page.mouse.move(cx, cy);
+            await page.mouse.wheel(0, 420);
+          }
+          await page.waitForTimeout(180);
+        }
+        await locator.first().scrollIntoViewIfNeeded();
+      };
       const fillField = async (name, value) => {
         const field = page.getByRole('textbox', { name, exact: true });
         await field.scrollIntoViewIfNeeded();
@@ -253,6 +390,34 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(process.
       await page.getByText(/Đơn vận chuyển Cloud/).first().waitFor({ timeout: 15000 });
       await page.getByText(/Đối soát & Kế toán kép/).first().waitFor();
       await page.screenshot({ path: path.join(output, `cloud-admin-overview-${width}.png`) });
+
+      await clickTab('Tài khoản');
+      await waitText('Trung tâm Quản trị Danh tính & Phân quyền Cloud');
+      const approveDriver = page.getByRole('button', { name: 'Duyệt Tài xế', exact: true });
+      await scrollFlutterIntoView(approveDriver);
+      await waitText('Ứng Viên Tài Xế Cloud');
+      await approveDriver.click();
+      await fillField('Ghi chú', 'Hồ sơ đối tác hợp lệ');
+      await page.getByRole('button', { name: 'Xác nhận', exact: true }).click();
+      await waitText('Tài xế · Đã duyệt');
+      assert.equal(driverState, 'active');
+
+      const grantMerchant = page.getByRole('button', { name: 'Cấp quyền Cửa hàng', exact: true }).last();
+      await scrollFlutterIntoView(grantMerchant);
+      await grantMerchant.click();
+      await page.getByRole('button', { name: 'Xác nhận', exact: true }).click();
+      await waitText('Cửa hàng · Đã duyệt');
+      assert.equal(merchantState, 'active');
+
+      const lockBtn = page.getByRole('button', { name: 'Khóa tài khoản', exact: true }).last();
+      await scrollFlutterIntoView(lockBtn);
+      await lockBtn.click();
+      await page.getByRole('button', { name: 'Xác nhận', exact: true }).click();
+      const unlockBtn = page.getByRole('button', { name: 'Mở khóa tài khoản', exact: true });
+      await scrollFlutterIntoView(unlockBtn);
+      await unlockBtn.waitFor();
+      assert.equal(candidateBlocked, true);
+      await page.screenshot({ path: path.join(output, `cloud-admin-accounts-${width}.png`) });
 
       await clickTab('Cửa hàng & Đánh giá');
       await page.getByText('Cửa hàng chờ duyệt', { exact: false }).first().waitFor();

@@ -2,11 +2,11 @@ import crypto from 'node:crypto';
 import { configValue, INTEGRATION_DEFINITIONS, providerConfigured } from './integration-config.mjs';
 import { createCommerceDatabase } from './commerce-db.mjs';
 
-export const COMMERCE_MIGRATION = '20261108_cloud_logistics';
+export const COMMERCE_MIGRATION = '20261109_admin_account_management';
 const revisionKey = crypto.randomBytes(32);
 export const databaseRevision = env => crypto.createHmac('sha256', revisionKey)
   .update(JSON.stringify([configValue('DATABASE_URL', env), configValue('DATABASE_CA_CERT', env)])).digest('hex');
-const migrations = ['20261027_delivery_integrations.sql', '20261028_cloud_orders.sql', '20261029_payments_ghn.sql', '20261029_cloud_addresses.sql', '20261030_marketplace.sql', '20261031_market_operations.sql', '20261101_partner_memberships.sql', '20261102_local_address_import.sql', '20261103_catalog_stock_versions.sql', '20261104_market_media.sql', '20261105_market_browse.sql', '20261106_catalog_configuration.sql', '20261107_cloud_commercial_suite.sql', '20261108_cloud_logistics.sql'];
+const migrations = ['20261027_delivery_integrations.sql', '20261028_cloud_orders.sql', '20261029_payments_ghn.sql', '20261029_cloud_addresses.sql', '20261030_marketplace.sql', '20261031_market_operations.sql', '20261101_partner_memberships.sql', '20261102_local_address_import.sql', '20261103_catalog_stock_versions.sql', '20261104_market_media.sql', '20261105_market_browse.sql', '20261106_catalog_configuration.sql', '20261107_cloud_commercial_suite.sql', '20261108_cloud_logistics.sql', '20261109_admin_account_management.sql'];
 
 // Catalog-only queries: never create users, orders, provider requests or payments.
 export const DEPLOYMENT_SCHEMA_SQL = `with commerce_tables as (
@@ -61,6 +61,14 @@ select
       cross join (select oid from pg_roles where rolname in ('anon','authenticated')) r
       cross join unnest(array['SELECT','INSERT','UPDATE','DELETE']) p(privilege)
       where coalesce(has_table_privilege(r.oid,to_regclass('public.'||n),p.privilege),false)) as logistics_schema,
+  to_regprocedure('public.delivery_cloud_admin_accounts(text,jsonb)') is not null
+    and to_regprocedure('public.delivery_cloud_admin_account_row(uuid)') is not null
+    and to_regprocedure('public.delivery_cloud_auth_providers(uuid,jsonb)') is not null
+    and not exists(select 1 from (select oid from pg_roles where rolname in ('anon','authenticated')) r
+      where has_function_privilege(r.oid,to_regprocedure('public.delivery_cloud_admin_account_row(uuid)'),'EXECUTE')
+        or has_function_privilege(r.oid,to_regprocedure('public.delivery_cloud_auth_providers(uuid,jsonb)'),'EXECUTE'))
+    and not has_function_privilege((select oid from pg_roles where rolname='anon'),
+      to_regprocedure('public.delivery_cloud_admin_accounts(text,jsonb)'),'EXECUTE') as admin_accounts_schema,
   to_regprocedure('public.delivery_market_selection(uuid,jsonb)') is not null
     and to_regprocedure('public.delivery_market_configured_cart()') is not null
     and (select count(*)=4 from information_schema.columns where table_schema='public'
@@ -178,6 +186,8 @@ export function createDeploymentReadiness({ env = process.env, database = create
       schema?.commercial_suite_schema ? 'Đã có biến thể SKU, nhân sự shop, trả trước multi-shop, bằng chứng riêng tư, voucher, flash sale và xu.' : 'Cần migration 20261107_cloud_commercial_suite.sql.');
     add('logistics_schema','Thu gom, tín nhiệm người nhận và thống kê giao hàng',schema ? schema.logistics_schema ? 'ok' : 'missing' : 'unchecked',
       schema?.logistics_schema ? 'Đã có phiếu thu gom, chỉ dẫn giao hàng, cờ rủi ro người nhận riêng tư và thống kê từ đơn cloud.' : 'Cần migration 20261108_cloud_logistics.sql.');
+    add('admin_accounts_schema','Quản trị danh tính và phân quyền tài khoản',schema ? schema.admin_accounts_schema ? 'ok' : 'missing' : 'unchecked',
+      schema?.admin_accounts_schema ? 'Đã có quản trị danh tính Auth, cấp quyền đối tác trực tiếp, bảo vệ tự khóa Operator và nhật ký kiểm toán.' : 'Cần migration 20261109_admin_account_management.sql.');
     const commerceSchema = schema?.commerce_schema && schema?.commerce_guard;
     add('address_schema','Sổ địa chỉ tài khoản',schema ? schema.address_schema ? 'ok' : 'missing' : 'unchecked',
       schema?.address_schema ? 'Đã có RPC và RLS sổ địa chỉ.' : 'Cần migration 20261029_cloud_addresses.sql.');

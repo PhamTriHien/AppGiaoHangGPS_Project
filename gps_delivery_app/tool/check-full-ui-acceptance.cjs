@@ -2334,7 +2334,7 @@ async function runSuite06OperatorAdmin(browser, acceptanceRoot, gallery) {
         ghnPreviewed = true;
         return route.fulfill({ headers: CORS, json: { quote_id: 'ghn-q-1', total_fee: 27500 } });
       }
-      if (p === '/delivery/cloud/accounts') {
+      if (p === '/delivery/cloud/accounts' || p === '/delivery/cloud/admin-accounts/list') {
         return route.fulfill({
           headers: CORS,
           json: {
@@ -2342,17 +2342,52 @@ async function runSuite06OperatorAdmin(browser, acceptanceRoot, gallery) {
             accounts: [
               {
                 user_id: candidateId,
+                email: 'candidate@example.com',
+                email_confirmed: true,
+                auth_providers: ['google'],
+                has_profile: true,
                 full_name: 'Ứng Viên Tài Xế Mới',
                 phone: '0977888999',
                 role: 'customer',
                 blocked: accountBlocked,
+                is_operator: false,
                 requested_role: driverApproved ? null : 'driver',
                 approved_roles: driverApproved ? ['driver'] : [],
                 memberships: [
                   { role: 'driver', state: driverApproved ? 'active' : 'pending', version: driverApproved ? 2 : 1, reason: '' },
                 ],
+                coin_balance: 0,
+                shops_count: 0,
+                orders_count: 1,
+                driver_orders_count: 0,
+                active_driver_trips: 0,
               },
             ],
+            summary: {
+              total_accounts: 1,
+              completed_profiles: 1,
+              incomplete_profiles: 0,
+              operators: 1,
+              active_drivers: driverApproved && !accountBlocked ? 1 : 0,
+              active_merchants: 0,
+              pending_memberships: driverApproved ? 0 : 1,
+              blocked_accounts: accountBlocked ? 1 : 0,
+            },
+          },
+        });
+      }
+      if (p === '/delivery/cloud/admin-accounts/set_blocked') {
+        accountBlocked = Boolean(body.blocked);
+        return route.fulfill({ headers: CORS, json: { ok: true } });
+      }
+      if (p === '/delivery/cloud/logistics/stats') {
+        return route.fulfill({
+          headers: CORS,
+          json: {
+            scope: 'network',
+            summary: { total: 42, delivered: 29, failed_or_returned: 1, cancelled: 0, active: 12, avg_delivery_minutes: 31, avg_transit_minutes: 19, by_service: [] },
+            pickups: { requested: 1, assigned: 2 },
+            drivers: { approved: 3, on_trip: 1 },
           },
         });
       }
@@ -2472,7 +2507,7 @@ async function runSuite06OperatorAdmin(browser, acceptanceRoot, gallery) {
             databaseConfigured: false,
             canMigrate: true,
             liveTransactionsVerified: false,
-            migrationVersion: '20261108_cloud_logistics',
+            migrationVersion: '20261109_admin_account_management',
             databaseRevision: 'acceptance-fixture',
             checks: [
               { label: 'PostgreSQL backend', status: 'missing', detail: 'Lưu kết nối PostgreSQL tại Admin của backend đang kết nối.' },
@@ -2535,7 +2570,7 @@ async function runSuite06OperatorAdmin(browser, acceptanceRoot, gallery) {
     ]);
     await s.clickButton('Đóng');
 
-    await s.clickNav('Đơn & Tài khoản');
+    await s.clickNav('Vận đơn');
     await s.waitText(/Hộp sách chuyên khảo/);
     await s.clickButton('Vận chuyển GHN');
     await s.fill('Tỉnh/thành điểm lấy (hệ hai cấp)', 'Hồ Chí Minh');
@@ -2545,7 +2580,7 @@ async function runSuite06OperatorAdmin(browser, acceptanceRoot, gallery) {
     await s.clickButton('Xem phí GHN');
     await s.page.getByRole('button', { name: 'Tạo vận đơn GHN', exact: true }).waitFor();
     assert.equal(ghnPreviewed, true);
-    await s.snap(folder, '05-admin-orders-ghn-dispatch-1440.png', 'Tab 2 Đơn & Tài khoản: Báo giá & điều phối hãng vận chuyển GHN', [
+    await s.snap(folder, '05-admin-orders-ghn-dispatch-1440.png', 'Tab Vận đơn: Báo giá & điều phối hãng vận chuyển GHN', [
       'Vận chuyển GHN',
       'Xem phí GHN',
       'Tạo vận đơn GHN',
@@ -2565,7 +2600,7 @@ async function runSuite06OperatorAdmin(browser, acceptanceRoot, gallery) {
     await s.waitText('Tài xế · Đã duyệt');
     assert.equal(driverApproved, true);
 
-    await s.clickButton('Khóa tài khoản');
+    await s.clickButton('Khóa tài khoản', { last: true });
     await s.clickButton('Xác nhận');
     await s.page.getByRole('button', { name: 'Mở khóa tài khoản', exact: true }).waitFor();
     await s.snap(folder, '07-admin-accounts-governance-1440.png', 'Quản trị tài khoản Cloud: Đã duyệt Tài xế & Khóa/Mở khóa tài khoản', [

@@ -157,6 +157,11 @@ class CloudOrdersService {
     Map<String, dynamic> payload = const {},
   ]) => request('logistics/$action', body: payload);
 
+  Future<Map<String, dynamic>> adminAccounts(
+    String action, [
+    Map<String, dynamic> payload = const {},
+  ]) => request('admin-accounts/$action', body: payload);
+
   Future<Map<String, dynamic>> aiChat(List<Map<String, String>> messages) =>
       request('ai-chat', body: {'messages': messages});
 

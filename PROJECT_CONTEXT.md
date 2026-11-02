@@ -37,7 +37,7 @@ All paths below are relative to this repository root.
 | Public and token-shared cloud tracking | `gps_delivery_app/lib/presentation/screens/public_order_tracking_screen.dart`, `shared_tracking_screen.dart` |
 | Private operations, commercial suite, expiry and share projection | `gps_delivery_app/database/migrations/20261031_market_operations.sql`, `20261107_cloud_commercial_suite.sql`, `gps_delivery_app/backend/otp-relay/market-operations.mjs` |
 | Legacy consumer and admin archives | `gps_delivery_app/lib/presentation/screens/architecture_dashboard_screen.dart`, `legacy_admin_portal_screen.dart` |
-| Cloud Admin operator portal | `gps_delivery_app/lib/presentation/screens/admin_portal_screen.dart` |
+| Cloud Admin operator portal & account governance | `gps_delivery_app/lib/presentation/screens/admin_portal_screen.dart`, `gps_delivery_app/lib/presentation/widgets/admin_accounts_panel.dart`, `gps_delivery_app/database/migrations/20261109_admin_account_management.sql` |
 | Canonical cloud UI | `gps_delivery_app/lib/presentation/screens/cloud_orders_screen.dart` |
 | Private cloud order details/history | `gps_delivery_app/lib/presentation/screens/cloud_order_details_screen.dart` |
 | Verified cloud session | `gps_delivery_app/lib/core/integrations/cloud_account_session.dart` |
@@ -164,7 +164,7 @@ All paths below are relative to this repository root.
   and schedule slots. Product uploads decode/re-encode to WebP, remove metadata
   and use scoped Supabase Storage inserts; private chat/return/finance attachments
   use the RLS-locked `'delivery-private-evidence'` bucket (`delivery_market_attachments`).
-  Target migration is `20261108_cloud_logistics`, workflow 14. Isolated tests
+  Target migration is `20261109_admin_account_management`, workflow 15. Isolated tests
   do not certify deployed transactions.
   Quotes optionally bind the client's displayed cart/address versions and reject
   stale data; current Flutter sends both available versions. Confirmation renders
@@ -208,8 +208,18 @@ All paths below are relative to this repository root.
   excludes open/unrefunded returns. See MARKETPLACE.md before commercial use.
 - Additive cloud migrations through `20261107_cloud_commercial_suite.sql`
   (workflow 13, profile schema 3) were applied to the configured Supabase
-  PostgreSQL project on 2026-10-31, and `20261108_cloud_logistics.sql`
-  (workflow 14) on 2026-11-02 (`npm run migrate:cloud`).
+  PostgreSQL project on 2026-10-31, `20261108_cloud_logistics.sql`
+  (workflow 14) on 2026-11-02, and `20261109_admin_account_management.sql`
+  (workflow 15) on 2026-11-03 (`npm run migrate:cloud`).
+- `delivery_cloud_admin_accounts(action,payload)` (route `/delivery/cloud/admin-accounts/:action`)
+  and `delivery_cloud_membership(..., 'grant', ...)` power the dedicated **Tài khoản**
+  module (`AdminAccountsPanel`) in `AdminPortalScreen`: unified `auth.users` +
+  `auth.identities` (`google`/`email`) + `delivery_cloud_accounts` + `delivery_cloud_memberships`
+  + `delivery_api_profiles` directory, incomplete-onboarding completion and profile
+  updates (`update_profile`), direct partner grants (`grant`) alongside pending
+  request approvals/rejections/revocations, business lock/unlock (`set_blocked`
+  with self-lock guard), Operator grant/revoke (`set_operator` with mandatory audit
+  reason and self-demote guard), and per-account shop/audit inspection (`detail`).
 - `delivery_cloud_logistics(action,payload)` (route `/delivery/cloud/logistics/:action`)
   owns bulk pickups (`delivery_cloud_pickups`: approved merchant, address-book
   snapshot, vehicle capacity, slot within 14 days, operator dispatch with version
