@@ -20,6 +20,10 @@ test('Route and matrix gateway validate coordinates, generate fixed OSRM options
   const app = await appFor(t, createDeliveryIntegrations({ env, authenticate: identity('user'), operatorOnly, fetcher: async url => {
     calls++;
     if (url.pathname.includes('/route/')) return json({ code: 'Ok', routes: [{ distance: 100, duration: 60 }] });
+    if (url.pathname.includes('106.30000')) {
+      assert.equal(url.searchParams.has('sources'), false); assert.equal(url.searchParams.has('destinations'), false);
+      return json({ code: 'Ok', distances: [[0, 5], [5, 0]], durations: [[0, 1], [1, 0]] });
+    }
     assert.equal(url.searchParams.get('sources'), '0;1'); assert.equal(url.searchParams.get('destinations'), '2');
     assert.equal(url.searchParams.has('fallback_speed'), false);
     return json({ code: 'Ok', distances: [[10], [20]], durations: [[1], [2]] });
@@ -30,6 +34,8 @@ test('Route and matrix gateway validate coordinates, generate fixed OSRM options
   assert.equal((await app.get(route)).status, 200); assert.equal((await app.get(route)).status, 200); assert.equal(calls, 1);
   env.OSRM_ENABLED = 'false'; assert.equal((await app.get(route)).status, 503); assert.equal(calls, 1);
   env.OSRM_ENABLED = 'true'; assert.equal((await app.get('/matrix?coordinates=106,10;106.1,10.1;106.2,10.2')).status, 200);
+  const fullTable = await (await app.get('/matrix?full=1&coordinates=106,10;106.3,10.3')).json();
+  assert.deepEqual(fullTable.distances, [[0, 5], [5, 0]]);
 });
 test('Catalogues are cached but disabled banks fail; privileged adapters are role gated and secrets stay server side', async t => {
   const env = { GHN_ENABLED: 'true', GHN_BASE_URL: 'https://dev-online-gateway.ghn.vn/shiip/public-api/', GHN_TOKEN: 'private-token', GHN_SHOP_ID: '12' };
@@ -173,6 +179,15 @@ test('Route, matrix and connection check run 100% on Google Maps Platform when P
       assert.equal(options.headers['X-Goog-Maps-Solution-ID'], 'gmp_git_agentskills_v1');
       assert.equal(options.headers['X-Goog-FieldMask'], 'originIndex,destinationIndex,duration,distanceMeters,status,condition');
       const body = JSON.parse(options.body);
+      if (body.destinations.length === 2) {
+        assert.equal(body.origins.length, 2);
+        return json([
+          { originIndex: 0, destinationIndex: 1, status: {}, distanceMeters: 700, duration: '90s', condition: 'ROUTE_EXISTS' },
+          { originIndex: 1, destinationIndex: 0, status: {}, distanceMeters: 800, duration: '95s', condition: 'ROUTE_EXISTS' },
+          { originIndex: 0, destinationIndex: 0, status: {}, distanceMeters: 0, duration: '0s', condition: 'ROUTE_EXISTS' },
+          { originIndex: 1, destinationIndex: 1, status: {}, distanceMeters: 0, duration: '0s', condition: 'ROUTE_EXISTS' },
+        ]);
+      }
       assert.equal(body.origins.length, 2);
       assert.equal(body.destinations.length, 1);
       return json([
@@ -205,6 +220,10 @@ test('Route, matrix and connection check run 100% on Google Maps Platform when P
   assert.deepEqual(matrixRes.durations, [[140], [380]]);
   assert.deepEqual(matrixRes.distances, [[950], [2400]]);
   assert.equal(matrixCalls, 1);
+  const fullMatrix = await (await app.get('/matrix?full=1&coordinates=106.69,10.77;106.70,10.78')).json();
+  assert.deepEqual(fullMatrix.distances, [[0, 700], [800, 0]]);
+  assert.deepEqual(fullMatrix.durations, [[0, 90], [95, 0]]);
+  assert.equal(matrixCalls, 2);
 
   const checkOk = await (await app.post('/admin/integrations/test/google_maps', {})).json();
   assert.equal(checkOk.ok, true);

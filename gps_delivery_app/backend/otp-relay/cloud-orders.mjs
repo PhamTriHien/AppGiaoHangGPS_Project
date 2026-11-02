@@ -65,7 +65,7 @@ export function createCloudOrders({ env = process.env, authenticate, fetcher = f
     catch { throw new IntegrationError(502, 'Phản hồi cloud không hợp lệ.'); }
     if (!response.ok) {
       if (['PGRST202', '42P01', '42883'].includes(data.code)) throw new IntegrationError(503,
-        ['delivery_marketplace','delivery_market_operations','delivery_market_browse','delivery_market_media_reserve','delivery_market_attachment_reserve','delivery_cloud_order_otp','delivery_cloud_share_manage'].includes(name)
+        ['delivery_marketplace','delivery_market_operations','delivery_market_browse','delivery_market_media_reserve','delivery_market_attachment_reserve','delivery_cloud_order_otp','delivery_cloud_share_manage','delivery_cloud_logistics'].includes(name)
           ? 'Dữ liệu mua hàng cần được cập nhật trong trang quản trị.'
           : name === 'delivery_cloud_addresses_manage'
           ? 'Chưa cài sổ địa chỉ cloud. Chạy migration 20261029_cloud_addresses.sql trên Supabase.'
@@ -115,6 +115,16 @@ export function createCloudOrders({ env = process.env, authenticate, fetcher = f
       : await rpc(req, operationActions.has(req.params.action) ? 'delivery_market_operations' : 'delivery_marketplace', { p_action: req.params.action, p_payload: req.body });
     if (req.params.action === 'tracking_share') attachShareUrl(result, env);
     res.json(result);
+  }));
+  const logisticsActions = new Set([
+    'pickup_list','pickup_create','pickup_assign','recipient_trust','recipient_flag','instruction_set','stats','service_eta',
+  ]);
+  router.post('/logistics/:action', route(async (req, res) => {
+    if (!logisticsActions.has(req.params.action) || !req.body || Array.isArray(req.body) ||
+        typeof req.body !== 'object' || Buffer.byteLength(JSON.stringify(req.body)) > 4000) {
+      throw new IntegrationError(400, 'Yêu cầu vận hành không hợp lệ.');
+    }
+    res.json(await rpc(req, 'delivery_cloud_logistics', { p_action: req.params.action, p_payload: req.body }));
   }));
   const aiChat = createCustomerAiChatHandler({ env, fetcher, rpc });
   router.post('/ai-chat', route(aiChat));

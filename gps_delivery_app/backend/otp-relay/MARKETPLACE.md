@@ -183,11 +183,15 @@ The native PKCE callback is `http://127.0.0.1:8766/auth/callback`; add this exac
 redirect to the project's allowed redirects. Web Google returns to the site root.
 No native Google client secret or provider token is used as a Supabase identity.
 
-Password recovery uses Supabase email recovery, not the legacy relay OTP. Configure
-the Auth recovery template to include `{{ .Token }}` for code entry in the desktop
-form; web recovery links must use a correctly configured Site URL/redirect. Gmail
-SMTP settings saved in the relay do not configure Supabase Auth SMTP automatically.
-Real recovery email delivery and Google login have not been certified here.
+Password recovery uses Supabase email recovery (`verifyOTP` with `OtpType.recovery`),
+not the legacy relay OTP. When saved backend `SMTP_*` settings are enabled,
+`setup-google-cloud.mjs` (`./setup-google-cloud.ps1 -Apply`) synchronizes Supabase
+Auth Custom SMTP (`smtp_host`, `smtp_port`, `smtp_user`, `smtp_pass`, `smtp_admin_email`)
+and 6-digit OTP templates (`mailer_otp_length: 6`, `{{ .Token }}` in recovery and
+confirmation templates) — applied and verified live (`POST /auth/v1/recover` -> `200 OK`)
+on 2026-11-02. Editing `SMTP_*` in the relay alone still requires rerunning
+`./setup-google-cloud.ps1 -Apply` (or updating Supabase Dashboard SMTP) to push changes
+to Supabase Auth.
 
 `npm run setup:google-cloud -- --check` reads public provider status and reports
 whether the saved backend/native Google fields exist, without printing secrets.

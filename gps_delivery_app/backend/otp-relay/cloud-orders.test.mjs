@@ -262,3 +262,25 @@ test('Cloud HTTP gateway rejects local identity, forwards only verified user JWT
   assert.equal(calls[0].options.headers.Authorization,'Bearer user-jwt');
   assert.equal(calls[0].url,'https://example.supabase.co/rest/v1/rpc/delivery_cloud_list');
 });
+
+test('Cloud logistics gateway allows only fixed actions and forwards the user JWT to the fixed RPC', async t => {
+  const calls=[];
+  const app=express(); app.use(express.json());
+  app.use('/cloud',createCloudOrders({env:{SUPABASE_URL:'https://example.supabase.co',SUPABASE_ANON_KEY:'public-key'},
+    authenticate(req,_res,next){req.deliveryIdentity={id:'verified-user',token:'user-jwt',local:false};next();},
+    fetcher:async (url,options)=>{calls.push({url:String(url),options});return new Response(JSON.stringify({score:88,tier:'trusted'}));}}));
+  app.use((error,_req,res,_next)=>res.status(error.status||500).json({error:error.message}));
+  const server=app.listen(0,'127.0.0.1');t.after(()=>server.close()); await new Promise(resolve=>server.once('listening',resolve));
+  const base=`http://127.0.0.1:${server.address().port}/cloud/logistics`;
+  const post=(action,body)=>fetch(`${base}/${action}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  assert.equal((await post('delete_everything',{})).status,400);
+  assert.equal((await post('stats',[])).status,400);
+  assert.equal((await post('pickup_create',{note:'x'.repeat(5000)})).status,400);
+  assert.equal(calls.length,0);
+  const response=await post('recipient_trust',{phone:'0912345678'});
+  assert.equal(response.status,200);
+  assert.deepEqual(await response.json(),{score:88,tier:'trusted'});
+  assert.equal(calls[0].url,'https://example.supabase.co/rest/v1/rpc/delivery_cloud_logistics');
+  assert.equal(calls[0].options.headers.Authorization,'Bearer user-jwt');
+  assert.deepEqual(JSON.parse(calls[0].options.body),{p_action:'recipient_trust',p_payload:{phone:'0912345678'}});
+});

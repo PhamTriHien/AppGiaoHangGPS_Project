@@ -132,15 +132,20 @@ export function createDeliveryGateway({ env = process.env, fetcher = fetch,
     const coords = points(req.query.coordinates);
     const pairs = coords.split(';');
     const count = pairs.length;
+    // Default: every point to the last one (ETA). full=1: all-pairs table for stop ordering.
+    const full = req.query.full === '1';
+    const oneToLast = full ? {} : {
+      sources: Array.from({ length: count - 1 }, (_, i) => i).join(';'),
+      destinations: String(count - 1),
+    };
     if (useTrackAsia) {
       const tUrl = new URL(`https://maps.track-asia.com/distance-matrix/v1/car/${coords}.json`);
       tUrl.search = new URLSearchParams({
-        sources: Array.from({ length: count - 1 }, (_, i) => i).join(';'),
-        destinations: String(count - 1),
+        ...oneToLast,
         annotations: 'duration,distance',
         key: env.TRACKASIA_API_KEY,
       }).toString();
-      const tResult = await cached(tUrl, {}, 60000, `trackasia:matrix:${coords}`);
+      const tResult = await cached(tUrl, {}, 60000, `trackasia:matrix:${full ? 'full:' : ''}${coords}`);
       if (tResult.code !== 'Ok' || !Array.isArray(tResult.durations) || !Array.isArray(tResult.distances)) {
         throw new IntegrationError(502, 'Khong tinh duoc ETA.');
       }
@@ -148,10 +153,9 @@ export function createDeliveryGateway({ env = process.env, fetcher = fetch,
     }
     if (useGoogle) {
       const parsed = pairs.map(pair => pair.split(',').map(Number));
-      const origins = parsed.slice(0, -1).map(([lon, lat]) => ({
-        waypoint: { location: { latLng: { latitude: lat, longitude: lon } } },
-      }));
-      const [destLon, destLat] = parsed[parsed.length - 1];
+      const waypoint = ([lon, lat]) => ({ waypoint: { location: { latLng: { latitude: lat, longitude: lon } } } });
+      const origins = (full ? parsed : parsed.slice(0, -1)).map(waypoint);
+      const destinations = full ? parsed.map(waypoint) : [waypoint(parsed[parsed.length - 1])];
       const elements = await cached('https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix', {
         method: 'POST',
         headers: {
@@ -162,34 +166,34 @@ export function createDeliveryGateway({ env = process.env, fetcher = fetch,
         },
         body: JSON.stringify({
           origins,
-          destinations: [{ waypoint: { location: { latLng: { latitude: destLat, longitude: destLon } } } }],
+          destinations,
           travelMode: 'DRIVE',
           routingPreference: 'TRAFFIC_AWARE',
         }),
-      }, 60000, `gmaps:matrix:${coords}`);
+      }, 60000, `gmaps:matrix:${full ? 'full:' : ''}${coords}`);
       if (!Array.isArray(elements)) throw new IntegrationError(502, 'Khong tinh duoc ETA.');
-      const durations = Array.from({ length: origins.length }, () => null);
-      const distances = Array.from({ length: origins.length }, () => null);
+      const durations = Array.from({ length: origins.length }, () => Array(destinations.length).fill(null));
+      const distances = Array.from({ length: origins.length }, () => Array(destinations.length).fill(null));
       for (const item of elements) {
         const idx = item?.originIndex ?? 0;
         const destIdx = item?.destinationIndex ?? 0;
-        if (!Number.isInteger(idx) || idx < 0 || idx >= origins.length || destIdx !== 0) continue;
+        if (!Number.isInteger(idx) || idx < 0 || idx >= origins.length ||
+            !Number.isInteger(destIdx) || destIdx < 0 || destIdx >= destinations.length) continue;
         if ((item?.status?.code ?? 0) !== 0 || item?.condition !== 'ROUTE_EXISTS') continue;
         const duration = parseGoogleDuration(item.duration);
         const distance = Number(item.distanceMeters ?? (item.duration === '0s' ? 0 : NaN));
         if (Number.isFinite(duration) && duration >= 0 && Number.isFinite(distance) && distance >= 0) {
-          durations[idx] = [duration];
-          distances[idx] = [distance];
+          durations[idx][destIdx] = duration;
+          distances[idx][destIdx] = distance;
         }
       }
-      if (durations.some(v => v === null) || distances.some(v => v === null)) {
+      if (durations.some(row => row.includes(null)) || distances.some(row => row.includes(null))) {
         throw new IntegrationError(502, 'Khong tinh duoc ETA.');
       }
       return res.json({ code: 'Ok', durations, distances, attribution: 'Google Maps' });
     }
     const url = endpoint('OSRM_BASE_URL', `table/v1/driving/${coords}`);
-    url.search = new URLSearchParams({ sources: Array.from({ length: count - 1 }, (_, i) => i).join(';'),
-      destinations: String(count - 1), annotations: 'duration,distance', skip_waypoints: 'true' }).toString();
+    url.search = new URLSearchParams({ ...oneToLast, annotations: 'duration,distance', skip_waypoints: 'true' }).toString();
     const result = await cached(url);
     if (result.code !== 'Ok' || !Array.isArray(result.durations) || !Array.isArray(result.distances)) throw new IntegrationError(502, 'Khong tinh duoc ETA.');
     res.json(result);

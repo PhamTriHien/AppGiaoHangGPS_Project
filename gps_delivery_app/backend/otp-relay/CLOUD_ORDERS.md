@@ -10,7 +10,7 @@ The public/publishable key cannot execute migrations. Use either:
 
 1. In Supabase SQL Editor, run `database/migrations/20261028_cloud_orders.sql`
    (after `20261027_delivery_integrations.sql`) and subsequent additive migrations
-   through `20261107_cloud_commercial_suite.sql`. Do not install the legacy
+   through `20261108_cloud_logistics.sql`. Do not install the legacy
    `database/schema.sql` as a prerequisite.
 2. Put the real PostgreSQL connection string from Supabase **Connect** in backend
    `.env` as `DATABASE_URL`, then run `npm run migrate:cloud`. Use the direct or
@@ -28,10 +28,10 @@ or orders are inserted. Its default tariff is 25,000 VND for the first 2 km,
 5,000 per additional started km, 10,000 express surcharge, and 3,000 per started
 kg over 5 kg. Admin can change these values in **Bang gia cloud**.
 
-### Workflow version 13 & profile schema 3
+### Workflow version 14 & profile schema 3
 
 `npm run migrate:cloud` applies all additive migrations through
-`database/migrations/20261107_cloud_commercial_suite.sql` (`workflowVersion: 13`),
+`database/migrations/20261108_cloud_logistics.sql` (`workflowVersion: 14`),
 preserving accounts, tariffs, existing orders, history and login sessions.
 `GET /delivery/cloud/profile` reports `schema_version: 3` with independently
 approved `merchant` and `driver` memberships (`delivery_cloud_memberships`).
@@ -173,6 +173,7 @@ authorization checks even when called through Supabase Data API directly.
 | GET `/orders/:id/otp` | Authorized 6-digit `otp_code` read for sender/recipient (`delivery_cloud_order_otp`) |
 | GET/POST `/orders/:id/shares`, POST `/orders/:id/shares/:shareId/revoke` | Revocable 256-bit SHA-256 shipping tracking shares (`delivery_cloud_shares`) |
 | POST `/pod`, POST `/pod/sign` | Private POD photo upload and short-lived signed read URL |
+| POST `/logistics/:action` | Fixed `delivery_cloud_logistics` actions: `pickup_list`, `pickup_create` (approved merchant, address-book warehouse, vehicle capacity, slot within 14 days, idempotent `request_key`), `pickup_assign` (operator, approved driver, expected version, audit), `recipient_trust` / `recipient_flag` (counts only the caller's own shipments; private flags), `instruction_set` (owner, expected version, history entry), `stats` (caller scope or network for operators, last 30 days from transition history), `service_eta` (network averages per service, no order data) |
 | POST `/delivery/tracking/lookup` | Public non-PII status lookup by Cloud order UUID + 4-digit phone suffix or 64-hex share token |
 
 ## Limits

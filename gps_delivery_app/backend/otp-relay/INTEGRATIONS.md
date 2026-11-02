@@ -57,7 +57,7 @@ App delivery calls go through authenticated backend routes:
 | Route under `/delivery` | Purpose |
 | --- | --- |
 | `GET /places`, `GET /reverse` | Managed TrackAsia / Google Maps / Photon address lookup & reverse geocoding |
-| `GET /route`, `GET /matrix` | Managed TrackAsia / Google Routes API / OSRM road routing and ETA |
+| `GET /route`, `GET /matrix` | Managed TrackAsia / Google Routes API / OSRM road routing and ETA; `matrix?full=1` returns the all-pairs table used to order intermediate stops |
 | `GET /banks`, `GET /weather` | VietQR directory and MET forecast |
 | `POST /ocr`, `/optimize`, `/support-summary` | OCR, VROOM and Operator AI summary (`GEMINI_BASE_URL` + `GEMINI_API_KEY`) |
 | `POST /cloud/ai-chat`, `POST /ai/chat` | Authenticated customer AI chatbot using backend-managed `GEMINI_BASE_URL`, `GEMINI_API_KEY` and `GEMINI_MODEL` (supports both Google Gemini `:generateContent` and OpenAI-compatible `/chat/completions`, with read-only RLS-scoped customer order context) |

@@ -7,6 +7,7 @@ import { startNativePostgres } from './native-postgres.mjs';
 import { DEPLOYMENT_SCHEMA_SQL } from '../deployment-readiness.mjs';
 import { testConfiguredCatalog } from './configured-catalog-acceptance.mjs';
 import { testCommercialSuite } from './commercial-suite-acceptance.mjs';
+import { testCloudLogistics } from './cloud-logistics-acceptance.mjs';
 
 const startedAt=Date.now();
 const cluster=await startNativePostgres();
@@ -35,7 +36,7 @@ try{
     grant usage on schema storage to authenticated;grant select,insert on storage.objects to authenticated;create publication supabase_realtime;`);
   await check('P0 latest additive migrations and catalog privacy',async()=>{
     for(const file of ['20261027_delivery_integrations','20261028_cloud_orders','20261029_payments_ghn','20261029_cloud_addresses',
-      '20261030_marketplace','20261031_market_operations','20261101_partner_memberships','20261102_local_address_import','20261103_catalog_stock_versions','20261104_market_media','20261105_market_browse','20261106_catalog_configuration','20261107_cloud_commercial_suite']) {
+      '20261030_marketplace','20261031_market_operations','20261101_partner_memberships','20261102_local_address_import','20261103_catalog_stock_versions','20261104_market_media','20261105_market_browse','20261106_catalog_configuration','20261107_cloud_commercial_suite','20261108_cloud_logistics']) {
       await db.query(await readFile(new URL(`../../../database/migrations/${file}.sql`,import.meta.url),'utf8'));
     }
     const schema=(await db.query(DEPLOYMENT_SCHEMA_SQL)).rows[0];
@@ -176,6 +177,7 @@ try{
   });
   await testConfiguredCatalog({db,as,rpc,operator,merchant,buyer:buyers[7],shop,check});
   await testCommercialSuite({db,as,rpc,operator,merchant,driver,secondDriver,buyers,shop,check,authenticatedQuery});
+  await testCloudLogistics({db,as,operator,merchant,driver,buyers,check});
   const output=path.resolve(import.meta.dirname,'../../../build/verification/postgres-acceptance.json');
   await mkdir(path.dirname(output),{recursive:true});
   await writeFile(output,JSON.stringify({environment:'disposable-loopback-postgresql',checkedAt:new Date().toISOString(),durationMs:Date.now()-startedAt,results},null,2));
