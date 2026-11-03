@@ -309,7 +309,7 @@ class _CloudPickupScreenState extends State<CloudPickupScreen> {
                   decimal: true,
                 ),
                 decoration: const InputDecoration(
-                  labelText: 'Tổng khối lượng (kg)',
+                  labelText: 'Tổng khối lượng', suffixText: 'kg',
                   border: OutlineInputBorder(),
                 ),
                 validator: (raw) {

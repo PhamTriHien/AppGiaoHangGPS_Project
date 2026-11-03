@@ -152,8 +152,14 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
     'Người nhận': _text(_details['recipient_name']),
     'Điện thoại': _text(_details['recipient_phone']),
     'Hàng hóa': _text(_details['package_description']),
-    'Khối lượng (kg)': _text(_details['weight_kg']),
+    'Khối lượng': '${_text(_details['weight_kg'])} kg',
     'Cước vận chuyển': _money(_order['shipping_fee']),
+    if ((_order['coin_discount'] as num? ?? 0) > 0) ...{
+      'Đổi Xu giảm cước': '-${_money(_order['coin_discount'])}',
+      'Cước cần thanh toán': _money(
+        _order['payable_fee'] ?? _order['shipping_fee'],
+      ),
+    },
     'Tiền thu hộ COD': _money(_order['cod_amount']),
     'Trả phí': _payer,
     'Thanh toán': _payment,
@@ -245,7 +251,7 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
           session: widget.lease.session,
           dialog: true,
           builder: (dialog, _) => AlertDialog(
-            title: const Text('Ảnh bằng chứng giao hàng (POD)'),
+            title: const Text('Ảnh bằng chứng giao hàng'),
             content: SizedBox(
               width: 480,
               height: 360,
@@ -618,15 +624,15 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
                     const Divider(height: 32),
                     _section('Kiện hàng', {
                       'Hàng hóa': summary['Hàng hóa']!,
-                      'Khối lượng (kg)': summary['Khối lượng (kg)']!,
+                      'Khối lượng': summary['Khối lượng']!,
                       'Dịch vụ':
                           cloudServiceTypes[_details['service_type']] ??
                           'Chưa có thông tin',
                       if ((_details['length_cm'] as num? ?? 0) > 0 &&
                           (_details['width_cm'] as num? ?? 0) > 0 &&
                           (_details['height_cm'] as num? ?? 0) > 0)
-                        'Kích thước (cm)':
-                            '${_details['length_cm']} × ${_details['width_cm']} × ${_details['height_cm']}',
+                        'Kích thước':
+                            '${_details['length_cm']} × ${_details['width_cm']} × ${_details['height_cm']} cm',
                       if ((_details['declared_value'] as num? ?? 0) > 0)
                         'Khai giá bảo hiểm': _money(_details['declared_value']),
                       if ((_details['buyer_note'] as String? ?? '').isNotEmpty)

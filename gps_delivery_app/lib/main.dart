@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/config/env_config.dart';
 import 'core/config/default_cloud_connection.dart';
 import 'core/config/local_auth_config.dart';
+import 'core/config/session_slot_storage.dart';
 import 'core/integrations/delivery_api_client.dart';
 import 'core/integrations/cloud_account_session.dart';
 import 'core/integrations/cloud_orders_service.dart';
@@ -21,17 +22,26 @@ import 'presentation/screens/cloud_orders_screen.dart';
 import 'presentation/screens/marketplace_screen.dart';
 import 'presentation/screens/shared_tracking_screen.dart';
 
-Future<void> main() async {
+Future<void> main([List<String> args = const []]) async {
   WidgetsFlutterBinding.ensureInitialized();
-  SqliteOfflineQueueDatasource.ensureDesktopFfiInitialized();
+  final sessionSlot = parseSessionSlotArg(args);
+  if (sessionSlot == null) {
+    SqliteOfflineQueueDatasource.ensureDesktopFfiInitialized();
+  }
   Map<String, dynamic> localConfig = {};
   bool localConfigReadable = true;
   try {
     final config = await loadLocalAuthConfig();
     localConfig = config;
-    EnvConfig.configureDeliveryApiRuntime(
-      baseUrl: config['deliveryApiBaseUrl'] as String? ?? '',
-    );
+    final savedApiBase = (config['deliveryApiBaseUrl'] as String? ?? '').trim();
+    final savedHost = Uri.tryParse(savedApiBase)?.host ?? '';
+    final savedIsLoopback =
+        savedHost == '127.0.0.1' ||
+        savedHost == 'localhost' ||
+        savedHost == '::1';
+    if (!EnvConfig.hasBuildDeliveryApiBaseUrl || !savedIsLoopback) {
+      EnvConfig.configureDeliveryApiRuntime(baseUrl: savedApiBase);
+    }
     EnvConfig.configureAuthProvidersRuntime(
       googleClientId: config['googleClientId'] as String?,
       googleClientSecret: config['googleClientSecret'] as String?,
@@ -64,6 +74,7 @@ Future<void> main() async {
       await Supabase.initialize(
         url: EnvConfig.supabaseUrl,
         publishableKey: EnvConfig.supabaseAnonKey,
+        authOptions: buildSupabaseAuthOptions(sessionSlot),
       );
       SupabasePostgisDatasource.bindRuntimeClient(
         EnvConfig.supabaseUrl,
@@ -75,9 +86,11 @@ Future<void> main() async {
     }
   }
 
-  try {
-    await AppStateStore.instance.initializeDatabase();
-  } catch (_) {}
+  if (sessionSlot == null) {
+    try {
+      await AppStateStore.instance.initializeDatabase();
+    } catch (_) {}
+  }
   if (EnvConfig.deliveryApiBaseUrl.isNotEmpty &&
       EnvConfig.otpEmailWebhookToken.isNotEmpty) {
     try {
@@ -148,7 +161,7 @@ class _GpsDeliveryAppState extends State<GpsDeliveryApp> {
     return BlocProvider(
       create: (_) => SystemArchitectureCubit(),
       child: MaterialApp(
-        title: 'Giao Hàng Siêu Tốc (GHST) - Định Vị GPS Đa Nền Tảng',
+        title: 'GHST - Giao Hàng Siêu Tốc Đa Nền Tảng',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         initialRoute: widget.initialRoute ?? _resolveBrowserInitialRoute(),

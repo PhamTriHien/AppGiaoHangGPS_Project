@@ -174,7 +174,7 @@ export function createPodUpload({ env, fetcher }) {
       await uploadResp.body?.cancel();
     } catch (error) {
       if (error instanceof IntegrationError) throw error;
-      throw new IntegrationError(502, 'Chưa lưu được ảnh bằng chứng giao hàng (POD).');
+      throw new IntegrationError(502, 'Chưa lưu được ảnh bằng chứng giao hàng.');
     }
     let eventResp;
     try {

@@ -416,4 +416,36 @@ void main() {
       expect(session.isOperator, isFalse);
     }
   });
+
+  test('Preserves verified session across same-account auth replay and transient wake-up network errors', () async {
+    final (api, session) = setup();
+    api.operator = true;
+    await session.refresh();
+    final lease = CloudSessionLease(session: session);
+    addTearDown(lease.dispose);
+    final revision = session.revision;
+    api.changes.add(AuthState(AuthChangeEvent.signedIn, null));
+    await tick();
+    expect(session.verified, isTrue);
+    expect(lease.valid, isTrue);
+    expect(session.revision, revision);
+
+    for (final transient in <Object>[
+      const PublicApiException('Không kết nối được máy chủ dịch vụ.'),
+      const PublicApiException('Bad Gateway', statusCode: 502),
+      const PublicApiException('Gateway Timeout', statusCode: 504),
+      TimeoutException('wake-up timeout'),
+    ]) {
+      api.failure = transient;
+      await expectLater(session.refresh(), throwsA(anything));
+      expect(session.verified, isTrue);
+      expect(lease.valid, isTrue);
+      expect(session.revision, revision);
+    }
+
+    api.failure = const PublicApiException('Unauthorized', statusCode: 401);
+    await expectLater(session.refresh(), throwsA(isA<PublicApiException>()));
+    expect(session.verified, isFalse);
+    expect(lease.valid, isFalse);
+  });
 }

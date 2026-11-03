@@ -41,7 +41,7 @@ extension AppStateLiveDeliveryOps on AppStateStore {
                     senderName: 'Thành viên đơn hàng',
                     isCustomer: payload['isCustomer'] == true,
                     text: text,
-                    timeLabel: 'Đồng bộ cloud',
+                    timeLabel: 'Đồng bộ trực tuyến',
                   );
                   if (chatMessages.any((m) => m.id == id)) continue;
                   chatMessages.add(msg);
@@ -125,7 +125,7 @@ extension AppStateLiveDeliveryOps on AppStateStore {
               liveRoomMessages[room] = 'Đang đồng bộ trực tiếp';
               _notifyStoreChanged();
             } catch (_) {
-              liveRoomMessages[room] = 'Có dữ liệu cloud không hợp lệ';
+              liveRoomMessages[room] = 'Có dữ liệu đồng bộ không hợp lệ';
               _notifyStoreChanged();
             } finally {
               _applyingLiveEvents = false;
@@ -133,7 +133,7 @@ extension AppStateLiveDeliveryOps on AppStateStore {
           },
           onError: (Object error) {
             liveRoomMessages[room] =
-                'Mất kết nối hoặc chưa được cấp quyền cloud';
+                'Mất kết nối hoặc chưa được cấp quyền truy cập';
             _notifyStoreChanged();
           },
         );
@@ -171,7 +171,7 @@ extension AppStateLiveDeliveryOps on AppStateStore {
                 if (_publishedStatuses[room] == status) {
                   _publishedStatuses.remove(room);
                 }
-                liveRoomMessages[room] = 'Chưa gửi được trạng thái cloud';
+                liveRoomMessages[room] = 'Chưa gửi được trạng thái đơn hàng';
               }),
         );
       }
@@ -197,7 +197,7 @@ extension AppStateLiveDeliveryOps on AppStateStore {
                 'longitude': liveDeviceLocation!.longitude,
               })
               .catchError((_) {
-                liveRoomMessages[room] = 'Chưa gửi được vị trí cloud';
+                liveRoomMessages[room] = 'Chưa gửi được vị trí trực tiếp';
               }),
         );
       }
@@ -219,7 +219,7 @@ extension AppStateLiveDeliveryOps on AppStateStore {
           }, eventId: eventId)
           .catchError((_) {
             liveRoomMessages[room] =
-                'Tin nhắn đã lưu trên máy, chưa gửi được cloud';
+                'Tin nhắn đã lưu trên máy, chưa đồng bộ được';
             _notifyStoreChanged();
           }),
     );

@@ -4,33 +4,28 @@ import 'package:flutter/services.dart';
 import '../../core/integrations/cloud_account_session.dart';
 import '../../core/integrations/cloud_session_lease.dart';
 import '../../core/network/public_json_api.dart';
+import '../../core/theme/admin_studio_theme.dart';
 import 'cloud_membership_decision_dialog.dart';
 import 'cloud_membership_panel.dart';
 import 'cloud_order_labels.dart';
+import 'cloud_profile_form.dart';
 import 'cloud_session_boundary.dart';
-
-const _kDark = Color(0xFF081C18);
-const _kDarkActive = Color(0xFF15443A);
-const _kPrimary = Color(0xFF087F5B);
-const _kBorder = Color(0xFFE2E8F0);
-const _kText = Color(0xFF0F172A);
-const _kMuted = Color(0xFF64748B);
-const _kDanger = Color(0xFFB42318);
 
 const adminAuditActionLabels = {
   'pricing': 'Cập nhật bảng giá cước',
   'account_role': 'Cập nhật vai trò / trạng thái khóa',
   'account_profile': 'Cập nhật hồ sơ danh tính',
-  'account_block': 'Khóa tài khoản Cloud',
-  'account_unblock': 'Mở khóa tài khoản Cloud',
-  'operator_grant': 'Cấp quyền Điều hành viên (Operator)',
-  'operator_revoke': 'Thu hồi quyền Điều hành viên (Operator)',
+  'account_block': 'Khóa tài khoản',
+  'account_unblock': 'Mở khóa tài khoản',
+  'operator_grant': 'Cấp quyền Điều hành viên',
+  'operator_revoke': 'Thu hồi quyền Điều hành viên',
   'membership_request': 'Người dùng gửi đăng ký đối tác',
   'membership_grant': 'Cấp trực tiếp tư cách đối tác',
   'membership_approve': 'Phê duyệt tư cách đối tác',
   'membership_reject': 'Từ chối hồ sơ đối tác',
   'membership_revoke': 'Thu hồi tư cách đối tác',
   'pickup_assign': 'Điều phối tài xế thu gom',
+  'promo_settings_save': 'Cập nhật cấu hình Sự kiện & Vòng xoay',
 };
 
 String adminAuditActionLabel(dynamic raw) {
@@ -114,7 +109,7 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
         setState(
           () => _error = e is PublicApiException
               ? e.message
-              : 'Chưa tải được danh sách tài khoản Cloud.',
+              : 'Chưa tải được danh sách tài khoản.',
         );
       }
     } finally {
@@ -129,11 +124,14 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
     if (!widget.lease.valid) return Future.value(null);
     return showDialog<T>(
       context: context,
-      builder: (_) => CloudSessionBoundary(
-        session: widget.session,
-        operator: true,
-        dialog: true,
-        builder: builder,
+      builder: (_) => Theme(
+        data: AdminStudioTheme.themeData(),
+        child: CloudSessionBoundary(
+          session: widget.session,
+          operator: true,
+          dialog: true,
+          builder: builder,
+        ),
       ),
     );
   }
@@ -218,6 +216,9 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
         a['email'],
         a['phone'],
         a['user_id'],
+        a['citizen_id'],
+        a['birth_date'],
+        formatIsoBirthDate(a['birth_date'] as String?),
       ].any((v) => '${v ?? ''}'.toLowerCase().contains(q));
     }).toList();
   }
@@ -239,19 +240,25 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
       builder: (_, _) => _EditAccountProfileDialog(account: account),
     );
     if (result == null || !mounted || !widget.lease.valid) return;
+    final hadBirth = '${account['birth_date'] ?? ''}'.trim().isNotEmpty;
+    final hadCitizen = '${account['citizen_id'] ?? ''}'.trim().isNotEmpty;
+    final nextBirth = result['birth_date'] ?? '';
+    final nextCitizen = result['citizen_id'] ?? '';
     await _runMutation(
       () async {
         await widget.session.service.adminAccounts('update_profile', {
           'user_id': uid,
           'full_name': result['full_name'],
           'phone': result['phone'],
+          if (nextBirth.isNotEmpty || hadBirth) 'birth_date': nextBirth,
+          if (nextCitizen.isNotEmpty || hadCitizen) 'citizen_id': nextCitizen,
           'reason': result['reason'] ?? '',
         });
         if (uid == widget.session.service.userId) {
           await widget.session.refresh();
         }
       },
-      successMessage: 'Đã cập nhật hồ sơ danh tính Cloud.',
+      successMessage: 'Đã cập nhật hồ sơ danh tính.',
     );
   }
 
@@ -318,8 +325,8 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
         });
       },
       successMessage: nextBlocked
-          ? 'Đã khóa tài khoản Cloud.'
-          : 'Đã mở khóa tài khoản Cloud.',
+          ? 'Đã khóa tài khoản.'
+          : 'Đã mở khóa tài khoản.',
     );
   }
 
@@ -329,8 +336,8 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
     final reason = await _showProtectedDialog<String>(
       builder: (_, _) => CloudMembershipDecisionDialog(
         title: nextOperator
-            ? 'Cấp quyền Điều hành viên (Operator)'
-            : 'Thu hồi quyền Điều hành viên (Operator)',
+            ? 'Cấp quyền Điều hành viên'
+            : 'Thu hồi quyền Điều hành viên',
         accountName:
             '${_displayName(account)}${'${account['email'] ?? ''}'.isNotEmpty ? ' · ${account['email']}' : ''}',
         reasonRequired: true,
@@ -346,8 +353,8 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
         });
       },
       successMessage: nextOperator
-          ? 'Đã cấp quyền Điều hành viên (Operator).'
-          : 'Đã thu hồi quyền Điều hành viên (Operator).',
+          ? 'Đã cấp quyền Điều hành viên.'
+          : 'Đã thu hồi quyền Điều hành viên.',
     );
   }
 
@@ -375,21 +382,17 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
     bool compact = false,
   }) {
     final selected = _filter == filterKey;
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(compact ? 14 : 16),
+    return AdminNeoBox(
+      backgroundColor: selected
+          ? AdminStudioColors.acidSoft
+          : AdminStudioColors.surface,
+      borderWidth: selected ? 2 : 1.5,
+      shadowColor: selected ? AdminStudioColors.violet : AdminStudioColors.ink,
+      shadowOffset: selected ? const Offset(4, 4) : const Offset(3, 3),
       child: InkWell(
-        borderRadius: BorderRadius.circular(compact ? 14 : 16),
         onTap: () => setState(() => _filter = filterKey),
-        child: Container(
+        child: Padding(
           padding: EdgeInsets.all(compact ? 12 : 15),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(compact ? 14 : 16),
-            border: Border.all(
-              color: selected ? accent : _kBorder,
-              width: selected ? 1.6 : 1,
-            ),
-          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -400,7 +403,10 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                     height: compact ? 30 : 34,
                     decoration: BoxDecoration(
                       color: tint,
-                      borderRadius: BorderRadius.circular(compact ? 8 : 10),
+                      border: Border.all(
+                        color: AdminStudioColors.ink,
+                        width: 1.2,
+                      ),
                     ),
                     child: Icon(icon, size: compact ? 16 : 18, color: accent),
                   ),
@@ -412,8 +418,8 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: compact ? 11.5 : 12.5,
-                        fontWeight: FontWeight.w600,
-                        color: _kMuted,
+                        fontWeight: FontWeight.w700,
+                        color: AdminStudioColors.muted,
                       ),
                     ),
                   ),
@@ -425,9 +431,10 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: compact ? 18 : 22,
-                  fontWeight: FontWeight.w800,
-                  color: _kText,
+                  fontSize: compact ? 18 : 23,
+                  fontWeight: FontWeight.w900,
+                  color: AdminStudioColors.ink,
+                  letterSpacing: -0.4,
                 ),
               ),
               const SizedBox(height: 2),
@@ -435,7 +442,10 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                 detail,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: compact ? 11 : 12, color: _kMuted),
+                style: TextStyle(
+                  fontSize: compact ? 11 : 12,
+                  color: AdminStudioColors.muted,
+                ),
               ),
             ],
           ),
@@ -450,10 +460,10 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
     required Color bg,
     IconData? icon,
   }) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
     decoration: BoxDecoration(
       color: bg,
-      borderRadius: BorderRadius.circular(999),
+      border: Border.all(color: AdminStudioColors.ink, width: 1.1),
     ),
     child: Row(
       mainAxisSize: MainAxisSize.min,
@@ -468,8 +478,8 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w700,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
               color: fg,
             ),
           ),
@@ -479,16 +489,15 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
   );
 
   Widget _metricPill(IconData icon, String text, {Color? accent}) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
     decoration: BoxDecoration(
-      color: const Color(0xFFF8FAFC),
-      borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: _kBorder),
+      color: AdminStudioColors.paper,
+      border: Border.all(color: AdminStudioColors.ink, width: 1.1),
     ),
     child: Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 14, color: accent ?? _kMuted),
+        Icon(icon, size: 14, color: accent ?? AdminStudioColors.muted),
         const SizedBox(width: 5),
         Flexible(
           child: Text(
@@ -497,8 +506,8 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: accent ?? const Color(0xFF334155),
+              fontWeight: FontWeight.w700,
+              color: accent ?? AdminStudioColors.ink,
             ),
           ),
         ),
@@ -517,38 +526,40 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
     final (statusText, fg, bg) = switch (state) {
       'active' => (
         '$roleLabel · Đã duyệt',
-        _kPrimary,
-        const Color(0xFFE6FCF5),
+        AdminStudioColors.ink,
+        AdminStudioColors.acid,
       ),
       'pending' => (
         '$roleLabel · Chờ duyệt',
-        const Color(0xFFD9480F),
-        const Color(0xFFFFF4E6),
+        AdminStudioColors.goldInk,
+        AdminStudioColors.gold,
       ),
       'rejected' => (
         '$roleLabel · Chưa được duyệt',
-        _kDanger,
-        const Color(0xFFFEF3F2),
+        AdminStudioColors.danger,
+        AdminStudioColors.dangerSoft,
       ),
       'revoked' => (
         '$roleLabel · Đã thu hồi',
-        const Color(0xFF475569),
-        const Color(0xFFF1F5F9),
+        AdminStudioColors.muted,
+        AdminStudioColors.paperWarm,
       ),
       _ => (
         '$roleLabel · Chưa đăng ký',
-        _kMuted,
-        const Color(0xFFF8FAFC),
+        AdminStudioColors.muted,
+        AdminStudioColors.surface,
       ),
     };
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(12),
+        color: state == 'pending'
+            ? AdminStudioColors.goldSoft
+            : AdminStudioColors.paper,
         border: Border.all(
-          color: state == 'pending' ? const Color(0xFFFFD8A8) : _kBorder,
+          color: AdminStudioColors.ink,
+          width: state == 'pending' ? 1.5 : 1.1,
         ),
       ),
       child: Column(
@@ -573,13 +584,20 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                       ? null
                       : () => _decideMembership(account, role, 'approve'),
                   style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFFD3F9D8),
-                    foregroundColor: const Color(0xFF087F5B),
+                    backgroundColor: AdminStudioColors.acid,
+                    foregroundColor: AdminStudioColors.ink,
+                    side: const BorderSide(
+                      color: AdminStudioColors.ink,
+                      width: 1.3,
+                    ),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
                       vertical: 8,
                     ),
                     visualDensity: VisualDensity.compact,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.zero,
+                    ),
                   ),
                   icon: const Icon(Icons.check_rounded, size: 16),
                   label: Text('Duyệt $roleLabel'),
@@ -589,8 +607,11 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                       ? null
                       : () => _decideMembership(account, role, 'reject'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: _kDanger,
-                    side: const BorderSide(color: Color(0xFFFECDCA)),
+                    foregroundColor: AdminStudioColors.danger,
+                    side: const BorderSide(
+                      color: AdminStudioColors.danger,
+                      width: 1.3,
+                    ),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
                       vertical: 8,
@@ -606,8 +627,11 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                       ? null
                       : () => _decideMembership(account, role, 'revoke'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: _kDanger,
-                    side: const BorderSide(color: Color(0xFFFECDCA)),
+                    foregroundColor: AdminStudioColors.danger,
+                    side: const BorderSide(
+                      color: AdminStudioColors.danger,
+                      width: 1.3,
+                    ),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
                       vertical: 8,
@@ -623,8 +647,11 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                       ? null
                       : () => _decideMembership(account, role, 'grant'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: _kPrimary,
-                    side: const BorderSide(color: Color(0xFF96F2D7)),
+                    foregroundColor: AdminStudioColors.violet,
+                    side: const BorderSide(
+                      color: AdminStudioColors.violet,
+                      width: 1.3,
+                    ),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
                       vertical: 8,
@@ -640,7 +667,10 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
             const SizedBox(height: 6),
             Text(
               'Ghi chú xét duyệt: $reason',
-              style: const TextStyle(fontSize: 12, color: _kMuted),
+              style: const TextStyle(
+                fontSize: 12,
+                color: AdminStudioColors.muted,
+              ),
             ),
           ],
         ],
@@ -658,6 +688,9 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
     final email = '${a['email'] ?? ''}'.trim();
     final emailConfirmed = a['email_confirmed'] == true;
     final phone = '${a['phone'] ?? ''}'.trim();
+    final birthDate = formatIsoBirthDate(a['birth_date'] as String?);
+    final citizenMasked = maskCitizenId(a['citizen_id'] as String?);
+    final kycVerified = a['identity_verified'] == true;
     final providers = _strings(a['auth_providers']);
     final lastSignIn = cloudDate(a['last_sign_in_at']);
     final createdAt = cloudDate(a['created_at'] ?? a['updated_at']);
@@ -668,342 +701,389 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
     final coins = _intVal(a['coin_balance']);
 
     final avatarBg = blocked
-        ? const Color(0xFFFEF3F2)
+        ? AdminStudioColors.dangerSoft
         : isOp
-        ? const Color(0xFFE6FCF5)
-        : const Color(0xFFEDF2FF);
-    final avatarFg = blocked
-        ? _kDanger
-        : isOp
-        ? _kPrimary
-        : const Color(0xFF364FC7);
+        ? AdminStudioColors.acid
+        : AdminStudioColors.violetSoft;
+    final avatarFg = blocked ? AdminStudioColors.danger : AdminStudioColors.ink;
 
-    return Card(
+    return AdminNeoBox(
       margin: const EdgeInsets.only(bottom: 14),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: blocked
-              ? const Color(0xFFFECDCA)
-              : _hasPending(a)
-              ? const Color(0xFFFFD8A8)
-              : _kBorder,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: avatarBg,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    _initials(a),
-                    style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 15,
-                      color: avatarFg,
-                    ),
+      padding: const EdgeInsets.all(16),
+      shadowColor: blocked
+          ? AdminStudioColors.pink
+          : _hasPending(a)
+          ? AdminStudioColors.violet
+          : AdminStudioColors.ink,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: avatarBg,
+                  border: Border.all(color: AdminStudioColors.ink, width: 1.4),
+                ),
+                child: Text(
+                  _initials(a),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 15,
+                    color: avatarFg,
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 6,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          Text(
-                            _displayName(a),
-                            style: const TextStyle(
-                              fontSize: 15.5,
-                              fontWeight: FontWeight.w800,
-                              color: _kText,
-                            ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(
+                          _displayName(a),
+                          style: const TextStyle(
+                            fontSize: 15.5,
+                            fontWeight: FontWeight.w900,
+                            color: AdminStudioColors.ink,
                           ),
-                          if (isSelf)
-                            _badge(
-                              label: 'Phiên hiện tại',
-                              fg: const Color(0xFF0B7285),
-                              bg: const Color(0xFFE3FAFC),
-                            ),
-                          if (isOp)
-                            _badge(
-                              label: 'Operator',
-                              fg: _kPrimary,
-                              bg: const Color(0xFFE6FCF5),
-                              icon: Icons.shield_outlined,
-                            ),
-                          if (blocked)
-                            _badge(
-                              label: 'Đang khóa',
-                              fg: _kDanger,
-                              bg: const Color(0xFFFEF3F2),
-                              icon: Icons.lock_outline_rounded,
-                            )
-                          else if (!hasProfile)
-                            _badge(
-                              label: 'Chưa hoàn tất hồ sơ',
-                              fg: const Color(0xFFD9480F),
-                              bg: const Color(0xFFFFF4E6),
-                              icon: Icons.warning_amber_rounded,
-                            )
-                          else
-                            _badge(
-                              label: 'Đang hoạt động',
-                              fg: _kPrimary,
-                              bg: const Color(0xFFE6FCF5),
-                            ),
-                          for (final p in providers)
-                            _badge(
-                              label: p == 'google'
-                                  ? 'Google OAuth'
-                                  : p == 'email'
-                                  ? 'Email / Mật khẩu'
-                                  : p,
-                              fg: const Color(0xFF334155),
-                              bg: const Color(0xFFF1F5F9),
-                              icon: p == 'google'
-                                  ? Icons.public_rounded
-                                  : Icons.alternate_email_rounded,
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 4,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          if (email.isNotEmpty)
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.mail_outline_rounded,
-                                  size: 14,
-                                  color: _kMuted,
-                                ),
-                                const SizedBox(width: 4),
-                                Flexible(
-                                  child: Text(
-                                    email,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFF334155),
-                                    ),
-                                  ),
-                                ),
-                                if (emailConfirmed) ...[
-                                  const SizedBox(width: 4),
-                                  const Tooltip(
-                                    message: 'Email đã xác thực',
-                                    child: Icon(
-                                      Icons.verified_rounded,
-                                      size: 14,
-                                      color: _kPrimary,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
+                        ),
+                        if (isSelf)
+                          _badge(
+                            label: 'Phiên hiện tại',
+                            fg: Colors.white,
+                            bg: AdminStudioColors.violet,
+                          ),
+                        if (isOp)
+                          _badge(
+                            label: 'Operator',
+                            fg: AdminStudioColors.ink,
+                            bg: AdminStudioColors.acid,
+                            icon: Icons.shield_outlined,
+                          ),
+                        if (blocked)
+                          _badge(
+                            label: 'Đang khóa',
+                            fg: AdminStudioColors.danger,
+                            bg: AdminStudioColors.dangerSoft,
+                            icon: Icons.lock_outline_rounded,
+                          )
+                        else if (!hasProfile)
+                          _badge(
+                            label: 'Chưa hoàn tất hồ sơ',
+                            fg: AdminStudioColors.goldInk,
+                            bg: AdminStudioColors.gold,
+                            icon: Icons.warning_amber_rounded,
+                          )
+                        else
+                          _badge(
+                            label: 'Đang hoạt động',
+                            fg: AdminStudioColors.acidInk,
+                            bg: AdminStudioColors.acidSoft,
+                          ),
+                        if (kycVerified)
+                          _badge(
+                            label: 'Đã định danh CCCD',
+                            fg: AdminStudioColors.acidInk,
+                            bg: AdminStudioColors.acidSoft,
+                            icon: Icons.verified_user_outlined,
+                          ),
+                        for (final p in providers)
+                          _badge(
+                            label: p == 'google'
+                                ? 'Google OAuth'
+                                : p == 'email'
+                                ? 'Email / Mật khẩu'
+                                : p,
+                            fg: AdminStudioColors.ink,
+                            bg: AdminStudioColors.paper,
+                            icon: p == 'google'
+                                ? Icons.public_rounded
+                                : Icons.alternate_email_rounded,
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        if (email.isNotEmpty)
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               const Icon(
-                                Icons.phone_outlined,
+                                Icons.mail_outline_rounded,
                                 size: 14,
-                                color: _kMuted,
+                                color: AdminStudioColors.muted,
                               ),
                               const SizedBox(width: 4),
                               Flexible(
                                 child: Text(
-                                  phone.isNotEmpty ? phone : 'Chưa cập nhật SĐT',
+                                  email,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontSize: 13,
-                                    color: phone.isNotEmpty
-                                        ? const Color(0xFF334155)
-                                        : _kMuted,
+                                    fontWeight: FontWeight.w700,
+                                    color: AdminStudioColors.ink,
                                   ),
+                                ),
+                              ),
+                              if (emailConfirmed) ...[
+                                const SizedBox(width: 4),
+                                const Tooltip(
+                                  message: 'Email đã xác thực',
+                                  child: Icon(
+                                    Icons.verified_rounded,
+                                    size: 14,
+                                    color: AdminStudioColors.violet,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.phone_outlined,
+                              size: 14,
+                              color: AdminStudioColors.muted,
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                phone.isNotEmpty ? phone : 'Chưa cập nhật SĐT',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: phone.isNotEmpty
+                                      ? FontWeight.w600
+                                      : FontWeight.w500,
+                                  color: phone.isNotEmpty
+                                      ? AdminStudioColors.ink
+                                      : AdminStudioColors.muted,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (birthDate.isNotEmpty)
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.cake_outlined,
+                                size: 14,
+                                color: AdminStudioColors.muted,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                birthDate,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: AdminStudioColors.ink,
                                 ),
                               ),
                             ],
                           ),
-                          InkWell(
-                            borderRadius: BorderRadius.circular(6),
-                            onTap: () => _copyUuid(uid),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                                vertical: 2,
+                        if (citizenMasked.isNotEmpty)
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.badge_outlined,
+                                size: 14,
+                                color: AdminStudioColors.muted,
                               ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.fingerprint_rounded,
-                                    size: 14,
-                                    color: _kMuted,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    shortUid,
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      fontFamily: 'monospace',
-                                      color: _kMuted,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 3),
-                                  const Icon(
-                                    Icons.copy_rounded,
-                                    size: 12,
-                                    color: _kMuted,
-                                  ),
-                                ],
+                              const SizedBox(width: 4),
+                              Text(
+                                citizenMasked,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: AdminStudioColors.ink,
+                                ),
                               ),
+                            ],
+                          ),
+                        InkWell(
+                          onTap: () => _copyUuid(uid),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 2,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.fingerprint_rounded,
+                                  size: 14,
+                                  color: AdminStudioColors.muted,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  shortUid,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontFamily: 'monospace',
+                                    color: AdminStudioColors.muted,
+                                  ),
+                                ),
+                                const SizedBox(width: 3),
+                                const Icon(
+                                  Icons.copy_rounded,
+                                  size: 12,
+                                  color: AdminStudioColors.muted,
+                                ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _metricPill(Icons.local_shipping_outlined, 'Đơn đặt: $ordersCount'),
-                _metricPill(
-                  Icons.two_wheeler_outlined,
-                  activeTrips > 0
-                      ? 'Chuyến giao: $driverOrders ($activeTrips đang chạy)'
-                      : 'Chuyến giao: $driverOrders',
-                  accent: activeTrips > 0 ? const Color(0xFFD9480F) : null,
-                ),
-                _metricPill(Icons.storefront_outlined, 'Gian hàng: $shopsCount'),
-                _metricPill(Icons.monetization_on_outlined, 'Ví Xu: $coins Xu'),
-                if (lastSignIn.isNotEmpty)
-                  _metricPill(Icons.login_rounded, 'Đăng nhập: $lastSignIn')
-                else if (createdAt.isNotEmpty)
-                  _metricPill(Icons.calendar_today_outlined, 'Tạo: $createdAt'),
-              ],
-            ),
-            const SizedBox(height: 12),
-            LayoutBuilder(
-              builder: (context, c) {
-                if (c.maxWidth >= 680) {
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(child: _partnerRoleBlock(a, 'driver')),
-                      const SizedBox(width: 10),
-                      Expanded(child: _partnerRoleBlock(a, 'merchant')),
-                    ],
-                  );
-                }
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _metricPill(
+                Icons.local_shipping_outlined,
+                'Đơn đặt: $ordersCount',
+              ),
+              _metricPill(
+                Icons.two_wheeler_outlined,
+                activeTrips > 0
+                    ? 'Chuyến giao: $driverOrders · $activeTrips đang chạy'
+                    : 'Chuyến giao: $driverOrders',
+                accent: activeTrips > 0 ? AdminStudioColors.violet : null,
+              ),
+              _metricPill(Icons.storefront_outlined, 'Gian hàng: $shopsCount'),
+              _metricPill(Icons.monetization_on_outlined, 'Ví Xu: $coins Xu'),
+              if (lastSignIn.isNotEmpty)
+                _metricPill(Icons.login_rounded, 'Đăng nhập: $lastSignIn')
+              else if (createdAt.isNotEmpty)
+                _metricPill(Icons.calendar_today_outlined, 'Tạo: $createdAt'),
+            ],
+          ),
+          const SizedBox(height: 12),
+          LayoutBuilder(
+            builder: (context, c) {
+              if (c.maxWidth >= 680) {
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _partnerRoleBlock(a, 'driver'),
-                    const SizedBox(height: 8),
-                    _partnerRoleBlock(a, 'merchant'),
+                    Expanded(child: _partnerRoleBlock(a, 'driver')),
+                    const SizedBox(width: 10),
+                    Expanded(child: _partnerRoleBlock(a, 'merchant')),
                   ],
                 );
-              },
-            ),
-            const SizedBox(height: 12),
-            const Divider(height: 1),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              alignment: WrapAlignment.spaceBetween,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    OutlinedButton.icon(
-                      onPressed: _busy ? null : () => _openDetail(a),
-                      icon: const Icon(Icons.admin_panel_settings_outlined, size: 17),
-                      label: const Text('Chi tiết & Phân quyền'),
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _partnerRoleBlock(a, 'driver'),
+                  const SizedBox(height: 8),
+                  _partnerRoleBlock(a, 'merchant'),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          const Divider(height: 1),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: _busy ? null : () => _openDetail(a),
+                    icon: const Icon(
+                      Icons.admin_panel_settings_outlined,
+                      size: 17,
                     ),
+                    label: const Text('Chi tiết & Phân quyền'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: _busy ? null : () => _editProfile(a),
+                    icon: const Icon(Icons.edit_outlined, size: 17),
+                    label: Text(hasProfile ? 'Sửa hồ sơ' : 'Hoàn tất hồ sơ'),
+                  ),
+                  if (!isSelf || !isOp)
                     OutlinedButton.icon(
-                      onPressed: _busy ? null : () => _editProfile(a),
-                      icon: const Icon(Icons.edit_outlined, size: 17),
-                      label: Text(hasProfile ? 'Sửa hồ sơ' : 'Hoàn tất hồ sơ'),
-                    ),
-                    if (!isSelf || !isOp)
-                      OutlinedButton.icon(
-                        onPressed: _busy || (blocked && !isOp)
-                            ? null
-                            : () => _toggleOperator(a),
-                        icon: Icon(
-                          isOp
-                              ? Icons.remove_moderator_outlined
-                              : Icons.add_moderator_outlined,
-                          size: 17,
-                        ),
-                        label: Text(
-                          isOp ? 'Thu hồi Operator' : 'Cấp quyền Operator',
-                        ),
-                      ),
-                  ],
-                ),
-                if (hasProfile)
-                  Tooltip(
-                    message: isSelf && !blocked
-                        ? 'Không thể tự khóa tài khoản quản trị đang đăng nhập'
-                        : '',
-                    child: OutlinedButton.icon(
-                      onPressed: _busy || (isSelf && !blocked)
+                      onPressed: _busy || (blocked && !isOp)
                           ? null
-                          : () => _toggleBlocked(a),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: blocked ? _kPrimary : _kDanger,
-                        side: BorderSide(
-                          color: blocked
-                              ? const Color(0xFF96F2D7)
-                              : const Color(0xFFFECDCA),
-                        ),
-                      ),
+                          : () => _toggleOperator(a),
                       icon: Icon(
-                        blocked
-                            ? Icons.lock_open_rounded
-                            : Icons.lock_outline_rounded,
+                        isOp
+                            ? Icons.remove_moderator_outlined
+                            : Icons.add_moderator_outlined,
                         size: 17,
                       ),
                       label: Text(
-                        blocked ? 'Mở khóa tài khoản' : 'Khóa tài khoản',
+                        isOp ? 'Thu hồi Operator' : 'Cấp quyền Operator',
                       ),
                     ),
+                ],
+              ),
+              if (hasProfile)
+                Tooltip(
+                  message: isSelf && !blocked
+                      ? 'Không thể tự khóa tài khoản quản trị đang đăng nhập'
+                      : '',
+                  child: OutlinedButton.icon(
+                    onPressed: _busy || (isSelf && !blocked)
+                        ? null
+                        : () => _toggleBlocked(a),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: blocked
+                          ? AdminStudioColors.acidInk
+                          : AdminStudioColors.danger,
+                      side: BorderSide(
+                        color: blocked
+                            ? AdminStudioColors.ink
+                            : AdminStudioColors.danger,
+                        width: 1.4,
+                      ),
+                    ),
+                    icon: Icon(
+                      blocked
+                          ? Icons.lock_open_rounded
+                          : Icons.lock_outline_rounded,
+                      size: 17,
+                    ),
+                    label: Text(
+                      blocked ? 'Mở khóa tài khoản' : 'Khóa tài khoản',
+                    ),
                   ),
-              ],
-            ),
-          ],
-        ),
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -1034,14 +1114,18 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
         ? (_summary.containsKey('active_drivers')
               ? _intVal(_summary['active_drivers'])
               : _accounts
-                    .where((a) => _strings(a['approved_roles']).contains('driver'))
+                    .where(
+                      (a) => _strings(a['approved_roles']).contains('driver'),
+                    )
                     .length)
         : 0;
     final merchants = _loaded
         ? (_summary.containsKey('active_merchants')
               ? _intVal(_summary['active_merchants'])
               : _accounts
-                    .where((a) => _strings(a['approved_roles']).contains('merchant'))
+                    .where(
+                      (a) => _strings(a['approved_roles']).contains('merchant'),
+                    )
                     .length)
         : 0;
     final pendingCount = _loaded
@@ -1057,238 +1141,263 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
 
     final visible = _visibleAccounts;
     final filterOptions = [
-      ('all', 'Tất cả ($total)'),
-      ('pending', 'Chờ duyệt ($pendingCount)'),
-      ('operator', 'Quản trị viên ($operators)'),
-      ('driver', 'Tài xế ($drivers)'),
-      ('merchant', 'Cửa hàng ($merchants)'),
+      ('all', 'Tất cả · $total'),
+      ('pending', 'Chờ duyệt · $pendingCount'),
+      ('operator', 'Quản trị viên · $operators'),
+      ('driver', 'Tài xế · $drivers'),
+      ('merchant', 'Cửa hàng · $merchants'),
       if (incomplete > 0 || _filter == 'incomplete')
-        ('incomplete', 'Chưa hoàn tất hồ sơ ($incomplete)'),
-      ('blocked', 'Đang khóa ($blockedCount)'),
+        ('incomplete', 'Chưa hoàn tất hồ sơ · $incomplete'),
+      ('blocked', 'Đang khóa · $blockedCount'),
     ];
 
-    return RefreshIndicator(
-      onRefresh: () => _load(force: true),
-      child: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1120),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [_kDark, Color(0xFF0E392F)],
-                      ),
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: LayoutBuilder(
-                      builder: (context, box) {
-                        final compact = box.maxWidth < 520;
-                        return Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Trung tâm Quản trị Danh tính & Phân quyền Cloud',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w800,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  const Text(
-                                    'Đồng bộ trực tiếp từ Supabase Auth, hồ sơ vận hành và sổ kiểm toán PostgreSQL.',
-                                    style: TextStyle(
-                                      fontSize: 12.5,
-                                      color: Color(0xFFA7F3D0),
-                                    ),
-                                  ),
-                                ],
-                              ),
+    return Theme(
+      data: AdminStudioTheme.themeData(),
+      child: RefreshIndicator(
+        onRefresh: () => _load(force: true),
+        child: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1120),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    AdminStudioGridBackdrop(
+                      child: Container(
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: AdminStudioColors.ink,
+                            width: 2,
+                          ),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: AdminStudioColors.violet,
+                              offset: Offset(4, 4),
+                              blurRadius: 0,
                             ),
-                            const SizedBox(width: 10),
-                            if (compact)
-                              IconButton(
-                                tooltip: 'Làm mới danh sách tài khoản',
-                                onPressed: _busy ? null : () => _load(force: true),
-                                icon: const Icon(
-                                  Icons.refresh_rounded,
-                                  color: Colors.white,
-                                ),
-                              )
-                            else
-                              FilledButton.icon(
-                                onPressed: _busy ? null : () => _load(force: true),
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: _kDarkActive,
-                                  foregroundColor: Colors.white,
-                                  side: const BorderSide(
-                                    color: Color(0xFF206A58),
+                          ],
+                        ),
+                        child: LayoutBuilder(
+                          builder: (context, box) {
+                            final compact = box.maxWidth < 520;
+                            return Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'Trung tâm Quản trị Danh tính & Phân quyền',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w900,
+                                          color: Colors.white,
+                                          letterSpacing: -0.3,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      const Text(
+                                        'Đồng bộ trực tiếp từ hồ sơ tài khoản, phân quyền đối tác và nhật ký kiểm toán.',
+                                        style: TextStyle(
+                                          fontSize: 12.5,
+                                          color: AdminStudioColors.acid,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                icon: const Icon(Icons.refresh_rounded, size: 18),
-                                label: const Text('Làm mới'),
-                              ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                  if (_busy)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 10),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.all(Radius.circular(999)),
-                        child: LinearProgressIndicator(minHeight: 4),
-                      ),
-                    ),
-                  if (_error != null)
-                    Container(
-                      margin: const EdgeInsets.only(top: 12),
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFEF3F2),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFFECDCA)),
-                      ),
-                      child: SelectableText(
-                        _error!,
-                        style: const TextStyle(
-                          color: _kDanger,
-                          fontWeight: FontWeight.w600,
+                                const SizedBox(width: 10),
+                                if (compact)
+                                  IconButton(
+                                    tooltip: 'Làm mới danh sách tài khoản',
+                                    style: IconButton.styleFrom(
+                                      backgroundColor: AdminStudioColors.acid,
+                                      foregroundColor: AdminStudioColors.ink,
+                                      shape: const RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.zero,
+                                      ),
+                                    ),
+                                    onPressed: _busy
+                                        ? null
+                                        : () => _load(force: true),
+                                    icon: const Icon(Icons.refresh_rounded),
+                                  )
+                                else
+                                  FilledButton.icon(
+                                    onPressed: _busy
+                                        ? null
+                                        : () => _load(force: true),
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: AdminStudioColors.acid,
+                                      foregroundColor: AdminStudioColors.ink,
+                                    ),
+                                    icon: const Icon(
+                                      Icons.refresh_rounded,
+                                      size: 18,
+                                    ),
+                                    label: const Text('Làm mới'),
+                                  ),
+                              ],
+                            );
+                          },
                         ),
                       ),
                     ),
-                  if (_notice != null)
-                    Container(
-                      margin: const EdgeInsets.only(top: 12),
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE6FCF5),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFF96F2D7)),
+                    if (_busy)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 10),
+                        child: LinearProgressIndicator(
+                          minHeight: 4,
+                          color: AdminStudioColors.violet,
+                          backgroundColor: AdminStudioColors.paperWarm,
+                        ),
                       ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.check_circle_outline_rounded,
-                            color: _kPrimary,
-                            size: 18,
+                    if (_error != null)
+                      Container(
+                        margin: const EdgeInsets.only(top: 12),
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: AdminStudioColors.dangerSoft,
+                          border: Border.all(
+                            color: AdminStudioColors.danger,
+                            width: 1.5,
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              _notice!,
-                              style: const TextStyle(
-                                color: _kPrimary,
-                                fontWeight: FontWeight.w700,
+                        ),
+                        child: SelectableText(
+                          _error!,
+                          style: const TextStyle(
+                            color: AdminStudioColors.danger,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    if (_notice != null)
+                      Container(
+                        margin: const EdgeInsets.only(top: 12),
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: AdminStudioColors.acid,
+                          border: Border.all(
+                            color: AdminStudioColors.ink,
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.check_circle_outline_rounded,
+                              color: AdminStudioColors.ink,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _notice!,
+                                style: const TextStyle(
+                                  color: AdminStudioColors.ink,
+                                  fontWeight: FontWeight.w800,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  if (_loaded) ...[
-                    const SizedBox(height: 16),
-                    LayoutBuilder(
-                      builder: (context, c) {
-                        final compact = c.maxWidth < 540;
-                        final cols = c.maxWidth >= 900 ? 3 : 2;
-                        final gap = compact ? 10.0 : 12.0;
-                        final width = (c.maxWidth - gap * (cols - 1)) / cols;
-                        final tiles = [
-                          _kpiTile(
-                            compact: compact,
-                            icon: Icons.people_alt_outlined,
-                            accent: _kPrimary,
-                            tint: const Color(0xFFE6FCF5),
-                            label: 'Tổng tài khoản Auth',
-                            value: '$total',
-                            detail:
-                                'Đủ hồ sơ: $completed · Chưa hoàn tất: $incomplete',
-                            filterKey: 'all',
-                          ),
-                          _kpiTile(
-                            compact: compact,
-                            icon: Icons.shield_outlined,
-                            accent: const Color(0xFF0B7285),
-                            tint: const Color(0xFFE3FAFC),
-                            label: 'Điều hành viên Cloud',
-                            value: '$operators',
-                            detail: 'Quyền quản trị Operator toàn hệ thống',
-                            filterKey: 'operator',
-                          ),
-                          _kpiTile(
-                            compact: compact,
-                            icon: pendingCount > 0
-                                ? Icons.pending_actions_rounded
-                                : Icons.task_alt_rounded,
-                            accent: pendingCount > 0
-                                ? const Color(0xFFD9480F)
-                                : _kPrimary,
-                            tint: pendingCount > 0
-                                ? const Color(0xFFFFF4E6)
-                                : const Color(0xFFE6FCF5),
-                            label: 'Hồ sơ đối tác chờ duyệt',
-                            value: '$pendingCount',
-                            detail: 'Yêu cầu Tài xế / Cửa hàng mới',
-                            filterKey: 'pending',
-                          ),
-                          _kpiTile(
-                            compact: compact,
-                            icon: Icons.two_wheeler_rounded,
-                            accent: const Color(0xFF364FC7),
-                            tint: const Color(0xFFEDF2FF),
-                            label: 'Tài xế đã phê duyệt',
-                            value: '$drivers',
-                            detail: 'Đủ điều kiện nhận chuyến Cloud',
-                            filterKey: 'driver',
-                          ),
-                          _kpiTile(
-                            compact: compact,
-                            icon: Icons.storefront_outlined,
-                            accent: const Color(0xFF5F3DC4),
-                            tint: const Color(0xFFF3F0FF),
-                            label: 'Đối tác Cửa hàng',
-                            value: '$merchants',
-                            detail: 'Được tạo & vận hành gian hàng',
-                            filterKey: 'merchant',
-                          ),
-                          _kpiTile(
-                            compact: compact,
-                            icon: Icons.lock_outline_rounded,
-                            accent: blockedCount > 0 ? _kDanger : _kMuted,
-                            tint: blockedCount > 0
-                                ? const Color(0xFFFEF3F2)
-                                : const Color(0xFFF1F5F9),
-                            label: 'Tài khoản đang khóa',
-                            value: '$blockedCount',
-                            detail: 'Tạm đình chỉ giao dịch Cloud',
-                            filterKey: 'blocked',
-                          ),
-                        ];
-                        return Wrap(
-                          spacing: gap,
-                          runSpacing: gap,
-                          children: [
-                            for (final t in tiles) SizedBox(width: width, child: t),
                           ],
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    Card(
-                      child: Padding(
+                        ),
+                      ),
+                    if (_loaded) ...[
+                      const SizedBox(height: 16),
+                      LayoutBuilder(
+                        builder: (context, c) {
+                          final compact = c.maxWidth < 540;
+                          final cols = c.maxWidth >= 900 ? 3 : 2;
+                          final gap = compact ? 10.0 : 12.0;
+                          final width = (c.maxWidth - gap * (cols - 1)) / cols;
+                          final tiles = [
+                            _kpiTile(
+                              compact: compact,
+                              icon: Icons.people_alt_outlined,
+                              accent: AdminStudioColors.ink,
+                              tint: AdminStudioColors.acid,
+                              label: 'Tổng tài khoản Auth',
+                              value: '$total',
+                              detail:
+                                  'Đủ hồ sơ: $completed · Chưa hoàn tất: $incomplete',
+                              filterKey: 'all',
+                            ),
+                            _kpiTile(
+                              compact: compact,
+                              icon: Icons.shield_outlined,
+                              accent: Colors.white,
+                              tint: AdminStudioColors.violet,
+                              label: 'Điều hành viên',
+                              value: '$operators',
+                              detail: 'Quyền quản trị Operator toàn hệ thống',
+                              filterKey: 'operator',
+                            ),
+                            _kpiTile(
+                              compact: compact,
+                              icon: pendingCount > 0
+                                  ? Icons.pending_actions_rounded
+                                  : Icons.task_alt_rounded,
+                              accent: AdminStudioColors.ink,
+                              tint: pendingCount > 0
+                                  ? AdminStudioColors.gold
+                                  : AdminStudioColors.acidSoft,
+                              label: 'Hồ sơ đối tác chờ duyệt',
+                              value: '$pendingCount',
+                              detail: 'Yêu cầu Tài xế / Cửa hàng mới',
+                              filterKey: 'pending',
+                            ),
+                            _kpiTile(
+                              compact: compact,
+                              icon: Icons.two_wheeler_rounded,
+                              accent: AdminStudioColors.violet,
+                              tint: AdminStudioColors.violetSoft,
+                              label: 'Tài xế đã phê duyệt',
+                              value: '$drivers',
+                              detail: 'Đủ điều kiện nhận chuyến',
+                              filterKey: 'driver',
+                            ),
+                            _kpiTile(
+                              compact: compact,
+                              icon: Icons.storefront_outlined,
+                              accent: AdminStudioColors.ink,
+                              tint: AdminStudioColors.pinkSoft,
+                              label: 'Đối tác Cửa hàng',
+                              value: '$merchants',
+                              detail: 'Được tạo & vận hành gian hàng',
+                              filterKey: 'merchant',
+                            ),
+                            _kpiTile(
+                              compact: compact,
+                              icon: Icons.lock_outline_rounded,
+                              accent: blockedCount > 0
+                                  ? AdminStudioColors.danger
+                                  : AdminStudioColors.muted,
+                              tint: blockedCount > 0
+                                  ? AdminStudioColors.dangerSoft
+                                  : AdminStudioColors.paperWarm,
+                              label: 'Tài khoản đang khóa',
+                              value: '$blockedCount',
+                              detail: 'Tạm đình chỉ giao dịch',
+                              filterKey: 'blocked',
+                            ),
+                          ];
+                          return Wrap(
+                            spacing: gap,
+                            runSpacing: gap,
+                            children: [
+                              for (final t in tiles)
+                                SizedBox(width: width, child: t),
+                            ],
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      AdminNeoBox(
                         padding: const EdgeInsets.all(16),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1304,7 +1413,8 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                                     ? null
                                     : IconButton(
                                         tooltip: 'Xóa tìm kiếm',
-                                        onPressed: () => setState(_search.clear),
+                                        onPressed: () =>
+                                            setState(_search.clear),
                                         icon: const Icon(Icons.close_rounded),
                                       ),
                               ),
@@ -1318,15 +1428,14 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                                   ChoiceChip(
                                     label: Text(opt.$2),
                                     selected: _filter == opt.$1,
-                                    selectedColor: const Color(0xFFD3F9D8),
+                                    selectedColor: AdminStudioColors.acid,
+                                    backgroundColor: AdminStudioColors.surface,
                                     labelStyle: TextStyle(
                                       fontSize: 12.5,
                                       fontWeight: _filter == opt.$1
-                                          ? FontWeight.w700
-                                          : FontWeight.w500,
-                                      color: _filter == opt.$1
-                                          ? _kPrimary
-                                          : const Color(0xFF334155),
+                                          ? FontWeight.w800
+                                          : FontWeight.w600,
+                                      color: AdminStudioColors.ink,
                                     ),
                                     onSelected: (_) =>
                                         setState(() => _filter = opt.$1),
@@ -1338,48 +1447,44 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                               'Hiển thị ${visible.length} / ${_accounts.length} tài khoản đã tải',
                               style: const TextStyle(
                                 fontSize: 12.5,
-                                fontWeight: FontWeight.w600,
-                                color: _kMuted,
+                                fontWeight: FontWeight.w700,
+                                color: AdminStudioColors.muted,
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    if (_accounts.isEmpty && !_busy)
-                      const Card(
-                        child: Padding(
+                      const SizedBox(height: 16),
+                      if (_accounts.isEmpty && !_busy)
+                        const AdminNeoBox(
                           padding: EdgeInsets.all(28),
                           child: Center(
                             child: Text(
-                              'Chưa có tài khoản Cloud nào trên hệ thống.',
+                              'Chưa có tài khoản nào trên hệ thống.',
                               style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: _kMuted,
+                                fontWeight: FontWeight.w700,
+                                color: AdminStudioColors.muted,
                               ),
                             ),
                           ),
-                        ),
-                      )
-                    else if (visible.isEmpty && !_busy)
-                      Card(
-                        child: Padding(
+                        )
+                      else if (visible.isEmpty && !_busy)
+                        AdminNeoBox(
                           padding: const EdgeInsets.all(28),
                           child: Column(
                             children: [
                               const Icon(
                                 Icons.person_search_outlined,
                                 size: 36,
-                                color: _kMuted,
+                                color: AdminStudioColors.muted,
                               ),
                               const SizedBox(height: 10),
                               const Text(
                                 'Không tìm thấy tài khoản phù hợp bộ lọc hiện tại.',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  color: _kText,
+                                  fontWeight: FontWeight.w700,
+                                  color: AdminStudioColors.ink,
                                 ),
                               ),
                               const SizedBox(height: 10),
@@ -1392,16 +1497,16 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                               ),
                             ],
                           ),
-                        ),
-                      )
-                    else
-                      for (final account in visible) _accountCard(account),
+                        )
+                      else
+                        for (final account in visible) _accountCard(account),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1425,14 +1530,49 @@ class _EditAccountProfileDialogState extends State<_EditAccountProfileDialog> {
   late final _phone = TextEditingController(
     text: '${widget.account['phone'] ?? ''}',
   );
+  late final _birthDate = TextEditingController(
+    text: formatIsoBirthDate(widget.account['birth_date'] as String?),
+  );
+  late final _citizenId = TextEditingController(
+    text: '${widget.account['citizen_id'] ?? ''}',
+  );
   final _reason = TextEditingController();
 
   @override
   void dispose() {
     _name.dispose();
     _phone.dispose();
+    _birthDate.dispose();
+    _citizenId.dispose();
     _reason.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickBirthDate() async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    DateTime initial = DateTime(2000, 1, 1);
+    final currentIso = parseBirthDateToIso(_birthDate.text);
+    if (currentIso != null && currentIso.isNotEmpty) {
+      final parts = currentIso.split('-').map(int.parse).toList();
+      initial = DateTime(parts[0], parts[1], parts[2]);
+    }
+    if (initial.isAfter(today)) initial = today;
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(1900, 1, 1),
+      lastDate: today,
+      helpText: 'Chọn ngày tháng năm sinh',
+      cancelText: 'Hủy',
+      confirmText: 'Chọn',
+    );
+    if (picked == null || !mounted) return;
+    final dd = picked.day.toString().padLeft(2, '0');
+    final mm = picked.month.toString().padLeft(2, '0');
+    setState(() {
+      _birthDate.text = '$dd/$mm/${picked.year}';
+    });
   }
 
   @override
@@ -1441,7 +1581,8 @@ class _EditAccountProfileDialogState extends State<_EditAccountProfileDialog> {
     final email = '${widget.account['email'] ?? ''}'.trim();
     return AlertDialog(
       title: Text(
-        hasProfile ? 'Chỉnh sửa hồ sơ tài khoản' : 'Hoàn tất hồ sơ Cloud',
+        hasProfile ? 'Chỉnh sửa hồ sơ tài khoản' : 'Hoàn tất hồ sơ',
+        style: const TextStyle(fontWeight: FontWeight.w900),
       ),
       content: SizedBox(
         width: 440,
@@ -1456,8 +1597,8 @@ class _EditAccountProfileDialogState extends State<_EditAccountProfileDialog> {
                   Text(
                     email,
                     style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: _kMuted,
+                      fontWeight: FontWeight.w700,
+                      color: AdminStudioColors.muted,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -1492,12 +1633,55 @@ class _EditAccountProfileDialogState extends State<_EditAccountProfileDialog> {
                 ),
                 const SizedBox(height: 10),
                 TextFormField(
+                  controller: _birthDate,
+                  maxLength: 10,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: const [BirthDateSlashFormatter()],
+                  decoration: InputDecoration(
+                    labelText: 'Ngày tháng năm sinh',
+                    hintText: 'dd/MM/yyyy',
+                    counterText: '',
+                    suffixIcon: IconButton(
+                      tooltip: 'Chọn ngày sinh',
+                      icon: const Icon(Icons.calendar_month_outlined),
+                      onPressed: _pickBirthDate,
+                    ),
+                  ),
+                  validator: (v) {
+                    final s = v?.trim() ?? '';
+                    if (s.isEmpty) return null;
+                    return parseBirthDateToIso(s) == null
+                        ? 'Ngày sinh không hợp lệ, nhập dd/MM/yyyy.'
+                        : null;
+                  },
+                ),
+                const SizedBox(height: 10),
+                TextFormField(
+                  controller: _citizenId,
+                  maxLength: 12,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  decoration: const InputDecoration(
+                    labelText: 'Số CCCD định danh',
+                    hintText: '12 chữ số',
+                    counterText: '',
+                  ),
+                  validator: (v) {
+                    final s = v?.trim() ?? '';
+                    if (s.isEmpty) return null;
+                    return RegExp(r'^\d{12}$').hasMatch(s)
+                        ? null
+                        : 'Số CCCD phải gồm đúng 12 chữ số.';
+                  },
+                ),
+                const SizedBox(height: 10),
+                TextFormField(
                   controller: _reason,
                   maxLength: 500,
                   minLines: 1,
                   maxLines: 3,
                   decoration: const InputDecoration(
-                    labelText: 'Ghi chú quản trị (không bắt buộc)',
+                    labelText: 'Ghi chú quản trị',
                   ),
                 ),
               ],
@@ -1516,6 +1700,8 @@ class _EditAccountProfileDialogState extends State<_EditAccountProfileDialog> {
               Navigator.pop(context, {
                 'full_name': _name.text.trim(),
                 'phone': _phone.text.trim(),
+                'birth_date': parseBirthDateToIso(_birthDate.text) ?? '',
+                'citizen_id': _citizenId.text.trim(),
                 'reason': _reason.text.trim(),
               });
             }
@@ -1556,7 +1742,10 @@ class _BlockAccountDialogState extends State<_BlockAccountDialog> {
     final email = '${widget.account['email'] ?? ''}'.trim();
     final phone = '${widget.account['phone'] ?? ''}'.trim();
     return AlertDialog(
-      title: Text(widget.block ? 'Khóa tài khoản' : 'Mở khóa tài khoản'),
+      title: Text(
+        widget.block ? 'Khóa tài khoản' : 'Mở khóa tài khoản',
+        style: const TextStyle(fontWeight: FontWeight.w900),
+      ),
       content: SizedBox(
         width: 440,
         child: SingleChildScrollView(
@@ -1566,7 +1755,7 @@ class _BlockAccountDialogState extends State<_BlockAccountDialog> {
             children: [
               Text(
                 widget.displayName,
-                style: const TextStyle(fontWeight: FontWeight.w700),
+                style: const TextStyle(fontWeight: FontWeight.w800),
               ),
               if (email.isNotEmpty || phone.isNotEmpty)
                 Padding(
@@ -1574,14 +1763,17 @@ class _BlockAccountDialogState extends State<_BlockAccountDialog> {
                   child: Text(
                     [if (email.isNotEmpty) email, if (phone.isNotEmpty) phone]
                         .join(' · '),
-                    style: const TextStyle(fontSize: 13, color: _kMuted),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AdminStudioColors.muted,
+                    ),
                   ),
                 ),
               const SizedBox(height: 12),
               Text(
                 widget.block
-                    ? 'Tài khoản bị khóa sẽ không thể đặt đơn, vận hành gian hàng hay nhận chuyến giao trên Cloud.'
-                    : 'Mở khóa để khôi phục quyền giao dịch Cloud và các tư cách đối tác đang hiệu lực.',
+                    ? 'Tài khoản bị khóa sẽ không thể đặt đơn, vận hành gian hàng hay nhận chuyến giao.'
+                    : 'Mở khóa để khôi phục quyền giao dịch và các tư cách đối tác đang hiệu lực.',
                 style: const TextStyle(fontSize: 13, height: 1.4),
               ),
               const SizedBox(height: 12),
@@ -1605,7 +1797,10 @@ class _BlockAccountDialogState extends State<_BlockAccountDialog> {
         ),
         FilledButton(
           style: widget.block
-              ? FilledButton.styleFrom(backgroundColor: _kDanger)
+              ? FilledButton.styleFrom(
+                  backgroundColor: AdminStudioColors.danger,
+                  foregroundColor: Colors.white,
+                )
               : null,
           onPressed: () => Navigator.pop(context, _reason.text.trim()),
           child: const Text('Xác nhận'),
@@ -1691,15 +1886,18 @@ class _AccountGovernanceDetailDialogState
             children: [
               Text(
                 label,
-                style: const TextStyle(fontSize: 12, color: _kMuted),
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AdminStudioColors.muted,
+                ),
               ),
               const SizedBox(height: 2),
               SelectableText(
                 display,
                 style: const TextStyle(
                   fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                  color: _kText,
+                  fontWeight: FontWeight.w700,
+                  color: AdminStudioColors.ink,
                 ),
               ),
             ],
@@ -1712,7 +1910,10 @@ class _AccountGovernanceDetailDialogState
               width: 140,
               child: Text(
                 label,
-                style: const TextStyle(fontSize: 12.5, color: _kMuted),
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  color: AdminStudioColors.muted,
+                ),
               ),
             ),
             Expanded(
@@ -1720,8 +1921,8 @@ class _AccountGovernanceDetailDialogState
                 display,
                 style: const TextStyle(
                   fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                  color: _kText,
+                  fontWeight: FontWeight.w700,
+                  color: AdminStudioColors.ink,
                 ),
               ),
             ),
@@ -1742,6 +1943,7 @@ class _AccountGovernanceDetailDialogState
     return AlertDialog(
       title: Text(
         'Hồ sơ & Kiểm toán: ${'${_account['full_name'] ?? ''}'.trim().isNotEmpty ? _account['full_name'] : (_account['email'] ?? _account['user_id'])}',
+        style: const TextStyle(fontWeight: FontWeight.w900),
       ),
       content: SizedBox(
         width: 620,
@@ -1760,15 +1962,20 @@ class _AccountGovernanceDetailDialogState
                   padding: const EdgeInsets.only(bottom: 10),
                   child: Text(
                     _error!,
-                    style: const TextStyle(color: _kDanger, fontSize: 13),
+                    style: const TextStyle(
+                      color: AdminStudioColors.danger,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: _kBorder),
+                  color: AdminStudioColors.surface,
+                  border: Border.all(
+                    color: AdminStudioColors.ink,
+                    width: 1.4,
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1776,13 +1983,29 @@ class _AccountGovernanceDetailDialogState
                     _infoRow('UUID định danh', '${_account['user_id']}'),
                     _infoRow(
                       'Email xác thực',
-                      '${_account['email'] ?? ''}${_account['email_confirmed'] == true ? ' (Đã xác minh)' : ''}',
+                      '${_account['email'] ?? ''}${_account['email_confirmed'] == true ? ' · Đã xác minh' : ''}',
                     ),
                     _infoRow(
                       'Số điện thoại',
                       '${_account['phone'] ?? ''}'.isNotEmpty
                           ? '${_account['phone']}'
                           : 'Chưa cập nhật',
+                    ),
+                    _infoRow(
+                      'Ngày tháng năm sinh',
+                      formatIsoBirthDate(
+                        _account['birth_date'] as String?,
+                      ).isNotEmpty
+                          ? formatIsoBirthDate(
+                              _account['birth_date'] as String?,
+                            )
+                          : 'Chưa cập nhật',
+                    ),
+                    _infoRow(
+                      'Số CCCD định danh',
+                      '${_account['citizen_id'] ?? ''}'.isNotEmpty
+                          ? '${_account['citizen_id']} · Đã định danh CCCD'
+                          : 'Chưa định danh',
                     ),
                     _infoRow('Nhà cung cấp Auth', providers),
                     _infoRow(
@@ -1813,9 +2036,9 @@ class _AccountGovernanceDetailDialogState
                 const Text(
                   'Gian hàng sở hữu',
                   style: TextStyle(
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w900,
                     fontSize: 14,
-                    color: _kText,
+                    color: AdminStudioColors.ink,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -1824,9 +2047,11 @@ class _AccountGovernanceDetailDialogState
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: _kBorder),
+                      color: AdminStudioColors.surface,
+                      border: Border.all(
+                        color: AdminStudioColors.ink,
+                        width: 1.2,
+                      ),
                     ),
                     child: Text(
                       '${s['name']} · ${s['status'] == 'active' ? 'Đang hoạt động' : s['status'] == 'pending' ? 'Chờ duyệt' : 'Tạm khóa'}${s['paused'] == true ? ' (Tạm nghỉ)' : ''}\n${s['address'] ?? ''}',
@@ -1838,25 +2063,30 @@ class _AccountGovernanceDetailDialogState
               const Text(
                 'Nhật ký kiểm toán tài khoản này',
                 style: TextStyle(
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w900,
                   fontSize: 14,
-                  color: _kText,
+                  color: AdminStudioColors.ink,
                 ),
               ),
               const SizedBox(height: 8),
               if (_audit.isEmpty && !_busy)
                 const Text(
                   'Chưa có bản ghi kiểm toán nào cho tài khoản này.',
-                  style: TextStyle(fontSize: 12.5, color: _kMuted),
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: AdminStudioColors.muted,
+                  ),
                 ),
               for (final e in _audit)
                 Container(
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: _kBorder),
+                    color: AdminStudioColors.surface,
+                    border: Border.all(
+                      color: AdminStudioColors.ink,
+                      width: 1.2,
+                    ),
                   ),
                   child: Builder(
                     builder: (_) {
@@ -1866,7 +2096,7 @@ class _AccountGovernanceDetailDialogState
                           ? '${e['actor_email']}'
                           : '${e['actor_id']}';
                       return SelectableText(
-                        '${adminAuditActionLabel(e['action'])} (${e['action']})\n'
+                        '${adminAuditActionLabel(e['action'])} · ${e['action']}\n'
                         '${cloudDate(e['created_at'])} · Thực hiện bởi: $actor'
                         '${reason.isNotEmpty ? '\nGhi chú: $reason' : ''}',
                         style: const TextStyle(fontSize: 12, height: 1.45),

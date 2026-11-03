@@ -466,7 +466,7 @@ void main() {
       );
       await settleShort(tester);
 
-      expect(find.text('GHST CLOUD ADMIN'), findsOneWidget);
+      expect(find.text('GHST ADMIN'), findsOneWidget);
       expect(find.text('Email quản trị'), findsOneWidget);
 
       await tester.enterText(
@@ -481,7 +481,7 @@ void main() {
       await settleShort(tester);
 
       expect(
-        find.text('Tài khoản cloud chưa có quyền operator.'),
+        find.text('Tài khoản chưa có quyền quản trị.'),
         findsOneWidget,
       );
 
@@ -502,7 +502,7 @@ void main() {
       await settleShort(tester);
 
       expect(
-        find.text('Chỉ số vận hành Cloud thời gian thực'),
+        find.text('Chỉ số vận hành thời gian thực'),
         findsOneWidget,
       );
       expect(find.text('Khuyến mãi & Đối soát'), findsWidgets);
@@ -654,7 +654,7 @@ void main() {
 
       await tester.tap(find.textContaining('Theo dõi shop'));
       await settleShort(tester);
-      expect(find.textContaining('Đang theo dõi shop (9)'), findsOneWidget);
+      expect(find.textContaining('Đang theo dõi shop · 9'), findsOneWidget);
 
       await tester.tap(find.textContaining('Gói 500g'));
       await settleShort(tester);
@@ -681,11 +681,11 @@ void main() {
       await settleShort(tester);
 
       expect(
-        find.text('Cà phê Đặc sản Rang Mộc · CF-500G (Gói 500g)'),
+        find.text('Cà phê Đặc sản Rang Mộc · CF-500G · Gói 500g'),
         findsOneWidget,
       );
 
-      await tester.tap(find.text('Trả trước trực tuyến (payOS)'));
+      await tester.tap(find.text('Trả trước trực tuyến payOS'));
       await settleShort(tester);
       await tester.tap(find.text('Vận chuyển, Voucher & Xu thưởng'));
       await settleShort(tester);
@@ -753,7 +753,7 @@ void main() {
       );
       await settleShort(tester);
 
-      expect(find.text('Kiện vận chuyển (2)'), findsOneWidget);
+      expect(find.text('Kiện vận chuyển · 2'), findsOneWidget);
       expect(find.text('Đánh giá cửa hàng'), findsOneWidget);
       expect(find.text('Đánh giá tài xế'), findsOneWidget);
       expect(find.text('Xem ảnh minh chứng'), findsOneWidget);

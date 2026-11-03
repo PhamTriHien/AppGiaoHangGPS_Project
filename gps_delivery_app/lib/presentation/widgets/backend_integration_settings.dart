@@ -4,12 +4,8 @@ import 'package:flutter/material.dart';
 import '../../core/config/env_config.dart';
 import '../../core/integrations/delivery_api_client.dart';
 import '../../core/network/public_json_api.dart';
+import '../../core/theme/admin_studio_theme.dart';
 import 'backend_readiness_dialog.dart';
-
-const _kIntPrimary = Color(0xFF087F5B);
-const _kIntBorder = Color(0xFFE2E8F0);
-const _kIntText = Color(0xFF0F172A);
-const _kIntMuted = Color(0xFF64748B);
 
 class BackendIntegrationSettings extends StatefulWidget {
   const BackendIntegrationSettings({super.key, this.api});
@@ -160,7 +156,7 @@ class _BackendIntegrationSettingsState
         final next = (_providers?[id] as Map?) ?? provider;
         final changed = (response['changed'] as List?)?.length ?? 0;
         final cloudSuffix = _storage == 'cloud_postgres'
-            ? ' (đã đồng bộ Cloud PostgreSQL)'
+            ? ' · đã đồng bộ hệ thống'
             : '';
         if (changed == 0 && values.isEmpty && clear.isEmpty) {
           _message = 'Đã đồng bộ trạng thái ${provider['label']}.';
@@ -249,9 +245,14 @@ class _BackendIntegrationSettingsState
     if (field['type'] == 'boolean') {
       return SwitchListTile.adaptive(
         contentPadding: EdgeInsets.zero,
+        activeTrackColor: AdminStudioColors.violet,
         title: Text(
           field['label'].toString(),
-          style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
+          style: const TextStyle(
+            fontSize: 13.5,
+            fontWeight: FontWeight.w700,
+            color: AdminStudioColors.ink,
+          ),
         ),
         value: _booleans[key] ?? false,
         onChanged: enabled
@@ -291,7 +292,7 @@ class _BackendIntegrationSettingsState
               ? 'Sẽ xóa khi lưu'
               : savedSecret
               ? (_storage == 'cloud_postgres'
-                    ? 'Khóa bảo mật đã đồng bộ Cloud PostgreSQL — để trống nếu giữ nguyên'
+                    ? 'Khóa bảo mật đã đồng bộ hệ thống — để trống nếu giữ nguyên'
                     : 'Khóa bảo mật đã lưu tại backend — để trống nếu giữ nguyên')
               : null,
           hintText: field['secret'] == true && field['configured'] == true
@@ -319,27 +320,35 @@ class _BackendIntegrationSettingsState
 
   Widget _providerStatusBadge(bool available, Map provider) {
     final (String text, Color fg, Color bg) = !available
-        ? ('Chưa có luồng giao dịch', _kIntMuted, const Color(0xFFF1F5F9))
+        ? (
+            'Chưa có luồng giao dịch',
+            AdminStudioColors.muted,
+            AdminStudioColors.paperWarm,
+          )
         : provider['configured'] != true
-        ? ('Thiếu cấu hình', const Color(0xFFB45309), const Color(0xFFFEF3C7))
+        ? (
+            'Thiếu cấu hình',
+            AdminStudioColors.goldInk,
+            AdminStudioColors.goldSoft,
+          )
         : provider['enabled'] == true
-        ? ('Đang bật', _kIntPrimary, const Color(0xFFE6FCF5))
-        : ('Đang tắt', const Color(0xFF475569), const Color(0xFFF1F5F9));
+        ? ('Đang bật', AdminStudioColors.ink, AdminStudioColors.acid)
+        : ('Đang tắt', AdminStudioColors.muted, AdminStudioColors.paperWarm);
 
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.only(top: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+        margin: const EdgeInsets.only(top: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: AdminStudioColors.ink, width: 1.1),
         ),
         child: Text(
           text,
           style: TextStyle(
-            fontSize: 11.5,
-            fontWeight: FontWeight.w700,
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
             color: fg,
           ),
         ),
@@ -350,18 +359,13 @@ class _BackendIntegrationSettingsState
   Widget _cardSurface({
     required Widget child,
     EdgeInsetsGeometry padding = EdgeInsets.zero,
-    Color borderColor = _kIntBorder,
-    double radius = 14,
-  }) => Material(
-    color: Colors.white,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(radius),
-      side: BorderSide(color: borderColor),
-    ),
-    clipBehavior: Clip.antiAlias,
-    child: padding == EdgeInsets.zero
-        ? child
-        : Padding(padding: padding, child: child),
+    Color borderColor = AdminStudioColors.ink,
+    Offset shadowOffset = const Offset(3, 3),
+  }) => AdminNeoBox(
+    padding: padding,
+    borderColor: borderColor,
+    shadowOffset: shadowOffset,
+    child: child,
   );
 
   Widget _provider(String id, Map provider) {
@@ -373,44 +377,45 @@ class _BackendIntegrationSettingsState
     final check = provider['lastCheck'];
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 12),
       child: _cardSurface(
-        borderColor: active ? const Color(0xFF96F2D7) : _kIntBorder,
+        borderColor: AdminStudioColors.ink,
+        shadowOffset: active ? const Offset(4, 4) : const Offset(2, 2),
         child: Theme(
           data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
           child: ExpansionTile(
             key: ValueKey('integration-$id'),
             tilePadding: const EdgeInsets.symmetric(
               horizontal: 14,
-              vertical: 4,
+              vertical: 6,
             ),
-            childrenPadding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+            childrenPadding: const EdgeInsets.fromLTRB(16, 4, 16, 14),
             leading: Container(
               width: 38,
               height: 38,
               decoration: BoxDecoration(
                 color: active
-                    ? const Color(0xFFE6FCF5)
-                    : const Color(0xFFF1F5F9),
-                borderRadius: BorderRadius.circular(10),
+                    ? AdminStudioColors.acid
+                    : AdminStudioColors.paperWarm,
+                border: Border.all(color: AdminStudioColors.ink, width: 1.2),
               ),
               child: Icon(
                 _providerIcon(id),
                 size: 19,
-                color: active ? _kIntPrimary : _kIntMuted,
+                color: AdminStudioColors.ink,
               ),
             ),
             title: Text(
               provider['label'].toString(),
               style: const TextStyle(
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w800,
                 fontSize: 14.5,
-                color: _kIntText,
+                color: AdminStudioColors.ink,
               ),
             ),
             subtitle: _providerStatusBadge(available, provider),
             children: [
-              const Divider(height: 16, color: _kIntBorder),
+              const Divider(height: 16, color: AdminStudioColors.line),
               ...((provider['fields'] as List).cast<Map>()).map(
                 (field) => _field(field, available),
               ),
@@ -420,10 +425,12 @@ class _BackendIntegrationSettingsState
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: check['verified'] == true
-                        ? const Color(0xFFE6FCF5)
-                        : const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: _kIntBorder),
+                        ? AdminStudioColors.acidSoft
+                        : AdminStudioColors.paper,
+                    border: Border.all(
+                      color: AdminStudioColors.ink,
+                      width: 1.2,
+                    ),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -434,8 +441,8 @@ class _BackendIntegrationSettingsState
                             : Icons.info_outline,
                         size: 18,
                         color: check['verified'] == true
-                            ? _kIntPrimary
-                            : _kIntMuted,
+                            ? AdminStudioColors.acidInk
+                            : AdminStudioColors.muted,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -445,8 +452,9 @@ class _BackendIntegrationSettingsState
                             Text(
                               check['message'].toString(),
                               style: const TextStyle(
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w700,
                                 fontSize: 13,
+                                color: AdminStudioColors.ink,
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -454,7 +462,8 @@ class _BackendIntegrationSettingsState
                               '${check['checkedAt']} · ${check['latencyMs']} ms',
                               style: const TextStyle(
                                 fontSize: 11.5,
-                                color: _kIntMuted,
+                                fontFamily: 'monospace',
+                                color: AdminStudioColors.muted,
                               ),
                             ),
                           ],
@@ -514,17 +523,19 @@ class _BackendIntegrationSettingsState
         margin: margin,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: _failed ? const Color(0xFFFEF3F2) : const Color(0xFFE6FCF5),
-          borderRadius: BorderRadius.circular(12),
+          color: _failed
+              ? AdminStudioColors.dangerSoft
+              : AdminStudioColors.acidSoft,
           border: Border.all(
-            color: _failed ? const Color(0xFFFECDCA) : const Color(0xFF96F2D7),
+            color: _failed ? AdminStudioColors.danger : AdminStudioColors.ink,
+            width: 1.4,
           ),
         ),
         child: Text(
           _message!,
           style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: _failed ? Theme.of(context).colorScheme.error : _kIntPrimary,
+            fontWeight: FontWeight.w700,
+            color: _failed ? AdminStudioColors.danger : AdminStudioColors.ink,
           ),
         ),
       );
@@ -543,224 +554,304 @@ class _BackendIntegrationSettingsState
             .length ??
         0;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _cardSurface(
-          radius: 16,
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE6FCF5),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.hub_outlined,
-                      size: 20,
-                      color: _kIntPrimary,
-                    ),
+    return Theme(
+      data: AdminStudioTheme.themeData(),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AdminStudioGridBackdrop(
+            child: Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                border: Border.all(color: AdminStudioColors.ink, width: 2),
+                boxShadow: const [
+                  BoxShadow(
+                    color: AdminStudioColors.violet,
+                    offset: Offset(4, 4),
+                    blurRadius: 0,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Cổng tích hợp & Dịch vụ Backend',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 15.5,
-                            color: _kIntText,
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: AdminStudioColors.acid,
+                          border: Border.all(
+                            color: AdminStudioColors.ink,
+                            width: 1.5,
                           ),
                         ),
-                        if (_providers != null)
-                          Text(
-                            'Kích hoạt $activeCount/${_providers!.length} dịch vụ${_storage == 'cloud_postgres' ? ' · Lưu trữ PostgreSQL Cloud' : ''}',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: _kIntMuted,
+                        child: const Icon(
+                          Icons.hub_outlined,
+                          size: 20,
+                          color: AdminStudioColors.ink,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Cổng tích hợp & Dịch vụ Backend',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w900,
+                                fontSize: 16,
+                                color: Colors.white,
+                              ),
+                            ),
+                            if (_providers != null)
+                              Text(
+                                'Kích hoạt $activeCount/${_providers!.length} dịch vụ${_storage == 'cloud_postgres' ? ' · Lưu trữ tập trung' : ''}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AdminStudioColors.acid,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      FilledButton.icon(
+                        onPressed: _busy ? null : _load,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AdminStudioColors.acid,
+                          foregroundColor: AdminStudioColors.ink,
+                        ),
+                        icon: const Icon(Icons.settings_outlined, size: 18),
+                        label: Text(
+                          _providers == null
+                              ? 'Quản lý API backend'
+                              : 'Tải lại cấu hình',
+                        ),
+                      ),
+                      if (_providers != null)
+                        IconButton(
+                          tooltip: 'Sẵn sàng triển khai',
+                          style: IconButton.styleFrom(
+                            backgroundColor: AdminStudioColors.shellElevated,
+                            foregroundColor: Colors.white,
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.zero,
+                              side: BorderSide(color: AdminStudioColors.acid),
                             ),
                           ),
-                      ],
-                    ),
+                          onPressed: _busy ? null : _readiness,
+                          icon: const Icon(Icons.fact_check_outlined),
+                        ),
+                      if (_providers != null)
+                        IconButton(
+                          tooltip: 'Hoạt động API',
+                          style: IconButton.styleFrom(
+                            backgroundColor: AdminStudioColors.shellElevated,
+                            foregroundColor: Colors.white,
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.zero,
+                              side: BorderSide(
+                                color: AdminStudioColors.shellLine,
+                              ),
+                            ),
+                          ),
+                          onPressed: _busy
+                              ? null
+                              : () => _run(() async {
+                                  final response = await _api.request(
+                                    'admin/integrations/usage',
+                                    localAuth: _localAuth,
+                                  );
+                                  if (mounted) {
+                                    setState(() => _usage = response);
+                                  }
+                                }),
+                          icon: const Icon(Icons.monitor_heart_outlined),
+                        ),
+                      if (_providers != null)
+                        IconButton(
+                          tooltip: 'Lịch sử cấu hình',
+                          style: IconButton.styleFrom(
+                            backgroundColor: AdminStudioColors.shellElevated,
+                            foregroundColor: Colors.white,
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.zero,
+                              side: BorderSide(
+                                color: AdminStudioColors.shellLine,
+                              ),
+                            ),
+                          ),
+                          onPressed: _busy
+                              ? null
+                              : () => _run(() async {
+                                  final response = await _api.request(
+                                    'admin/integrations/audit',
+                                    localAuth: _localAuth,
+                                  );
+                                  if (mounted) {
+                                    setState(
+                                      () =>
+                                          _audit = response['entries'] as List,
+                                    );
+                                  }
+                                }),
+                          icon: const Icon(Icons.history),
+                        ),
+                    ],
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                crossAxisAlignment: WrapCrossAlignment.center,
+            ),
+          ),
+          if (_busy)
+            const Padding(
+              padding: EdgeInsets.only(top: 10),
+              child: LinearProgressIndicator(
+                color: AdminStudioColors.violet,
+                backgroundColor: AdminStudioColors.paperWarm,
+              ),
+            ),
+          if (_message != null &&
+              (_activeProvider == null ||
+                  _providers?.containsKey(_activeProvider) != true))
+            _statusBanner(margin: const EdgeInsets.only(top: 12)),
+          if (_providers != null) ...[
+            const SizedBox(height: 14),
+            _cardSurface(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              child: ListTile(
+                key: const ValueKey('managed-backend-address'),
+                contentPadding: EdgeInsets.zero,
+                leading: Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: AdminStudioColors.violetSoft,
+                    border: Border.all(
+                      color: AdminStudioColors.ink,
+                      width: 1.2,
+                    ),
+                  ),
+                  child: Icon(
+                    _loopback ? Icons.computer_outlined : Icons.cloud_outlined,
+                    size: 18,
+                    color: AdminStudioColors.violet,
+                  ),
+                ),
+                title: Text(
+                  _loopback ? 'Backend local' : 'Backend từ xa',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13.5,
+                    color: AdminStudioColors.ink,
+                  ),
+                ),
+                subtitle: SelectableText(
+                  _backendAddress,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'monospace',
+                    color: AdminStudioColors.muted,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            ..._providers!.entries.map(
+              (entry) => _provider(entry.key, entry.value as Map),
+            ),
+          ],
+          if (_usage != null) ...[
+            const SizedBox(height: 14),
+            _cardSurface(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  FilledButton.icon(
-                    onPressed: _busy ? null : _load,
-                    icon: const Icon(Icons.settings_outlined, size: 18),
-                    label: Text(
-                      _providers == null
-                          ? 'Quản lý API backend'
-                          : 'Tải lại cấu hình',
+                  const Text(
+                    'Hoạt động API',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 15,
+                      color: AdminStudioColors.ink,
                     ),
                   ),
-                  if (_providers != null)
-                    IconButton(
-                      tooltip: 'Sẵn sàng triển khai',
-                      onPressed: _busy ? null : _readiness,
-                      icon: const Icon(Icons.fact_check_outlined),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Từ khi backend khởi động: ${_usage!['since']}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontFamily: 'monospace',
+                      color: AdminStudioColors.muted,
                     ),
-                  if (_providers != null)
-                    IconButton(
-                      tooltip: 'Hoạt động API',
-                      onPressed: _busy
-                          ? null
-                          : () => _run(() async {
-                              final response = await _api.request(
-                                'admin/integrations/usage',
-                                localAuth: _localAuth,
-                              );
-                              if (mounted) setState(() => _usage = response);
-                            }),
-                      icon: const Icon(Icons.monitor_heart_outlined),
-                    ),
-                  if (_providers != null)
-                    IconButton(
-                      tooltip: 'Lịch sử cấu hình',
-                      onPressed: _busy
-                          ? null
-                          : () => _run(() async {
-                              final response = await _api.request(
-                                'admin/integrations/audit',
-                                localAuth: _localAuth,
-                              );
-                              if (mounted) {
-                                setState(
-                                  () => _audit = response['entries'] as List,
-                                );
-                              }
-                            }),
-                      icon: const Icon(Icons.history),
+                  ),
+                  const SizedBox(height: 8),
+                  if ((_usage!['providers'] as List).isEmpty)
+                    const Text('Chưa ghi nhận yêu cầu API.'),
+                  for (final row
+                      in (_usage!['providers'] as List).whereType<Map>())
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        '${row['provider']} · ${row['requests']} yêu cầu',
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                      subtitle: Text(
+                        'Thành công ${row['successes']} · Lỗi ${row['failures']} · Giới hạn 429: ${row['rateLimited']}\nTrung bình ${row['averageMs']} ms · HTTP gần nhất ${row['lastStatus']}',
+                      ),
                     ),
                 ],
               ),
-            ],
-          ),
-        ),
-        if (_busy)
-          const Padding(
-            padding: EdgeInsets.only(top: 8),
-            child: LinearProgressIndicator(),
-          ),
-        if (_message != null &&
-            (_activeProvider == null ||
-                _providers?.containsKey(_activeProvider) != true))
-          _statusBanner(margin: const EdgeInsets.only(top: 10)),
-        if (_providers != null) ...[
-          const SizedBox(height: 12),
-          _cardSurface(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            child: ListTile(
-              key: const ValueKey('managed-backend-address'),
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(
-                _loopback ? Icons.computer_outlined : Icons.cloud_outlined,
-                color: _kIntPrimary,
-              ),
-              title: Text(
-                _loopback ? 'Backend local' : 'Backend từ xa',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13.5,
-                ),
-              ),
-              subtitle: SelectableText(
-                _backendAddress,
-                style: const TextStyle(fontSize: 12.5, color: _kIntMuted),
-              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          ..._providers!.entries.map(
-            (entry) => _provider(entry.key, entry.value as Map),
-          ),
-        ],
-        if (_usage != null) ...[
-          const SizedBox(height: 12),
-          _cardSurface(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Hoạt động API',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15,
-                    color: _kIntText,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Từ khi backend khởi động: ${_usage!['since']}',
-                  style: const TextStyle(fontSize: 12.5, color: _kIntMuted),
-                ),
-                const SizedBox(height: 8),
-                if ((_usage!['providers'] as List).isEmpty)
-                  const Text('Chưa ghi nhận yêu cầu API.'),
-                for (final row
-                    in (_usage!['providers'] as List).whereType<Map>())
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(
-                      '${row['provider']} · ${row['requests']} yêu cầu',
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    subtitle: Text(
-                      'Thành công ${row['successes']} · Lỗi ${row['failures']} · Giới hạn 429: ${row['rateLimited']}\nTrung bình ${row['averageMs']} ms · HTTP gần nhất ${row['lastStatus']}',
+          ],
+          if (_audit != null) ...[
+            const SizedBox(height: 14),
+            _cardSurface(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Lịch sử cấu hình',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 15,
+                      color: AdminStudioColors.ink,
                     ),
                   ),
-              ],
-            ),
-          ),
-        ],
-        if (_audit != null) ...[
-          const SizedBox(height: 12),
-          _cardSurface(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Lịch sử cấu hình',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15,
-                    color: _kIntText,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                if (_audit!.isEmpty) const Text('Chưa có thay đổi.'),
-                ..._audit!.whereType<Map>().map(
-                  (row) => ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(
-                      (row['changed'] as List).join(', '),
-                      style: const TextStyle(fontWeight: FontWeight.w600),
+                  const SizedBox(height: 8),
+                  if (_audit!.isEmpty) const Text('Chưa có thay đổi.'),
+                  ..._audit!.whereType<Map>().map(
+                    (row) => ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        (row['changed'] as List).join(', '),
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      subtitle: Text(
+                        '${row['at']} · ${row['actor']}',
+                        style: const TextStyle(fontFamily: 'monospace'),
+                      ),
                     ),
-                    subtitle: Text('${row['at']} · ${row['actor']}'),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
+          ],
         ],
-      ],
+      ),
     );
   }
 }

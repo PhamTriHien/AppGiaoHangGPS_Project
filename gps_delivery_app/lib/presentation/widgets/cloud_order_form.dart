@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/config/env_config.dart';
 import '../../core/gps/stop_order_optimizer.dart';
+import '../../core/integrations/cloud_account_session.dart';
 import '../../core/integrations/cloud_orders_service.dart';
 import '../../core/integrations/cloud_session_lease.dart';
 import '../../core/integrations/photon_address_service.dart';
@@ -30,6 +31,7 @@ class CloudOrderForm extends StatefulWidget {
     super.key,
     required this.service,
     required this.merchants,
+    this.session,
     this.lease,
     this.initialDetails,
     this.embedded = false,
@@ -38,6 +40,7 @@ class CloudOrderForm extends StatefulWidget {
   });
   final CloudOrdersService service;
   final List<Map<String, dynamic>> merchants;
+  final CloudAccountSession? session;
   final CloudSessionLease? lease;
   final Map<String, dynamic>? initialDetails;
   final bool embedded;
@@ -85,11 +88,17 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
       _preferEv = false,
       _greenFund = false,
       _requirePod = false,
-      _requireOtp = false;
+      _requireOtp = false,
+      _useCoins = false;
   Map<String, dynamic>? _quote;
   Map<String, Map<String, dynamic>>? _serviceEta;
   bool _busy = false;
   String? _error, _routeNotice;
+
+  CloudAccountSession? get _accountSession =>
+      widget.session ?? widget.lease?.session;
+
+  int get _availableCoins => _accountSession?.coinBalance ?? 0;
 
   bool get _sameAccount =>
       !_invalidated &&
@@ -162,6 +171,7 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
       _greenFund = initial['green_fund'] == true;
       _requirePod = initial['require_pod'] == true;
       _requireOtp = initial['require_otp'] == true;
+      _useCoins = initial['use_coins'] == true;
       if (initial['extra_stops'] is List) {
         for (final raw in (initial['extra_stops'] as List).take(5)) {
           if (raw is Map) {
@@ -484,6 +494,7 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
     if (_greenFund) result['green_fund'] = true;
     if (_requirePod) result['require_pod'] = true;
     if (_requireOtp) result['require_otp'] = true;
+    if (_useCoins) result['use_coins'] = true;
     if (_extraStops.isNotEmpty) {
       result['extra_stops'] = [
         for (final s in _extraStops)
@@ -526,11 +537,12 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
         await widget.service.command('orders', {
           'details': details,
           'pricing_version': _quote!['pricing_version'],
-          'expected_fee': _quote!['shipping_fee'],
+          'expected_fee': _quote!['payable_fee'] ?? _quote!['shipping_fee'],
           'draft_id': draft,
         });
         if (!mounted || !_sameAccount) return;
         await widget.service.completeDraft(draft);
+        unawaited(_accountSession?.refresh().catchError((Object _) {}));
         if (mounted && _sameAccount) {
           if (widget.embedded) {
             widget.onCreated?.call();
@@ -609,7 +621,7 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
         }
         _routeNotice = plan.improves
             ? 'Đã sắp xếp lại điểm dừng: ${km(plan.currentMeters)} km → ${km(plan.optimizedMeters)} km đường bộ.'
-            : 'Thứ tự hiện tại đã ngắn nhất (${km(plan.currentMeters)} km đường bộ).';
+            : 'Thứ tự hiện tại đã ngắn nhất: ${km(plan.currentMeters)} km đường bộ.';
       });
     } catch (error) {
       if (mounted && _sameAccount) {
@@ -655,7 +667,7 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
     String label, {
     bool numeric = false,
     bool optional = false,
-    int max = 500,
+    int max = 500, String? suffixText,
   }) => Padding(
     padding: const EdgeInsets.only(bottom: 10),
     child: TextFormField(
@@ -666,7 +678,7 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
           ? const TextInputType.numberWithOptions(decimal: true, signed: false)
           : TextInputType.text,
       decoration: InputDecoration(
-        labelText: label,
+        labelText: label, suffixText: suffixText,
         border: const OutlineInputBorder(),
         counterText: '',
       ),
@@ -699,7 +711,7 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
         if (key == 'scheduled_at') {
           if (value.isEmpty) return null;
           return DateTime.tryParse(value) == null
-              ? 'Thời gian ISO-8601 không hợp lệ'
+              ? 'Thời gian hẹn lấy không hợp lệ'
               : null;
         }
         if (optional && value.isEmpty) return null;
@@ -829,7 +841,7 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
               ),
             ActionChip(
               avatar: const Icon(Icons.my_location_outlined, size: 16),
-              label: const Text('Vị trí hiện tại (GPS)'),
+              label: const Text('Vị trí hiện tại'),
               onPressed: _busy || !_sameAccount
                   ? null
                   : _useCurrentGpsForActiveTarget,
@@ -849,7 +861,7 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
         const SizedBox(height: 8),
         Map3dPerspectiveWidget(
           key: const ValueKey('cloud-order-google-map'),
-          height: 270,
+          height: 390,
           showTopBanner: false,
           mode: MapViewMode.customerPreview,
           customFleetDrivers: const [],
@@ -996,8 +1008,8 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
                     enabled: !_busy && _sameAccount,
                   ),
                   _text('package_description', 'Hàng hóa', max: 1000),
-                  _text('weight_kg', 'Khối lượng (kg)', numeric: true),
-                  _text('cod_amount', 'Tiền thu hộ (đồng)', numeric: true),
+                  _text('weight_kg', 'Khối lượng', numeric: true, suffixText: 'kg'),
+                  _text('cod_amount', 'Tiền thu hộ', numeric: true, suffixText: 'đ'),
                   DropdownButtonFormField<String>(
                     initialValue: _serviceType,
                     isExpanded: true,
@@ -1077,10 +1089,33 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
                     ),
                   ],
                   const SizedBox(height: 12),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    secondary: const Icon(Icons.monetization_on_outlined),
+                    title: const Text('Dùng Xu giảm cước phí đơn hàng'),
+                    subtitle: Text(
+                      _availableCoins > 0
+                          ? '$_availableCoins Xu khả dụng · Giảm tối đa 20% cước phí'
+                          : 'Hiện có 0 Xu · Hoàn tất đơn hoặc tham gia sự kiện để tích Xu',
+                    ),
+                    value:
+                        _useCoins &&
+                        (_availableCoins > 0 ||
+                            (_quote?['coin_discount'] as num? ?? 0) > 0),
+                    onChanged:
+                        _busy ||
+                            !_sameAccount ||
+                            (_availableCoins <= 0 && !_useCoins)
+                        ? null
+                        : (v) => setState(() {
+                            _useCoins = v;
+                            _quote = null;
+                          }),
+                  ),
                   ExpansionTile(
                     tilePadding: EdgeInsets.zero,
                     title: const Text(
-                      'Tùy chọn nâng cao (Kích thước, Bảo hiểm, Đa điểm dừng, POD/OTP)',
+                      'Tùy chọn nâng cao: Kích thước, Bảo hiểm & Điểm dừng',
                     ),
                     children: [
                       const SizedBox(height: 8),
@@ -1089,7 +1124,7 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
                           Expanded(
                             child: _text(
                               'length_cm',
-                              'Dài (cm)',
+                              'Dài', suffixText: 'cm',
                               numeric: true,
                               optional: true,
                             ),
@@ -1098,7 +1133,7 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
                           Expanded(
                             child: _text(
                               'width_cm',
-                              'Rộng (cm)',
+                              'Rộng', suffixText: 'cm',
                               numeric: true,
                               optional: true,
                             ),
@@ -1107,7 +1142,7 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
                           Expanded(
                             child: _text(
                               'height_cm',
-                              'Cao (cm)',
+                              'Cao', suffixText: 'cm',
                               numeric: true,
                               optional: true,
                             ),
@@ -1116,7 +1151,7 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
                       ),
                       _text(
                         'declared_value',
-                        'Khai giá bảo hiểm (đồng)',
+                        'Khai giá bảo hiểm', suffixText: 'đ',
                         numeric: true,
                         optional: true,
                       ),
@@ -1131,7 +1166,7 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
                           Expanded(
                             child: _text(
                               'scheduled_at',
-                              'Hẹn giờ lấy hàng (ISO-8601)',
+                              'Hẹn giờ lấy hàng',
                               optional: true,
                               max: 64,
                             ),
@@ -1159,7 +1194,7 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
                       ),
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,
-                        title: const Text('Giao khứ hồi (+60% cước)'),
+                        title: const Text('Giao khứ hồi · Phụ thu 60% cước'),
                         value: _isRoundTrip,
                         onChanged: _busy || !_sameAccount
                             ? null
@@ -1170,7 +1205,7 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
                       ),
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,
-                        title: const Text('Ưu tiên tài xế xe điện (EV)'),
+                        title: const Text('Ưu tiên tài xế xe điện'),
                         value: _preferEv,
                         onChanged: _busy || !_sameAccount
                             ? null
@@ -1181,7 +1216,7 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
                       ),
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,
-                        title: const Text('Đóng góp Quỹ Xanh (+1.000 đ)'),
+                        title: const Text('Đóng góp Quỹ Xanh · 1.000 đ'),
                         value: _greenFund,
                         onChanged: _busy || !_sameAccount
                             ? null
@@ -1193,7 +1228,7 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,
                         title: const Text(
-                          'Yêu cầu ảnh bằng chứng giao hàng (POD)',
+                          'Yêu cầu ảnh bằng chứng giao hàng',
                         ),
                         value: _requirePod,
                         onChanged: _busy || !_sameAccount
@@ -1348,7 +1383,7 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
                                   }),
                             icon: const Icon(Icons.add_location_alt_outlined),
                             label: const Text(
-                              'Thêm điểm dừng trung gian (+5.000 đ)',
+                              'Thêm điểm dừng trung gian · 5.000 đ',
                             ),
                           ),
                         ),
@@ -1363,6 +1398,39 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
+                    if ((_quote!['coin_discount'] as num? ?? 0) > 0) ...[
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          'Đổi Xu giảm cước: -${CurrencyFormatter.formatVnd((_quote!['coin_discount'] as num).toDouble())}',
+                          style: TextStyle(
+                            color: Colors.green.shade800,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2, bottom: 4),
+                        child: Text(
+                          'Cước cần thanh toán: ${CurrencyFormatter.formatVnd(((_quote!['payable_fee'] ?? _quote!['shipping_fee']) as num).toDouble())}',
+                          style: const TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ] else if (!_useCoins &&
+                        (_quote!['max_coin_discount'] as num? ?? 0) > 0)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4, bottom: 4),
+                        child: Text(
+                          'Có thể bật Dùng Xu để giảm ngay ${CurrencyFormatter.formatVnd((_quote!['max_coin_discount'] as num).toDouble())} cước phí',
+                          style: TextStyle(
+                            color: Colors.amber.shade900,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
                     Text(
                       'Cự ly ước tính: ${((_quote!['distance_meters'] as num) / 1000).toStringAsFixed(1)} km',
                     ),
@@ -1376,7 +1444,7 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
                       ),
                     if (_serviceEta?[_serviceType] case final eta?)
                       Text(
-                        'Thời gian giao thực tế trung bình 30 ngày (${cloudServiceTypes[_serviceType]}): '
+                        'Thời gian giao thực tế trung bình 30 ngày · ${cloudServiceTypes[_serviceType]}: '
                         '${cloudMinutes(eta['avg_delivery_minutes'])} · ${eta['samples']} đơn',
                       ),
                     if (_quote!['breakdown'] is Map) ...[

@@ -55,6 +55,11 @@ class CloudOrdersRepository {
     _cursor = null;
   }
 
+  void cancelPending() {
+    _generation++;
+    _pending = null;
+  }
+
   void clear() {
     _generation++;
     _pending = null;

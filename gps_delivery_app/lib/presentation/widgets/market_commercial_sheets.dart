@@ -246,7 +246,7 @@ class _VariantsDialogState extends State<_VariantsDialog> {
             for (final v in _variants)
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: Text('${v['title']} (${v['sku']})'),
+                title: Text('${v['title']} · ${v['sku']}'),
                 subtitle: Text(
                   '${_vnd(v['price'])} · Tồn ${v['stock']} · ${v['weight_kg']} kg · ${v['published'] == true ? 'Đang bán' : 'Ẩn'}',
                 ),
@@ -275,7 +275,7 @@ class _VariantsDialogState extends State<_VariantsDialog> {
                   child: TextField(
                     controller: _title,
                     decoration: const InputDecoration(
-                      labelText: 'Tên biến thể (VD: Size L)',
+                      labelText: 'Tên biến thể', hintText: 'Size L',
                     ),
                   ),
                 ),
@@ -288,7 +288,7 @@ class _VariantsDialogState extends State<_VariantsDialog> {
                   child: TextField(
                     controller: _price,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Giá (đ)'),
+                    decoration: const InputDecoration(labelText: 'Giá', suffixText: 'đ'),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -306,7 +306,7 @@ class _VariantsDialogState extends State<_VariantsDialog> {
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
-                    decoration: const InputDecoration(labelText: 'Nặng (kg)'),
+                    decoration: const InputDecoration(labelText: 'Khối lượng', suffixText: 'kg'),
                   ),
                 ),
               ],
@@ -318,7 +318,7 @@ class _VariantsDialogState extends State<_VariantsDialog> {
                   child: TextField(
                     controller: _l,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Dài (cm)'),
+                    decoration: const InputDecoration(labelText: 'Dài', suffixText: 'cm'),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -326,7 +326,7 @@ class _VariantsDialogState extends State<_VariantsDialog> {
                   child: TextField(
                     controller: _w,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Rộng (cm)'),
+                    decoration: const InputDecoration(labelText: 'Rộng', suffixText: 'cm'),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -334,7 +334,7 @@ class _VariantsDialogState extends State<_VariantsDialog> {
                   child: TextField(
                     controller: _h,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Cao (cm)'),
+                    decoration: const InputDecoration(labelText: 'Cao', suffixText: 'cm'),
                   ),
                 ),
               ],
@@ -495,8 +495,8 @@ class _ShopStaffDialogState extends State<_ShopStaffDialog> {
                 title: Text('${s['full_name']} · ${s['phone']}'),
                 subtitle: Text(
                   s['role'] == 'manager'
-                      ? 'Quản lý (sản phẩm, kho, đơn hàng)'
-                      : 'Nhân viên (xử lý đơn & tin nhắn)',
+                      ? 'Quản lý sản phẩm, kho & đơn hàng'
+                      : 'Nhân viên xử lý đơn & tin nhắn',
                 ),
                 trailing: IconButton(
                   tooltip: 'Thu hồi quyền',
@@ -514,7 +514,7 @@ class _ShopStaffDialogState extends State<_ShopStaffDialog> {
             TextField(
               controller: _phoneOrId,
               decoration: const InputDecoration(
-                labelText: 'Số điện thoại hoặc UUID tài khoản cloud',
+                labelText: 'Số điện thoại hoặc UUID tài khoản',
               ),
             ),
             const SizedBox(height: 10),
@@ -648,7 +648,7 @@ class _VoucherEditorDialogState extends State<_VoucherEditorDialog> {
         hours < 1) {
       setState(
         () => _error =
-            'Kiểm tra mã (3-32 ký tự chữ/số), mức giảm và tổng ngân sách.',
+            'Kiểm tra mã 3-32 ký tự chữ/số, mức giảm và tổng ngân sách.',
       );
       return;
     }
@@ -737,7 +737,7 @@ class _VoucherEditorDialogState extends State<_VoucherEditorDialog> {
                     controller: _val,
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
-                      labelText: _kind == 'percent' ? 'Mức (%)' : 'Giảm (đ)',
+                      labelText: _kind == 'percent' ? 'Mức giảm' : 'Số tiền giảm', suffixText: _kind == 'percent' ? '%' : 'đ',
                     ),
                   ),
                 ),
@@ -747,7 +747,7 @@ class _VoucherEditorDialogState extends State<_VoucherEditorDialog> {
                     controller: _max,
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
-                      labelText: 'Giảm tối đa (đ)',
+                      labelText: 'Giảm tối đa', suffixText: 'đ',
                     ),
                   ),
                 ),
@@ -761,7 +761,7 @@ class _VoucherEditorDialogState extends State<_VoucherEditorDialog> {
                     controller: _min,
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
-                      labelText: 'Đơn tối thiểu (đ)',
+                      labelText: 'Đơn tối thiểu', suffixText: 'đ',
                     ),
                   ),
                 ),
@@ -771,7 +771,7 @@ class _VoucherEditorDialogState extends State<_VoucherEditorDialog> {
                     controller: _budget,
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
-                      labelText: 'Ngân sách (đ)',
+                      labelText: 'Ngân sách', suffixText: 'đ',
                     ),
                   ),
                 ),
@@ -796,7 +796,7 @@ class _VoucherEditorDialogState extends State<_VoucherEditorDialog> {
                       controller: _hours,
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
-                        labelText: 'Hiệu lực (giờ)',
+                        labelText: 'Hiệu lực', suffixText: 'giờ',
                       ),
                     ),
                   ),
@@ -960,7 +960,7 @@ class _FlashSaleDialogState extends State<_FlashSaleDialog> {
                       (p) => DropdownMenuItem(
                         value: '${p['id']}',
                         child: Text(
-                          '${p['name']} (${_vnd(p['price'])})',
+                          '${p['name']} · ${_vnd(p['price'])}',
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -975,7 +975,7 @@ class _FlashSaleDialogState extends State<_FlashSaleDialog> {
               controller: _price,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(
-                labelText: 'Giá Flash Sale (đ)',
+                labelText: 'Giá Flash Sale', suffixText: 'đ',
               ),
             ),
             const SizedBox(height: 8),
@@ -1006,7 +1006,7 @@ class _FlashSaleDialogState extends State<_FlashSaleDialog> {
                 controller: _hours,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
-                  labelText: 'Thời lượng (giờ)',
+                  labelText: 'Thời lượng', suffixText: 'giờ',
                 ),
               ),
             ],
@@ -1110,9 +1110,9 @@ class _VoucherBrowserDialogState extends State<_VoucherBrowserDialog> {
             for (final v in _vouchers)
               Card(
                 child: ListTile(
-                  title: Text('${v['code']} · ${v['title']}'),
+                  title: Text('${v['code']}${v['personal'] == true ? ' [Cá nhân]' : ''} · ${v['title']}'),
                   subtitle: Text(
-                    '${v['discount_kind'] == 'percent' ? 'Giảm ${v['discount_value']}% (tối đa ${_vnd(v['max_discount'])})' : 'Giảm ${_vnd(v['discount_value'])}'
+                    '${v['discount_kind'] == 'percent' ? 'Giảm ${v['discount_value']}% tối đa ${_vnd(v['max_discount'])}' : 'Giảm ${_vnd(v['discount_value'])}'
                     } · Đơn từ ${_vnd(v['min_subtotal'])} · Ngân sách còn ${_vnd(v['remaining_budget'])}',
                   ),
                   trailing: FilledButton.tonal(
@@ -1195,10 +1195,19 @@ class _CoinWalletDialogState extends State<_CoinWalletDialog> {
   @override
   Widget build(BuildContext context) {
     const kinds = {
-      'earn_settlement': 'Tích xu sau đối soát (1%)',
+      'earn_settlement': 'Tích xu 1% sau đối soát',
+      'earn_shipping': 'Tích Xu 1% đơn giao hoàn tất',
       'redeem_checkout': 'Đổi xu thanh toán đơn hàng',
+      'redeem_shipping': 'Đổi Xu giảm cước giao hàng',
+      'release_cancel': 'Hoàn xu do hủy đơn',
+      'release_shipping_cancel': 'Hoàn Xu do hủy đơn giao hàng',
       'reverse_cancel': 'Hoàn xu do hủy đơn',
       'reverse_refund': 'Thu hồi xu khi hoàn tiền',
+      'promo_checkin': 'Thưởng điểm danh sự kiện hàng ngày',
+      'promo_spin': 'Trúng thưởng Vòng xoay may mắn',
+      'promo_blind_box': 'Khui thưởng Hộp mù bí ẩn',
+      'promo_mission': 'Thưởng nhiệm vụ đơn hàng',
+      'promo_exchange': 'Đổi Xu lấy vé / Voucher sự kiện',
     };
     return AlertDialog(
       title: const Text('Ví Xu thưởng GHST'),
@@ -1212,12 +1221,12 @@ class _CoinWalletDialogState extends State<_CoinWalletDialog> {
               if (_loading) const LinearProgressIndicator(),
               if (_error != null) Text(_error!),
               Text(
-                'Số dư hiện tại: $_balance Xu (tương đương ${_vnd(_balance)})',
+                'Số dư hiện tại: $_balance Xu · Tương đương ${_vnd(_balance)}',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 6),
               const Text(
-                'Tích 1% khi đơn hoàn tất đối soát, đổi tối đa 20% giá trị hàng hóa khi thanh toán.',
+                'Tích 1% khi đơn hoàn tất, đổi tối đa 20% cước phí giao hàng hoặc đơn mua sắm.',
               ),
               const Divider(height: 24),
               if (!_loading && _ledger.isEmpty)
@@ -1323,7 +1332,7 @@ class _SplitShipmentDialogState extends State<_SplitShipmentDialog> {
     if (sumCod != _expectedCod) {
       setState(
         () => _error =
-            'Tổng COD các kiện (${_vnd(sumCod)}) phải khớp ${_vnd(_expectedCod)}.',
+            'Tổng COD các kiện ${_vnd(sumCod)} phải khớp ${_vnd(_expectedCod)}.',
       );
       return;
     }
@@ -1389,7 +1398,7 @@ class _SplitShipmentDialogState extends State<_SplitShipmentDialog> {
                       child: TextField(
                         controller: _rows[i].$2,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(labelText: 'COD (đ)'),
+                        decoration: const InputDecoration(labelText: 'COD', suffixText: 'đ'),
                       ),
                     ),
                     if (_rows.length > 2)

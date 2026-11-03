@@ -77,13 +77,40 @@ export function createNotificationRouter({ env = process.env, authenticate, fetc
       res.json({ unregistered: true });
     } catch (e) { next(e); }
   });
-  router.post('/order-webhook', async (req, res, next) => {
+  async function handleWebhook(req, res, next) {
     if (!secureEqual(req.get('authorization'), `Bearer ${env.DELIVERY_WEBHOOK_SECRET || ''}`) || !env.DELIVERY_WEBHOOK_SECRET)
       return res.status(401).json({ error: 'Unauthorized' });
     try {
       const payload = req.body;
       const record = payload?.record;
       for (const [id, time] of completed) if (time < Date.now() - 86400000) completed.delete(id);
+      if (payload?.type === 'INSERT' && payload?.table === 'delivery_user_notifications' && typeof record?.id === 'string') {
+        const dedupKey = `user_notif:${record.id}`;
+        if (completed.has(dedupKey)) return res.json({ duplicate: true });
+        const stored = await supabase(`delivery_user_notifications?id=eq.${encodeURIComponent(record.id)}&select=id,user_id,category,kind,title,body,reference_type,reference_id`);
+        const notif = stored[0];
+        if (!notif) return res.json({ skipped: true });
+        const prefs = await supabase(`delivery_notification_preferences?user_id=eq.${encodeURIComponent(notif.user_id)}&select=push_enabled`);
+        if (prefs[0]?.push_enabled === false) {
+          if (completed.size >= 5000) completed.delete(completed.keys().next().value);
+          completed.set(dedupKey, Date.now());
+          return res.json({ sent: 0, skipped: true });
+        }
+        const tokens = await supabase(`delivery_device_tokens?user_id=eq.${encodeURIComponent(notif.user_id)}&select=user_id,token`);
+        const sent = await dispatchFcm(tokens,
+          { title: notif.title || 'GHST EXPRESS', body: notif.body },
+          {
+            notificationId: String(notif.id),
+            category: String(notif.category),
+            kind: String(notif.kind),
+            ...(notif.reference_type ? { referenceType: String(notif.reference_type) } : {}),
+            ...(notif.reference_id ? { referenceId: String(notif.reference_id) } : {}),
+          },
+        );
+        if (completed.size >= 5000) completed.delete(completed.keys().next().value);
+        completed.set(dedupKey, Date.now());
+        return res.json({ sent });
+      }
       if (payload?.type === 'INSERT' && payload?.table === 'delivery_market_notifications' && typeof record?.id === 'string') {
         const dedupKey = `market:${record.id}`;
         if (completed.has(dedupKey)) return res.json({ duplicate: true });
@@ -92,7 +119,7 @@ export function createNotificationRouter({ env = process.env, authenticate, fetc
         if (!notif) return res.json({ skipped: true });
         const tokens = await supabase(`delivery_device_tokens?user_id=eq.${encodeURIComponent(notif.user_id)}&select=user_id,token`);
         const sent = await dispatchFcm(tokens,
-          { title: 'GO-MAU', body: marketNotificationBody(notif.kind) },
+          { title: 'GHST EXPRESS', body: marketNotificationBody(notif.kind) },
           { marketOrderId: String(notif.order_id), notificationId: String(notif.id), kind: String(notif.kind) },
         );
         if (completed.size >= 5000) completed.delete(completed.keys().next().value);
@@ -104,22 +131,22 @@ export function createNotificationRouter({ env = process.env, authenticate, fetc
         throw new IntegrationError(400, 'Webhook khong hop le.');
       if (completed.has(record.id)) return res.json({ duplicate: true });
       // Re-read the event: webhook data alone never selects recipients or notification content.
-      const stored = await supabase(`delivery_live_events?id=eq.${encodeURIComponent(record.id)}&select=id,room_id,kind,payload`);
+      const stored = await supabase(`delivery_live_events?id=eq.${encodeURIComponent(record.id)}&select=id,room_id,sender_id,kind,payload`);
       const event = stored[0];
       if (!event || !['status', 'chat'].includes(event.kind)) return res.json({ skipped: true });
       const members = await supabase(`delivery_live_members?room_id=eq.${encodeURIComponent(event.room_id)}&select=user_id`);
-      const recipients = [...new Set(members.map(m => m.user_id))];
+      const recipients = [...new Set(members.filter(m => !event.sender_id || m.user_id !== event.sender_id).map(m => m.user_id))];
       let tokens = [];
       if (recipients.length) tokens = await supabase(`delivery_device_tokens?user_id=in.(${recipients.map(encodeURIComponent).join(',')})&select=user_id,token`);
       const sent = await dispatchFcm(tokens,
-        { title: 'GO-MAU', body: event.kind === 'chat' ? 'Ban co tin nhan moi trong don hang.' : 'Don hang vua cap nhat trang thai.' },
+        { title: 'GHST EXPRESS', body: event.kind === 'chat' ? 'Bạn có tin nhắn mới trong đơn hàng.' : 'Đơn hàng vừa cập nhật trạng thái.' },
         { roomId: event.room_id, eventId: event.id },
       );
       if (providerConfigured('telegram', env) &&
           event.kind === 'status' && ['failed', 'returning'].includes(event.payload?.status)) {
         const result = await providerJson(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
-            chat_id: env.TELEGRAM_CHAT_ID, text: `GO-MAU: Don ${event.room_id} can kiem tra (${event.payload.status}).`,
+            chat_id: env.TELEGRAM_CHAT_ID, text: `GHST EXPRESS: Đơn ${event.room_id} cần kiểm tra · ${event.payload.status}.`,
           }),
         }, fetcher);
         if (!result.ok) throw new IntegrationError(502, 'Chua gui duoc canh bao noi bo.');
@@ -128,6 +155,8 @@ export function createNotificationRouter({ env = process.env, authenticate, fetc
       completed.set(record.id, Date.now());
       res.json({ sent });
     } catch (e) { next(e); }
-  });
+  }
+  router.post('/order-webhook', handleWebhook);
+  router.post('/market-notification-webhook', handleWebhook);
   return router;
 }

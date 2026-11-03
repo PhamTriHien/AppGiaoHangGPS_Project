@@ -394,11 +394,11 @@ class _CloudDeliveryStatsCardState extends State<CloudDeliveryStatsCard> {
             : '${(delivered * 100 / finished).toStringAsFixed(1)}%',
       ),
       (
-        'Thời gian từ tạo đơn đến giao (TB)',
+        'Thời gian trung bình từ tạo đơn đến giao',
         cloudMinutes(summary['avg_delivery_minutes']),
       ),
       (
-        'Thời gian từ lấy hàng đến giao (TB)',
+        'Thời gian trung bình từ lấy hàng đến giao',
         cloudMinutes(summary['avg_transit_minutes']),
       ),
       if (pickups != null)
@@ -425,8 +425,8 @@ class _CloudDeliveryStatsCardState extends State<CloudDeliveryStatsCard> {
                 Expanded(
                   child: Text(
                     stats?['scope'] == 'network'
-                        ? 'Thống kê giao hàng toàn mạng (30 ngày)'
-                        : 'Thống kê giao hàng của bạn (30 ngày)',
+                        ? 'Thống kê giao hàng toàn mạng · 30 ngày'
+                        : 'Thống kê giao hàng của bạn · 30 ngày',
                     style: const TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 15,

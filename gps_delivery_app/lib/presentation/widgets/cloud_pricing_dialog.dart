@@ -20,10 +20,10 @@ class CloudPricingDialog extends StatefulWidget {
 
 class _CloudPricingDialogState extends State<CloudPricingDialog> {
   static const _labels = {
-    'base_fee': 'Phí 2 km đầu (đồng)',
-    'per_km': 'Mỗi km tiếp theo (đồng)',
-    'express_fee': 'Phụ phí giao nhanh (đồng)',
-    'extra_kg': 'Mỗi kg vượt 5 kg (đồng)',
+    'base_fee': 'Phí 2 km đầu',
+    'per_km': 'Mỗi km tiếp theo',
+    'express_fee': 'Phụ phí giao nhanh',
+    'extra_kg': 'Mỗi kg vượt 5 kg',
   };
   final _form = GlobalKey<FormState>();
   late final _fields = {
@@ -76,7 +76,7 @@ class _CloudPricingDialogState extends State<CloudPricingDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-    title: const Text('Bảng giá cloud'),
+    title: const Text('Bảng giá cước'),
     content: SizedBox(
       width: 400,
       child: SingleChildScrollView(
@@ -93,7 +93,7 @@ class _CloudPricingDialogState extends State<CloudPricingDialog> {
                     enabled: !_busy,
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
-                      labelText: _labels[entry.key],
+                      labelText: _labels[entry.key], suffixText: 'đ',
                       border: const OutlineInputBorder(),
                     ),
                     validator: (raw) {

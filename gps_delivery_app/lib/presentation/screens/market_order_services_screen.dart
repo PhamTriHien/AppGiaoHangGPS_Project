@@ -199,7 +199,7 @@ class _MarketOrderServicesScreenState extends State<MarketOrderServicesScreen> {
                           padding: const EdgeInsets.only(bottom: 14),
                           child: TextFormField(
                             controller: controllers[entry.key],
-                            decoration: InputDecoration(labelText: entry.value),
+                            decoration: InputDecoration(labelText: entry.value, suffixText: entry.key == 'amount' ? 'đ' : null),
                             keyboardType:
                                 ['quantity', 'amount'].contains(entry.key)
                                 ? TextInputType.number
@@ -525,7 +525,7 @@ class _MarketOrderServicesScreenState extends State<MarketOrderServicesScreen> {
                           CheckboxListTile(
                             contentPadding: EdgeInsets.zero,
                             title: const Text(
-                              'Tạo vận đơn thu hồi hàng trả (reverse logistics)',
+                              'Tạo vận đơn thu hồi hàng trả',
                             ),
                             value: createReturnShipment,
                             onChanged: (v) => update(
@@ -602,7 +602,7 @@ class _MarketOrderServicesScreenState extends State<MarketOrderServicesScreen> {
     final response = await _form(
       _kinds[kind]!,
       {
-        'amount': 'Số tiền (VND)',
+        'amount': 'Số tiền',
         'reason': 'Lý do',
         'evidence': 'Mã chứng từ / tham chiếu',
       },
@@ -1010,7 +1010,7 @@ class _MarketOrderServicesScreenState extends State<MarketOrderServicesScreen> {
                             if (shipments.isNotEmpty) ...[
                               const SizedBox(height: 8),
                               Text(
-                                'Kiện vận chuyển (${shipments.length})',
+                                'Kiện vận chuyển · ${shipments.length}',
                                 style: Theme.of(context).textTheme.titleSmall,
                               ),
                               for (final s in shipments)

@@ -38,9 +38,9 @@ const cloudPickupVehicleCapacityKg = {
 };
 
 const cloudPickupSlots = {
-  'morning': '09:00 - 11:00 (Ca sáng)',
-  'afternoon': '14:00 - 16:00 (Ca chiều)',
-  'evening': '18:00 - 20:00 (Ca tối)',
+  'morning': 'Ca sáng · 09:00 - 11:00',
+  'afternoon': 'Ca chiều · 14:00 - 16:00',
+  'evening': 'Ca tối · 18:00 - 20:00',
 };
 
 const cloudPickupStatuses = {

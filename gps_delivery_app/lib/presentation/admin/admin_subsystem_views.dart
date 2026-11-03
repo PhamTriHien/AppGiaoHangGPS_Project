@@ -92,7 +92,7 @@ class _AdminSubsystemEntryState extends State<AdminSubsystemEntry> {
     'Phân quyền RBAC',
     'Vận hành thương mại',
     'API & Dịch vụ',
-    'Đơn hàng cloud',
+    'Đơn hàng trực tuyến',
   ];
 
   @override

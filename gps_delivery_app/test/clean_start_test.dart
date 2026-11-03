@@ -73,7 +73,7 @@ void main() {
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pumpWidget(const GpsDeliveryApp(initialRoute: '/admin'));
         await tester.pump();
-        expect(find.text('GHST CLOUD ADMIN'), findsOneWidget);
+        expect(find.text('GHST ADMIN'), findsOneWidget);
         expect(find.text('Đăng nhập quản trị'), findsOneWidget);
         expect(find.text('Email quản trị'), findsOneWidget);
         expect(find.text('Đăng ký tài khoản'), findsNothing);

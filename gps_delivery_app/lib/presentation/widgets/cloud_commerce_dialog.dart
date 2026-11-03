@@ -165,14 +165,14 @@ class _CloudCommerceDialogState extends State<CloudCommerceDialog> {
     await _request('$_path/preview', body: values, quote: true);
   }
 
-  Widget _field(String key, String label, {bool number = false}) => Padding(
+  Widget _field(String key, String label, {bool number = false, String? suffixText}) => Padding(
     padding: const EdgeInsets.only(bottom: 12),
     child: TextField(
       controller: _fields.putIfAbsent(key, TextEditingController.new),
       enabled: !_busy && _sameAccount,
       keyboardType: number ? TextInputType.number : TextInputType.text,
       decoration: InputDecoration(
-        labelText: label,
+        labelText: label, suffixText: suffixText,
         border: const OutlineInputBorder(),
       ),
       onChanged: (_) => setState(() => _quote = null),
@@ -216,8 +216,14 @@ class _CloudCommerceDialogState extends State<CloudCommerceDialog> {
             'Tổng thanh toán đơn mua: ${_money(_record?['amount'] ?? widget.order['total'])}',
           )
         else ...[
+          if ((widget.order['coin_discount'] as num? ?? 0) > 0) ...[
+            Text('Cước gốc: ${_money(widget.order['shipping_fee'])}'),
+            Text(
+              'Đổi Xu giảm cước: -${_money(widget.order['coin_discount'])}',
+            ),
+          ],
           Text(
-            'Cước vận chuyển: ${_money(_record?['amount'] ?? widget.order['shipping_fee'])}',
+            'Cước cần thanh toán: ${_money(_record?['amount'] ?? widget.order['payable_fee'] ?? widget.order['shipping_fee'])}',
           ),
           Text('Thu hộ COD riêng: ${_money(widget.order['cod_amount'])}'),
         ],
@@ -318,7 +324,7 @@ class _CloudCommerceDialogState extends State<CloudCommerceDialog> {
         ),
         Text('Trạng thái hãng: ${_record!['status']}'),
         if (_record!['total_fee'] != null)
-          Text('Cước GHN (shop trả): ${_money(_record!['total_fee'])}'),
+          Text('Cước GHN shop trả: ${_money(_record!['total_fee'])}'),
         if (_record!['expected_delivery_time'] != null)
           Text(
             'Dự kiến: ${DateTime.tryParse('${_record!['expected_delivery_time']}')?.toLocal() ?? ''}',
@@ -373,13 +379,13 @@ class _CloudCommerceDialogState extends State<CloudCommerceDialog> {
         Text('Lấy: ${(widget.order['details'] as Map)['pickup_address']}'),
         Text('Giao: ${(widget.order['details'] as Map)['dropoff_address']}'),
         const SizedBox(height: 16),
-        _field('from_province_name', 'Tỉnh/thành điểm lấy (hệ hai cấp)'),
+        _field('from_province_name', 'Tỉnh/thành điểm lấy'),
         _field('from_ward_name', 'Phường/xã điểm lấy'),
-        _field('to_province_name', 'Tỉnh/thành điểm giao (hệ hai cấp)'),
+        _field('to_province_name', 'Tỉnh/thành điểm giao'),
         _field('to_ward_name', 'Phường/xã điểm giao'),
-        _field('length', 'Chiều dài (cm)', number: true),
-        _field('width', 'Chiều rộng (cm)', number: true),
-        _field('height', 'Chiều cao (cm)', number: true),
+        _field('length', 'Chiều dài', number: true, suffixText: 'cm'),
+        _field('width', 'Chiều rộng', number: true, suffixText: 'cm'),
+        _field('height', 'Chiều cao', number: true, suffixText: 'cm'),
         DropdownButtonFormField<String>(
           initialValue: _requiredNote,
           isExpanded: true,
@@ -413,7 +419,7 @@ class _CloudCommerceDialogState extends State<CloudCommerceDialog> {
         ),
         if (_quote != null) ...[
           const SizedBox(height: 12),
-          Text('Cước GHN (shop trả): ${_money(_quote!['total_fee'])}'),
+          Text('Cước GHN shop trả: ${_money(_quote!['total_fee'])}'),
           FilledButton.icon(
             onPressed: _busy || !_sameAccount
                 ? null
@@ -421,7 +427,7 @@ class _CloudCommerceDialogState extends State<CloudCommerceDialog> {
                     final quote = _quote!;
                     if (!await _confirm(
                           'Tạo vận đơn GHN?',
-                          '${widget.order['tracking_code']}\nCước GHN (shop trả): ${_money(quote['total_fee'])}',
+                          '${widget.order['tracking_code']}\nCước GHN shop trả: ${_money(quote['total_fee'])}',
                         ) ||
                         !mounted ||
                         !_sameAccount) {

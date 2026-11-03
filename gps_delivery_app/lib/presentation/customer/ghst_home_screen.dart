@@ -8,6 +8,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../domain/entities/geo_point.dart';
 import '../screens/cloud_order_details_screen.dart';
+import '../screens/cloud_promo_events_screen.dart';
 import '../widgets/cloud_order_labels.dart';
 import '../widgets/cloud_session_boundary.dart';
 import '../widgets/system_state_screens.dart';
@@ -23,12 +24,14 @@ class GhstHomeScreen extends StatefulWidget {
     required this.onOrders,
     required this.onAddressChanged,
     this.onAiAssistant,
+    this.onOpenPromoHub,
     this.trackingOnly = false,
   });
   final CloudAccountSession session;
   final ValueChanged<Map<String, dynamic>> onCreateOrder;
   final VoidCallback onCatalog, onAddresses, onOrders;
   final VoidCallback? onAiAssistant;
+  final ValueChanged<int>? onOpenPromoHub;
   final ValueChanged<String> onAddressChanged;
   final bool trackingOnly;
 
@@ -391,6 +394,168 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
     ),
   );
 
+  void _openPromo(int tab) {
+    if (!_allowed) return;
+    if (widget.onOpenPromoHub != null) {
+      widget.onOpenPromoHub!(tab);
+      return;
+    }
+    unawaited(
+      openCloudPromoEvents(
+        context,
+        widget.session,
+        initialTab: tab,
+        onOpenCatalog: widget.onCatalog,
+      ),
+    );
+  }
+
+  Widget _promoHub() => _panel(
+    Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 6,
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            const Text(
+              'Săn Voucher • Flash Sale • Vòng Xoay',
+              style: TextStyle(
+                fontSize: 13.5,
+                color: AppColors.ink,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.acid,
+                    border: Border.all(color: AppColors.ink, width: 1.2),
+                  ),
+                  child: Text(
+                    '${widget.session.coinBalance} Xu',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                TextButton(
+                  key: const ValueKey('btn-home-promo-hub'),
+                  onPressed: () => _openPromo(0),
+                  child: const Text('Mở trung tâm'),
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final cols = constraints.maxWidth >= 520 ? 4 : 2;
+            final width = (constraints.maxWidth - 10 * (cols - 1)) / cols;
+            final items = <(String, String, IconData, Color, int)>[
+              (
+                'Điểm danh & Sale',
+                'Nhận Xu mỗi ngày',
+                Icons.flash_on_rounded,
+                AppColors.pink,
+                0,
+              ),
+              (
+                'Vòng Xoay May Mắn',
+                'Săn Voucher 50K',
+                Icons.casino_outlined,
+                AppColors.violet,
+                1,
+              ),
+              (
+                'Hộp Mù Bí Ẩn',
+                'Khui quà R/SR/SSR',
+                Icons.card_giftcard,
+                const Color(0xFFD97706),
+                2,
+              ),
+              (
+                'Kho Voucher',
+                'Đổi Xu & Mã giảm',
+                Icons.confirmation_num_outlined,
+                const Color(0xFF059669),
+                3,
+              ),
+            ];
+            return Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                for (final item in items)
+                  SizedBox(
+                    width: width,
+                    child: InkWell(
+                      key: ValueKey('home-promo-tab-${item.$5}'),
+                      onTap: () => _openPromo(item.$5),
+                      child: Container(
+                        constraints: const BoxConstraints(minHeight: 74),
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppColors.paper,
+                          border: Border.all(color: AppColors.ink, width: 1.3),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 28,
+                              height: 28,
+                              alignment: Alignment.center,
+                              color: item.$4,
+                              child: Icon(
+                                item.$3,
+                                size: 16,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              item.$1,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w900,
+                                color: AppColors.ink,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              item.$2,
+                              style: const TextStyle(
+                                fontSize: 10.5,
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
+      ],
+    ),
+  );
+
   Widget _location() => _panel(
     Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -473,71 +638,81 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
     ),
   );
 
-  Widget _map() => _panel(
-    Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _heading(
-          _trackedOrder == null
-              ? 'Bản đồ định vị trực tiếp'
-              : 'Hành trình • ${_trackedOrder!['tracking_code'] ?? _trackedOrder!['id']}',
-        ),
-        if ((_data['orders'] ?? const []).any(
-          (row) => _route(row).length == 2,
-        )) ...[
-          const SizedBox(height: 8),
-          DropdownButtonFormField<String>(
-            key: ValueKey(
-              _route(_trackedOrder).length == 2 ? _trackedOrder!['id'] : '',
+  Widget _map(double viewportHeight) {
+    final mapHeight = widget.trackingOnly
+        ? (viewportHeight - 220).clamp(480.0, 760.0).toDouble()
+        : 440.0;
+    return _panel(
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _heading(
+            _trackedOrder == null
+                ? 'Bản đồ định vị trực tiếp'
+                : 'Hành trình • ${_trackedOrder!['tracking_code'] ?? _trackedOrder!['id']}',
+          ),
+          if ((_data['orders'] ?? const []).any(
+            (row) => _route(row).length == 2,
+          )) ...[
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              key: ValueKey(
+                _route(_trackedOrder).length == 2 ? _trackedOrder!['id'] : '',
+              ),
+              isExpanded: true,
+              initialValue: _route(_trackedOrder).length == 2
+                  ? '${_trackedOrder!['id']}'
+                  : '',
+              decoration: const InputDecoration(
+                labelText: 'Hành trình đơn hàng',
+              ),
+              items: [
+                const DropdownMenuItem(
+                  value: '',
+                  child: Text('Địa chỉ đã lưu'),
+                ),
+                for (final order in _data['orders'] ?? <Map<String, dynamic>>[])
+                  if (_route(order).length == 2)
+                    DropdownMenuItem(
+                      value: '${order['id']}',
+                      child: Text('${order['tracking_code'] ?? order['id']}'),
+                    ),
+              ],
+              onChanged: (id) => setState(() => _trackedId = id),
             ),
-            isExpanded: true,
-            initialValue: _route(_trackedOrder).length == 2
-                ? '${_trackedOrder!['id']}'
-                : '',
-            decoration: const InputDecoration(labelText: 'Hành trình đơn hàng'),
-            items: [
-              const DropdownMenuItem(value: '', child: Text('Địa chỉ đã lưu')),
-              for (final order in _data['orders'] ?? <Map<String, dynamic>>[])
-                if (_route(order).length == 2)
-                  DropdownMenuItem(
-                    value: '${order['id']}',
-                    child: Text('${order['tracking_code'] ?? order['id']}'),
-                  ),
-            ],
-            onChanged: (id) => setState(() => _trackedId = id),
+          ],
+          const SizedBox(height: 8),
+          Map3dPerspectiveWidget(
+            key: const ValueKey('ghst-home-map'),
+            height: mapHeight,
+            showTopBanner: false,
+            mode: MapViewMode.customerPreview,
+            singlePinPoint: _route(_trackedOrder).length == 2
+                ? null
+                : _savedPoint,
+            singlePinLabel: 'Địa chỉ đã lưu',
+            customFleetDrivers: const [],
+            useGlobalFallbackRoute: false,
+            routePoints: _route(_trackedOrder),
+            pickupLabel: 'Điểm lấy',
+            dropoffLabel: 'Điểm giao',
+            onTapGeoPoint:
+                !widget.session.canCreateShippingOrder ||
+                    _route(_trackedOrder).isNotEmpty
+                ? null
+                : (point) {
+                    if (_allowed) {
+                      widget.onCreateOrder({
+                        'dropoff_lat': point.latitude,
+                        'dropoff_lng': point.longitude,
+                      });
+                    }
+                  },
           ),
         ],
-        const SizedBox(height: 8),
-        Map3dPerspectiveWidget(
-          key: const ValueKey('ghst-home-map'),
-          height: widget.trackingOnly ? 440 : 330,
-          showTopBanner: false,
-          mode: MapViewMode.customerPreview,
-          singlePinPoint: _route(_trackedOrder).length == 2
-              ? null
-              : _savedPoint,
-          singlePinLabel: 'Địa chỉ đã lưu',
-          customFleetDrivers: const [],
-          useGlobalFallbackRoute: false,
-          routePoints: _route(_trackedOrder),
-          pickupLabel: 'Điểm lấy',
-          dropoffLabel: 'Điểm giao',
-          onTapGeoPoint:
-              !widget.session.canCreateShippingOrder ||
-                  _route(_trackedOrder).isNotEmpty
-              ? null
-              : (point) {
-                  if (_allowed) {
-                    widget.onCreateOrder({
-                      'dropoff_lat': point.latitude,
-                      'dropoff_lng': point.longitude,
-                    });
-                  }
-                },
-        ),
-      ],
-    ),
-  );
+      ),
+    );
+  }
 
   Widget _recent() {
     final orders = _data['orders'] ?? const [];
@@ -652,17 +827,24 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
             ],
             LayoutBuilder(
               builder: (context, constraints) {
+                final viewportHeight = MediaQuery.sizeOf(context).height;
                 final services = Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _services(),
+                    const SizedBox(height: 12),
+                    _promoHub(),
                     const SizedBox(height: 12),
                     _discovery(),
                   ],
                 );
                 final tracking = Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [_map(), const SizedBox(height: 12), _recent()],
+                  children: [
+                    _map(viewportHeight),
+                    const SizedBox(height: 12),
+                    _recent(),
+                  ],
                 );
                 if (widget.trackingOnly) return tracking;
                 if (constraints.maxWidth >= 900) {

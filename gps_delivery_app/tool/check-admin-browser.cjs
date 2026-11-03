@@ -66,13 +66,26 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(process.
         return route.fulfill({ status: 403, headers: cors, json: { message: 'Isolated Admin fixture' } });
       });
 
-      await page.route('http://127.0.0.1:8787/**', route => {
+      await page.route('**/delivery/**', route => {
         const request = route.request();
         if (request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors });
         const pathname = new URL(request.url()).pathname;
         const body = request.method() === 'POST' ? request.postDataJSON() : null;
         if (pathname === '/delivery/local-auth/config') {
           return route.fulfill({ json: { googleClientId: '', sms: false }, headers: cors });
+        }
+        if (pathname.startsWith('/delivery/cloud/notifications/')) {
+          return route.fulfill({
+            headers: cors,
+            json: {
+              ok: true,
+              unread_count: 0,
+              notifications: [],
+              latest: null,
+              next: null,
+              preferences: { push_enabled: true, shipping_updates: true, market_updates: true, promo_updates: true },
+            },
+          });
         }
         if (pathname === '/delivery/cloud/profile') {
           return route.fulfill({
@@ -272,6 +285,31 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(process.
           reviewHidden = true;
           return route.fulfill({ headers: cors, json: { ok: true } });
         }
+        if (pathname === '/delivery/cloud/promo-events/status') {
+          return route.fulfill({
+            headers: cors,
+            json: {
+              enabled: true,
+              settings: { enabled: true, spin_ticket_coin_cost: 100, box_ticket_coin_cost: 150, voucher_20k_coin_cost: 200, voucher_40k_coin_cost: 350, version: 1 },
+              wallet: { spin_tickets: 1, blind_box_tickets: 0, checkin_streak: 0, checked_in_today: false, total_spins: 0, total_boxes_opened: 0 },
+              coin_balance: 0,
+              vouchers: [],
+              flash_sales: [],
+              history: [],
+              admin_stats: { participants: 2, total_spins: 3, total_boxes_opened: 1, total_claims: 4, personal_vouchers_active: 1 },
+            },
+          });
+        }
+        if (pathname === '/delivery/cloud/promo-events/admin_settings_save') {
+          return route.fulfill({
+            headers: cors,
+            json: {
+              enabled: body?.enabled !== false,
+              settings: { enabled: body?.enabled !== false, spin_ticket_coin_cost: 100, box_ticket_coin_cost: 150, voucher_20k_coin_cost: 200, voucher_40k_coin_cost: 350, version: 2 },
+              admin_stats: { participants: 2, total_spins: 3, total_boxes_opened: 1, total_claims: 4, personal_vouchers_active: 1 },
+            },
+          });
+        }
         if (pathname === '/delivery/admin/integrations/readiness') {
           return route.fulfill({
             headers: cors,
@@ -280,11 +318,11 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(process.
               databaseConfigured: false,
               canMigrate: true,
               liveTransactionsVerified: false,
-              migrationVersion: '20261109_admin_account_management',
+              migrationVersion: '20261110_cloud_promo_events',
               databaseRevision: 'ui-fixture',
               checks: [
                 { label: 'PostgreSQL backend', status: 'missing', detail: 'Lưu kết nối PostgreSQL tại Admin của backend đang kết nối.' },
-                { label: 'Schema bộ thương mại hóa Cloud (P1-P6)', status: 'unchecked', detail: 'Cần kiểm tra database và chạy migration cloud.' },
+                { label: 'Thương mại điện tử toàn diện P1–P6', status: 'unchecked', detail: 'Cần kiểm tra database và chạy cập nhật dữ liệu.' },
                 { label: 'payOS thanh toán', status: 'missing', detail: 'Thiếu: PAYOS_CLIENT_ID, PAYOS_API_KEY, PAYOS_CHECKSUM_KEY' },
                 { label: 'GHN vận chuyển', status: 'missing', detail: 'Thiếu: GHN_TOKEN, GHN_SHOP_ID, GHN_WEBHOOK_SECRET' },
               ],
@@ -371,14 +409,14 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(process.
       await enableSemantics();
       await page.getByRole('button', { name: 'Đăng nhập', exact: true }).last().waitFor();
       assert.equal(await page.getByRole('button', { name: 'Thiết lập quản trị viên đầu tiên' }).count(), 0);
-      assert.equal(await page.getByText('GHST CLOUD ADMIN', { exact: true }).count(), 0);
+      assert.equal(await page.getByText('GHST ADMIN', { exact: true }).count(), 0);
       assert.equal(await page.getByText('Đơn hàng cloud', { exact: true }).count(), 0);
       await page.screenshot({ path: path.join(output, `user-login-${width}.png`) });
 
       await page.goto('about:blank');
       await page.goto('http://127.0.0.1:8080/#/admin', { waitUntil: 'domcontentloaded' });
       await enableSemantics();
-      await page.getByText('GHST CLOUD ADMIN', { exact: true }).waitFor();
+      await page.getByText('GHST ADMIN', { exact: true }).waitFor();
       await page.getByText('Đăng nhập quản trị', { exact: true }).waitFor();
       await fillField('Email quản trị', adminUser.email);
       await fillField('Mật khẩu', 'Ui-check-2026');
@@ -387,12 +425,12 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(process.
       const clickTab = name =>
         page.getByLabel(new RegExp('^' + name)).or(page.getByText(new RegExp('^' + name))).last().click();
 
-      await page.getByText(/Đơn vận chuyển Cloud/).first().waitFor({ timeout: 15000 });
-      await page.getByText(/Đối soát & Kế toán kép/).first().waitFor();
+      await waitText(/Đơn vận chuyển/);
+      await waitText(/Đối soát & Kế toán kép/);
       await page.screenshot({ path: path.join(output, `cloud-admin-overview-${width}.png`) });
 
       await clickTab('Tài khoản');
-      await waitText('Trung tâm Quản trị Danh tính & Phân quyền Cloud');
+      await waitText('Trung tâm Quản trị Danh tính & Phân quyền');
       const approveDriver = page.getByRole('button', { name: 'Duyệt Tài xế', exact: true });
       await scrollFlutterIntoView(approveDriver);
       await waitText('Ứng Viên Tài Xế Cloud');
@@ -420,38 +458,44 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(process.
       await page.screenshot({ path: path.join(output, `cloud-admin-accounts-${width}.png`) });
 
       await clickTab('Cửa hàng & Đánh giá');
-      await page.getByText('Cửa hàng chờ duyệt', { exact: false }).first().waitFor();
+      await waitText('Cửa hàng chờ duyệt');
       await page.getByRole('button', { name: 'Duyệt hoạt động', exact: true }).click();
-      await page.getByText('Đang hoạt động', { exact: false }).first().waitFor();
+      await waitText('Đang hoạt động');
       assert.equal(shopStatus, 'active');
 
       await page.getByLabel(/Đánh giá bị báo cáo/).or(page.getByText(/Đánh giá bị báo cáo/)).last().click();
       await page.getByRole('button', { name: 'Ẩn', exact: true }).click();
       await fillField('Lý do kiểm duyệt', 'Nội dung vi phạm quy chuẩn');
       await page.getByRole('button', { name: 'Xác nhận', exact: true }).click();
-      await page.getByText('Không có đánh giá bị báo cáo.', { exact: false }).first().waitFor();
+      await waitText('Không có đánh giá bị báo cáo.');
       assert.equal(reviewHidden, true);
       await page.screenshot({ path: path.join(output, `cloud-admin-moderation-${width}.png`) });
 
+      await clickTab('Khuyến mãi & Đối soát');
+      await waitText('Sự kiện Vòng xoay & Hộp mù: ĐANG MỞ');
+      await page.screenshot({ path: path.join(output, `cloud-admin-promo-${width}.png`) });
+
       await clickTab('Tích hợp');
       const manage = page.getByRole('button', { name: 'Quản lý API backend', exact: true });
-      await manage.scrollIntoViewIfNeeded();
+      await scrollFlutterIntoView(manage);
       await manage.click();
-      await page.getByText('Gmail / SMTP', { exact: false }).first().click();
+      const smtpToggle = page.getByLabel(/Gmail \/ SMTP/).or(page.getByText(/Gmail \/ SMTP/)).first();
+      await scrollFlutterIntoView(smtpToggle);
+      await smtpToggle.click();
       const password = page.getByRole('textbox', { name: 'App Password' });
-      await password.scrollIntoViewIfNeeded();
+      await scrollFlutterIntoView(password);
       assert.equal(await password.getAttribute('type'), 'password');
       assert.equal(await password.inputValue(), '');
       assert.equal(gatewayLoads, 1);
       await page.screenshot({ path: path.join(output, `backend-admin-${width}.png`) });
 
       const readiness = page.getByRole('button', { name: 'Sẵn sàng triển khai', exact: true });
-      await readiness.scrollIntoViewIfNeeded();
+      await scrollFlutterIntoView(readiness);
       await readiness.click();
-      await page.getByText('PostgreSQL backend · Còn thiếu', { exact: true }).waitFor();
+      await waitText('PostgreSQL backend · Còn thiếu');
       await page.waitForTimeout(350);
       await page.screenshot({ path: path.join(output, `backend-readiness-${width}.png`) });
-      assert.equal(await page.getByRole('button', { name: 'Cập nhật schema cloud', exact: true }).isDisabled(), true);
+      assert.equal(await page.getByRole('button', { name: 'Cập nhật cấu trúc dữ liệu', exact: true }).isDisabled(), true);
       await page.getByRole('button', { name: 'Đóng', exact: true }).click();
 
       assert.deepEqual(errors, []);

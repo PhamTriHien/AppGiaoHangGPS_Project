@@ -6,6 +6,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/integrations/cloud_orders_service.dart';
 import '../../core/integrations/cloud_account_session.dart';
+import '../../core/integrations/delivery_api_client.dart';
+import '../../core/integrations/push_notification_service.dart';
 import '../../core/network/public_json_api.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../data/repositories/cloud_orders_repository.dart';
@@ -13,6 +15,7 @@ import '../widgets/cloud_order_form.dart';
 import '../widgets/cloud_pricing_dialog.dart';
 import '../widgets/cloud_commerce_dialog.dart';
 import '../widgets/cloud_logistics_panels.dart';
+import '../widgets/cloud_notification_center.dart';
 import '../widgets/cloud_profile_form.dart';
 import '../widgets/cloud_membership_panel.dart';
 import '../widgets/cloud_membership_decision_dialog.dart';
@@ -36,12 +39,14 @@ class CloudOrdersScreen extends StatefulWidget {
     this.admin = false,
     this.embedded = false,
     this.showAccountsToggle = true,
+    this.initialQueue = false,
   });
   final CloudOrdersService? service;
   final CloudAccountSession? session;
   final bool admin;
   final bool embedded;
   final bool showAccountsToggle;
+  final bool initialQueue;
   @override
   State<CloudOrdersScreen> createState() => _CloudOrdersScreenState();
 }
@@ -53,6 +58,7 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
   late final _session = widget.session ?? CloudAccountSession(service: _api);
   late final CloudOrdersRepository _repository;
   Timer? _poll;
+  Object? _pushWatcher;
   final _email = TextEditingController();
   final _password = TextEditingController();
   final _search = TextEditingController();
@@ -63,7 +69,8 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
   bool get _operator => widget.admin && _session.isOperator;
   bool get _loaded => _session.verified;
   bool _busy = false, _register = false;
-  bool _queue = false, _accountsView = false;
+  late bool _queue = widget.initialQueue;
+  bool _accountsView = false;
   bool get _hasMore => _repository.hasMore;
   String? _error, _notice;
   int _generation = 0;
@@ -86,6 +93,9 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
     _sessionRevision = _session.revision;
     _repository = CloudOrdersRepository(session: _session, admin: widget.admin);
     _session.addListener(_onSessionChanged);
+    if (!widget.embedded) {
+      _pushWatcher = PushNotificationService.instance.attachWatcher(_session);
+    }
     _load();
     _poll = Timer.periodic(const Duration(seconds: 20), (_) {
       if (mounted &&
@@ -102,16 +112,42 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
   }
 
   @override
+  void didUpdateWidget(covariant CloudOrdersScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialQueue != oldWidget.initialQueue) {
+      final targetQueue = widget.initialQueue && _session.hasRole('driver');
+      if (_queue != targetQueue) {
+        setState(() {
+          _queue = targetQueue;
+          _repository.clear();
+        });
+        if (_foreground && _api.signedIn && !_loading && !_busy) {
+          unawaited(_load());
+        }
+      }
+    }
+  }
+
+  @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       if (_foreground) return;
       _foreground = true;
-      _session.invalidateVerification();
-      unawaited(_load());
-    } else {
+      DeliveryApiClient.instance.resetConnectionPool();
+      _generation++;
+      _loading = false;
+      _busy = false;
+      _repository.cancelPending();
+      unawaited(_load(silent: _loaded));
+    } else if (state == AppLifecycleState.hidden ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
       if (!_foreground) return;
       _foreground = false;
-      _session.invalidateVerification();
+      _generation++;
+      _loading = false;
+      _busy = false;
+      _repository.cancelPending();
     }
   }
 
@@ -123,7 +159,7 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
       setState(() {
         _repository.clear();
         _busy = false;
-        _queue = false;
+        _queue = widget.initialQueue;
         _accountsView = false;
         _search.clear();
         _statusFilter = '';
@@ -147,6 +183,9 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
     _generation++;
     WidgetsBinding.instance.removeObserver(this);
     _poll?.cancel();
+    if (_pushWatcher != null) {
+      PushNotificationService.instance.detachWatcher(_pushWatcher!);
+    }
     _session.removeListener(_onSessionChanged);
     _repository.dispose();
     if (widget.session == null) _session.dispose();
@@ -188,10 +227,12 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
         return;
       }
       if (_operator || _session.canUseBusiness && !widget.admin) {
+        final useQueue = _queue && _session.hasRole('driver');
+        if (_queue != useQueue) _queue = useQueue;
         await _repository.load(
           view: _accountsView
               ? CloudOrderView.accounts
-              : _queue
+              : useQueue
               ? CloudOrderView.queue
               : CloudOrderView.orders,
           more: more,
@@ -214,11 +255,10 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
         });
       }
     } finally {
-      _loading = false;
-      if (mounted && generation == _generation) {
-        setState(() => _busy = false);
-      }
-      if (mounted && generation != _generation && _session.error == null) {
+      if (generation == _generation) {
+        _loading = false;
+        if (mounted) setState(() => _busy = false);
+      } else if (!_loading && mounted && _session.error == null) {
         _load();
       }
     }
@@ -248,7 +288,7 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
         _password.text.length < (_register ? 8 : 6)) {
       setState(
         () => _error =
-            'Nhập email và mật khẩu hợp lệ (đăng ký tối thiểu 8 ký tự).',
+            'Nhập email và mật khẩu hợp lệ, đăng ký tối thiểu 8 ký tự.',
       );
       return;
     }
@@ -361,7 +401,7 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
       final otpResult = await _privateDialog<String>(
         builder: (dialog) => StatefulBuilder(
           builder: (context, update) => AlertDialog(
-            title: const Text('Xác thực giao hàng (POD / OTP)'),
+            title: const Text('Xác thực giao hàng'),
             content: SizedBox(
               width: 420,
               child: Column(
@@ -431,7 +471,7 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
                       label: Text(
                         podUploaded
                             ? 'Đã tải lên ảnh POD'
-                            : 'Tải ảnh bằng chứng giao hàng (POD)',
+                            : 'Tải ảnh bằng chứng giao hàng',
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -638,7 +678,7 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
       children: [
         Text(
           widget.admin
-              ? 'Đăng nhập quản trị cloud'
+              ? 'Đăng nhập quản trị'
               : (_register ? 'Đăng ký tài khoản' : 'Đăng nhập'),
           style: Theme.of(context).textTheme.titleLarge,
         ),
@@ -735,6 +775,14 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
           Text(
             'Phí: ${CurrencyFormatter.formatVnd((order['shipping_fee'] as num).toDouble())} · COD: ${CurrencyFormatter.formatVnd((order['cod_amount'] as num).toDouble())}',
           ),
+          if (!_queue && ((order['coin_discount'] as num? ?? 0) > 0))
+            Text(
+              'Đổi Xu giảm cước: -${CurrencyFormatter.formatVnd((order['coin_discount'] as num).toDouble())} · Cần thanh toán: ${CurrencyFormatter.formatVnd(((order['payable_fee'] ?? order['shipping_fee']) as num).toDouble())}',
+              style: TextStyle(
+                color: Colors.green.shade800,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           if (!_queue)
             Text(
               '${details['payment_method'] == 'sender_cash' ? 'Người gửi trả phí' : 'Người nhận trả phí'} · ${order['payment_status'] == 'PAID'
@@ -938,7 +986,7 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
             ],
             if (_schemaVersion < 3)
               PopupMenuButton<String>(
-                tooltip: 'Phân quyền cloud',
+                tooltip: 'Phân quyền tài khoản',
                 enabled: !_busy && _schemaVersion >= 2,
                 icon: const Icon(Icons.manage_accounts_outlined),
                 itemBuilder: (_) => cloudRoles.entries
@@ -1230,7 +1278,7 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
                         icon: const Icon(Icons.fact_check_outlined),
                       ),
                       IconButton(
-                        tooltip: 'Bảng giá cloud',
+                        tooltip: 'Bảng giá cước',
                         onPressed: _busy || _schemaVersion < 2
                             ? null
                             : _pricing,
@@ -1266,12 +1314,38 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
                                 ),
                               ),
                       ),
-                    if (_account != null)
+                    if (_account != null) ...[
+                      ListenableBuilder(
+                        listenable: PushNotificationService.instance,
+                        builder: (context, _) {
+                          final unread =
+                              PushNotificationService.instance.unreadCount;
+                          return IconButton(
+                            tooltip: 'Trung tâm thông báo',
+                            onPressed: _busy || blocked
+                                ? null
+                                : () => openCloudNotificationCenter(
+                                    context,
+                                    _session,
+                                    operator: _operator,
+                                    onOpenProfile: _profile,
+                                  ),
+                            icon: Badge.count(
+                              count: unread,
+                              isLabelVisible: unread > 0,
+                              child: const Icon(
+                                Icons.notifications_none_rounded,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                       IconButton(
                         tooltip: 'Thông tin tài khoản',
                         icon: const Icon(Icons.person_outline),
                         onPressed: _busy || blocked ? null : _profile,
                       ),
+                    ],
                     IconButton(
                       tooltip: 'Đăng xuất',
                       onPressed: _busy ? null : () => _run(_api.signOut),
@@ -1289,7 +1363,7 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
                     padding: const EdgeInsets.only(bottom: 12),
                     child: Text(
                       _operator
-                          ? 'Cơ sở dữ liệu cloud cần cập nhật trước khi đổi quyền, bảng giá hoặc trạng thái đơn.'
+                          ? 'Cơ sở dữ liệu cần cập nhật trước khi đổi quyền, bảng giá hoặc trạng thái đơn.'
                           : 'Hệ thống đang bảo trì. Vui lòng thử lại sau.',
                     ),
                   ),
@@ -1313,7 +1387,7 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
               if (!_api.signedIn)
                 Align(alignment: Alignment.centerLeft, child: _authForm())
               else if (widget.admin && _loaded && !_operator)
-                const Text('Tài khoản cloud chưa có quyền operator.')
+                const Text('Tài khoản chưa có quyền quản trị.')
               else if (blocked && !_operator)
                 const Text('Tài khoản đang bị khóa.')
               else if (_loaded && _account == null && !_operator)
@@ -1407,7 +1481,7 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
                     Text(
                       'Hiển thị ${visibleAccounts.length} / ${_accounts.length} tài khoản đã tải',
                     ),
-                  if (_accounts.isEmpty) const Text('Chưa có hồ sơ cloud.'),
+                  if (_accounts.isEmpty) const Text('Chưa có hồ sơ tài khoản.'),
                   if (_accounts.isNotEmpty && visibleAccounts.isEmpty)
                     const Text('Không có tài khoản phù hợp.'),
                   for (final account in visibleAccounts) ...[
@@ -1448,7 +1522,7 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
     if (widget.embedded) return content;
     final screen = Scaffold(
       appBar: AppBar(
-        title: Text(widget.admin ? 'Điều hành cloud' : 'Đơn hàng'),
+        title: Text(widget.admin ? 'Điều hành vận đơn' : 'Đơn hàng'),
       ),
       body: SafeArea(child: content),
     );

@@ -215,10 +215,10 @@ void main() {
         );
         await tester.pumpAndSettle();
         await tester.ensureVisible(
-          find.widgetWithText(TextFormField, 'Phụ thu (đ)').first,
+          find.widgetWithText(TextFormField, 'Phụ thu').first,
         );
         await tester.enterText(
-          find.widgetWithText(TextFormField, 'Phụ thu (đ)').first,
+          find.widgetWithText(TextFormField, 'Phụ thu').first,
           '7000',
         );
         await tester.ensureVisible(find.text('Thêm khung giờ'));

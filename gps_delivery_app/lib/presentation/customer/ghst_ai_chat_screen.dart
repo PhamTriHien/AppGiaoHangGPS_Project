@@ -15,7 +15,7 @@ class GhstAiChatController extends ChangeNotifier {
 
   static const suggestions = [
     'Đơn hàng gần nhất của tôi đang ở trạng thái nào?',
-    'So sánh 5 gói giao hàng Cloud của GHST',
+    'So sánh 5 gói giao hàng của GHST',
     'Cách tính phí quy đổi và bảo hiểm hàng hóa?',
     'Hướng dẫn dùng Voucher, đổi Xu và trả hàng',
   ];
@@ -24,7 +24,6 @@ class GhstAiChatController extends ChangeNotifier {
   final CloudSessionLease _lease;
   final List<({String role, String content})> _messages = [];
 
-  String? _activeModel;
   String? _error;
   String? _retryPrompt;
   bool _busy = false;
@@ -33,7 +32,6 @@ class GhstAiChatController extends ChangeNotifier {
 
   List<({String role, String content})> get messages =>
       List.unmodifiable(_messages);
-  String? get activeModel => _activeModel;
   String? get error => _error;
   String? get retryPrompt => _retryPrompt;
   bool get busy => _busy;
@@ -43,7 +41,6 @@ class GhstAiChatController extends ChangeNotifier {
     if (_disposed || _lease.valid) return;
     _generation++;
     _messages.clear();
-    _activeModel = null;
     _error = null;
     _retryPrompt = null;
     _busy = false;
@@ -93,11 +90,7 @@ class GhstAiChatController extends ChangeNotifier {
           'Trợ lý AI chưa trả về nội dung phản hồi.',
         );
       }
-      final model = response['model'];
       _busy = false;
-      if (model is String && model.trim().isNotEmpty) {
-        _activeModel = model.trim();
-      }
       final updated = <({String role, String content})>[
         ..._messages,
         (role: 'assistant', content: reply.trim()),
@@ -220,42 +213,19 @@ class _GhstAiChatScreenState extends State<GhstAiChatScreen> {
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  const Text(
-                    'TRỢ LÝ AI GHST EXPRESS',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0,
-                    ),
-                  ),
-                  if (_controller.activeModel != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      color: AppColors.violet,
-                      child: Text(
-                        _controller.activeModel!,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                ],
+            children: const [
+              Text(
+                'TRỢ LÝ AI GHST EXPRESS',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0,
+                ),
               ),
-              const SizedBox(height: 2),
-              const Text(
-                'Kết nối trực tiếp qua Backend • Tra cứu đơn hàng & giải đáp dịch vụ',
+              SizedBox(height: 2),
+              Text(
+                'Tra cứu đơn hàng & giải đáp dịch vụ',
                 style: TextStyle(
                   color: AppColors.techMuted,
                   fontSize: 11,
@@ -493,11 +463,11 @@ class _GhstAiFloatingBubbleState extends State<GhstAiFloatingBubble> {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Expanded(
+                          const Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
+                                Text(
                                   'CHAT AI GHST',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -508,11 +478,10 @@ class _GhstAiFloatingBubbleState extends State<GhstAiFloatingBubble> {
                                   ),
                                 ),
                                 Text(
-                                  widget.controller.activeModel ??
-                                      'Trợ lý trực tuyến',
+                                  'Trợ lý trực tuyến',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: AppColors.acid,
                                     fontSize: 9.5,
                                     fontWeight: FontWeight.w700,

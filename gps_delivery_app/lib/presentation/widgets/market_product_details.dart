@@ -231,7 +231,7 @@ class _MarketProductDetailsState extends State<MarketProductDetails> {
                       ),
                       label: Text(
                         '${_data['shop_following'] == true ? 'Đang theo dõi shop' : 'Theo dõi shop'}'
-                        '${_data['shop_followers'] != null ? ' (${_data['shop_followers']})' : ''}',
+                        '${_data['shop_followers'] != null ? ' · ${_data['shop_followers']}' : ''}',
                       ),
                       onPressed: _busy
                           ? null
@@ -252,7 +252,7 @@ class _MarketProductDetailsState extends State<MarketProductDetails> {
                       for (final v in variants)
                         ChoiceChip(
                           label: Text(
-                            '${v['title']} (${CurrencyFormatter.formatVnd((v['price'] as num).toDouble())})',
+                            '${v['title']} · ${CurrencyFormatter.formatVnd((v['price'] as num).toDouble())}',
                           ),
                           selected: selectedVariant?['id'] == v['id'],
                           onSelected: _busy || (v['stock'] as num? ?? 0) <= 0
@@ -285,7 +285,7 @@ class _MarketProductDetailsState extends State<MarketProductDetails> {
                 for (final g in groups) ...[
                   const Divider(),
                   Text(
-                    '${g['name']} (${g['min']}–${g['max']})',
+                    '${g['name']} · Chọn ${g['min']}–${g['max']}',
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                   for (final option in marketRows(g['options']))

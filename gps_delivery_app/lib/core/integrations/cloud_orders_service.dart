@@ -32,7 +32,7 @@ class CloudOrdersService {
 
   void _requireIdentity(String scope) {
     if (!signedIn || userId.isEmpty || scope != _identityScope) {
-      throw StateError('Tài khoản cloud đã thay đổi. Hãy tải lại dữ liệu.');
+      throw StateError('Tài khoản đã thay đổi. Hãy tải lại dữ liệu.');
     }
   }
 
@@ -190,6 +190,16 @@ class CloudOrdersService {
     String action, [
     Map<String, dynamic> payload = const {},
   ]) => request('admin-accounts/$action', body: payload);
+
+  Future<Map<String, dynamic>> promoEvents(
+    String action, [
+    Map<String, dynamic> payload = const {},
+  ]) => request('promo-events/$action', body: payload);
+
+  Future<Map<String, dynamic>> notifications(
+    String action, [
+    Map<String, dynamic> payload = const {},
+  ]) => request('notifications/$action', body: payload);
 
   Future<Map<String, dynamic>> aiChat(List<Map<String, String>> messages) =>
       request('ai-chat', body: {'messages': messages});

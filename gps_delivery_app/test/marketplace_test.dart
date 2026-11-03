@@ -241,18 +241,18 @@ void main() {
         await tester.tap(find.byTooltip('Khoảng giá'));
         await tester.pumpAndSettle();
         await tester.enterText(
-          find.widgetWithText(TextFormField, 'Từ (đ)'),
+          find.widgetWithText(TextFormField, 'Giá từ'),
           '60000',
         );
         await tester.enterText(
-          find.widgetWithText(TextFormField, 'Đến (đ)'),
+          find.widgetWithText(TextFormField, 'Giá đến'),
           '50000',
         );
         await tester.tap(find.text('Áp dụng'));
         await tester.pumpAndSettle();
         expect(find.text('Giá tối đa phải từ giá tối thiểu.'), findsOneWidget);
         await tester.enterText(
-          find.widgetWithText(TextFormField, 'Đến (đ)'),
+          find.widgetWithText(TextFormField, 'Giá đến'),
           '100000',
         );
         await tester.tap(find.text('Áp dụng'));
@@ -335,7 +335,7 @@ void main() {
         ),
       );
       await tick(tester);
-      expect(find.text('Thanh toán khi nhận hàng (COD)'), findsOneWidget);
+      expect(find.text('Thanh toán khi nhận hàng'), findsOneWidget);
       await tester.ensureVisible(find.text('Cập nhật báo giá'));
       await tester.tap(find.text('Cập nhật báo giá'));
       await tick(tester);

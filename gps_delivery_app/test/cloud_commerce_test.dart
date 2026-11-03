@@ -194,7 +194,7 @@ void main() {
       addTearDown(api.changes.close);
       await open(tester, api, shipment: true, operator: true);
       expect(tester.takeException(), isNull);
-      final field = find.widgetWithText(TextField, 'Chiều cao (cm)');
+      final field = find.widgetWithText(TextField, 'Chiều cao');
       await tester.ensureVisible(field);
       await tester.enterText(field, '10');
       await tester.ensureVisible(find.text('Xem phí GHN'));

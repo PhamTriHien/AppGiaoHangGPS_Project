@@ -341,14 +341,14 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final shortcut = find.text('Xét duyệt đối tác (1)');
+        final shortcut = find.text('Xét duyệt đối tác · 1');
         await tester.ensureVisible(shortcut);
         await tester.pumpAndSettle();
         await tester.tap(shortcut);
         await tester.pumpAndSettle();
 
         expect(
-          find.text('Trung tâm Quản trị Danh tính & Phân quyền Cloud'),
+          find.text('Trung tâm Quản trị Danh tính & Phân quyền'),
           findsOneWidget,
         );
         expect(find.text('Ph?m Tr? Hi?n'), findsOneWidget);

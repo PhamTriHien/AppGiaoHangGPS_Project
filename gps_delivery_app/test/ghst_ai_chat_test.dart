@@ -109,7 +109,7 @@ void main() {
           find.text('Đơn CL-AI-001 của bạn đang trên đường giao.'),
           findsOneWidget,
         );
-        expect(find.text('gpt-4o-mini'), findsOneWidget);
+        expect(find.text('gpt-4o-mini'), findsNothing);
 
         api.reply = 'Phí giao nhanh được tính theo khoảng cách thực tế.';
         await tester.enterText(
@@ -270,6 +270,8 @@ void main() {
           find.text('Phản hồi trực tiếp ngay trong bong bóng nổi!'),
           findsOneWidget,
         );
+        expect(find.text('gpt-4o-mini'), findsNothing);
+        expect(find.text('Trợ lý trực tuyến'), findsOneWidget);
 
         await tester.tap(find.byKey(const ValueKey('ghst-ai-bubble-close')));
         await tester.pumpAndSettle();
@@ -285,6 +287,8 @@ void main() {
           find.text('Phản hồi trực tiếp ngay trong bong bóng nổi!'),
           findsOneWidget,
         );
+        expect(find.text('gpt-4o-mini'), findsNothing);
+        expect(find.text('Trợ lý trực tuyến'), findsOneWidget);
 
         await tester.tap(find.byKey(const ValueKey('ghst-ai-bubble-expand')));
         await tester.pumpAndSettle();
@@ -294,6 +298,8 @@ void main() {
           find.text('Phản hồi trực tiếp ngay trong bong bóng nổi!'),
           findsOneWidget,
         );
+        expect(find.text('gpt-4o-mini'), findsNothing);
+        expect(find.text('TRỢ LÝ AI GHST EXPRESS'), findsOneWidget);
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox.shrink());
       },

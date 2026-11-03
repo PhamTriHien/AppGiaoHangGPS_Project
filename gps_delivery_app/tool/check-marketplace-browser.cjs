@@ -143,6 +143,19 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(process.
               ],
             }});
           }
+          if(u.pathname.startsWith('/delivery/cloud/notifications/')){
+            const nAction=u.pathname.split('/').pop();
+            const prefs={push_enabled:true,shipping_updates:true,market_updates:true,promo_updates:true};
+            const rows=submitted?[
+              {id:'ready',category:'market',kind:'ready',title:'Đơn hàng đã sẵn sàng giao',body:`Đơn ${oid}`,reference_type:'market_order',reference_id:oid,read_at:readNotices.has('ready')?'2026-10-30T00:00:00Z':null,created_at:'2026-10-30T00:00:00Z'},
+              {id:'message',category:'market',kind:'message',title:'Tin nhắn mới',body:`Đơn ${oid}`,reference_type:'market_order',reference_id:oid,read_at:readNotices.has('message')?'2026-10-30T00:00:00Z':null,created_at:'2026-10-30T00:00:00Z'},
+            ]:[];
+            if(nAction==='mark_read'&&body&&body.id)readNotices.add(body.id);
+            if(nAction==='mark_all_read')rows.forEach(r=>readNotices.add(r.id));
+            const unread=rows.filter(r=>!readNotices.has(r.id)).length;
+            return route.fulfill({...data,json:{ok:true,unread_count:unread,latest:rows.find(r=>!readNotices.has(r.id))||null,notifications:rows,next:null,preferences:prefs}});
+          }
+          if(u.pathname==='/delivery/cloud/logistics/stats')return route.fulfill({...data,json:{scope:'network',summary:{total:1,delivered:1,failed_or_returned:0,cancelled:0,active:0,avg_delivery_minutes:24,avg_transit_minutes:15,by_service:[{service_type:'standard',total:1,delivered:1,avg_delivery_minutes:24}]},pickups:{requested:0,assigned:0},drivers:{approved:1,on_trip:0}}});
           const action=u.pathname.split('/').pop();
           if(!u.pathname.startsWith('/delivery/cloud/marketplace/'))return route.fulfill({...data,status:403,json:{error:'Fixture denied'}});
           if(action==='catalog')return route.fulfill({...data,json:{products:[p],next:null,categories:['Gia dụng'],shop:body.shop_id?sh:null}});
@@ -175,6 +188,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(process.
           if(action==='review_save'){assert.equal(body.rating,4);assert.equal(body.product_id,p.id);reviewed=true;return route.fulfill({...data,json:{ok:true}});}
           if(action==='tracking_share'){shared=true;return route.fulfill({...data,json:{id:'share-1',token:'a'.repeat(64),expires_at:new Date(Date.now()+86400000).toISOString()}});}
           if(action==='tracking_revoke'){shared=false;return route.fulfill({...data,json:{ok:true}});}
+          if(action==='admin_analytics')return route.fulfill({...data,json:{cloud_orders:{total:1,searching:0,in_transit:0,delivered:1,shipping_fee_delivered:25000},market_orders:{total:1,pending:0,accepted_ready:0,delivered:1,cancelled:0},finance_totals:{collections_completed:0,settlements_completed:0,refunds_completed:0,pending_requests:1},shops:{active:1,pending:0},promotions:{active_vouchers:0,voucher_budget_used:0,active_flash_sales:0,coins_circulating:1500},memberships_pending:0,reported_reviews:0,ledger_balances:{cash_clearing:0}}});
           if(action==='operations')return route.fulfill({...data,json:{finance:[finance],returns:[],jobs:{pending:0,failed:0,overdue:0},failed_jobs:[]}});
           if(action==='finance_action'){assert.equal(body.version,finance.version);finance.version++;finance.state=body.action==='approve'?'approved':'completed';return route.fulfill({...data,json:{finance}});}
           if(action==='notifications'||action==='notification_read'){
@@ -212,8 +226,22 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(process.
         await fill('Email',user.email);await fill('Mật khẩu','fixture-password');
         if(role==='customer')await capture(`market-login-${width}.png`);
         await page.getByRole('button',{name:'Đăng nhập',exact:true}).last().click();
-        await page.getByText('Bạn muốn giao hàng hay đặt món đến đâu?',{exact:true}).waitFor({timeout:15000});
-        await capture(`ghst-home-${role}-${width}.png`);
+        if(role==='operator'){
+          await page.getByText('GHST ADMIN',{exact:true}).waitFor({timeout:15000});
+          await capture(`ghst-home-${role}-${width}.png`);
+          await page.getByRole('button',{name:'Giao diện Khách hàng',exact:true}).click();
+          await page.getByText('Bạn muốn giao hàng hay đặt món đến đâu?',{exact:true}).waitFor({timeout:15000});
+        }else if(['merchant','partner','shop_staff'].includes(role)){
+          await page.getByText('Cửa hàng kiểm thử',{exact:true}).waitFor({timeout:15000});
+          await capture(`ghst-home-${role}-${width}.png`);
+          if(role!=='shop_staff'){
+            await page.getByRole('button',{name:'Vai trò Khách hàng',exact:true}).click();
+            await page.getByText('Bạn muốn giao hàng hay đặt món đến đâu?',{exact:true}).waitFor({timeout:15000});
+          }
+        }else{
+          await page.getByText('Bạn muốn giao hàng hay đặt món đến đâu?',{exact:true}).waitFor({timeout:15000});
+          await capture(`ghst-home-${role}-${width}.png`);
+        }
         if(role==='customer'){
           await page.getByRole('button',{name:'Mở bong bóng Trợ lý AI',exact:true}).click();
           await page.getByText('CHAT AI GHST',{exact:true}).waitFor({timeout:10000});
@@ -282,13 +310,14 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(process.
           await page.getByRole('button',{name:'Back',exact:true}).click();
         }
         if(role==='shop_staff'){
-          await navigate('Tài khoản');
-          await page.getByText('Cửa hàng của tôi',{exact:true}).last().click();
-          await page.getByText('Cửa hàng kiểm thử',{exact:true}).waitFor();
           assert.equal(await page.getByRole('button',{name:'Thêm sản phẩm',exact:true}).isDisabled(),true);
           assert.equal(await page.getByRole('button',{name:'Nhân sự',exact:true}).count(),0);
-          await navigate('Tài khoản');
-          await page.getByText('Đơn của cửa hàng',{exact:true}).last().click();
+          await page.getByRole('button',{name:'Vai trò Khách hàng',exact:true}).click();
+          await page.getByText('Bạn muốn giao hàng hay đặt món đến đâu?',{exact:true}).waitFor({timeout:10000});
+          await page.getByRole('button',{name:'Vai trò Cửa hàng',exact:true}).click();
+          await page.getByText('Cửa hàng kiểm thử',{exact:true}).waitFor({timeout:10000});
+          const shopOrdersLabel=width<860?'Đơn shop':'Đơn của cửa hàng';
+          await page.getByRole('button',{name:shopOrdersLabel,exact:true}).or(page.getByText(shopOrdersLabel,{exact:true})).last().click();
           await page.getByRole('button',{name:'Xác nhận đơn',exact:true}).click();
           await page.getByRole('button',{name:'Sẵn sàng giao',exact:true}).waitFor();
           assert.equal(await page.getByRole('button',{name:'Tách kiện giao',exact:true}).count(),0);
@@ -298,11 +327,10 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(process.
           await capture(`market-shop-staff-${width}.png`);
         }
         if(['merchant','partner'].includes(role)){
-          await navigate('Tài khoản');
-          if(role==='partner')await page.getByRole('button',{name:'Chuyến giao của tôi',exact:true}).or(page.getByText('Chuyến giao của tôi',{exact:true})).last().waitFor();
-          await page.getByText('Cửa hàng của tôi',{exact:true}).last().click();
+          await page.getByRole('button',{name:'Vai trò Cửa hàng',exact:true}).click();
+          await page.getByText('Cửa hàng kiểm thử',{exact:true}).waitFor();
           await page.getByRole('button',{name:'Sửa sản phẩm',exact:true}).click();
-          await fill('Giá bán (đ)','55000');
+          await fill('Giá bán','55000');
           const chooser=page.waitForEvent('filechooser');
           await page.getByRole('button',{name:'Chọn ảnh',exact:true}).click();
           await (await chooser).setFiles({name:'product-test.png',mimeType:'image/png',buffer:imageFixture});
@@ -318,8 +346,8 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(process.
           await page.getByRole('button',{name:'Lưu',exact:true}).click();
           await page.getByRole('button',{name:'Thêm sản phẩm',exact:true}).waitFor();
           if(role==='merchant'){
-            await navigate('Tài khoản');
-            await page.getByText('Đơn của cửa hàng',{exact:true}).last().click();
+            const shopOrdersLabel=width<860?'Đơn shop':'Đơn của cửa hàng';
+            await page.getByRole('button',{name:shopOrdersLabel,exact:true}).or(page.getByText(shopOrdersLabel,{exact:true})).last().click();
             await page.getByRole('button',{name:'Xác nhận đơn',exact:true}).click();
             await page.getByRole('button',{name:'Tách kiện giao',exact:true}).waitFor();
             await page.getByRole('button',{name:'Sẵn sàng giao',exact:true}).click();
@@ -327,17 +355,15 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(process.
             await capture(`market-merchant-orders-${width}.png`);
           }
           if(role==='partner'){
-            await navigate('Tài khoản');
-            await page.getByText('Chuyến giao của tôi',{exact:true}).last().click();
-            await page.getByText('Chờ nhận',{exact:true}).last().click();
+            await page.getByRole('button',{name:'Vai trò Đối tác Tài xế',exact:true}).click();
             await page.getByRole('button',{name:'Nhận chuyến',exact:true}).click();
             await page.getByText('Chuyến của tôi',{exact:true}).last().click();
             await page.getByRole('button',{name:'Đã đến lấy hàng',exact:true}).click();
             await page.getByRole('button',{name:'Đã lấy hàng',exact:true}).click();
             await page.getByRole('button',{name:'Giao thành công',exact:true}).click();
-            await page.getByText('Xác thực giao hàng (POD / OTP)',{exact:true}).waitFor();
+            await page.getByText('Xác thực giao hàng',{exact:true}).waitFor();
             const podChooser=page.waitForEvent('filechooser');
-            await page.getByRole('button',{name:'Tải ảnh bằng chứng giao hàng (POD)',exact:true}).click();
+            await page.getByRole('button',{name:'Tải ảnh bằng chứng giao hàng',exact:true}).click();
             await (await podChooser).setFiles({name:'pod-test.png',mimeType:'image/png',buffer:imageFixture});
             await page.getByRole('button',{name:'Đã tải lên ảnh POD',exact:true}).waitFor();
             await fill('Mã OTP 6 số từ người nhận','654321');
@@ -348,6 +374,8 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(process.
           }
         }
         if(role==='operator'){
+          await page.getByRole('button',{name:'Vai trò Quản trị',exact:true}).click();
+          await page.getByText('GHST ADMIN',{exact:true}).waitFor({timeout:10000});
           await page.goto('http://127.0.0.1:8080/#/cloud-admin',{waitUntil:'domcontentloaded'});
           await enableSemantics();
           await page.getByRole('button',{name:'Đối soát và hậu mãi',exact:true}).click();
@@ -366,10 +394,10 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(process.
         if(role==='customer'){
           await page.goto('http://127.0.0.1:8080/#/track',{waitUntil:'domcontentloaded'});
           await enableSemantics();
-          await fill('Mã vận đơn (CL-...) hoặc mã chia sẻ',dcode);
+          await fill('Mã vận đơn hoặc mã chia sẻ',dcode);
           await fill('4 số cuối SĐT nhận','5678');
           await page.getByRole('button',{name:'Tra cứu',exact:true}).click();
-          await page.getByText('NHẬT KÝ HÀNH TRÌNH XÁC THỰC CLOUD',{exact:true}).waitFor();
+          await page.getByText('NHẬT KÝ HÀNH TRÌNH XÁC THỰC',{exact:true}).waitFor();
           assert.equal(lookupCalled,true);
           assert.equal(await page.getByText('0912345678',{exact:false}).count(),0);
           await capture(`cloud-public-lookup-${width}.png`);

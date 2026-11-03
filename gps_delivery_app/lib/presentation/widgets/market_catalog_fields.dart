@@ -28,12 +28,12 @@ class MarketOptionEditor extends StatelessWidget {
     onChanged: (v) => row['name'] = v.trim(),
     validator: (v) => v == null || v.trim().isEmpty ? 'Nhập tên.' : null,
   );
-  Widget _number(Map<String, dynamic> row, String key, String label, int max) =>
+  Widget _number(Map<String, dynamic> row, String key, String label, int max, {String? suffixText}) =>
       TextFormField(
         initialValue: '${row[key]}',
         enabled: enabled,
         keyboardType: TextInputType.number,
-        decoration: InputDecoration(labelText: label),
+        decoration: InputDecoration(labelText: label, suffixText: suffixText),
         onChanged: (v) => row[key] = int.tryParse(v) ?? -1,
         validator: (v) =>
             int.tryParse(v ?? '') == null ||
@@ -97,8 +97,8 @@ class MarketOptionEditor extends StatelessWidget {
                           child: _number(
                             _originalOption(group, option),
                             'price',
-                            'Phụ thu (đ)',
-                            1000000,
+                            'Phụ thu',
+                            1000000, suffixText: 'đ',
                           ),
                         ),
                         IconButton(
@@ -253,7 +253,7 @@ class MarketScheduleEditor extends StatelessWidget {
                               TextFormField(
                                 controller: open,
                                 decoration: const InputDecoration(
-                                  labelText: 'Bắt đầu (HH:mm)',
+                                  labelText: 'Giờ bắt đầu', hintText: '08:00',
                                 ),
                                 keyboardType: TextInputType.datetime,
                                 validator: (v) =>
@@ -266,7 +266,7 @@ class MarketScheduleEditor extends StatelessWidget {
                               TextFormField(
                                 controller: close,
                                 decoration: const InputDecoration(
-                                  labelText: 'Kết thúc (HH:mm)',
+                                  labelText: 'Giờ kết thúc', hintText: '17:00',
                                 ),
                                 keyboardType: TextInputType.datetime,
                                 validator: (v) {

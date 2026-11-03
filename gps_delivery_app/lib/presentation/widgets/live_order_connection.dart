@@ -53,7 +53,7 @@ class _LiveOrderConnectionState extends State<LiveOrderConnection> {
     } catch (_) {
       if (mounted) {
         setState(
-          () => _error = 'Chưa kết nối được. Kiểm tra tài khoản cloud và quyền truy cập đơn hàng.',
+          () => _error = 'Chưa kết nối được. Kiểm tra tài khoản và quyền truy cập đơn hàng.',
         );
       }
     } finally {
@@ -99,7 +99,7 @@ class _LiveOrderConnectionState extends State<LiveOrderConnection> {
       }
     } catch (_) {
       if (mounted) {
-        setState(() => _error = 'Chưa tải được ảnh giao hàng lên cloud.');
+        setState(() => _error = 'Chưa tải được ảnh giao hàng lên hệ thống.');
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -127,7 +127,7 @@ class _LiveOrderConnectionState extends State<LiveOrderConnection> {
               style: const TextStyle(fontSize: 12),
             ),
             IconButton(
-              tooltip: 'Kết nối đơn hàng với cloud',
+              tooltip: 'Kết nối đồng bộ đơn hàng',
               onPressed: _busy ? null : _connect,
               icon: _busy
                   ? const SizedBox(
@@ -244,7 +244,7 @@ class _CloudSignInDialogState extends State<_CloudSignInDialog> {
     } catch (_) {
       if (mounted) {
         setState(
-          () => _error = 'Chưa đăng nhập được cloud. Kiểm tra thông tin tài khoản và cấu hình Supabase.',
+          () => _error = 'Chưa đăng nhập được. Kiểm tra thông tin tài khoản và kết nối mạng.',
         );
       }
     } finally {
@@ -254,7 +254,7 @@ class _CloudSignInDialogState extends State<_CloudSignInDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-    title: const Text('Đăng nhập cloud'),
+    title: const Text('Đăng nhập trực tuyến'),
     content: SizedBox(
       width: 360,
       child: Column(
@@ -268,7 +268,7 @@ class _CloudSignInDialogState extends State<_CloudSignInDialog> {
           TextField(
             controller: _password,
             obscureText: true,
-            decoration: const InputDecoration(labelText: 'Mật khẩu cloud'),
+            decoration: const InputDecoration(labelText: 'Mật khẩu'),
             onSubmitted: (_) {
               if (!_busy) _signIn();
             },

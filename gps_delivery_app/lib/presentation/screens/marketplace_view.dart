@@ -11,6 +11,7 @@ import '../../core/utils/currency_formatter.dart';
 import '../../core/utils/market_options.dart';
 import '../widgets/cloud_commerce_dialog.dart';
 import '../widgets/cloud_logistics_panels.dart';
+import '../widgets/cloud_notification_center.dart';
 import '../widgets/cloud_profile_form.dart';
 import '../widgets/cloud_session_boundary.dart';
 import '../widgets/market_catalog_fields.dart';
@@ -22,6 +23,7 @@ import 'cloud_local_import_screen.dart';
 import 'cloud_order_import_screen.dart';
 import 'cloud_orders_screen.dart';
 import 'cloud_pickup_screen.dart';
+import 'cloud_promo_events_screen.dart';
 import 'market_order_services_screen.dart';
 
 enum MarketView {
@@ -52,6 +54,23 @@ String _money(dynamic value) =>
 List<Map<String, dynamic>> _rows(dynamic raw) => (raw as List? ?? [])
     .map((e) => Map<String, dynamic>.from(e as Map))
     .toList();
+
+Future<void> openMarketOrderConversation(
+  BuildContext context,
+  CloudAccountSession session,
+  String orderId,
+) => Navigator.of(context).push(
+  MaterialPageRoute<void>(
+    builder: (_) => CloudSessionBoundary(
+      session: session,
+      builder: (_, lease) => _OrderConversation(
+        session: session,
+        lease: lease,
+        orderId: orderId,
+      ),
+    ),
+  ),
+);
 
 Future<void> openMarketplaceView(
   BuildContext context,
@@ -89,6 +108,7 @@ class MarketplaceView extends StatefulWidget {
     this.shopId,
     this.onNavigate,
     this.onOpenShipping,
+    this.onOpenOperator,
   });
   final CloudAccountSession session;
   final MarketView view;
@@ -97,6 +117,7 @@ class MarketplaceView extends StatefulWidget {
   final String? shopId;
   final ValueChanged<MarketView>? onNavigate;
   final VoidCallback? onOpenShipping;
+  final VoidCallback? onOpenOperator;
   @override
   State<MarketplaceView> createState() => _MarketplaceViewState();
 }
@@ -132,13 +153,12 @@ class _MarketplaceViewState extends State<MarketplaceView> {
   void initState() {
     super.initState();
     _lease.addListener(_invalidated);
-    if (widget.view == MarketView.account) {
+    if ([MarketView.account, MarketView.notifications].contains(widget.view)) {
       _loading = false;
     } else {
       _load();
     }
     if ([
-      MarketView.notifications,
       MarketView.orders,
       MarketView.merchantOrders,
     ].contains(widget.view)) {
@@ -437,6 +457,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
       _cart = {};
       _notice = 'Đã đặt mua. Mã đơn: $id';
     });
+    unawaited(_session.refresh().catchError((Object _) {}));
     await _load();
     if (_allowed && purchase['payment_method'] == 'prepaid' && mounted) {
       await showDialog<void>(
@@ -517,7 +538,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Đánh giá: ${res['rating_avg'] ?? 0} sao (${res['rating_count'] ?? 0} lượt) · Theo dõi: ${res['followers'] ?? 0}',
+                    'Đánh giá: ${res['rating_avg'] ?? 0} sao · ${res['rating_count'] ?? 0} lượt · Theo dõi: ${res['followers'] ?? 0}',
                   ),
                   const Divider(),
                   if (reviews.isEmpty)
@@ -671,13 +692,13 @@ class _MarketplaceViewState extends State<MarketplaceView> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  for (final entry in [(low, 'Từ (đ)'), (high, 'Đến (đ)')])
+                  for (final entry in [(low, 'Giá từ'), (high, 'Giá đến')])
                     Padding(
                       padding: const EdgeInsets.only(bottom: 16),
                       child: TextFormField(
                         controller: entry.$1,
                         keyboardType: TextInputType.number,
-                        decoration: InputDecoration(labelText: entry.$2),
+                        decoration: InputDecoration(labelText: entry.$2, suffixText: 'đ'),
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
                             return null;
@@ -1052,7 +1073,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                 ),
                 Text(
                   '${p['name']} · ${p['sku']}'
-                  '${(p['variant_title'] as String? ?? '').isEmpty ? '' : ' (${p['variant_title']})'}',
+                  '${(p['variant_title'] as String? ?? '').isEmpty ? '' : ' · ${p['variant_title']}'}',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 if (marketOptionNames(p['options']).isNotEmpty)
@@ -1146,7 +1167,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
             runSpacing: 8,
             children: [
               ChoiceChip(
-                label: const Text('Thanh toán khi nhận hàng (COD)'),
+                label: const Text('Thanh toán khi nhận hàng'),
                 selected: _paymentMethod == 'cod',
                 onSelected: _busy || _loading
                     ? null
@@ -1156,7 +1177,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                       }),
               ),
               ChoiceChip(
-                label: const Text('Trả trước trực tuyến (payOS)'),
+                label: const Text('Trả trước trực tuyến payOS'),
                 selected: _paymentMethod == 'prepaid',
                 onSelected: _busy || _loading
                     ? null
@@ -1236,7 +1257,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(
-                  'Đổi Xu thưởng (${_session.coinBalance} Xu khả dụng)',
+                  'Đổi Xu thưởng · ${_session.coinBalance} Xu khả dụng',
                 ),
                 value: _useCoins,
                 onChanged: _busy || _loading || _session.coinBalance <= 0
@@ -1257,7 +1278,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Ưu tiên xe điện (EV)'),
+                title: const Text('Ưu tiên xe điện'),
                 value: _preferEv,
                 onChanged: _busy || _loading
                     ? null
@@ -1268,7 +1289,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Yêu cầu ảnh bằng chứng giao (POD)'),
+                title: const Text('Yêu cầu ảnh bằng chứng giao hàng'),
                 value: _requirePod,
                 onChanged: _busy || _loading
                     ? null
@@ -1399,7 +1420,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                 if (_rows(o['shipments']).length > 1)
                   for (final s in _rows(o['shipments']))
                     SelectableText(
-                      'Kiện #${s['parcel_no']}: ${s['tracking_code']} (${cloudStatuses[s['status']] ?? s['status']})',
+                      'Kiện #${s['parcel_no']}: ${s['tracking_code']} · ${cloudStatuses[s['status']] ?? s['status']}',
                     ),
                 if ((o['reason'] as String? ?? '').isNotEmpty)
                   Text('Lý do: ${o['reason']}'),
@@ -1775,38 +1796,87 @@ class _MarketplaceViewState extends State<MarketplaceView> {
     );
   }
 
-  Widget _account() => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      Text(
-        '${_session.account?['full_name']}',
-        style: Theme.of(context).textTheme.titleLarge,
-      ),
-      Text(_session.service.email),
-      if (_session.account?['requested_role'] != null)
+  String _verifiedRoleSummary() {
+    final labels = <String>[
+      if (_session.isOperator) 'Quản trị viên',
+      if (_session.hasRole('merchant'))
+        'Đối tác Cửa hàng'
+      else if (_session.hasStaffShop)
+        'Nhân sự cửa hàng',
+      if (_session.hasRole('driver')) 'Đối tác Tài xế',
+      'Khách hàng',
+    ];
+    return 'Vai trò đã xác thực: ${labels.join(' · ')}';
+  }
+
+  Widget _account() {
+    final phone = '${_session.account?['phone'] ?? ''}'.trim();
+    final birthDate = formatIsoBirthDate(_session.birthDate);
+    final citizenMasked = maskCitizenId(_session.citizenId);
+    final verifiedKyc = _session.identityVerified;
+    final identitySummary = <String>[
+      if (phone.isNotEmpty) 'SĐT: $phone',
+      'Ngày sinh: ${birthDate.isNotEmpty ? birthDate : 'Chưa cập nhật'}',
+      'CCCD: ${citizenMasked.isNotEmpty ? citizenMasked : 'Chưa cập nhật'}',
+    ].join(' · ');
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
         Text(
-          'Chờ duyệt: ${cloudAccountRoles[_session.account!['requested_role']]}',
+          '${_session.account?['full_name']}',
+          style: Theme.of(context).textTheme.titleLarge,
         ),
-      const SizedBox(height: 16),
-      ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: const Icon(Icons.person_outline),
-        title: const Text('Hồ sơ cá nhân'),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => CloudSessionBoundary(
-              session: _session,
-              profile: true,
-              builder: (page, lease) => Scaffold(
-                appBar: AppBar(title: const Text('Hồ sơ cá nhân')),
-                body: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: Center(
-                    child: CloudProfileForm(
-                      session: _session,
-                      lease: lease,
-                      onSaved: () => Navigator.pop(page),
+        Text(_session.service.email),
+        Text(
+          identitySummary,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        const SizedBox(height: 2),
+        Text(
+          _verifiedRoleSummary(),
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        if (_session.account?['requested_role'] != null)
+          Text(
+            'Chờ duyệt: ${cloudAccountRoles[_session.account!['requested_role']]}',
+          ),
+        const SizedBox(height: 8),
+        if (_session.isOperator && widget.onOpenOperator != null)
+          ListTile(
+            dense: true,
+            visualDensity: VisualDensity.compact,
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.admin_panel_settings_outlined),
+            title: const Text('Cổng Quản trị'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: widget.onOpenOperator,
+          ),
+        ListTile(
+          dense: true,
+          visualDensity: VisualDensity.compact,
+          contentPadding: EdgeInsets.zero,
+          leading: Icon(
+            verifiedKyc ? Icons.verified_user_outlined : Icons.person_outline,
+          ),
+          title: const Text('Hồ sơ cá nhân'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => CloudSessionBoundary(
+                session: _session,
+                profile: true,
+                builder: (page, lease) => Scaffold(
+                  appBar: AppBar(title: const Text('Hồ sơ cá nhân')),
+                  body: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: Center(
+                      child: CloudProfileForm(
+                        session: _session,
+                        lease: lease,
+                        onSaved: () => Navigator.pop(page),
+                      ),
                     ),
                   ),
                 ),
@@ -1814,56 +1884,112 @@ class _MarketplaceViewState extends State<MarketplaceView> {
             ),
           ),
         ),
-      ),
-      ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: const Icon(Icons.contact_mail_outlined),
-        title: const Text('Sổ địa chỉ'),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: _addressesPage,
-      ),
-      ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: const Icon(Icons.favorite_outline),
-        title: const Text('Sản phẩm yêu thích'),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () =>
-            openMarketplaceView(context, _session, MarketView.favorites),
-      ),
-      ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: const Icon(Icons.monetization_on_outlined),
-        title: const Text('Ví Xu thưởng'),
-        subtitle: Text('${_session.coinBalance} Xu khả dụng'),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () => showCoinWalletDialog(context, session: _session),
-      ),
-      ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: const Icon(Icons.confirmation_num_outlined),
-        title: const Text('Kho mã giảm giá'),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () => showVoucherBrowserDialog(context, session: _session),
-      ),
-      if (PushNotificationService.supported)
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          secondary: const Icon(Icons.notifications_active_outlined),
-          title: const Text('Thông báo đẩy thời gian thực'),
-          value: PushNotificationService.instance.enabled,
-          onChanged: _busy
-              ? null
-              : (enabled) => _run(() async {
-                  if (enabled) {
-                    await PushNotificationService.instance.enable((msg) {
-                      if (mounted && _allowed) setState(() => _notice = msg);
-                    });
-                  } else {
-                    await PushNotificationService.instance.disable();
-                  }
-                  if (mounted) setState(() {});
-                }),
+        ListenableBuilder(
+          listenable: PushNotificationService.instance,
+          builder: (context, _) {
+            final unread = PushNotificationService.instance.unreadCount;
+            return ListTile(
+              dense: true,
+              visualDensity: VisualDensity.compact,
+              contentPadding: EdgeInsets.zero,
+              leading: Badge.count(
+                count: unread,
+                isLabelVisible: unread > 0,
+                child: const Icon(Icons.notifications_none_rounded),
+              ),
+              title: const Text('Trung tâm thông báo'),
+              subtitle: Text(
+                unread > 0
+                    ? '$unread thông báo chưa đọc'
+                    : 'Lịch sử & tùy chỉnh cảnh báo',
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => widget.onNavigate != null
+                  ? widget.onNavigate!(MarketView.notifications)
+                  : openCloudNotificationCenter(context, _session),
+            );
+          },
         ),
+        ListTile(
+          dense: true,
+          visualDensity: VisualDensity.compact,
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.contact_mail_outlined),
+          title: const Text('Sổ địa chỉ'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: _addressesPage,
+        ),
+        ListTile(
+          dense: true,
+          visualDensity: VisualDensity.compact,
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.favorite_outline),
+          title: const Text('Sản phẩm yêu thích'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () =>
+              openMarketplaceView(context, _session, MarketView.favorites),
+        ),
+        ListTile(
+          dense: true,
+          visualDensity: VisualDensity.compact,
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.casino_outlined),
+          title: const Text('Sự kiện & Vòng xoay may mắn'),
+          subtitle: const Text('Điểm danh, Vòng xoay, Hộp mù & Đổi Xu'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => openCloudPromoEvents(
+            context,
+            _session,
+            onOpenCatalog: () => widget.onNavigate != null
+                ? widget.onNavigate!(MarketView.catalog)
+                : openMarketplaceView(context, _session, MarketView.catalog),
+          ),
+        ),
+        ListTile(
+          dense: true,
+          visualDensity: VisualDensity.compact,
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.monetization_on_outlined),
+          title: const Text('Ví Xu thưởng'),
+          subtitle: Text('${_session.coinBalance} Xu khả dụng'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => showCoinWalletDialog(context, session: _session),
+        ),
+        ListTile(
+          dense: true,
+          visualDensity: VisualDensity.compact,
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.confirmation_num_outlined),
+          title: const Text('Kho mã giảm giá'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => showVoucherBrowserDialog(context, session: _session),
+        ),
+        if (PushNotificationService.supported)
+          ListenableBuilder(
+            listenable: PushNotificationService.instance,
+            builder: (context, _) => SwitchListTile(
+              dense: true,
+              visualDensity: VisualDensity.compact,
+              contentPadding: EdgeInsets.zero,
+              secondary: const Icon(Icons.notifications_active_outlined),
+              title: const Text('Thông báo đẩy thời gian thực'),
+              value: PushNotificationService.instance.enabled,
+              onChanged: _busy
+                  ? null
+                  : (enabled) => _run(() async {
+                      if (enabled) {
+                        await PushNotificationService.instance.enable((msg) {
+                          if (mounted && _allowed) setState(() => _notice = msg);
+                        });
+                      } else {
+                        await PushNotificationService.instance.disable(
+                          clearRemotePreference: true,
+                        );
+                      }
+                      if (mounted) setState(() {});
+                    }),
+            ),
+          ),
       if (_session.schemaVersion >= 3)
         ListTile(
           contentPadding: EdgeInsets.zero,
@@ -1930,11 +2056,24 @@ class _MarketplaceViewState extends State<MarketplaceView> {
       ),
     ],
   );
+  }
 
   @override
   Widget build(BuildContext context) {
     if (!_lease.valid) {
       return const Center(child: Text('Phiên làm việc đã thay đổi.'));
+    }
+    if (widget.view == MarketView.notifications) {
+      return Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1080),
+          child: CloudNotificationCenter(
+            session: _session,
+            lease: _lease,
+            embedded: true,
+          ),
+        ),
+      );
     }
     return RefreshIndicator(
       onRefresh: () => _busy

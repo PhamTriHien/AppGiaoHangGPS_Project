@@ -65,7 +65,7 @@ export function createCloudOrders({ env = process.env, authenticate, fetcher = f
     catch { throw new IntegrationError(502, 'Phản hồi cloud không hợp lệ.'); }
     if (!response.ok) {
       if (['PGRST202', '42P01', '42883'].includes(data.code)) throw new IntegrationError(503,
-        ['delivery_marketplace','delivery_market_operations','delivery_market_browse','delivery_market_media_reserve','delivery_market_attachment_reserve','delivery_cloud_order_otp','delivery_cloud_share_manage','delivery_cloud_logistics','delivery_cloud_admin_accounts'].includes(name)
+        ['delivery_marketplace','delivery_market_operations','delivery_market_browse','delivery_market_media_reserve','delivery_market_attachment_reserve','delivery_cloud_order_otp','delivery_cloud_share_manage','delivery_cloud_logistics','delivery_cloud_admin_accounts','delivery_cloud_promo_events','delivery_cloud_notifications'].includes(name)
           ? 'Dữ liệu mua hàng cần được cập nhật trong trang quản trị.'
           : name === 'delivery_cloud_addresses_manage'
           ? 'Chưa cài sổ địa chỉ cloud. Chạy migration 20261029_cloud_addresses.sql trên Supabase.'
@@ -135,6 +135,26 @@ export function createCloudOrders({ env = process.env, authenticate, fetcher = f
       throw new IntegrationError(400, 'Yêu cầu quản trị tài khoản không hợp lệ.');
     }
     res.json(await rpc(req, 'delivery_cloud_admin_accounts', { p_action: req.params.action, p_payload: req.body }));
+  }));
+  const promoEventActions = new Set([
+    'status','checkin','claim_mission','exchange_coins','spin_wheel','open_blind_box','reset_blind_boxes','admin_settings_save',
+  ]);
+  router.post('/promo-events/:action', route(async (req, res) => {
+    if (!promoEventActions.has(req.params.action) || !req.body || Array.isArray(req.body) ||
+        typeof req.body !== 'object' || Buffer.byteLength(JSON.stringify(req.body)) > 4000) {
+      throw new IntegrationError(400, 'Yêu cầu sự kiện khuyến mãi không hợp lệ.');
+    }
+    res.json(await rpc(req, 'delivery_cloud_promo_events', { p_action: req.params.action, p_payload: req.body }));
+  }));
+  const notificationActions = new Set([
+    'list','unread_count','mark_read','mark_all_read','save_preferences',
+  ]);
+  router.post('/notifications/:action', route(async (req, res) => {
+    if (!notificationActions.has(req.params.action) || !req.body || Array.isArray(req.body) ||
+        typeof req.body !== 'object' || Buffer.byteLength(JSON.stringify(req.body)) > 4000) {
+      throw new IntegrationError(400, 'Yêu cầu thông báo không hợp lệ.');
+    }
+    res.json(await rpc(req, 'delivery_cloud_notifications', { p_action: req.params.action, p_payload: req.body }));
   }));
   const aiChat = createCustomerAiChatHandler({ env, fetcher, rpc });
   router.post('/ai-chat', route(aiChat));

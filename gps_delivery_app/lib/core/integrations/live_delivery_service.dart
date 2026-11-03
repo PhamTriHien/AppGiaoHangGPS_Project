@@ -45,7 +45,7 @@ class LiveDeliveryService extends ChangeNotifier {
       _operator &&
       _operatorScope == _identityScope &&
       identical(_operatorSession, client?.auth.currentSession);
-  String status = 'Chưa kết nối cloud';
+  String status = 'Chưa kết nối trực tuyến';
 
   Future<void> loadInstallationIdentity() async {
     final preferences = await SharedPreferences.getInstance();
@@ -69,7 +69,7 @@ class LiveDeliveryService extends ChangeNotifier {
     _operatorScope = null;
     _operatorSession = null;
     if (cloud == null || user == null) {
-      status = 'Chưa kết nối cloud';
+      status = 'Chưa kết nối trực tuyến';
       notifyListeners();
       return;
     }
@@ -88,8 +88,8 @@ class LiveDeliveryService extends ChangeNotifier {
       _operatorScope = scope;
       _operatorSession = session;
       status = isOperator
-          ? 'Đã đăng nhập cloud · Quyền operator'
-          : 'Đã đăng nhập cloud · Chưa có quyền operator';
+          ? 'Đã đăng nhập · Quyền điều hành'
+          : 'Đã đăng nhập · Chưa có quyền điều hành';
     } catch (_) {
       if (generation != _roleGeneration ||
           scope != _identityScope ||
@@ -98,7 +98,7 @@ class LiveDeliveryService extends ChangeNotifier {
         return;
       }
       _operator = false;
-      status = 'Đã đăng nhập cloud · Chưa đọc được quyền';
+      status = 'Đã đăng nhập · Chưa đọc được quyền';
     }
     notifyListeners();
   }
@@ -121,14 +121,14 @@ class LiveDeliveryService extends ChangeNotifier {
     _roleGeneration++;
     _operator = false;
     _operatorScope = null;
-    status = 'Đã ngắt cloud';
+    status = 'Đã ngắt kết nối';
     notifyListeners();
     await client?.auth.signOut();
   }
 
   Stream<List<Map<String, dynamic>>> events(String room) {
     final cloud = client;
-    if (cloud == null || !signedIn) throw StateError('Cần đăng nhập cloud.');
+    if (cloud == null || !signedIn) throw StateError('Vui lòng đăng nhập tài khoản.');
     return cloud
         .from('delivery_live_events')
         .stream(primaryKey: ['id'])
@@ -154,7 +154,7 @@ class LiveDeliveryService extends ChangeNotifier {
 
   Future<void> provisionRoom(String room, String userId, String role) async {
     if (!isOperator || !['customer', 'merchant', 'driver'].contains(role)) {
-      throw StateError('Cần quyền điều hành cloud.');
+      throw StateError('Cần quyền điều hành hệ thống.');
     }
     await client!
         .from('delivery_live_rooms')
@@ -173,7 +173,7 @@ class LiveDeliveryService extends ChangeNotifier {
     String? eventId,
   }) async {
     final cloud = client;
-    if (cloud == null || !signedIn) throw StateError('Cần đăng nhập cloud.');
+    if (cloud == null || !signedIn) throw StateError('Vui lòng đăng nhập tài khoản.');
     await cloud.from('delivery_live_events').insert({
       'id': eventId ?? const Uuid().v4(),
       'room_id': room,

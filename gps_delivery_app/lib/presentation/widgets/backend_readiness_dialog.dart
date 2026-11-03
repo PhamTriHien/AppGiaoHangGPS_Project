@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../core/integrations/delivery_api_client.dart';
 import '../../core/network/public_json_api.dart';
+import '../../core/theme/admin_studio_theme.dart';
 
 class BackendReadinessDialog extends StatefulWidget {
   const BackendReadinessDialog({
@@ -70,31 +71,50 @@ class _BackendReadinessDialogState extends State<BackendReadinessDialog> {
     final revision = _report!['databaseRevision'];
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Cập nhật schema cloud?'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Áp dụng migration vào database backend đã lưu:'),
-              const SizedBox(height: 12),
-              for (final file in (_report!['migrations'] as List? ?? []))
-                Text('$file'),
-            ],
+      builder: (context) => Theme(
+        data: AdminStudioTheme.themeData(),
+        child: AlertDialog(
+          title: const Text(
+            'Cập nhật cấu trúc dữ liệu?',
+            style: TextStyle(
+              fontWeight: FontWeight.w900,
+              color: AdminStudioColors.ink,
+            ),
           ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Áp dụng migration vào database backend đã lưu:'),
+                const SizedBox(height: 12),
+                for (final file in (_report!['migrations'] as List? ?? []))
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      '$file',
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Quay lại'),
+            ),
+            FilledButton.icon(
+              onPressed: () => Navigator.pop(context, true),
+              icon: const Icon(Icons.system_update_alt),
+              label: const Text('Áp dụng'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Quay lại'),
-          ),
-          FilledButton.icon(
-            onPressed: () => Navigator.pop(context, true),
-            icon: const Icon(Icons.system_update_alt),
-            label: const Text('Áp dụng'),
-          ),
-        ],
       ),
     );
     if (confirmed != true || !mounted) return;
@@ -149,19 +169,25 @@ class _BackendReadinessDialogState extends State<BackendReadinessDialog> {
           'disabled': 'Đang tắt',
         }[status] ??
         'Chưa xác định';
-    final color = status == 'ok'
-        ? Colors.green.shade700
-        : status == 'error'
-        ? Theme.of(context).colorScheme.error
-        : Theme.of(context).colorScheme.onSurfaceVariant;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
+    final (Color fg, Color bg) = switch (status) {
+      'ok' => (AdminStudioColors.acidInk, AdminStudioColors.acidSoft),
+      'error' => (AdminStudioColors.danger, AdminStudioColors.dangerSoft),
+      'missing' => (AdminStudioColors.goldInk, AdminStudioColors.goldSoft),
+      _ => (AdminStudioColors.muted, AdminStudioColors.surface),
+    };
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: bg,
+        border: Border.all(color: AdminStudioColors.ink, width: 1.2),
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
             status == 'ok' ? Icons.check_circle_outline : Icons.info_outline,
-            color: color,
+            color: fg,
             size: 20,
           ),
           const SizedBox(width: 10),
@@ -171,9 +197,19 @@ class _BackendReadinessDialogState extends State<BackendReadinessDialog> {
               children: [
                 Text(
                   '${row['label']} · $label',
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: status == 'error' ? fg : AdminStudioColors.ink,
+                  ),
                 ),
-                Text('${row['detail']}'),
+                const SizedBox(height: 2),
+                Text(
+                  '${row['detail']}',
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    color: AdminStudioColors.muted,
+                  ),
+                ),
               ],
             ),
           ),
@@ -182,20 +218,29 @@ class _BackendReadinessDialogState extends State<BackendReadinessDialog> {
     );
   }
 
-  Widget _callback(Map row) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 10),
+  Widget _callback(Map row) => Container(
+    margin: const EdgeInsets.only(top: 8),
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: AdminStudioColors.surface,
+      border: Border.all(color: AdminStudioColors.ink, width: 1.2),
+    ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
           'Callback ${row['label']}',
-          style: const TextStyle(fontWeight: FontWeight.w600),
+          style: const TextStyle(
+            fontWeight: FontWeight.w800,
+            color: AdminStudioColors.ink,
+          ),
         ),
         Row(
           children: [
             Expanded(
               child: SelectableText(
                 '${row['url'] ?? 'Chưa có URL HTTPS công khai'}',
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
               ),
             ),
             IconButton(
@@ -204,75 +249,155 @@ class _BackendReadinessDialogState extends State<BackendReadinessDialog> {
                   ? null
                   : () =>
                         Clipboard.setData(ClipboardData(text: '${row['url']}')),
-              icon: const Icon(Icons.copy),
+              icon: const Icon(Icons.copy, size: 18),
             ),
           ],
         ),
-        Text('${row['authentication']}'),
-        const Text('Chưa xác minh đăng ký callback tại nhà cung cấp.'),
+        Text(
+          '${row['authentication']}',
+          style: const TextStyle(fontSize: 12.5, color: AdminStudioColors.muted),
+        ),
+        const Text(
+          'Chưa xác minh đăng ký callback tại nhà cung cấp.',
+          style: TextStyle(fontSize: 12, color: AdminStudioColors.muted),
+        ),
       ],
     ),
   );
 
   @override
-  Widget build(BuildContext context) => PopScope(
-    canPop: !_migrating,
-    child: AlertDialog(
-      title: const Text('Sẵn sàng triển khai'),
-      content: SizedBox(
-        width: 600,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (_busy) const LinearProgressIndicator(),
-              if (_migrating) const Text('Đang cập nhật schema cloud...'),
-              if (_error != null)
-                Text(
-                  _error!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
-              if (_message != null) Text(_message!),
-              if (_report != null) ...[
-                Text('Kiểm tra lúc: ${_report!['checkedAt']}'),
-                for (final row
-                    in (_report!['checks'] as List? ?? []).whereType<Map>())
-                  _check(row),
-                const Divider(),
-                for (final row
-                    in (_report!['callbacks'] as List? ?? []).whereType<Map>())
-                  _callback(row),
-                const Divider(),
-                const Text('Giao dịch payOS/GHN thực tế: chưa nghiệm thu.'),
-                const SizedBox(height: 12),
-                if (_canMigrate)
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: FilledButton.icon(
-                      onPressed: _busy || _report!['databaseConfigured'] != true
-                          ? null
-                          : _migrate,
-                      icon: const Icon(Icons.system_update_alt),
-                      label: const Text('Cập nhật schema cloud'),
-                    ),
-                  ),
-              ],
-            ],
+  Widget build(BuildContext context) => Theme(
+    data: AdminStudioTheme.themeData(),
+    child: PopScope(
+      canPop: !_migrating,
+      child: AlertDialog(
+        title: const Text(
+          'Sẵn sàng triển khai',
+          style: TextStyle(
+            fontWeight: FontWeight.w900,
+            color: AdminStudioColors.ink,
           ),
         ),
+        content: SizedBox(
+          width: 600,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (_busy)
+                  const LinearProgressIndicator(
+                    color: AdminStudioColors.violet,
+                    backgroundColor: AdminStudioColors.paperWarm,
+                  ),
+                if (_migrating)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 8),
+                    child: Text(
+                      'Đang cập nhật cấu trúc dữ liệu...',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                if (_error != null)
+                  Container(
+                    margin: const EdgeInsets.only(top: 8),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AdminStudioColors.dangerSoft,
+                      border: Border.all(
+                        color: AdminStudioColors.danger,
+                        width: 1.4,
+                      ),
+                    ),
+                    child: Text(
+                      _error!,
+                      style: const TextStyle(
+                        color: AdminStudioColors.danger,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                if (_message != null)
+                  Container(
+                    margin: const EdgeInsets.only(top: 8),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AdminStudioColors.acidSoft,
+                      border: Border.all(
+                        color: AdminStudioColors.ink,
+                        width: 1.4,
+                      ),
+                    ),
+                    child: Text(
+                      _message!,
+                      style: const TextStyle(
+                        color: AdminStudioColors.ink,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                if (_report != null) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(
+                      'Kiểm tra lúc: ${_report!['checkedAt']}',
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 12,
+                        color: AdminStudioColors.muted,
+                      ),
+                    ),
+                  ),
+                  for (final row
+                      in (_report!['checks'] as List? ?? []).whereType<Map>())
+                    _check(row),
+                  const SizedBox(height: 12),
+                  const Divider(),
+                  for (final row
+                      in (_report!['callbacks'] as List? ?? [])
+                          .whereType<Map>())
+                    _callback(row),
+                  const SizedBox(height: 12),
+                  const Divider(),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Giao dịch payOS/GHN thực tế: chưa nghiệm thu.',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      color: AdminStudioColors.muted,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  if (_canMigrate)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: FilledButton.icon(
+                        onPressed:
+                            _busy || _report!['databaseConfigured'] != true
+                            ? null
+                            : _migrate,
+                        icon: const Icon(Icons.system_update_alt),
+                        label: const Text('Cập nhật cấu trúc dữ liệu'),
+                      ),
+                    ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          IconButton(
+            tooltip: 'Kiểm tra lại triển khai',
+            onPressed: _busy ? null : _load,
+            icon: const Icon(Icons.refresh),
+          ),
+          TextButton(
+            onPressed: _migrating ? null : () => Navigator.pop(context),
+            child: const Text('Đóng'),
+          ),
+        ],
       ),
-      actions: [
-        IconButton(
-          tooltip: 'Kiểm tra lại triển khai',
-          onPressed: _busy ? null : _load,
-          icon: const Icon(Icons.refresh),
-        ),
-        TextButton(
-          onPressed: _migrating ? null : () => Navigator.pop(context),
-          child: const Text('Đóng'),
-        ),
-      ],
     ),
   );
 }

@@ -290,6 +290,19 @@ async function runSuite01AuthAndPublic(browser, acceptanceRoot, gallery) {
           },
         });
       }
+      if (u.pathname.startsWith('/delivery/cloud/notifications/')) {
+        return route.fulfill({
+          headers: CORS,
+          json: {
+            ok: true,
+            unread_count: 0,
+            notifications: [],
+            latest: null,
+            next: null,
+            preferences: { push_enabled: true, shipping_updates: true, market_updates: true, promo_updates: true },
+          },
+        });
+      }
       if (u.pathname === '/delivery/cloud/addresses') {
         return route.fulfill({ headers: CORS, json: { addresses: [] } });
       }
@@ -399,10 +412,10 @@ async function runSuite01AuthAndPublic(browser, acceptanceRoot, gallery) {
 
     await s1440.page.goto('http://127.0.0.1:8080/#/track', { waitUntil: 'domcontentloaded' });
     await s1440.enableSemantics();
-    await s1440.fill('Mã vận đơn (CL-...) hoặc mã chia sẻ', trackingCode);
+    await s1440.fill('Mã vận đơn hoặc mã chia sẻ', trackingCode);
     await s1440.fill('4 số cuối SĐT nhận', '5678');
     await s1440.clickButton('Tra cứu');
-    await s1440.page.getByText('NHẬT KÝ HÀNH TRÌNH XÁC THỰC CLOUD', { exact: true }).waitFor();
+    await s1440.page.getByText('NHẬT KÝ HÀNH TRÌNH XÁC THỰC', { exact: true }).waitFor();
     await s1440.clickButton('Sao chép mã');
     await s1440.snap(folder, '06-public-tracking-lookup-1440.png', 'Tra cứu vận đơn công khai bằng mã CL + 4 số cuối SĐT', [
       'Tra cứu',
@@ -446,10 +459,10 @@ async function runSuite01AuthAndPublic(browser, acceptanceRoot, gallery) {
 
     await s360.page.goto('http://127.0.0.1:8080/#/track', { waitUntil: 'domcontentloaded' });
     await s360.enableSemantics();
-    await s360.fill('Mã vận đơn (CL-...) hoặc mã chia sẻ', trackingCode);
+    await s360.fill('Mã vận đơn hoặc mã chia sẻ', trackingCode);
     await s360.fill('4 số cuối SĐT nhận', '5678');
     await s360.clickButton('Tra cứu');
-    await s360.page.getByText('NHẬT KÝ HÀNH TRÌNH XÁC THỰC CLOUD', { exact: true }).waitFor();
+    await s360.page.getByText('NHẬT KÝ HÀNH TRÌNH XÁC THỰC', { exact: true }).waitFor();
     await s360.snap(folder, '08-public-tracking-mobile-360.png', 'Tra cứu vận đơn công khai trên Mobile 360px', [
       'Tra cứu Mobile 360px',
     ]);
@@ -780,6 +793,36 @@ async function runSuite02Customer(browser, acceptanceRoot, gallery) {
         return route.fulfill({ headers: CORS, json: { configured: true, payment: purchasePaymentRecord } });
       }
 
+      if (p.startsWith('/delivery/cloud/notifications/')) {
+        const nAction = p.split('/').pop();
+        if (nAction === 'mark_read' && body && body.id) readNotices.add(body.id);
+        if (nAction === 'mark_all_read') readNotices.add('n-msg');
+        const rows = [
+          {
+            id: 'n-msg',
+            category: 'market',
+            kind: 'message',
+            title: 'Tin nhắn mới',
+            body: `Đơn ${marketOrderId}`,
+            reference_type: 'market_order',
+            reference_id: marketOrderId,
+            read_at: readNotices.has('n-msg') ? '2026-10-31T10:00:00Z' : null,
+            created_at: '2026-10-31T09:50:00Z',
+          },
+        ];
+        const unread = rows.filter(r => !r.read_at).length;
+        return route.fulfill({
+          headers: CORS,
+          json: {
+            ok: true,
+            unread_count: unread,
+            latest: rows.find(r => !r.read_at) || null,
+            notifications: rows,
+            next: null,
+            preferences: { push_enabled: true, shipping_updates: true, market_updates: true, promo_updates: true },
+          },
+        });
+      }
       if (p.startsWith('/delivery/cloud/marketplace/')) {
         const action = p.split('/').pop();
         if (action === 'catalog') {
@@ -1134,20 +1177,20 @@ async function runSuite02Customer(browser, acceptanceRoot, gallery) {
     await s.clickButton('Chọn địa chỉ giao đã lưu');
     await s.page.getByRole('button', { name: 'Chọn địa chỉ', exact: true }).last().click();
     await s.fill('Hàng hóa', 'Hộp quà tặng doanh nghiệp');
-    await s.fill('Khối lượng (kg)', '2.5');
-    await s.fill('Tiền thu hộ (đồng)', '250000');
-    await s.clickNav('Tùy chọn nâng cao (Kích thước, Bảo hiểm, Đa điểm dừng, POD/OTP)');
-    await s.fill('Dài (cm)', '30');
-    await s.fill('Rộng (cm)', '20');
-    await s.fill('Cao (cm)', '20');
-    await s.fill('Khai giá bảo hiểm (đồng)', '2000000');
+    await s.fill('Khối lượng', '2.5');
+    await s.fill('Tiền thu hộ', '250000');
+    await s.clickNav('Tùy chọn nâng cao: Kích thước, Bảo hiểm & Điểm dừng');
+    await s.fill('Dài', '30');
+    await s.fill('Rộng', '20');
+    await s.fill('Cao', '20');
+    await s.fill('Khai giá bảo hiểm', '2000000');
     await s.fill('Ghi chú giao hàng', 'Gọi trước 5 phút khi đến sảnh');
-    await s.clickNav('Giao khứ hồi (+60% cước)');
-    await s.clickNav('Ưu tiên tài xế xe điện (EV)');
-    await s.clickNav('Đóng góp Quỹ Xanh (+1.000 đ)');
-    await s.clickNav('Yêu cầu ảnh bằng chứng giao hàng (POD)');
+    await s.clickNav('Giao khứ hồi · Phụ thu 60% cước');
+    await s.clickNav('Ưu tiên tài xế xe điện');
+    await s.clickNav('Đóng góp Quỹ Xanh · 1.000 đ');
+    await s.clickNav('Yêu cầu ảnh bằng chứng giao hàng');
     await s.clickNav('Yêu cầu mã OTP 6 số người nhận');
-    await s.clickButton('Thêm điểm dừng trung gian (+5.000 đ)');
+    await s.clickButton('Thêm điểm dừng trung gian · 5.000 đ');
     await s.fill('Địa chỉ điểm dừng #1', '45 Pasteur, Quận 1');
     await s.clickButton('Tìm điểm dừng #1 trên Google Map');
     await s.clickNav('45 Pasteur, Quận 1, TP.HCM');
@@ -1208,7 +1251,7 @@ async function runSuite02Customer(browser, acceptanceRoot, gallery) {
     await s.clickButton('Đóng');
 
     await s.clickButton('Xem ảnh POD');
-    await s.waitText('Ảnh bằng chứng giao hàng (POD)');
+    await s.waitText('Ảnh bằng chứng giao hàng');
     await s.snap(folder, '08-shipping-pod-viewer-1440.png', 'Xem ảnh bằng chứng giao hàng (POD) qua Signed URL', [
       'Xem ảnh POD',
     ]);
@@ -1228,8 +1271,8 @@ async function runSuite02Customer(browser, acceptanceRoot, gallery) {
     await s.waitText('Combo Cà Phê Đặc Sản Rang Mộc');
     await s.clickNav('Còn hàng');
     await s.clickButton('Khoảng giá');
-    await s.fill('Từ (đ)', '30000');
-    await s.fill('Đến (đ)', '150000');
+    await s.fill('Giá từ', '30000');
+    await s.fill('Giá đến', '150000');
     await s.clickButton('Áp dụng');
     await s.clickNav('Cửa hàng Đặc Sản Sài Gòn');
     await s.clickNav('Theo dõi cửa hàng');
@@ -1260,7 +1303,7 @@ async function runSuite02Customer(browser, acceptanceRoot, gallery) {
     await s.clickButton('Giỏ hàng');
     await s.clickButton('Tăng số lượng');
     await s.clickButton('Giảm số lượng');
-    await s.clickNav('Trả trước trực tuyến (payOS)');
+    await s.clickNav('Trả trước trực tuyến payOS');
     await s.clickNav('Vận chuyển, Voucher & Xu thưởng');
     await s.clickButton('Chọn mã');
     await s.waitText('Kho mã giảm giá khả dụng');
@@ -1270,9 +1313,9 @@ async function runSuite02Customer(browser, acceptanceRoot, gallery) {
     ]);
     await s.clickButton('Dùng');
 
-    await s.clickNav('Đổi Xu thưởng (1500 Xu khả dụng)');
-    await s.clickNav('Ưu tiên xe điện (EV)');
-    await s.clickNav('Yêu cầu ảnh bằng chứng giao (POD)');
+    await s.clickNav('Đổi Xu thưởng · 1500 Xu khả dụng');
+    await s.clickNav('Ưu tiên xe điện');
+    await s.clickNav('Yêu cầu ảnh bằng chứng giao hàng');
     await s.clickNav('Yêu cầu mã OTP 6 số khi nhận');
     await s.fill('Ghi chú đơn hàng', 'Giao giờ hành chính');
     await s.clickButton('Cập nhật báo giá');
@@ -1507,6 +1550,19 @@ async function runSuite03Merchant(browser, acceptanceRoot, gallery) {
           json: { image_url: 'https://yvnbfurazjbhbopahtmx.supabase.co/storage/v1/object/public/delivery-market-media/merchant.webp' },
         });
       }
+      if (p.startsWith('/delivery/cloud/notifications/')) {
+        return route.fulfill({
+          headers: CORS,
+          json: {
+            ok: true,
+            unread_count: 0,
+            notifications: [],
+            latest: null,
+            next: null,
+            preferences: { push_enabled: true, shipping_updates: true, market_updates: true, promo_updates: true },
+          },
+        });
+      }
       if (p.startsWith('/delivery/cloud/marketplace/')) {
         const action = p.split('/').pop();
         if (action === 'catalog') {
@@ -1685,7 +1741,7 @@ async function runSuite03Merchant(browser, acceptanceRoot, gallery) {
     ]);
 
     await s.clickButton('Sửa cửa hàng');
-    await s.fill('Bán kính phục vụ tối đa (km, 0 = không giới hạn)', '15');
+    await s.fill('Bán kính phục vụ tối đa', '15');
     const bannerChooser = s.page.waitForEvent('filechooser');
     await s.clickButton('Tải ảnh bìa cửa hàng');
     await (await bannerChooser).setFiles({ name: 'banner.png', mimeType: 'image/png', buffer: PNG_1X1 });
@@ -1705,10 +1761,10 @@ async function runSuite03Merchant(browser, acceptanceRoot, gallery) {
     await s.clickButton('Chọn ảnh');
     await (await prodChooser).setFiles({ name: 'buncha.png', mimeType: 'image/png', buffer: PNG_1X1 });
     await s.page.getByRole('button', { name: 'Bỏ ảnh', exact: true }).waitFor();
-    await s.fill('Giá bán (đ)', '79000');
-    await s.fill('Dài (cm)', '22');
-    await s.fill('Rộng (cm)', '18');
-    await s.fill('Cao (cm)', '12');
+    await s.fill('Giá bán', '79000');
+    await s.fill('Dài', '22');
+    await s.fill('Rộng', '18');
+    await s.fill('Cao', '12');
     await s.snap(folder, '03-merchant-product-editor-1440.png', 'Chỉnh sửa sản phẩm: Ảnh Cloud, Giá bán, Kích thước kiện (Dài/Rộng/Cao)', [
       'Chọn ảnh / Bỏ ảnh',
       'Giá bán (đ)',
@@ -1720,8 +1776,8 @@ async function runSuite03Merchant(browser, acceptanceRoot, gallery) {
 
     await s.clickButton('Biến thể SKU');
     await s.fill('Mã SKU', 'BC-JUMBO');
-    await s.fill('Tên biến thể (VD: Size L)', 'Phần Đặc Biệt 2 Người');
-    await s.fill('Giá (đ)', '145000');
+    await s.fill('Tên biến thể', 'Phần Đặc Biệt 2 Người');
+    await s.fill('Giá', '145000');
     await s.fill('Tồn kho', '15');
     await s.clickButton('Thêm SKU');
     await s.waitText(/Phần Đặc Biệt 2 Người/);
@@ -1743,7 +1799,7 @@ async function runSuite03Merchant(browser, acceptanceRoot, gallery) {
     assert.equal(voucherSaved, true);
 
     await s.clickButton('Flash Sale');
-    await s.fill('Giá Flash Sale (đ)', '59000');
+    await s.fill('Giá Flash Sale', '59000');
     await s.snap(folder, '06-merchant-flash-sale-1440.png', 'Thiết lập chương trình Flash Sale theo khung giờ và số suất', [
       'Flash Sale',
       'Lưu Flash Sale',
@@ -1752,7 +1808,7 @@ async function runSuite03Merchant(browser, acceptanceRoot, gallery) {
     assert.equal(flashSaved, true);
 
     await s.clickButton('Nhân sự');
-    await s.fill('Số điện thoại hoặc UUID tài khoản cloud', '0987654321');
+    await s.fill('Số điện thoại hoặc UUID tài khoản', '0987654321');
     await s.clickButton('Cấp quyền nhân sự');
     await s.waitText(/Phạm Nhân Viên/);
     await s.snap(folder, '07-merchant-staff-delegation-1440.png', 'Phân quyền & Thu hồi Nhân sự cửa hàng (Nhân viên / Quản lý)', [
@@ -1794,7 +1850,7 @@ async function runSuite03Merchant(browser, acceptanceRoot, gallery) {
 
     await s.clickButton('Chấp nhận trả');
     await s.fill('Phản hồi / lý do', 'Shop đồng ý nhận hoàn và bù hàng');
-    await s.clickNav('Tạo vận đơn thu hồi hàng trả (reverse logistics)');
+    await s.clickNav('Tạo vận đơn thu hồi hàng trả');
     await s.clickButton('Xác nhận');
     await s.page.getByRole('button', { name: 'Đã nhận hàng trả', exact: true }).waitFor();
 
@@ -1804,7 +1860,7 @@ async function runSuite03Merchant(browser, acceptanceRoot, gallery) {
     await s.waitText(/Đã nhập lại kho/);
 
     await s.clickButton('Đề nghị trả tiền shop');
-    await s.fill('Số tiền (VND)', '135000');
+    await s.fill('Số tiền', '135000');
     await s.fill('Lý do', 'Đối soát doanh thu đơn hoàn tất');
     await s.fill('Mã chứng từ / tham chiếu', 'SETTLE-301');
     await s.clickButton('Xác nhận');
@@ -1880,6 +1936,19 @@ async function runSuite04ShopStaff(browser, acceptanceRoot, gallery) {
                 staff_shops: [{ shop_id: shopId, shop_name: 'Tiệm Trà Thảo Mộc', role: staffRole }],
                 memberships: [],
               },
+            },
+          });
+        }
+        if (u.pathname.startsWith('/delivery/cloud/notifications/')) {
+          return route.fulfill({
+            headers: CORS,
+            json: {
+              ok: true,
+              unread_count: 0,
+              notifications: [],
+              latest: null,
+              next: null,
+              preferences: { push_enabled: true, shipping_updates: true, market_updates: true, promo_updates: true },
             },
           });
         }
@@ -2084,6 +2153,19 @@ async function runSuite05Driver(browser, acceptanceRoot, gallery) {
         });
       }
       if (p === '/delivery/cloud/addresses') return route.fulfill({ headers: CORS, json: { addresses: [] } });
+      if (p.startsWith('/delivery/cloud/notifications/')) {
+        return route.fulfill({
+          headers: CORS,
+          json: {
+            ok: true,
+            unread_count: 0,
+            notifications: [],
+            latest: null,
+            next: null,
+            preferences: { push_enabled: true, shipping_updates: true, market_updates: true, promo_updates: true },
+          },
+        });
+      }
       if (p === '/delivery/cloud/merchants') return route.fulfill({ headers: CORS, json: { merchants: [] } });
       if (p === '/delivery/cloud/marketplace/catalog') {
         return route.fulfill({ headers: CORS, json: { products: [], categories: [], next: null } });
@@ -2151,9 +2233,9 @@ async function runSuite05Driver(browser, acceptanceRoot, gallery) {
     await s.clickButton('Đã đến lấy hàng');
     await s.clickButton('Đã lấy hàng');
     await s.page.getByRole('button', { name: 'Giao thành công', exact: true }).first().click();
-    await s.waitText('Xác thực giao hàng (POD / OTP)');
+    await s.waitText('Xác thực giao hàng');
     const podChooser = s.page.waitForEvent('filechooser');
-    await s.clickButton('Tải ảnh bằng chứng giao hàng (POD)');
+    await s.clickButton('Tải ảnh bằng chứng giao hàng');
     await (await podChooser).setFiles({ name: 'pod.png', mimeType: 'image/png', buffer: PNG_1X1 });
     await s.waitText(/Đã tải lên ảnh POD/);
     await s.fill('Mã OTP 6 số từ người nhận', '654321');
@@ -2292,6 +2374,19 @@ async function runSuite06OperatorAdmin(browser, acceptanceRoot, gallery) {
               { action: 'pricing', target_id: 'default', actor_id: adminId, created_at: '2026-10-31T10:00:00Z' },
               { action: 'membership', target_id: candidateId, actor_id: adminId, created_at: '2026-10-31T10:05:00Z' },
             ],
+          },
+        });
+      }
+      if (p.startsWith('/delivery/cloud/notifications/')) {
+        return route.fulfill({
+          headers: CORS,
+          json: {
+            ok: true,
+            unread_count: 0,
+            notifications: [],
+            latest: null,
+            next: null,
+            preferences: { push_enabled: true, shipping_updates: true, market_updates: true, promo_updates: true },
           },
         });
       }
@@ -2533,9 +2628,9 @@ async function runSuite06OperatorAdmin(browser, acceptanceRoot, gallery) {
     await s.fill('Email quản trị', adminUser.email);
     await s.fill('Mật khẩu', 'AdminPass123');
     await s.clickButton('Đăng nhập');
-    await s.waitText('Tài khoản cloud chưa có quyền operator.');
+    await s.waitText('Tài khoản chưa có quyền quản trị.');
     await s.snap(folder, '01-admin-non-operator-guard-1440.png', 'Chặn tài khoản thường truy cập cổng /#/admin (Role Isolation Guard)', [
-      'Tài khoản cloud chưa có quyền operator.',
+      'Tài khoản chưa có quyền quản trị.',
       'Đăng xuất',
     ]);
     await s.clickButton('Đăng xuất');
@@ -2545,7 +2640,7 @@ async function runSuite06OperatorAdmin(browser, acceptanceRoot, gallery) {
     await s.fill('Email quản trị', adminUser.email);
     await s.fill('Mật khẩu', 'AdminPass123');
     await s.clickButton('Đăng nhập');
-    await s.waitText('Chỉ số vận hành Cloud thời gian thực');
+    await s.waitText('Chỉ số vận hành thời gian thực');
     await s.clickButton('Làm mới');
     await s.snap(folder, '02-admin-overview-analytics-1440.png', 'Tab 1 Tổng quan: Chỉ số vận hành Cloud & Kế toán kép thời gian thực', [
       'Tổng quan',
@@ -2553,18 +2648,18 @@ async function runSuite06OperatorAdmin(browser, acceptanceRoot, gallery) {
       '4 bảng KPI vận hành & sổ cái kép',
     ]);
 
-    await s.clickButton('Bảng giá cloud');
-    await s.waitText(/Phí 2 km đầu \(đồng\)/);
-    await s.fill('Phí 2 km đầu (đồng)', '19000');
+    await s.clickButton('Bảng giá cước');
+    await s.waitText(/Phí 2 km đầu/);
+    await s.fill('Phí 2 km đầu', '19000');
     await s.snap(folder, '03-admin-pricing-dialog-1440.png', 'Hộp thoại cập nhật Bảng giá vận chuyển Cloud', [
-      'Bảng giá cloud',
+      'Bảng giá cước',
       'Lưu bảng giá',
     ]);
     await s.clickButton('Lưu bảng giá');
     assert.equal(pricing.base_fee, 19000);
 
     await s.clickButton('Nhật ký điều hành');
-    await s.waitText('Nhật ký điều hành Cloud');
+    await s.waitText('Nhật ký điều hành');
     await s.snap(folder, '04-admin-audit-log-1440.png', 'Nhật ký điều hành Cloud (Audit Trail)', [
       'Nhật ký điều hành',
     ]);
@@ -2573,9 +2668,9 @@ async function runSuite06OperatorAdmin(browser, acceptanceRoot, gallery) {
     await s.clickNav('Vận đơn');
     await s.waitText(/Hộp sách chuyên khảo/);
     await s.clickButton('Vận chuyển GHN');
-    await s.fill('Tỉnh/thành điểm lấy (hệ hai cấp)', 'Hồ Chí Minh');
+    await s.fill('Tỉnh/thành điểm lấy', 'Hồ Chí Minh');
     await s.fill('Phường/xã điểm lấy', 'Phường Bến Nghé');
-    await s.fill('Tỉnh/thành điểm giao (hệ hai cấp)', 'Hồ Chí Minh');
+    await s.fill('Tỉnh/thành điểm giao', 'Hồ Chí Minh');
     await s.fill('Phường/xã điểm giao', 'Phường Bến Thành');
     await s.clickButton('Xem phí GHN');
     await s.page.getByRole('button', { name: 'Tạo vận đơn GHN', exact: true }).waitFor();
@@ -2681,14 +2776,14 @@ async function runSuite06OperatorAdmin(browser, acceptanceRoot, gallery) {
     await attachAdminBackend(m360.page);
     await m360.page.goto('http://127.0.0.1:8080/#/admin', { waitUntil: 'domcontentloaded' });
     await m360.enableSemantics();
-    await m360.waitText('GHST CLOUD ADMIN');
+    await m360.waitText('GHST ADMIN');
     await m360.snap(folder, '12-admin-login-mobile-360.png', 'Đăng nhập Quản trị GHST CLOUD ADMIN trên Mobile 360px', [
       'Header compact 360px không tràn dòng',
     ]);
     await m360.fill('Email quản trị', adminUser.email);
     await m360.fill('Mật khẩu', 'AdminPass123');
     await m360.clickButton('Đăng nhập');
-    await m360.waitText('Chỉ số vận hành Cloud thời gian thực');
+    await m360.waitText('Chỉ số vận hành thời gian thực');
     await m360.snap(folder, '13-admin-overview-mobile-360.png', 'Cổng Quản trị Cloud với NavigationBar 5 tab trên Mobile 360px', [
       'NavigationBar 5 tab Mobile 360px',
     ]);

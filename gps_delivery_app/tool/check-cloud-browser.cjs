@@ -91,6 +91,19 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(process.
             }
             return route.fulfill({ ...data, json: { schema_version: 2, operator: role === 'operator', account } });
           }
+          if (url.pathname.startsWith('/delivery/cloud/notifications/')) {
+            return route.fulfill({
+              ...data,
+              json: {
+                ok: true,
+                unread_count: 0,
+                notifications: [],
+                latest: null,
+                next: null,
+                preferences: { push_enabled: true, shipping_updates: true, market_updates: true, promo_updates: true },
+              },
+            });
+          }
           if (url.pathname === '/delivery/cloud/merchants') return route.fulfill({ ...data, json: { merchants: [] } });
           if (url.pathname === '/delivery/cloud/marketplace/catalog') return route.fulfill({ ...data, json: { products: [], next: null, categories: [] } });
           if (url.pathname.startsWith('/delivery/cloud/accounts/') && request.method() === 'POST') {
@@ -215,7 +228,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(process.
           await dropoffOption.click();
           for (const [name, value] of [
             ['Tên người nhận', 'UI Receiver'], ['Số điện thoại người nhận', '0912345678'],
-            ['Hàng hóa', 'Documents'], ['Khối lượng (kg)', '1'], ['Tiền thu hộ (đồng)', '100000'],
+            ['Hàng hóa', 'Documents'], ['Khối lượng', '1'], ['Tiền thu hộ', '100000'],
           ]) {
             await fillField(page.getByRole('textbox', { name, exact: true }), value);
           }
@@ -283,7 +296,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(process.
           }
         }
         if (role === 'operator') {
-          await page.getByRole('button', { name: 'Bảng giá cloud', exact: true }).click();
+          await page.getByRole('button', { name: 'Bảng giá cước', exact: true }).click();
           await page.getByRole('button', { name: 'Lưu bảng giá', exact: true }).waitFor();
           await page.waitForTimeout(400);
           await page.screenshot({ path: path.join(output, `cloud-pricing-${width}.png`) });

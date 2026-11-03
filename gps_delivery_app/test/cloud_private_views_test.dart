@@ -315,7 +315,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(
         find.byTooltip(
-          endpoint == 'pricing' ? 'Bảng giá cloud' : 'Nhật ký điều hành',
+          endpoint == 'pricing' ? 'Bảng giá cước' : 'Nhật ký điều hành',
         ),
       );
       await tester.pump();
@@ -688,14 +688,14 @@ void main() {
         GpsDeliveryApp(initialRoute: '/cloud', cloudService: api),
       );
       await tester.pumpAndSettle();
-      expect(find.byTooltip('Bảng giá cloud'), findsNothing);
+      expect(find.byTooltip('Bảng giá cước'), findsNothing);
       final shared = tester
           .widget<CloudOrdersScreen>(find.byType(CloudOrdersScreen))
           .session;
       Navigator.of(tester.element(find.byType(CloudOrdersScreen)))
           .pushReplacementNamed('/cloud-admin');
       await tester.pumpAndSettle();
-      expect(find.byTooltip('Bảng giá cloud'), findsOneWidget);
+      expect(find.byTooltip('Bảng giá cước'), findsOneWidget);
       Navigator.of(tester.element(find.byType(CloudOrdersScreen)))
           .pushReplacementNamed('/cloud');
       await tester.pumpAndSettle();
@@ -705,7 +705,7 @@ void main() {
       );
       expect(consumer.embedded, isTrue);
       expect(consumer.session, same(shared));
-      expect(find.byTooltip('Bảng giá cloud'), findsNothing);
+      expect(find.byTooltip('Bảng giá cước'), findsNothing);
       api.authenticated = false;
       api.changes.add(AuthState(AuthChangeEvent.signedOut, null));
       await tester.pumpAndSettle();

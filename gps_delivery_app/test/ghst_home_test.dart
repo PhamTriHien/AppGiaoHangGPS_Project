@@ -213,8 +213,8 @@ void main() {
         'Tên người nhận': 'Receiver',
         'Số điện thoại người nhận': '0912345678',
         'Hàng hóa': 'Documents',
-        'Khối lượng (kg)': '1',
-        'Tiền thu hộ (đồng)': '0',
+        'Khối lượng': '1',
+        'Tiền thu hộ': '0',
       };
       for (final entry in values.entries) {
         final field = find.widgetWithText(TextFormField, entry.key);

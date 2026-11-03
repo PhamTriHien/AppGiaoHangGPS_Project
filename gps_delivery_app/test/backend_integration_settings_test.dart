@@ -296,7 +296,7 @@ void main() {
 
       expect(
         find.textContaining(
-          'Đã lưu Google Maps Platform (đã đồng bộ Cloud PostgreSQL)',
+          'Đã lưu Google Maps Platform · đã đồng bộ hệ thống',
         ),
         findsOneWidget,
       );
@@ -306,7 +306,7 @@ void main() {
       );
       expect(
         find.textContaining(
-          'Khóa bảo mật đã đồng bộ Cloud PostgreSQL — để trống nếu giữ nguyên',
+          'Khóa bảo mật đã đồng bộ hệ thống — để trống nếu giữ nguyên',
         ),
         findsOneWidget,
       );

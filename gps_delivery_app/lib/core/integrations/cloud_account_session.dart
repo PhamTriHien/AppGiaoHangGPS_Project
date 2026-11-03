@@ -69,6 +69,14 @@ class CloudAccountSession extends ChangeNotifier {
   bool get hasMerchantAccess => hasRole('merchant') || hasStaffShop;
   int get coinBalance =>
       !canUseBusiness ? 0 : (_account!['coin_balance'] as int? ?? 0);
+  String? get birthDate =>
+      !canUseBusiness ? null : _account!['birth_date'] as String?;
+  String? get citizenId =>
+      !canUseBusiness ? null : _account!['citizen_id'] as String?;
+  bool get identityVerified =>
+      canUseBusiness && _account!['identity_verified'] == true;
+  int get unreadNotifications =>
+      !canUseBusiness ? 0 : (_account!['unread_notifications'] as int? ?? 0);
   bool get canCreateShippingOrder =>
       canUseBusiness && (_schemaVersion >= 3 || _account!['role'] != 'driver');
   int get schemaVersion => _schemaVersion;
@@ -96,8 +104,7 @@ class CloudAccountSession extends ChangeNotifier {
         if (_disposed) return;
         if (_scope != service.identityScope ||
             !service.signedIn ||
-            state.event == AuthChangeEvent.signedOut ||
-            state.event == AuthChangeEvent.signedIn) {
+            state.event == AuthChangeEvent.signedOut) {
           _invalidate();
         }
         if (service.signedIn) {
@@ -153,7 +160,22 @@ class CloudAccountSession extends ChangeNotifier {
                 !['customer', 'merchant', 'driver'].contains(raw['role']) ||
                 raw['blocked'] != null && raw['blocked'] is! bool ||
                 raw['requested_role'] != null &&
-                    !['merchant', 'driver'].contains(raw['requested_role']))) {
+                    !['merchant', 'driver'].contains(raw['requested_role']) ||
+                raw['birth_date'] != null &&
+                    (raw['birth_date'] is! String ||
+                        !RegExp(
+                          r'^\d{4}-\d{2}-\d{2}$',
+                        ).hasMatch(raw['birth_date'] as String)) ||
+                raw['citizen_id'] != null &&
+                    (raw['citizen_id'] is! String ||
+                        !RegExp(
+                          r'^\d{12}$',
+                        ).hasMatch(raw['citizen_id'] as String)) ||
+                raw['identity_verified'] != null &&
+                    raw['identity_verified'] is! bool ||
+                raw['unread_notifications'] != null &&
+                    (raw['unread_notifications'] is! int ||
+                        (raw['unread_notifications'] as int) < 0))) {
       throw const FormatException('Invalid cloud account profile');
     }
     var account = raw == null
@@ -275,12 +297,26 @@ class CloudAccountSession extends ChangeNotifier {
     return operation;
   }
 
+  bool _isTransientRefreshError(Object error) {
+    if (error is TimeoutException) return true;
+    if (error is PublicApiException) {
+      final code = error.statusCode;
+      return code == null ||
+          code == 408 ||
+          code == 429 ||
+          code == 502 ||
+          code == 504;
+    }
+    return false;
+  }
+
   Future<void> _load(int epoch, String scope) async {
     try {
       final response = await service.request('profile');
       if (_current(epoch, scope)) _accept(response);
     } catch (error) {
-      if (_current(epoch, scope)) {
+      if (_current(epoch, scope) &&
+          !(verified && _isTransientRefreshError(error))) {
         _fail(error);
       }
       rethrow;
@@ -298,19 +334,43 @@ class CloudAccountSession extends ChangeNotifier {
     notifyListeners();
   }
 
+  static bool _isValidIsoBirthDate(String value) {
+    final match = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$').firstMatch(value);
+    if (match == null) return false;
+    final y = int.parse(match.group(1)!);
+    final m = int.parse(match.group(2)!);
+    final d = int.parse(match.group(3)!);
+    final parsed = DateTime.utc(y, m, d);
+    if (parsed.year != y || parsed.month != m || parsed.day != d) return false;
+    final now = DateTime.now();
+    final today = DateTime.utc(now.year, now.month, now.day);
+    return !parsed.isBefore(DateTime.utc(1900, 1, 1)) &&
+        !parsed.isAfter(today);
+  }
+
   Future<void> saveProfile({
     required String fullName,
     required String phone,
     required String requestedRole,
+    String? birthDate,
+    String? citizenId,
   }) async {
     start();
     if (_disposed || _saving) throw StateError('Profile update unavailable');
     final epoch = _epoch, scope = _scope;
+    final normalizedBirthDate = birthDate?.trim();
+    final normalizedCitizenId = citizenId?.trim();
     if (!service.signedIn ||
         fullName.trim().isEmpty ||
         fullName.trim().length > 120 ||
         !RegExp(r'^0[35789][0-9]{8}$').hasMatch(phone.trim()) ||
-        !['customer', 'merchant', 'driver'].contains(requestedRole)) {
+        !['customer', 'merchant', 'driver'].contains(requestedRole) ||
+        (normalizedBirthDate != null &&
+            normalizedBirthDate.isNotEmpty &&
+            !_isValidIsoBirthDate(normalizedBirthDate)) ||
+        (normalizedCitizenId != null &&
+            normalizedCitizenId.isNotEmpty &&
+            !RegExp(r'^\d{12}$').hasMatch(normalizedCitizenId))) {
       throw ArgumentError('Invalid account details');
     }
     _saving = true;
@@ -321,6 +381,8 @@ class CloudAccountSession extends ChangeNotifier {
           'full_name': fullName.trim(),
           'phone': phone.trim(),
           'requested_role': requestedRole,
+          'birth_date': ?normalizedBirthDate,
+          'citizen_id': ?normalizedCitizenId,
         },
       );
       if (!_current(epoch, scope)) throw StateError('Cloud account changed');

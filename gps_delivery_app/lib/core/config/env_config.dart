@@ -49,6 +49,8 @@ class EnvConfig {
   static const String _envDeliveryApiBaseUrl = String.fromEnvironment(
     'DELIVERY_API_BASE_URL',
   );
+  static bool get hasBuildDeliveryApiBaseUrl =>
+      _envDeliveryApiBaseUrl.isNotEmpty;
   static String _runtimeDeliveryApiBaseUrl = '';
   static String get deliveryApiBaseUrl {
     final raw = _runtimeDeliveryApiBaseUrl.isNotEmpty
@@ -99,6 +101,7 @@ class EnvConfig {
     required int z,
     String layer = 'm',
     bool hideLabels = false,
+    int scale = 2,
   }) {
     final serverIdx = (x + y).abs() % 4;
     final styleParam = hideLabels
@@ -107,7 +110,7 @@ class EnvConfig {
     final keyParam = isGoogleMapsKeyConfigured
         ? '&key=${Uri.encodeQueryComponent(googleMapsApiKey)}'
         : '';
-    return 'https://mt$serverIdx.google.com/vt/lyrs=$layer&hl=vi&x=$x&y=$y&z=$z$styleParam$keyParam';
+    return 'https://mt$serverIdx.google.com/vt/lyrs=$layer&hl=vi&x=$x&y=$y&z=$z&scale=$scale$styleParam$keyParam';
   }
 
   static const String mapboxAccessToken = String.fromEnvironment(

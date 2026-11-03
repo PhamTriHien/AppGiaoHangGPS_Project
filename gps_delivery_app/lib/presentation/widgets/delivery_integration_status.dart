@@ -92,7 +92,7 @@ class _DeliveryIntegrationStatusState extends State<DeliveryIntegrationStatus> {
             },
             icon: const Icon(Icons.cloud_outlined),
             label: Text(
-              _cloud.signedIn ? 'Đổi tài khoản cloud' : 'Tài khoản cloud',
+              _cloud.signedIn ? 'Đổi tài khoản' : 'Đăng nhập tài khoản',
             ),
           ),
           if (_cloud.signedIn)
@@ -104,7 +104,7 @@ class _DeliveryIntegrationStatusState extends State<DeliveryIntegrationStatus> {
                       if (mounted) setState(() {});
                     },
               icon: const Icon(Icons.logout),
-              label: const Text('Đăng xuất cloud'),
+              label: const Text('Đăng xuất'),
             ),
         ],
       ),
@@ -135,12 +135,12 @@ class _DeliveryIntegrationStatusState extends State<DeliveryIntegrationStatus> {
               child: Text(
                 _cloud.signedIn
                     ? '${_cloud.status}\n'
-                          'Cloud: ${_cloud.cloudProjectRef}\n'
+                          'Dự án: ${_cloud.cloudProjectRef}\n'
                           'Email: ${_cloud.email}\n'
                           'Auth UUID: ${_cloud.userId}\n'
                           'Bản cài đặt: ${_shortId(_cloud.installationId)}'
                     : '${_cloud.status}\n'
-                          'Cloud đang cấu hình: ${_cloud.cloudProjectRef}\n'
+                          'Dự án đang cấu hình: ${_cloud.cloudProjectRef}\n'
                           'Bản cài đặt: ${_shortId(_cloud.installationId)}',
                 style: const TextStyle(fontSize: 12),
               ),
@@ -152,7 +152,7 @@ class _DeliveryIntegrationStatusState extends State<DeliveryIntegrationStatus> {
         const Padding(
           padding: EdgeInsets.only(bottom: 8),
           child: Text(
-            'Tài khoản đã đăng nhập nhưng chưa có role operator. Hãy chạy câu SQL bootstrap trong Supabase rồi bấm Đổi tài khoản cloud để đăng nhập lại.',
+            'Tài khoản đã đăng nhập nhưng chưa có quyền điều hành. Sau khi cấp quyền điều hành, hãy bấm Đổi tài khoản để đăng nhập lại.',
             style: TextStyle(fontSize: 12, color: Colors.deepOrange),
           ),
         ),

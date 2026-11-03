@@ -8,10 +8,32 @@ tested in dependency order, a concise UI without duplicates or fake static conte
 and a Windows desktop build they can inspect. Admin login is a separate page.
 User correction on 2026-10-31: the frame/theme-only Marketplace redesign was
 rejected. Restore the whole GHST EXPRESS customer composition: home, map,
-shipping, food, orders and profile, then share that interface across buyer,
-merchant and driver functions. The user explicitly selected the whole old app,
-not only its login. Approved permissions reveal work sections inside that shared
-shell, not separate role-specific applications.
+shipping, food, orders and profile.
+User update on 2026-11-03: accounts logging into the app (`/`) must switch
+automatically to role-synchronized Cloud workspaces according to their
+server-verified roles (`GhstRoleMode` in `GhstUserShell` / `MarketplaceScreen`):
+- **Operator (`isOperator`)**: opens `AdminPortalScreen` (`GHST ADMIN`)
+  directly inside the app on `/`, with a `'Giao diện Khách hàng'` switcher to
+  enter consumer/partner mode and `'Cổng Quản trị'` / `'Quản trị'` to return.
+  All user-visible UI labels across consumer, partner, promo events, tracking,
+  and admin screens must omit `"Cloud"` / `"PostgreSQL"` implementation jargon.
+  Signed-out `/admin` login remains strictly separate from signed-out consumer
+  login (`CloudAuthScreen`).
+- **Driver (`hasRole('driver')`)**: opens the dedicated `GHST DRIVER` workspace
+  defaulting to `Sàn chuyến chờ nhận` (`driverQueue`), with Driver navigation
+  (`Chờ nhận`, `Chuyến giao`, `Thu gom`, `Hiệu suất`, `Hồ sơ`).
+- **Merchant / Shop Staff (`hasMerchantAccess`)**: opens the dedicated
+  `GHST MERCHANT` workspace defaulting to `Cửa hàng của tôi` (`workspace`), with
+  Merchant B2B / staff navigation.
+- **Customer**: opens `GHST EXPRESS` customer home (`GhstHomeScreen`).
+- Multi-role accounts display a quick role-switcher bar (`VAI TRÒ:` /
+  `CHẾ ĐỘ VAI TRÒ`) to switch between unlocked Cloud modes without signing out;
+  live Cloud role grants upgrade unselected customer views automatically and
+  live revocations immediately drop revoked workspaces without leaking data.
+User workflow update on 2026-11-03:
+- Test directly against live Cloud (`https://ghst-backend-admin.onrender.com/delivery/`) and client apps; do **not** run local `:8787` / `:8080` servers unless explicitly requested.
+- Skip `graphify` updates/rebuilds to save time unless explicitly requested.
+- For Android builds/tests, use the connected physical Android phone (`arm64-v8a`) mirrored onto the Windows Desktop via `scrcpy` (`android-real-device-scrcpy` skill) rather than launching an Android Emulator.
 Integrations and secrets belong in backend/Admin, not consumer settings. Existing
 Google, Gmail/SMTP, and database configuration must be preserved.
 
@@ -53,19 +75,25 @@ All paths below are relative to this repository root.
 ## Architecture Facts
 
 - Default consumer login uses Supabase Auth with the original GHST/Studio frame
-  shared with the old login. All consumer/merchant/driver functions use the same
-  GHST EXPRESS user shell and original AppTheme.lightTheme. Desktop restores
-  the grouped original customer sidebar/white header; mobile restores its dark
-  header and original five tabs: Trang chu, Giao hang, An uong, Don hang, Ho so.
+  shared with the old login. After server verification (`CloudAccountSession`),
+  `MarketplaceScreen` synchronizes the active UI mode to the account's verified
+  Cloud roles (`AdminPortalScreen` for Operators on `/`; `GhstUserShell` in
+  `GHST DRIVER`, `GHST MERCHANT`, or `GHST EXPRESS` customer mode, plus a role
+  switcher strip whenever more than one mode is unlocked). Customer mode keeps
+  the grouped original customer sidebar/white header on desktop and dark header
+  with five tabs (`Trang chủ`, `Giao hàng`, `Ăn uống`, `Đơn hàng`, `Hồ sơ`) on
+  mobile; Driver and Merchant modes provide dedicated headers, sidebars, and
+  five-tab mobile bars tailored to trip claiming/pickups/stats and shop/B2B
+  shipping operations.
   Home restores the destination strip, service grid, map and recent-order/discovery
   composition using cloud requests and scoped leases. The map only uses cloud
   order endpoints/saved coordinates and physical device GPS, with no legacy
-  route/fleet fallback. Merchant workspace/orders and shipping/driver work change
-  shell content in place. Orders switches between shipping and purchases;
+  route/fleet fallback. Orders switches between shipping and purchases;
   shipping embeds CloudOrderForm and returns to orders after verified creation.
   Unsupported cloud services stay disabled without made-up fares. Local rewards/
-  lottery balances are not imported into this cloud home. `/cloud` opens this same
-  shell at shipping orders, including after sign-in; Admin remains separate.
+  lottery balances are not imported into this cloud home. `/cloud` opens consumer
+  shipping orders (`initialShipping: true`), including after sign-in; signed-out
+  `/admin` login remains separate.
   Presentation sharing never binds a
   cloud identity to the SQLite password/OTP handlers. Old SQLite screens remain
   at `/legacy`, without a consumer nav
@@ -164,7 +192,7 @@ All paths below are relative to this repository root.
   and schedule slots. Product uploads decode/re-encode to WebP, remove metadata
   and use scoped Supabase Storage inserts; private chat/return/finance attachments
   use the RLS-locked `'delivery-private-evidence'` bucket (`delivery_market_attachments`).
-  Target migration is `20261109_admin_account_management`, workflow 15. Isolated tests
+  Target migration is `20261111_profile_push_shipping_coins`, workflow 17. Isolated tests
   do not certify deployed transactions.
   Quotes optionally bind the client's displayed cart/address versions and reject
   stale data; current Flutter sends both available versions. Confirmation renders

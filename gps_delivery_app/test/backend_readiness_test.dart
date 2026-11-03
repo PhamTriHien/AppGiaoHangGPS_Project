@@ -129,12 +129,12 @@ void main() {
           isNull,
         );
         expect(tester.takeException(), isNull);
-        final migrate = find.text('Cập nhật schema cloud');
+        final migrate = find.text('Cập nhật cấu trúc dữ liệu');
         await tester.ensureVisible(migrate);
         await tester.tap(migrate);
         await tester.pumpAndSettle();
         expect(writes, 0);
-        expect(find.text('Cập nhật schema cloud?'), findsOneWidget);
+        expect(find.text('Cập nhật cấu trúc dữ liệu?'), findsOneWidget);
         await tester.tap(find.text('Quay lại'));
         await tester.pumpAndSettle();
         expect(writes, 0);
@@ -161,7 +161,7 @@ void main() {
       );
       await open(tester, api);
       final button = tester.widget<FilledButton>(
-        find.widgetWithText(FilledButton, 'Cập nhật schema cloud'),
+        find.widgetWithText(FilledButton, 'Cập nhật cấu trúc dữ liệu'),
       );
       expect(button.onPressed, isNull);
       expect(find.text('Schema payOS / GHN · Chưa kiểm tra'), findsOneWidget);
@@ -170,7 +170,7 @@ void main() {
       expect(
         tester
             .widget<FilledButton>(
-              find.widgetWithText(FilledButton, 'Cập nhật schema cloud'),
+              find.widgetWithText(FilledButton, 'Cập nhật cấu trúc dữ liệu'),
             )
             .onPressed,
         isNull,
@@ -180,7 +180,7 @@ void main() {
         client: MockClient((_) async => response(report(canMigrate: false))),
       );
       await open(tester, denied);
-      expect(find.text('Cập nhật schema cloud'), findsNothing);
+      expect(find.text('Cập nhật cấu trúc dữ liệu'), findsNothing);
       await tester.pumpWidget(const SizedBox());
     },
   );
@@ -201,7 +201,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Không truy cập được backend.'), findsOneWidget);
     expect(find.text('PostgreSQL backend · Đạt'), findsNothing);
-    expect(find.text('Cập nhật schema cloud'), findsNothing);
+    expect(find.text('Cập nhật cấu trúc dữ liệu'), findsNothing);
     await tester.pumpWidget(const SizedBox());
   });
 
@@ -217,8 +217,8 @@ void main() {
             : {'completed': true, 'readiness': report()},
       );
       await open(tester, api, local: false);
-      await tester.ensureVisible(find.text('Cập nhật schema cloud'));
-      await tester.tap(find.text('Cập nhật schema cloud'));
+      await tester.ensureVisible(find.text('Cập nhật cấu trúc dữ liệu'));
+      await tester.tap(find.text('Cập nhật cấu trúc dữ liệu'));
       await tester.pumpAndSettle();
       expect(api.requests.where((request) => request['body'] != null), isEmpty);
       await tester.tap(find.text('Áp dụng'));
@@ -255,13 +255,13 @@ void main() {
         }),
       );
       await open(tester, api);
-      await tester.ensureVisible(find.text('Cập nhật schema cloud'));
-      await tester.tap(find.text('Cập nhật schema cloud'));
+      await tester.ensureVisible(find.text('Cập nhật cấu trúc dữ liệu'));
+      await tester.tap(find.text('Cập nhật cấu trúc dữ liệu'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Áp dụng'));
       await tester.pump();
       expect(writes, 1);
-      expect(find.text('Đang cập nhật schema cloud...'), findsOneWidget);
+      expect(find.text('Đang cập nhật cấu trúc dữ liệu...'), findsOneWidget);
       expect(
         tester
             .widget<TextButton>(find.widgetWithText(TextButton, 'Đóng'))

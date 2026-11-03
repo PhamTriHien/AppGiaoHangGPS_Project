@@ -91,7 +91,7 @@ class _MarketplaceEditorState extends State<MarketplaceEditor> {
     String label, {
     int max = 160,
     bool number = false,
-    bool optional = false,
+    bool optional = false, String? suffixText, String? helperText,
   }) => Padding(
     padding: const EdgeInsets.only(bottom: 16),
     child: TextFormField(
@@ -101,7 +101,7 @@ class _MarketplaceEditorState extends State<MarketplaceEditor> {
           ? const TextInputType.numberWithOptions(decimal: true, signed: true)
           : TextInputType.text,
       maxLines: key == 'description' ? 3 : 1,
-      decoration: InputDecoration(labelText: label),
+      decoration: InputDecoration(labelText: label, suffixText: suffixText, helperText: helperText),
       validator: (value) {
         final text = value?.trim() ?? '';
         if (optional && text.isEmpty) return null;
@@ -341,13 +341,13 @@ class _MarketplaceEditorState extends State<MarketplaceEditor> {
                     _input('longitude', 'Kinh độ', number: true),
                     _input(
                       'service_radius_km',
-                      'Bán kính phục vụ tối đa (km, 0 = không giới hạn)',
+                      'Bán kính phục vụ tối đa', suffixText: 'km', helperText: 'Nhập 0 nếu không giới hạn',
                       number: true,
                       optional: true,
                     ),
                     _input(
                       'banner_url',
-                      'Ảnh bìa cửa hàng (HTTPS)',
+                      'Ảnh bìa cửa hàng',
                       max: 500,
                       optional: true,
                     ),
@@ -433,15 +433,15 @@ class _MarketplaceEditorState extends State<MarketplaceEditor> {
                         ),
                       ),
                     const SizedBox(height: 16),
-                    _input('price', 'Giá bán (đ)', number: true),
+                    _input('price', 'Giá bán', number: true, suffixText: 'đ'),
                     _input('stock', 'Tồn khả dụng', number: true),
-                    _input('weight_kg', 'Khối lượng (kg)', number: true),
+                    _input('weight_kg', 'Khối lượng', number: true, suffixText: 'kg'),
                     Row(
                       children: [
                         Expanded(
                           child: _input(
                             'length_cm',
-                            'Dài (cm)',
+                            'Dài', suffixText: 'cm',
                             number: true,
                             optional: true,
                           ),
@@ -450,7 +450,7 @@ class _MarketplaceEditorState extends State<MarketplaceEditor> {
                         Expanded(
                           child: _input(
                             'width_cm',
-                            'Rộng (cm)',
+                            'Rộng', suffixText: 'cm',
                             number: true,
                             optional: true,
                           ),
@@ -459,7 +459,7 @@ class _MarketplaceEditorState extends State<MarketplaceEditor> {
                         Expanded(
                           child: _input(
                             'height_cm',
-                            'Cao (cm)',
+                            'Cao', suffixText: 'cm',
                             number: true,
                             optional: true,
                           ),
@@ -468,7 +468,7 @@ class _MarketplaceEditorState extends State<MarketplaceEditor> {
                     ),
                     _input(
                       'preparation_minutes',
-                      'Chuẩn bị (phút)',
+                      'Thời gian chuẩn bị', suffixText: 'phút',
                       number: true,
                     ),
                     MarketOptionEditor(

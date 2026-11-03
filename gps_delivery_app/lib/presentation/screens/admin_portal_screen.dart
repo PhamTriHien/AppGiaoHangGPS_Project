@@ -7,11 +7,14 @@ import '../../core/integrations/cloud_account_session.dart';
 import '../../core/integrations/cloud_orders_service.dart';
 import '../../core/integrations/cloud_session_lease.dart';
 import '../../core/integrations/delivery_api_client.dart';
+import '../../core/integrations/push_notification_service.dart';
 import '../../core/network/public_json_api.dart';
+import '../../core/theme/admin_studio_theme.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../widgets/admin_accounts_panel.dart';
 import '../widgets/backend_integration_settings.dart';
 import '../widgets/cloud_logistics_panels.dart';
+import '../widgets/cloud_notification_center.dart';
 import '../widgets/cloud_order_labels.dart';
 import '../widgets/cloud_pricing_dialog.dart';
 import '../widgets/cloud_session_boundary.dart';
@@ -19,17 +22,6 @@ import '../widgets/market_commercial_sheets.dart';
 import 'cloud_orders_screen.dart';
 import 'market_order_services_screen.dart';
 import 'marketplace_view.dart';
-
-const _kAdminDark = Color(0xFF081C18);
-const _kAdminDarkElevated = Color(0xFF10312A);
-const _kAdminDarkActive = Color(0xFF15443A);
-const _kAdminPrimary = Color(0xFF087F5B);
-const _kAdminAccent = Color(0xFF12B886);
-const _kAdminCanvas = Color(0xFFF1F5F9);
-const _kAdminBorder = Color(0xFFE2E8F0);
-const _kAdminText = Color(0xFF0F172A);
-const _kAdminMuted = Color(0xFF64748B);
-const _kAdminDanger = Color(0xFFB42318);
 
 /// Cổng Điều hành Quản trị Cloud hợp nhất (/admin).
 /// Độc lập hoàn toàn với giao diện người tiêu dùng và tài khoản SQLite cục bộ.
@@ -39,17 +31,20 @@ class AdminPortalScreen extends StatefulWidget {
     this.session,
     this.service,
     this.api,
+    this.onSwitchToUserMode,
   });
 
   final CloudAccountSession? session;
   final CloudOrdersService? service;
   final DeliveryApiClient? api;
+  final VoidCallback? onSwitchToUserMode;
 
   @override
   State<AdminPortalScreen> createState() => _AdminPortalScreenState();
 }
 
-class _AdminPortalScreenState extends State<AdminPortalScreen> {
+class _AdminPortalScreenState extends State<AdminPortalScreen>
+    with WidgetsBindingObserver {
   late final CloudOrdersService _service =
       widget.session?.service ?? widget.service ?? CloudOrdersService();
   late final CloudAccountSession _session =
@@ -62,6 +57,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
   String? _error;
   int _tab = 0;
   String _accountsFilter = 'all';
+  Object? _pushWatcher;
 
   static const _destinations = [
     (
@@ -75,7 +71,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
       Icons.manage_accounts_outlined,
       Icons.manage_accounts_rounded,
       'Tài khoản',
-      'Quản trị danh tính Cloud, phân quyền Operator/Đối tác và bảo mật tài khoản',
+      'Quản trị danh tính, phân quyền Điều hành viên/Đối tác và bảo mật tài khoản',
       'Tài khoản',
     ),
     (
@@ -96,14 +92,14 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
       Icons.account_balance_outlined,
       Icons.account_balance_rounded,
       'Khuyến mãi & Đối soát',
-      'Ngân sách voucher toàn sàn, tiến trình nền và đối soát kế toán kép',
+      'Ngân sách voucher toàn sàn, sự kiện vòng xoay và đối soát kế toán kép',
       'Đối soát',
     ),
     (
       Icons.hub_outlined,
       Icons.hub_rounded,
       'Tích hợp',
-      'Quản lý khóa dịch vụ Cloud PostgreSQL, kiểm tra kết nối và schema',
+      'Quản lý khóa dịch vụ, kiểm tra kết nối và cấu trúc dữ liệu',
       'Tích hợp',
     ),
   ];
@@ -111,10 +107,27 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _session.start();
     _session.addListener(_onSessionChanged);
+    _pushWatcher = PushNotificationService.instance.attachWatcher(_session);
     if (_service.signedIn && !_session.verified) {
       unawaited(_session.refresh().catchError((Object _) {}));
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      PushNotificationService.instance.setAppForeground(true);
+      DeliveryApiClient.instance.resetConnectionPool();
+      if (_service.signedIn) {
+        unawaited(_session.refresh().catchError((Object _) {}));
+      }
+    } else if (state == AppLifecycleState.hidden ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      PushNotificationService.instance.setAppForeground(false);
     }
   }
 
@@ -129,7 +142,11 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _session.removeListener(_onSessionChanged);
+    if (_pushWatcher != null) {
+      PushNotificationService.instance.detachWatcher(_pushWatcher!);
+    }
     if (widget.session == null) _session.dispose();
     _email.dispose();
     _password.dispose();
@@ -153,7 +170,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
               ? e.message
               : e is AuthException
               ? e.message
-              : 'Thông tin đăng nhập không hợp lệ hoặc chưa kết nối được Cloud.',
+              : 'Thông tin đăng nhập không hợp lệ hoặc chưa kết nối được dịch vụ.',
         );
       }
     } finally {
@@ -170,81 +187,10 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
     }
   }
 
-  ThemeData _adminTheme() {
-    final scheme = ColorScheme.fromSeed(
-      seedColor: _kAdminPrimary,
-      primary: _kAdminPrimary,
-      surface: Colors.white,
-    );
-    return ThemeData(
-      useMaterial3: true,
-      colorScheme: scheme,
-      scaffoldBackgroundColor: _kAdminCanvas,
-      cardTheme: CardThemeData(
-        elevation: 0,
-        color: Colors.white,
-        margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: _kAdminBorder),
-        ),
-      ),
-      dividerTheme: const DividerThemeData(
-        color: _kAdminBorder,
-        thickness: 1,
-        space: 1,
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: const Color(0xFFF8FAFC),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 14,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: _kAdminPrimary, width: 1.8),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: _kAdminDanger),
-        ),
-      ),
-      filledButtonTheme: FilledButtonThemeData(
-        style: FilledButton.styleFrom(
-          backgroundColor: _kAdminPrimary,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      ),
-      outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          foregroundColor: _kAdminText,
-          side: const BorderSide(color: Color(0xFFCBD5E1)),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Theme(
-      data: _adminTheme(),
+      data: AdminStudioTheme.themeData(),
       child: !_service.signedIn
           ? _buildLogin()
           : !_session.verified
@@ -260,27 +206,6 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
     );
   }
 
-  Widget _buildBrandEmblem({double size = 38}) => Container(
-    width: size,
-    height: size,
-    decoration: BoxDecoration(
-      gradient: const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [_kAdminAccent, _kAdminPrimary],
-      ),
-      borderRadius: BorderRadius.circular(size * 0.28),
-      boxShadow: [
-        BoxShadow(
-          color: _kAdminPrimary.withValues(alpha: 0.28),
-          blurRadius: 12,
-          offset: const Offset(0, 4),
-        ),
-      ],
-    ),
-    child: Icon(Icons.shield_outlined, color: Colors.white, size: size * 0.54),
-  );
-
   Widget _buildDarkTopBanner({String? subtitle, List<Widget>? actions}) =>
       LayoutBuilder(
         builder: (context, constraints) {
@@ -292,12 +217,14 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
               vertical: compact ? 10 : 14,
             ),
             decoration: const BoxDecoration(
-              color: _kAdminDark,
-              border: Border(bottom: BorderSide(color: Color(0xFF1A433A))),
+              color: AdminStudioColors.shellDark,
+              border: Border(
+                bottom: BorderSide(color: AdminStudioColors.acid, width: 1.5),
+              ),
             ),
             child: Row(
               children: [
-                _buildBrandEmblem(size: compact ? 32 : 36),
+                AdminStudioMark(size: compact ? 32 : 36),
                 SizedBox(width: compact ? 8 : 12),
                 Expanded(
                   child: Column(
@@ -305,13 +232,13 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'GHST CLOUD ADMIN',
+                        'GHST ADMIN',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: compact ? 14.5 : 17,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.4,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.3,
                           color: Colors.white,
                         ),
                       ),
@@ -322,7 +249,8 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             fontSize: 11.5,
-                            color: Color(0xFF94A3B8),
+                            color: AdminStudioColors.acid,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                     ],
@@ -339,181 +267,200 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
     const pillars = [
       (
         Icons.verified_user_outlined,
+        AdminStudioColors.acid,
         'Phân tách quyền Operator độc lập',
         'Xác thực phiên quản trị riêng biệt hoàn toàn với luồng ứng dụng người tiêu dùng.',
       ),
       (
         Icons.account_balance_wallet_outlined,
+        AdminStudioColors.gold,
         'Sổ cái kế toán kép & Đối soát',
         'Giám sát thu hộ COD, thanh toán trả trước, quyết toán cửa hàng và hoàn tiền minh bạch.',
       ),
       (
         Icons.storefront_outlined,
+        AdminStudioColors.pink,
         'Kiểm duyệt đối tác & Gian hàng',
         'Xét duyệt hồ sơ tài xế, cửa hàng mới và xử lý báo cáo đánh giá vi phạm.',
       ),
       (
         Icons.cloud_done_outlined,
-        'Cấu hình hạ tầng Cloud tập trung',
-        'Quản lý khóa dịch vụ trên PostgreSQL khóa RLS kèm nhật ký kiểm toán thay đổi.',
+        Colors.white,
+        'Cấu hình dịch vụ tập trung',
+        'Quản lý khóa dịch vụ bảo mật phân quyền kèm nhật ký kiểm toán thay đổi.',
       ),
     ];
 
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [_kAdminDark, Color(0xFF0D2E27), Color(0xFF0A3C30)],
+    return AdminStudioGridBackdrop(
+      child: Container(
+        decoration: const BoxDecoration(
+          border: Border(
+            right: BorderSide(color: AdminStudioColors.ink, width: 2),
+          ),
         ),
-      ),
-      child: LayoutBuilder(
-        builder: (context, box) => SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 32),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight: (box.maxHeight - 64).clamp(0.0, double.infinity),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    _buildBrandEmblem(size: 42),
-                    const SizedBox(width: 14),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'GHST CLOUD ADMIN',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.6,
-                            ),
-                          ),
-                          SizedBox(height: 2),
-                          Text(
-                            'Cổng Điều hành Vận chuyển & Thương mại Cloud',
-                            style: TextStyle(
-                              color: Color(0xFF8CE99A),
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+        child: LayoutBuilder(
+          builder: (context, box) => SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 32),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: (box.maxHeight - 64).clamp(0.0, double.infinity),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _kAdminDarkActive,
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(color: const Color(0xFF206050)),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
+                      AdminStudioMark(size: 42),
+                      SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(
-                              Icons.lock_outline,
-                              size: 14,
-                              color: Color(0xFF63E6BE),
-                            ),
-                            SizedBox(width: 6),
                             Text(
-                              'TRUNG TÂM ĐIỀU HÀNH BẢO MẬT',
+                              'GHST ADMIN',
                               style: TextStyle(
-                                color: Color(0xFF63E6BE),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.6,
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.4,
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Cổng Điều hành Vận chuyển & Thương mại',
+                              style: TextStyle(
+                                color: AdminStudioColors.acid,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Điều phối vận đơn, đối tác và tích hợp Cloud trên một mặt phẳng duy nhất.',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          height: 1.3,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      for (final p in pillars)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  color: _kAdminDarkElevated,
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(
-                                    color: const Color(0xFF1E5245),
-                                  ),
-                                ),
-                                child: Icon(
-                                  p.$1,
-                                  size: 18,
-                                  color: const Color(0xFF63E6BE),
-                                ),
-                              ),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      p.$2,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 3),
-                                    Text(
-                                      p.$3,
-                                      style: const TextStyle(
-                                        color: Color(0xFF94A3B8),
-                                        fontSize: 12.5,
-                                        height: 1.4,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
                     ],
                   ),
-                ),
-                const Text(
-                  'Mọi tác vụ cấu hình và đối soát đều được ghi vết kiểm toán theo tài khoản Operator.',
-                  style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
-                ),
-              ],
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 26,
+                              height: 2,
+                              color: AdminStudioColors.pink,
+                            ),
+                            const SizedBox(width: 10),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AdminStudioColors.acid,
+                                border: Border.all(
+                                  color: AdminStudioColors.ink,
+                                ),
+                              ),
+                              child: const Text(
+                                'TRUNG TÂM ĐIỀU HÀNH BẢO MẬT',
+                                style: TextStyle(
+                                  color: AdminStudioColors.ink,
+                                  fontSize: 10.5,
+                                  fontFamily: 'monospace',
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.8,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 18),
+                        const Text(
+                          'Điều phối vận đơn, đối tác và dịch vụ tích hợp trên một mặt phẳng duy nhất.',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 25,
+                            height: 1.22,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.6,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        for (final p in pillars)
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: AdminStudioColors.shellElevated,
+                              border: Border.all(
+                                color: AdminStudioColors.shellLine,
+                              ),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 34,
+                                  height: 34,
+                                  decoration: BoxDecoration(
+                                    color: p.$2,
+                                    border: Border.all(
+                                      color: AdminStudioColors.ink,
+                                      width: 1.2,
+                                    ),
+                                  ),
+                                  child: Icon(
+                                    p.$1,
+                                    size: 18,
+                                    color: AdminStudioColors.ink,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        p.$3,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 13.5,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        p.$4,
+                                        style: const TextStyle(
+                                          color: AdminStudioColors.mutedOnDark,
+                                          fontSize: 12,
+                                          height: 1.4,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const Text(
+                    'Mọi tác vụ cấu hình và đối soát đều được ghi vết kiểm toán theo tài khoản Operator.',
+                    style: TextStyle(
+                      color: AdminStudioColors.mutedOnDark,
+                      fontSize: 11.5,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -521,166 +468,190 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
     );
   }
 
-  Widget _buildLoginFormCard() => Container(
+  Widget _buildLoginFormCard() => ConstrainedBox(
     constraints: const BoxConstraints(maxWidth: 420),
-    padding: const EdgeInsets.all(28),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: _kAdminBorder),
-      boxShadow: const [
-        BoxShadow(
-          color: Color(0x0F0F172A),
-          blurRadius: 28,
-          offset: Offset(0, 12),
-        ),
-      ],
-    ),
-    child: AutofillGroup(
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE6FCF5),
-                    borderRadius: BorderRadius.circular(12),
+    child: AdminNeoBox(
+      padding: const EdgeInsets.all(28),
+      borderWidth: 2,
+      shadowOffset: const Offset(6, 6),
+      child: AutofillGroup(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: AdminStudioColors.violet,
+                      border: Border.all(
+                        color: AdminStudioColors.ink,
+                        width: 1.5,
+                      ),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: AdminStudioColors.ink,
+                          offset: Offset(2, 2),
+                          blurRadius: 0,
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.admin_panel_settings_outlined,
+                      color: Colors.white,
+                    ),
                   ),
-                  child: const Icon(
-                    Icons.admin_panel_settings_outlined,
-                    color: _kAdminPrimary,
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Đăng nhập quản trị',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                            color: AdminStudioColors.ink,
+                            letterSpacing: -0.4,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Xác thực phiên Điều hành viên',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontFamily: 'monospace',
+                            fontWeight: FontWeight.w700,
+                            color: AdminStudioColors.violet,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Sử dụng tài khoản Điều hành viên đã được cấp quyền quản trị.',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AdminStudioColors.muted,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 22),
+              TextFormField(
+                controller: _email,
+                keyboardType: TextInputType.emailAddress,
+                autofillHints: const [AutofillHints.username],
+                textInputAction: TextInputAction.next,
+                decoration: const InputDecoration(
+                  labelText: 'Email quản trị',
+                  prefixIcon: Icon(Icons.alternate_email_rounded, size: 20),
+                ),
+                validator: (v) => v == null || !v.trim().contains('@')
+                    ? 'Nhập email quản trị hợp lệ'
+                    : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _password,
+                obscureText: _obscure,
+                autofillHints: const [AutofillHints.password],
+                onFieldSubmitted: (_) => _signIn(),
+                decoration: InputDecoration(
+                  labelText: 'Mật khẩu',
+                  prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20),
+                  suffixIcon: IconButton(
+                    tooltip: _obscure ? 'Hiện mật khẩu' : 'Ẩn mật khẩu',
+                    onPressed: () => setState(() => _obscure = !_obscure),
+                    icon: Icon(
+                      _obscure
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                    ),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
+                validator: (v) => v == null || v.trim().length < 6
+                    ? 'Mật khẩu tối thiểu 6 ký tự'
+                    : null,
+              ),
+              if (_error != null) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AdminStudioColors.dangerSoft,
+                    border: Border.all(
+                      color: AdminStudioColors.danger,
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Đăng nhập quản trị',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          color: _kAdminText,
-                        ),
+                      const Icon(
+                        Icons.error_outline_rounded,
+                        size: 18,
+                        color: AdminStudioColors.danger,
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Xác thực phiên Operator Cloud',
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          color: Colors.blueGrey.shade600,
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _error!,
+                          style: const TextStyle(
+                            color: AdminStudioColors.danger,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Sử dụng tài khoản Operator đã được cấp quyền trên Cloud.',
-              style: TextStyle(fontSize: 13, color: _kAdminMuted, height: 1.4),
-            ),
-            const SizedBox(height: 24),
-            TextFormField(
-              controller: _email,
-              keyboardType: TextInputType.emailAddress,
-              autofillHints: const [AutofillHints.username],
-              textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(
-                labelText: 'Email quản trị',
-                prefixIcon: Icon(Icons.alternate_email_rounded, size: 20),
-              ),
-              validator: (v) => v == null || !v.trim().contains('@')
-                  ? 'Nhập email quản trị hợp lệ'
-                  : null,
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _password,
-              obscureText: _obscure,
-              autofillHints: const [AutofillHints.password],
-              onFieldSubmitted: (_) => _signIn(),
-              decoration: InputDecoration(
-                labelText: 'Mật khẩu',
-                prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20),
-                suffixIcon: IconButton(
-                  tooltip: _obscure ? 'Hiện mật khẩu' : 'Ẩn mật khẩu',
-                  onPressed: () => setState(() => _obscure = !_obscure),
-                  icon: Icon(
-                    _obscure
-                        ? Icons.visibility_outlined
-                        : Icons.visibility_off_outlined,
-                  ),
-                ),
-              ),
-              validator: (v) => v == null || v.trim().length < 6
-                  ? 'Mật khẩu tối thiểu 6 ký tự'
-                  : null,
-            ),
-            if (_error != null) ...[
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
               Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFEF3F2),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFFECDCA)),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(
-                      Icons.error_outline_rounded,
-                      size: 18,
-                      color: _kAdminDanger,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _error!,
-                        style: const TextStyle(
-                          color: _kAdminDanger,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+                decoration: const BoxDecoration(
+                  boxShadow: [
+                    BoxShadow(
+                      color: AdminStudioColors.ink,
+                      offset: Offset(4, 4),
+                      blurRadius: 0,
                     ),
                   ],
                 ),
+                child: FilledButton(
+                  onPressed: _busy ? null : _signIn,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AdminStudioColors.violet,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 50),
+                  ),
+                  child: _busy
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text(
+                          'Đăng nhập',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                ),
               ),
             ],
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: _busy ? null : _signIn,
-              style: FilledButton.styleFrom(
-                minimumSize: const Size(double.infinity, 50),
-              ),
-              child: _busy
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Text(
-                      'Đăng nhập',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-            ),
-          ],
+          ),
         ),
       ),
     ),
@@ -695,7 +666,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
             return Row(
               children: [
                 SizedBox(
-                  width: (constraints.maxWidth * 0.45).clamp(380.0, 540.0),
+                  width: (constraints.maxWidth * 0.46).clamp(380.0, 560.0),
                   height: double.infinity,
                   child: _buildLoginShowcase(),
                 ),
@@ -712,7 +683,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
           }
           return Column(
             children: [
-              _buildDarkTopBanner(subtitle: 'Cổng Điều hành Quản trị Cloud'),
+              _buildDarkTopBanner(subtitle: 'Cổng Điều hành Quản trị'),
               Expanded(
                 child: Center(
                   child: SingleChildScrollView(
@@ -739,62 +710,68 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
                 padding: const EdgeInsets.all(24),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 420),
-                  child: Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(28),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (_session.error == null) ...[
-                            const CircularProgressIndicator(),
-                            const SizedBox(height: 18),
-                            const Text(
-                              'Đang xác minh quyền Operator Cloud...',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: _kAdminText,
+                  child: AdminNeoBox(
+                    padding: const EdgeInsets.all(28),
+                    borderWidth: 2,
+                    shadowOffset: const Offset(5, 5),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (_session.error == null) ...[
+                          const CircularProgressIndicator(
+                            color: AdminStudioColors.violet,
+                          ),
+                          const SizedBox(height: 18),
+                          const Text(
+                            'Đang xác minh quyền quản trị...',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              color: AdminStudioColors.ink,
+                            ),
+                          ),
+                        ] else ...[
+                          Container(
+                            width: 52,
+                            height: 52,
+                            decoration: BoxDecoration(
+                              color: AdminStudioColors.dangerSoft,
+                              border: Border.all(
+                                color: AdminStudioColors.ink,
+                                width: 1.5,
                               ),
                             ),
-                          ] else ...[
-                            Container(
-                              width: 52,
-                              height: 52,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFEF3F2),
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              child: const Icon(
-                                Icons.cloud_off_outlined,
-                                color: _kAdminDanger,
-                              ),
+                            child: const Icon(
+                              Icons.cloud_off_outlined,
+                              color: AdminStudioColors.danger,
                             ),
-                            const SizedBox(height: 14),
-                            const Text(
-                              'Không xác minh được quyền quản trị Cloud.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 15,
-                              ),
+                          ),
+                          const SizedBox(height: 14),
+                          const Text(
+                            'Không xác minh được quyền quản trị.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15,
+                              color: AdminStudioColors.ink,
                             ),
-                            const SizedBox(height: 14),
-                            FilledButton.icon(
-                              onPressed: () => unawaited(
-                                _session.refresh().catchError((Object _) {}),
-                              ),
-                              icon: const Icon(Icons.refresh),
-                              label: const Text('Thử lại'),
+                          ),
+                          const SizedBox(height: 14),
+                          FilledButton.icon(
+                            onPressed: () => unawaited(
+                              _session.refresh().catchError((Object _) {}),
                             ),
-                          ],
-                          const SizedBox(height: 12),
-                          TextButton.icon(
-                            onPressed: _signOut,
-                            icon: const Icon(Icons.logout),
-                            label: const Text('Đăng xuất'),
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Thử lại'),
                           ),
                         ],
-                      ),
+                        const SizedBox(height: 12),
+                        TextButton.icon(
+                          onPressed: _signOut,
+                          icon: const Icon(Icons.logout),
+                          label: const Text('Đăng xuất'),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -817,53 +794,57 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
                 padding: const EdgeInsets.all(24),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 440),
-                  child: Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(28),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 60,
-                            height: 60,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFEF3F2),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: const Icon(
-                              Icons.gpp_bad_outlined,
-                              size: 32,
-                              color: _kAdminDanger,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'Tài khoản cloud chưa có quyền operator.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: _kAdminText,
+                  child: AdminNeoBox(
+                    padding: const EdgeInsets.all(28),
+                    borderWidth: 2,
+                    shadowColor: AdminStudioColors.pink,
+                    shadowOffset: const Offset(6, 6),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            color: AdminStudioColors.dangerSoft,
+                            border: Border.all(
+                              color: AdminStudioColors.ink,
+                              width: 1.5,
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Cổng này chỉ dành cho điều hành viên hệ thống đã được cấp vai trò Operator trên cơ sở dữ liệu Cloud.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: _kAdminMuted,
-                              height: 1.4,
-                            ),
+                          child: const Icon(
+                            Icons.gpp_bad_outlined,
+                            size: 32,
+                            color: AdminStudioColors.danger,
                           ),
-                          const SizedBox(height: 20),
-                          FilledButton.icon(
-                            onPressed: _signOut,
-                            icon: const Icon(Icons.logout),
-                            label: const Text('Đăng xuất'),
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Tài khoản chưa có quyền quản trị.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            color: AdminStudioColors.ink,
                           ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Cổng này chỉ dành cho điều hành viên hệ thống đã được cấp quyền quản trị.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: AdminStudioColors.muted,
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        FilledButton.icon(
+                          onPressed: _signOut,
+                          icon: const Icon(Icons.logout),
+                          label: const Text('Đăng xuất'),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -880,14 +861,17 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
     if (!mounted || !_session.isOperator) return;
     await showDialog<bool>(
       context: context,
-      builder: (_) => CloudSessionBoundary(
-        session: _session,
-        operator: true,
-        dialog: true,
-        builder: (_, lease) => CloudPricingDialog(
-          service: _service,
-          pricing: Map<String, dynamic>.from(res['pricing'] as Map),
-          lease: lease,
+      builder: (_) => Theme(
+        data: AdminStudioTheme.themeData(),
+        child: CloudSessionBoundary(
+          session: _session,
+          operator: true,
+          dialog: true,
+          builder: (_, lease) => CloudPricingDialog(
+            service: _service,
+            pricing: Map<String, dynamic>.from(res['pricing'] as Map),
+            lease: lease,
+          ),
         ),
       ),
     );
@@ -901,229 +885,301 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
         .toList();
     await showDialog<void>(
       context: context,
-      builder: (_) => CloudSessionBoundary(
-        session: _session,
-        operator: true,
-        dialog: true,
-        builder: (dialog, _) => AlertDialog(
-          title: const Text('Nhật ký điều hành Cloud'),
-          content: SizedBox(
-            width: 540,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (entries.isEmpty) const Text('Chưa có thay đổi.'),
-                  for (final e in entries)
-                    Container(
-                      width: double.infinity,
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: _kAdminBorder),
+      builder: (_) => Theme(
+        data: AdminStudioTheme.themeData(),
+        child: CloudSessionBoundary(
+          session: _session,
+          operator: true,
+          dialog: true,
+          builder: (dialog, _) => AlertDialog(
+            title: const Text(
+              'Nhật ký điều hành',
+              style: TextStyle(fontWeight: FontWeight.w900),
+            ),
+            content: SizedBox(
+              width: 540,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (entries.isEmpty) const Text('Chưa có thay đổi.'),
+                    for (final e in entries)
+                      Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AdminStudioColors.surface,
+                          border: Border.all(
+                            color: AdminStudioColors.ink,
+                            width: 1.2,
+                          ),
+                        ),
+                        child: SelectableText(
+                          '${adminAuditActionLabel(e['action'])} · ${e['action']} · ${e['target_id'] ?? ''}\n${cloudDate(e['created_at'])} · ${e['actor_id']}',
+                          style: const TextStyle(fontSize: 12.5, height: 1.45),
+                        ),
                       ),
-                      child: SelectableText(
-                        '${adminAuditActionLabel(e['action'])} (${e['action']}) · ${e['target_id'] ?? ''}\n${cloudDate(e['created_at'])} · ${e['actor_id']}',
-                        style: const TextStyle(fontSize: 12.5, height: 1.45),
-                      ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialog),
+                child: const Text('Đóng'),
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialog),
-              child: const Text('Đóng'),
-            ),
-          ],
         ),
       ),
     );
   }
 
-  Widget _buildDesktopSidebar() => Container(
-    width: 256,
-    decoration: const BoxDecoration(
-      color: _kAdminDark,
-      border: Border(right: BorderSide(color: Color(0xFF153830))),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(18, 20, 18, 18),
-          child: Row(
-            children: [
-              _buildBrandEmblem(size: 38),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'GHST CLOUD ADMIN',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.4,
-                      ),
+  Widget _buildDesktopSidebar() => SizedBox(
+    width: 262,
+    child: AdminStudioGridBackdrop(
+      child: Container(
+        decoration: const BoxDecoration(
+          border: Border(
+            right: BorderSide(color: AdminStudioColors.ink, width: 2),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(18, 20, 18, 18),
+              child: Row(
+                children: [
+                  AdminStudioMark(size: 38),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'GHST ADMIN',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'STUDIO · OPS CONSOLE',
+                          style: TextStyle(
+                            color: AdminStudioColors.acid,
+                            fontSize: 10.5,
+                            fontFamily: 'monospace',
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
                     ),
-                    SizedBox(height: 2),
-                    Text(
-                      'Điều hành Trung tâm',
-                      style: TextStyle(
-                        color: Color(0xFF63E6BE),
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
+                  ),
+                ],
+              ),
+            ),
+            const Divider(color: AdminStudioColors.shellLine, height: 1),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(18, 16, 18, 8),
+              child: Text(
+                'PHÂN HỆ QUẢN TRỊ',
+                style: TextStyle(
+                  color: AdminStudioColors.mutedOnDark,
+                  fontSize: 10,
+                  fontFamily: 'monospace',
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1,
                 ),
               ),
-            ],
-          ),
-        ),
-        const Divider(color: Color(0xFF153830), height: 1),
-        const Padding(
-          padding: EdgeInsets.fromLTRB(18, 16, 18, 8),
-          child: Text(
-            'PHÂN HỆ QUẢN TRỊ',
-            style: TextStyle(
-              color: Color(0xFF64748B),
-              fontSize: 10.5,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.8,
             ),
-          ),
-        ),
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            itemCount: _destinations.length,
-            itemBuilder: (context, index) {
-              final d = _destinations[index];
-              final selected = _tab == index;
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Material(
-                  color: selected ? _kAdminDarkActive : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: () => setState(() {
-                      _tab = index;
-                      if (index == 1) _accountsFilter = 'all';
-                    }),
-                    child: Container(
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                itemCount: _destinations.length,
+                itemBuilder: (context, index) {
+                  final d = _destinations[index];
+                  final selected = _tab == index;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Material(
+                      color: selected
+                          ? AdminStudioColors.acid
+                          : Colors.transparent,
+                      child: InkWell(
+                        onTap: () => setState(() {
+                          _tab = index;
+                          if (index == 1) _accountsFilter = 'all';
+                        }),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 11,
+                          ),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: selected
+                                  ? AdminStudioColors.ink
+                                  : Colors.transparent,
+                              width: 1.2,
+                            ),
+                            boxShadow: selected
+                                ? const [
+                                    BoxShadow(
+                                      color: AdminStudioColors.violet,
+                                      offset: Offset(3, 3),
+                                      blurRadius: 0,
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                selected ? d.$2 : d.$1,
+                                size: 19,
+                                color: selected
+                                    ? AdminStudioColors.ink
+                                    : AdminStudioColors.mutedOnDark,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  d.$3,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: selected
+                                        ? AdminStudioColors.ink
+                                        : Colors.white,
+                                    fontSize: 13.5,
+                                    fontWeight: selected
+                                        ? FontWeight.w900
+                                        : FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            if (widget.onSwitchToUserMode != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
+                child: Semantics(
+                  button: true,
+                  label: 'Giao diện Khách hàng',
+                  excludeSemantics: true,
+                  child: OutlinedButton.icon(
+                    key: const ValueKey('admin-switch-user-mode'),
+                    onPressed: widget.onSwitchToUserMode,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AdminStudioColors.acid,
+                      backgroundColor: AdminStudioColors.shellElevated,
+                      side: const BorderSide(
+                        color: AdminStudioColors.acid,
+                        width: 1.2,
+                      ),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
                         vertical: 11,
                       ),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: selected
-                              ? const Color(0xFF206A58)
-                              : Colors.transparent,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            selected ? d.$2 : d.$1,
-                            size: 20,
-                            color: selected
-                                ? const Color(0xFF63E6BE)
-                                : const Color(0xFF94A3B8),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              d.$3,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: selected
-                                    ? Colors.white
-                                    : const Color(0xFFCBD5E1),
-                                fontSize: 13.5,
-                                fontWeight: selected
-                                    ? FontWeight.w700
-                                    : FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
+                    ),
+                    icon: const Icon(Icons.swap_horiz_rounded, size: 18),
+                    label: const Text(
+                      'Giao diện Khách hàng',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                   ),
                 ),
-              );
-            },
-          ),
-        ),
-        Container(
-          margin: const EdgeInsets.all(12),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: _kAdminDarkElevated,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFF1A473C)),
-          ),
-          child: Row(
-            children: [
-              const Icon(
-                Icons.verified_user_rounded,
-                size: 18,
-                color: Color(0xFF63E6BE),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      'Operator đã xác thực',
-                      style: TextStyle(
-                        color: Color(0xFF63E6BE),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      _service.email,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Colors.white, fontSize: 12),
-                    ),
-                  ],
-                ),
+            Container(
+              margin: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AdminStudioColors.shellElevated,
+                border: Border.all(color: AdminStudioColors.shellLine),
               ),
-            ],
-          ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    color: AdminStudioColors.violet,
+                    child: const Icon(
+                      Icons.verified_user_rounded,
+                      size: 16,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'Operator đã xác thực',
+                          style: TextStyle(
+                            color: AdminStudioColors.acid,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _service.email,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11.5,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     ),
   );
 
   Widget _buildDesktopTopBar() {
     final active = _destinations[_tab];
     return Material(
-      color: Colors.white,
+      color: AdminStudioColors.surface,
       child: Container(
         height: 66,
         padding: const EdgeInsets.symmetric(horizontal: 24),
         decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: _kAdminBorder)),
+          border: Border(
+            bottom: BorderSide(color: AdminStudioColors.ink, width: 2),
+          ),
         ),
         child: LayoutBuilder(
           builder: (context, bar) {
@@ -1134,10 +1190,17 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE6FCF5),
-                    borderRadius: BorderRadius.circular(10),
+                    color: AdminStudioColors.acid,
+                    border: Border.all(
+                      color: AdminStudioColors.ink,
+                      width: 1.4,
+                    ),
                   ),
-                  child: Icon(active.$2, size: 20, color: _kAdminPrimary),
+                  child: Icon(
+                    active.$2,
+                    size: 20,
+                    color: AdminStudioColors.ink,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -1146,16 +1209,16 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: _kAdminText,
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w800,
+                      color: AdminStudioColors.ink,
                     ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 if (compactActions) ...[
                   IconButton(
-                    tooltip: 'Bảng giá cloud',
+                    tooltip: 'Bảng giá cước',
                     onPressed: _openPricing,
                     icon: const Icon(Icons.price_change_outlined, size: 19),
                   ),
@@ -1169,7 +1232,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
                   OutlinedButton.icon(
                     onPressed: _openPricing,
                     icon: const Icon(Icons.price_change_outlined, size: 18),
-                    label: const Text('Bảng giá cloud'),
+                    label: const Text('Bảng giá cước'),
                   ),
                   const SizedBox(width: 8),
                   OutlinedButton.icon(
@@ -1179,14 +1242,60 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
                   ),
                 ],
                 const SizedBox(width: 8),
+                ListenableBuilder(
+                  listenable: PushNotificationService.instance,
+                  builder: (context, _) {
+                    final unread = PushNotificationService.instance.unreadCount;
+                    return IconButton(
+                      tooltip: 'Trung tâm thông báo',
+                      onPressed: () => openCloudNotificationCenter(
+                        context,
+                        _session,
+                        operator: true,
+                        onOpenShippingOrder: (_) {
+                          Navigator.of(context).maybePop();
+                          setState(() => _tab = 2);
+                        },
+                        onOpenProfile: () {
+                          Navigator.of(context).maybePop();
+                          setState(() => _tab = 1);
+                        },
+                      ),
+                      style: IconButton.styleFrom(
+                        backgroundColor: AdminStudioColors.paper,
+                        foregroundColor: AdminStudioColors.ink,
+                        side: const BorderSide(
+                          color: AdminStudioColors.ink,
+                          width: 1.4,
+                        ),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.zero,
+                        ),
+                      ),
+                      icon: Badge.count(
+                        count: unread,
+                        isLabelVisible: unread > 0,
+                        child: const Icon(
+                          Icons.notifications_none_rounded,
+                          size: 19,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(width: 8),
                 IconButton(
                   tooltip: 'Đăng xuất',
                   onPressed: _signOut,
                   style: IconButton.styleFrom(
-                    backgroundColor: const Color(0xFFF8FAFC),
-                    side: const BorderSide(color: _kAdminBorder),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                    backgroundColor: AdminStudioColors.paper,
+                    foregroundColor: AdminStudioColors.ink,
+                    side: const BorderSide(
+                      color: AdminStudioColors.ink,
+                      width: 1.4,
+                    ),
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.zero,
                     ),
                   ),
                   icon: const Icon(Icons.logout_rounded, size: 19),
@@ -1263,9 +1372,41 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
                 _buildDarkTopBanner(
                   subtitle: _service.email,
                   actions: [
+                    ListenableBuilder(
+                      listenable: PushNotificationService.instance,
+                      builder: (context, _) {
+                        final unread =
+                            PushNotificationService.instance.unreadCount;
+                        return IconButton(
+                          visualDensity: VisualDensity.compact,
+                          tooltip: 'Trung tâm thông báo',
+                          onPressed: () => openCloudNotificationCenter(
+                            context,
+                            _session,
+                            operator: true,
+                            onOpenShippingOrder: (_) {
+                              Navigator.of(context).maybePop();
+                              setState(() => _tab = 2);
+                            },
+                            onOpenProfile: () {
+                              Navigator.of(context).maybePop();
+                              setState(() => _tab = 1);
+                            },
+                          ),
+                          icon: Badge.count(
+                            count: unread,
+                            isLabelVisible: unread > 0,
+                            child: const Icon(
+                              Icons.notifications_none_rounded,
+                              color: Colors.white,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                     IconButton(
                       visualDensity: VisualDensity.compact,
-                      tooltip: 'Bảng giá cloud',
+                      tooltip: 'Bảng giá cước',
                       onPressed: _openPricing,
                       icon: const Icon(
                         Icons.price_change_outlined,
@@ -1292,18 +1433,98 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
                     ),
                   ],
                 ),
+                if (widget.onSwitchToUserMode != null)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: const BoxDecoration(
+                      color: AdminStudioColors.shellElevated,
+                      border: Border(
+                        bottom: BorderSide(color: AdminStudioColors.shellLine),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.admin_panel_settings_outlined,
+                          size: 15,
+                          color: AdminStudioColors.acid,
+                        ),
+                        const SizedBox(width: 6),
+                        const Expanded(
+                          child: Text(
+                            'VAI TRÒ: QUẢN TRỊ VIÊN',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: AdminStudioColors.mutedOnDark,
+                              fontSize: 10.5,
+                              fontFamily: 'monospace',
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Semantics(
+                          button: true,
+                          label: 'Giao diện Khách hàng',
+                          excludeSemantics: true,
+                          child: InkWell(
+                            key: const ValueKey('admin-switch-user-mode'),
+                            onTap: widget.onSwitchToUserMode,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AdminStudioColors.acid,
+                                border: Border.all(
+                                  color: AdminStudioColors.ink,
+                                ),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.swap_horiz_rounded,
+                                    size: 14,
+                                    color: AdminStudioColors.ink,
+                                  ),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Giao diện Khách hàng',
+                                    style: TextStyle(
+                                      color: AdminStudioColors.ink,
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 Expanded(child: body),
               ],
             ),
           ),
           bottomNavigationBar: Material(
-            color: Colors.white,
+            color: AdminStudioColors.surface,
             child: SafeArea(
               top: false,
               child: Container(
                 height: 64,
                 decoration: const BoxDecoration(
-                  border: Border(top: BorderSide(color: _kAdminBorder)),
+                  border: Border(
+                    top: BorderSide(color: AdminStudioColors.ink, width: 2),
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -1322,7 +1543,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 2,
-                                vertical: 6,
+                                vertical: 5,
                               ),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -1330,23 +1551,27 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
                                 children: [
                                   Container(
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
+                                      horizontal: 9,
                                       vertical: 3,
                                     ),
                                     decoration: BoxDecoration(
                                       color: _tab == i
-                                          ? const Color(0xFFD3F9D8)
+                                          ? AdminStudioColors.acid
                                           : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(999),
+                                      border: _tab == i
+                                          ? Border.all(
+                                              color: AdminStudioColors.ink,
+                                            )
+                                          : null,
                                     ),
                                     child: Icon(
                                       _tab == i
                                           ? _destinations[i].$2
                                           : _destinations[i].$1,
-                                      size: 20,
+                                      size: 19,
                                       color: _tab == i
-                                          ? _kAdminPrimary
-                                          : _kAdminMuted,
+                                          ? AdminStudioColors.ink
+                                          : AdminStudioColors.muted,
                                     ),
                                   ),
                                   const SizedBox(height: 3),
@@ -1357,11 +1582,11 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
                                     style: TextStyle(
                                       fontSize: 10.5,
                                       fontWeight: _tab == i
-                                          ? FontWeight.w700
-                                          : FontWeight.w500,
+                                          ? FontWeight.w800
+                                          : FontWeight.w600,
                                       color: _tab == i
-                                          ? _kAdminPrimary
-                                          : _kAdminMuted,
+                                          ? AdminStudioColors.ink
+                                          : AdminStudioColors.muted,
                                     ),
                                   ),
                                 ],
@@ -1421,7 +1646,7 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
         setState(
           () => _error = e is PublicApiException
               ? e.message
-              : 'Chưa tải được chỉ số điều hành Cloud.',
+              : 'Chưa tải được chỉ số điều hành.',
         );
       }
     } finally {
@@ -1442,13 +1667,8 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
     required String value,
     required String detail,
     bool compact = false,
-  }) => Container(
+  }) => AdminNeoBox(
     padding: EdgeInsets.all(compact ? 12 : 16),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(compact ? 14 : 16),
-      border: Border.all(color: _kAdminBorder),
-    ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1459,7 +1679,7 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
               height: compact ? 30 : 36,
               decoration: BoxDecoration(
                 color: tint,
-                borderRadius: BorderRadius.circular(compact ? 8 : 10),
+                border: Border.all(color: AdminStudioColors.ink, width: 1.2),
               ),
               child: Icon(icon, size: compact ? 16 : 19, color: accent),
             ),
@@ -1471,8 +1691,8 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: compact ? 11.5 : 12.5,
-                  fontWeight: FontWeight.w600,
-                  color: _kAdminMuted,
+                  fontWeight: FontWeight.w700,
+                  color: AdminStudioColors.muted,
                 ),
               ),
             ),
@@ -1485,8 +1705,9 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
             fontSize: compact ? 17 : 22,
-            fontWeight: FontWeight.w800,
-            color: _kAdminText,
+            fontWeight: FontWeight.w900,
+            color: AdminStudioColors.ink,
+            letterSpacing: -0.4,
           ),
         ),
         const SizedBox(height: 3),
@@ -1494,7 +1715,10 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
           detail,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontSize: compact ? 11 : 12, color: _kAdminMuted),
+          style: TextStyle(
+            fontSize: compact ? 11 : 12,
+            color: AdminStudioColors.muted,
+          ),
         ),
       ],
     ),
@@ -1507,97 +1731,95 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
     required String title,
     required List<(String, String)> rows,
     double? completionRatio,
-  }) => Card(
-    child: Padding(
-      padding: const EdgeInsets.all(18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+  }) => AdminNeoBox(
+    padding: const EdgeInsets.all(18),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: tint,
+                border: Border.all(color: AdminStudioColors.ink, width: 1.2),
+              ),
+              child: Icon(icon, size: 19, color: accent),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 15.5,
+                  color: AdminStudioColors.ink,
+                ),
+              ),
+            ),
+            if (completionRatio != null)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AdminStudioColors.acid,
+                  border: Border.all(color: AdminStudioColors.ink, width: 1.1),
+                ),
+                child: Text(
+                  '${(completionRatio * 100).round()}%',
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    fontFamily: 'monospace',
+                    fontWeight: FontWeight.w900,
+                    color: AdminStudioColors.ink,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        if (completionRatio != null) ...[
+          const SizedBox(height: 12),
+          ExcludeSemantics(
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: AdminStudioColors.ink),
+              ),
+              child: LinearProgressIndicator(
+                value: completionRatio.clamp(0.0, 1.0),
+                minHeight: 6,
+                backgroundColor: AdminStudioColors.paper,
+                valueColor: AlwaysStoppedAnimation<Color>(accent),
+              ),
+            ),
+          ),
+        ],
+        const SizedBox(height: 14),
+        for (var i = 0; i < rows.length; i++) ...[
+          if (i > 0) const Divider(height: 14, color: AdminStudioColors.line),
           Row(
             children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: tint,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, size: 19, color: accent),
-              ),
-              const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  title,
+                  rows[i].$1,
                   style: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15.5,
-                    color: _kAdminText,
+                    fontSize: 13.5,
+                    color: AdminStudioColors.muted,
                   ),
                 ),
               ),
-              if (completionRatio != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: tint,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    '${(completionRatio * 100).round()}%',
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w700,
-                      color: accent,
-                    ),
-                  ),
+              const SizedBox(width: 10),
+              Text(
+                rows[i].$2,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13.5,
+                  color: AdminStudioColors.ink,
                 ),
+              ),
             ],
           ),
-          if (completionRatio != null) ...[
-            const SizedBox(height: 12),
-            ExcludeSemantics(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(999),
-                child: LinearProgressIndicator(
-                  value: completionRatio.clamp(0.0, 1.0),
-                  minHeight: 6,
-                  backgroundColor: const Color(0xFFF1F5F9),
-                  valueColor: AlwaysStoppedAnimation<Color>(accent),
-                ),
-              ),
-            ),
-          ],
-          const SizedBox(height: 14),
-          for (var i = 0; i < rows.length; i++) ...[
-            if (i > 0) const Divider(height: 14, color: Color(0xFFF1F5F9)),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    rows[i].$1,
-                    style: const TextStyle(
-                      fontSize: 13.5,
-                      color: Color(0xFF334155),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  rows[i].$2,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13.5,
-                    color: _kAdminText,
-                  ),
-                ),
-              ],
-            ),
-          ],
         ],
-      ),
+      ],
     ),
   );
 
@@ -1632,81 +1854,92 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [_kAdminDark, Color(0xFF0E392F)],
+                  AdminStudioGridBackdrop(
+                    child: Container(
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: AdminStudioColors.ink,
+                          width: 2,
+                        ),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: AdminStudioColors.violet,
+                            offset: Offset(4, 4),
+                            blurRadius: 0,
+                          ),
+                        ],
                       ),
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: LayoutBuilder(
-                      builder: (context, headerBox) {
-                        final compact = headerBox.maxWidth < 520;
-                        return Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Chỉ số vận hành Cloud thời gian thực',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w800,
-                                      color: Colors.white,
+                      child: LayoutBuilder(
+                        builder: (context, headerBox) {
+                          final compact = headerBox.maxWidth < 520;
+                          return Row(
+                            children: [
+                              const Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Chỉ số vận hành thời gian thực',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w900,
+                                        color: Colors.white,
+                                        letterSpacing: -0.3,
+                                      ),
+                                    ),
+                                    SizedBox(height: 4),
+                                    Text(
+                                      'Tổng hợp trực tiếp từ dữ liệu đơn hàng và sổ cái giao dịch.',
+                                      style: TextStyle(
+                                        fontSize: 12.5,
+                                        color: AdminStudioColors.acid,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              if (compact)
+                                IconButton(
+                                  tooltip: 'Làm mới',
+                                  style: IconButton.styleFrom(
+                                    backgroundColor: AdminStudioColors.acid,
+                                    foregroundColor: AdminStudioColors.ink,
+                                    shape: const RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.zero,
                                     ),
                                   ),
-                                  const SizedBox(height: 4),
-                                  const Text(
-                                    'Đồng bộ trực tiếp từ cơ sở dữ liệu PostgreSQL & sổ cái giao dịch Cloud.',
-                                    style: TextStyle(
-                                      fontSize: 12.5,
-                                      color: Color(0xFFA7F3D0),
-                                    ),
+                                  onPressed: _busy ? null : _load,
+                                  icon: const Icon(Icons.refresh_rounded),
+                                )
+                              else
+                                FilledButton.icon(
+                                  onPressed: _busy ? null : _load,
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: AdminStudioColors.acid,
+                                    foregroundColor: AdminStudioColors.ink,
                                   ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            if (compact)
-                              IconButton(
-                                tooltip: 'Làm mới',
-                                onPressed: _busy ? null : _load,
-                                icon: const Icon(
-                                  Icons.refresh_rounded,
-                                  color: Colors.white,
-                                ),
-                              )
-                            else
-                              FilledButton.icon(
-                                onPressed: _busy ? null : _load,
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: _kAdminDarkActive,
-                                  foregroundColor: Colors.white,
-                                  side: const BorderSide(
-                                    color: Color(0xFF206A58),
+                                  icon: const Icon(
+                                    Icons.refresh_rounded,
+                                    size: 18,
                                   ),
+                                  label: const Text('Làm mới'),
                                 ),
-                                icon: const Icon(
-                                  Icons.refresh_rounded,
-                                  size: 18,
-                                ),
-                                label: const Text('Làm mới'),
-                              ),
-                          ],
-                        );
-                      },
+                            ],
+                          );
+                        },
+                      ),
                     ),
                   ),
                   if (_busy)
                     const Padding(
                       padding: EdgeInsets.only(top: 10),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.all(Radius.circular(999)),
-                        child: LinearProgressIndicator(minHeight: 4),
+                      child: LinearProgressIndicator(
+                        minHeight: 4,
+                        color: AdminStudioColors.violet,
+                        backgroundColor: AdminStudioColors.paperWarm,
                       ),
                     ),
                   if (_error != null)
@@ -1714,15 +1947,17 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
                       margin: const EdgeInsets.only(top: 14),
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFEF3F2),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFFECDCA)),
+                        color: AdminStudioColors.dangerSoft,
+                        border: Border.all(
+                          color: AdminStudioColors.danger,
+                          width: 1.5,
+                        ),
                       ),
                       child: Text(
                         _error!,
                         style: const TextStyle(
-                          color: _kAdminDanger,
-                          fontWeight: FontWeight.w600,
+                          color: AdminStudioColors.danger,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
@@ -1738,9 +1973,9 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
                           _kpiSummaryTile(
                             compact: compact,
                             icon: Icons.local_shipping_outlined,
-                            accent: _kAdminPrimary,
-                            tint: const Color(0xFFE6FCF5),
-                            label: 'Tổng vận đơn Cloud',
+                            accent: AdminStudioColors.ink,
+                            tint: AdminStudioColors.acid,
+                            label: 'Tổng vận đơn',
                             value: '$shipTotal',
                             detail:
                                 'Hoàn tất $shipDelivered · Đang giao ${_intVal(co['in_transit'])}',
@@ -1748,8 +1983,8 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
                           _kpiSummaryTile(
                             compact: compact,
                             icon: Icons.payments_outlined,
-                            accent: const Color(0xFF0B7285),
-                            tint: const Color(0xFFE3FAFC),
+                            accent: Colors.white,
+                            tint: AdminStudioColors.violet,
                             label: 'Cước giao thành công',
                             value: _vnd(co['shipping_fee_delivered']),
                             detail:
@@ -1758,8 +1993,8 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
                           _kpiSummaryTile(
                             compact: compact,
                             icon: Icons.account_balance_wallet_outlined,
-                            accent: const Color(0xFF364FC7),
-                            tint: const Color(0xFFEDF2FF),
+                            accent: AdminStudioColors.ink,
+                            tint: AdminStudioColors.gold,
                             label: 'Tổng thu hộ & Trả trước',
                             value: _vnd(fin['collections_completed']),
                             detail:
@@ -1770,12 +2005,10 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
                             icon: pendingTotal > 0
                                 ? Icons.notification_important_outlined
                                 : Icons.task_alt_rounded,
-                            accent: pendingTotal > 0
-                                ? const Color(0xFFD9480F)
-                                : _kAdminPrimary,
+                            accent: AdminStudioColors.ink,
                             tint: pendingTotal > 0
-                                ? const Color(0xFFFFF4E6)
-                                : const Color(0xFFE6FCF5),
+                                ? AdminStudioColors.pinkSoft
+                                : AdminStudioColors.acidSoft,
                             label: 'Tác vụ chờ phê duyệt',
                             value: '$pendingTotal',
                             detail:
@@ -1800,13 +2033,14 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
                         children: [
                           if (membershipsPending > 0)
                             ActionChip(
+                              backgroundColor: AdminStudioColors.acid,
                               avatar: const Icon(
                                 Icons.badge_outlined,
                                 size: 16,
-                                color: _kAdminPrimary,
+                                color: AdminStudioColors.ink,
                               ),
                               label: Text(
-                                'Xét duyệt đối tác ($membershipsPending)',
+                                'Xét duyệt đối tác · $membershipsPending',
                               ),
                               onPressed: () => widget.onNavigateTab(
                                 1,
@@ -1815,24 +2049,26 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
                             ),
                           if (shopsPending > 0 || reportedReviews > 0)
                             ActionChip(
+                              backgroundColor: AdminStudioColors.gold,
                               avatar: const Icon(
                                 Icons.fact_check_outlined,
                                 size: 16,
-                                color: _kAdminPrimary,
+                                color: AdminStudioColors.ink,
                               ),
                               label: Text(
-                                'Kiểm duyệt gian hàng & báo cáo (${shopsPending + reportedReviews})',
+                                'Kiểm duyệt gian hàng & báo cáo · ${shopsPending + reportedReviews}',
                               ),
                               onPressed: () => widget.onNavigateTab(3),
                             ),
                           if (finPending > 0)
                             ActionChip(
+                              backgroundColor: AdminStudioColors.violetSoft,
                               avatar: const Icon(
                                 Icons.receipt_long_outlined,
                                 size: 16,
-                                color: _kAdminPrimary,
+                                color: AdminStudioColors.violet,
                               ),
-                              label: Text('Duyệt đối soát ($finPending)'),
+                              label: Text('Duyệt đối soát · $finPending'),
                               onPressed: () => widget.onNavigateTab(4),
                             ),
                         ],
@@ -1846,9 +2082,9 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
                         final cards = [
                           _statCard(
                             icon: Icons.route_outlined,
-                            accent: _kAdminPrimary,
-                            tint: const Color(0xFFE6FCF5),
-                            title: 'Đơn vận chuyển Cloud',
+                            accent: AdminStudioColors.violet,
+                            tint: AdminStudioColors.acid,
+                            title: 'Đơn vận chuyển',
                             completionRatio: shipTotal > 0
                                 ? shipDelivered / shipTotal
                                 : null,
@@ -1865,8 +2101,8 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
                           ),
                           _statCard(
                             icon: Icons.shopping_bag_outlined,
-                            accent: const Color(0xFF364FC7),
-                            tint: const Color(0xFFEDF2FF),
+                            accent: AdminStudioColors.violet,
+                            tint: AdminStudioColors.violetSoft,
                             title: 'Đơn mua Thương mại điện tử',
                             completionRatio: marketTotal > 0
                                 ? marketDelivered / marketTotal
@@ -1887,8 +2123,8 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
                           ),
                           _statCard(
                             icon: Icons.menu_book_outlined,
-                            accent: const Color(0xFF0B7285),
-                            tint: const Color(0xFFE3FAFC),
+                            accent: AdminStudioColors.ink,
+                            tint: AdminStudioColors.gold,
                             title: 'Đối soát & Kế toán kép',
                             rows: [
                               (
@@ -1913,8 +2149,8 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
                           ),
                           _statCard(
                             icon: Icons.verified_outlined,
-                            accent: const Color(0xFF5F3DC4),
-                            tint: const Color(0xFFF3F0FF),
+                            accent: AdminStudioColors.ink,
+                            tint: AdminStudioColors.pinkSoft,
                             title: 'Đối tác, Khuyến mãi & Kiểm duyệt',
                             rows: [
                               ('Cửa hàng đang mở', '${shops['active'] ?? 0}'),
@@ -1925,7 +2161,7 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
                               ),
                               (
                                 'Voucher đang chạy',
-                                '${promo['active_vouchers'] ?? 0} (${_vnd(promo['voucher_budget_used'])})',
+                                '${promo['active_vouchers'] ?? 0} · ${_vnd(promo['voucher_budget_used'])}',
                               ),
                               (
                                 'Flash Sale / Xu lưu hành',
@@ -2008,27 +2244,33 @@ class _AdminModerationPanelState extends State<_AdminModerationPanel> {
     final ctrl = TextEditingController();
     final reason = await showDialog<String>(
       context: context,
-      builder: (_) => CloudSessionBoundary(
-        session: widget.session,
-        operator: true,
-        dialog: true,
-        builder: (dialog, _) => AlertDialog(
-          title: Text(hidden ? 'Ẩn đánh giá vi phạm' : 'Hiện lại đánh giá'),
-          content: TextField(
-            controller: ctrl,
-            maxLength: 500,
-            decoration: const InputDecoration(labelText: 'Lý do kiểm duyệt'),
+      builder: (_) => Theme(
+        data: AdminStudioTheme.themeData(),
+        child: CloudSessionBoundary(
+          session: widget.session,
+          operator: true,
+          dialog: true,
+          builder: (dialog, _) => AlertDialog(
+            title: Text(
+              hidden ? 'Ẩn đánh giá vi phạm' : 'Hiện lại đánh giá',
+              style: const TextStyle(fontWeight: FontWeight.w900),
+            ),
+            content: TextField(
+              controller: ctrl,
+              maxLength: 500,
+              decoration: const InputDecoration(labelText: 'Lý do kiểm duyệt'),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialog),
+                child: const Text('Hủy'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialog, ctrl.text.trim()),
+                child: const Text('Xác nhận'),
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialog),
-              child: const Text('Hủy'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(dialog, ctrl.text.trim()),
-              child: const Text('Xác nhận'),
-            ),
-          ],
         ),
       ),
     );
@@ -2063,8 +2305,10 @@ class _AdminModerationPanelState extends State<_AdminModerationPanel> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(bottom: BorderSide(color: _kAdminBorder)),
+          color: AdminStudioColors.surface,
+          border: Border(
+            bottom: BorderSide(color: AdminStudioColors.ink, width: 1.5),
+          ),
         ),
         child: Center(
           child: ConstrainedBox(
@@ -2111,112 +2355,110 @@ class _AdminModerationPanelState extends State<_AdminModerationPanel> {
                           if (_busy)
                             const Padding(
                               padding: EdgeInsets.only(bottom: 12),
-                              child: LinearProgressIndicator(),
+                              child: LinearProgressIndicator(
+                                color: AdminStudioColors.violet,
+                              ),
                             ),
                           if (_error != null)
                             Padding(
                               padding: const EdgeInsets.only(bottom: 12),
                               child: Text(
                                 _error!,
-                                style: const TextStyle(color: _kAdminDanger),
+                                style: const TextStyle(
+                                  color: AdminStudioColors.danger,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
                           if (!_busy && _reported.isEmpty)
-                            Card(
-                              child: Padding(
-                                padding: const EdgeInsets.all(28),
-                                child: Column(
-                                  children: [
-                                    Container(
-                                      width: 48,
-                                      height: 48,
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFE6FCF5),
-                                        borderRadius: BorderRadius.circular(14),
-                                      ),
-                                      child: const Icon(
-                                        Icons.verified_outlined,
-                                        color: _kAdminPrimary,
+                            AdminNeoBox(
+                              padding: const EdgeInsets.all(28),
+                              child: Column(
+                                children: [
+                                  Container(
+                                    width: 48,
+                                    height: 48,
+                                    decoration: BoxDecoration(
+                                      color: AdminStudioColors.acid,
+                                      border: Border.all(
+                                        color: AdminStudioColors.ink,
+                                        width: 1.4,
                                       ),
                                     ),
-                                    const SizedBox(height: 12),
-                                    const Text(
-                                      'Không có đánh giá bị báo cáo.',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        color: _kAdminText,
-                                      ),
+                                    child: const Icon(
+                                      Icons.verified_outlined,
+                                      color: AdminStudioColors.ink,
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  const Text(
+                                    'Không có đánh giá bị báo cáo.',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      color: AdminStudioColors.ink,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           for (final r in _reported)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: Card(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Container(
-                                        width: 40,
-                                        height: 40,
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFFEF3F2),
-                                          borderRadius: BorderRadius.circular(
-                                            10,
+                            AdminNeoBox(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: AdminStudioColors.dangerSoft,
+                                      border: Border.all(
+                                        color: AdminStudioColors.ink,
+                                        width: 1.2,
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.report_problem_outlined,
+                                      color: AdminStudioColors.danger,
+                                      size: 20,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          '${r['review_kind'] == 'partner' ? 'Đối tác' : 'Sản phẩm'} · ${r['rating']} sao · Báo cáo: ${r['report_count']}',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w800,
+                                            color: AdminStudioColors.ink,
                                           ),
                                         ),
-                                        child: const Icon(
-                                          Icons.report_problem_outlined,
-                                          color: _kAdminDanger,
-                                          size: 20,
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          '${r['body']}',
+                                          style: const TextStyle(
+                                            color: AdminStudioColors.muted,
+                                            height: 1.4,
+                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              '${r['review_kind'] == 'partner' ? 'Đối tác' : 'Sản phẩm'} · ${r['rating']} sao · Báo cáo: ${r['report_count']}',
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.w700,
-                                                color: _kAdminText,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 6),
-                                            Text(
-                                              '${r['body']}',
-                                              style: const TextStyle(
-                                                color: Color(0xFF334155),
-                                                height: 1.4,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      OutlinedButton(
-                                        onPressed: _busy
-                                            ? null
-                                            : () => _moderate(
-                                                r,
-                                                r['hidden'] != true,
-                                              ),
-                                        child: Text(
-                                          r['hidden'] == true
-                                              ? 'Hiện lại'
-                                              : 'Ẩn',
-                                        ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
-                                ),
+                                  const SizedBox(width: 12),
+                                  OutlinedButton(
+                                    onPressed: _busy
+                                        ? null
+                                        : () =>
+                                              _moderate(r, r['hidden'] != true),
+                                    child: Text(
+                                      r['hidden'] == true ? 'Hiện lại' : 'Ẩn',
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                         ],
@@ -2230,58 +2472,186 @@ class _AdminModerationPanelState extends State<_AdminModerationPanel> {
   );
 }
 
-class _AdminFinancePromoPanel extends StatelessWidget {
+class _AdminFinancePromoPanel extends StatefulWidget {
   const _AdminFinancePromoPanel({required this.session, required this.lease});
   final CloudAccountSession session;
   final CloudSessionLease lease;
 
   @override
-  Widget build(BuildContext context) => Column(
-    children: [
-      Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(bottom: BorderSide(color: _kAdminBorder)),
-        ),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1080),
-            child: Wrap(
-              alignment: WrapAlignment.spaceBetween,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: 12,
-              runSpacing: 8,
-              children: [
-                const Text(
-                  'Quản trị ngân sách khuyến mãi, tiến trình nền và đối soát hai bước',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: _kAdminText,
+  State<_AdminFinancePromoPanel> createState() =>
+      _AdminFinancePromoPanelState();
+}
+
+class _AdminFinancePromoPanelState extends State<_AdminFinancePromoPanel> {
+  Map<String, dynamic>? _promoSettings;
+  Map<String, dynamic>? _promoSummary;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPromoStatus();
+  }
+
+  Future<void> _loadPromoStatus() async {
+    if (!widget.lease.valid) return;
+    try {
+      final res = await widget.session.service.promoEvents('status');
+      if (!mounted || !widget.lease.valid) return;
+      if (res['settings'] is Map) {
+        setState(() {
+          _promoSettings = Map<String, dynamic>.from(res['settings'] as Map);
+          if (res['admin_stats'] is Map) {
+            _promoSummary = Map<String, dynamic>.from(
+              res['admin_stats'] as Map,
+            );
+          }
+        });
+      }
+    } catch (e) {
+      widget.lease.handleAccessFailure(e);
+    }
+  }
+
+  Future<void> _togglePromoEnabled(bool next) async {
+    if (_busy || !widget.lease.valid) return;
+    setState(() => _busy = true);
+    try {
+      final res = await widget.session.service.promoEvents(
+        'admin_settings_save',
+        {'enabled': next},
+      );
+      if (!mounted || !widget.lease.valid) return;
+      if (res['settings'] is Map) {
+        setState(() {
+          _promoSettings = Map<String, dynamic>.from(res['settings'] as Map);
+          if (res['admin_stats'] is Map) {
+            _promoSummary = Map<String, dynamic>.from(
+              res['admin_stats'] as Map,
+            );
+          }
+        });
+      }
+    } catch (e) {
+      widget.lease.handleAccessFailure(e);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = _promoSettings?['enabled'] != false;
+    final spins = (_promoSummary?['total_spins'] as num? ?? 0).toInt();
+    final boxes = (_promoSummary?['total_boxes_opened'] as num? ?? 0).toInt();
+    final personalVouchers =
+        (_promoSummary?['personal_vouchers_active'] as num? ?? 0).toInt();
+
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          decoration: const BoxDecoration(
+            color: AdminStudioColors.surface,
+            border: Border(
+              bottom: BorderSide(color: AdminStudioColors.ink, width: 1.5),
+            ),
+          ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1080),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 12,
+                    runSpacing: 8,
+                    children: [
+                      const Text(
+                        'Quản trị ngân sách khuyến mãi, tiến trình nền và đối soát hai bước',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          color: AdminStudioColors.ink,
+                        ),
+                      ),
+                      FilledButton.icon(
+                        onPressed: () => showVoucherEditorDialog(
+                          context,
+                          session: widget.session,
+                          operator: true,
+                        ),
+                        icon: const Icon(
+                          Icons.confirmation_num_outlined,
+                          size: 18,
+                        ),
+                        label: const Text('Tạo voucher toàn sàn'),
+                      ),
+                    ],
                   ),
-                ),
-                FilledButton.icon(
-                  onPressed: () => showVoucherEditorDialog(
-                    context,
-                    session: session,
-                    operator: true,
-                  ),
-                  icon: const Icon(Icons.confirmation_num_outlined, size: 18),
-                  label: const Text('Tạo voucher toàn sàn'),
-                ),
-              ],
+                  if (_promoSettings != null) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: enabled
+                            ? AdminStudioColors.acidSoft
+                            : AdminStudioColors.paperWarm,
+                        border: Border.all(
+                          color: AdminStudioColors.ink,
+                          width: 1.2,
+                        ),
+                      ),
+                      child: Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 12,
+                        runSpacing: 6,
+                        children: [
+                          Text(
+                            'Sự kiện Vòng xoay & Hộp mù: ${enabled ? 'ĐANG MỞ' : 'TẠM TẮT'} · Quay: $spins · Hộp mù: $boxes · Voucher cá nhân: $personalVouchers',
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w800,
+                              color: AdminStudioColors.ink,
+                            ),
+                          ),
+                          OutlinedButton.icon(
+                            onPressed: _busy
+                                ? null
+                                : () => _togglePromoEnabled(!enabled),
+                            icon: Icon(
+                              enabled
+                                  ? Icons.pause_circle_outline
+                                  : Icons.play_circle_outline,
+                              size: 16,
+                            ),
+                            label: Text(
+                              enabled ? 'Tạm dừng sự kiện' : 'Mở lại sự kiện',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
         ),
-      ),
-      Expanded(
-        child: MarketOrderServicesScreen(
-          session: session,
-          lease: lease,
-          operator: true,
+        Expanded(
+          child: MarketOrderServicesScreen(
+            session: widget.session,
+            lease: widget.lease,
+            operator: true,
+          ),
         ),
-      ),
-    ],
-  );
+      ],
+    );
+  }
 }

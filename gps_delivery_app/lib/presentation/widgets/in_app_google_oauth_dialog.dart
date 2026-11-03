@@ -152,7 +152,7 @@ class _InAppGoogleOAuthDialogState extends State<InAppGoogleOAuthDialog> {
       setState(() {
         _isLoadingPage = false;
         _initError =
-            'Không thể khởi tạo trình duyệt nhúng trong ứng dụng ($e). '
+            'Không thể khởi tạo trình duyệt nhúng trong ứng dụng: $e. '
             'Bạn có thể tiếp tục xác thực trực tiếp qua trình duyệt hệ thống.';
       });
     }

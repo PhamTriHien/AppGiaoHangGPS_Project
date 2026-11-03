@@ -21,11 +21,11 @@ const url = (label, defaultValue = '') => field(label, { type: 'url', defaultVal
 
 export const INTEGRATION_DEFINITIONS = {
   backend: { label: 'Triển khai backend', required: ['DATABASE_URL'], fields: {
-    DATABASE_URL: secret('Kết nối PostgreSQL (DATABASE_URL)'),
-    DATABASE_CA_CERT: field('Chung chi CA PostgreSQL (PEM)', { type: 'certificate' }),
+    DATABASE_URL: secret('Kết nối PostgreSQL DATABASE_URL'),
+    DATABASE_CA_CERT: field('Chứng chỉ CA PostgreSQL PEM', { type: 'certificate' }),
     PUBLIC_BASE_URL: url('URL HTTPS công khai của backend', 'http://127.0.0.1:8787'),
     PUBLIC_APP_URL: url('URL ứng dụng nhận liên kết theo dõi'),
-    MARKET_JOBS_ENABLED: bool('Tự xử lý đơn mua quá hạn (sau cập nhật schema)', 'false'),
+    MARKET_JOBS_ENABLED: bool('Tự xử lý đơn mua quá hạn', 'false'),
   } },
   google: { label: 'Google OAuth desktop', toggle: 'GOOGLE_ENABLED', required: ['GOOGLE_CLIENT_ID'], fields: {
     GOOGLE_CLIENT_ID: field('OAuth Client ID'), GOOGLE_CLIENT_SECRET: secret('Client secret'),
@@ -35,7 +35,7 @@ export const INTEGRATION_DEFINITIONS = {
     SMS_API_KEY: secret('API key / Account SID'), SMS_API_SECRET: secret('API secret / Auth token'),
     SMS_BRANDNAME: field('Device ID / Brandname / From / Verify SID'),
   } },
-  supabase: { label: 'Supabase Cloud', toggle: 'SUPABASE_ENABLED', required: ['SUPABASE_URL', 'SUPABASE_ANON_KEY'], fields: {
+  supabase: { label: 'Supabase Auth & Dữ liệu', toggle: 'SUPABASE_ENABLED', required: ['SUPABASE_URL', 'SUPABASE_ANON_KEY'], fields: {
     SUPABASE_URL: url('Project URL'), SUPABASE_ANON_KEY: secret('Publishable / anon key'),
     SUPABASE_SERVICE_ROLE_KEY: secret('Server secret / service role key'), DELIVERY_WEBHOOK_SECRET: secret('Webhook secret'),
   } },
@@ -46,10 +46,10 @@ export const INTEGRATION_DEFINITIONS = {
   photon: { label: 'Photon địa chỉ', toggle: 'PHOTON_ENABLED', required: ['PHOTON_BASE_URL'], fields: {
     PHOTON_BASE_URL: url('Base URL', 'https://photon.komoot.io/'), PHOTON_AUTOCOMPLETE: bool('Autocomplete', 'false'),
   } },
-  trackasia: { label: 'TrackAsia Maps Việt Nam (Địa chỉ / Tuyến đường / ETA)', toggle: 'TRACKASIA_ENABLED', required: ['TRACKASIA_API_KEY'], fields: {
+  trackasia: { label: 'TrackAsia Maps Việt Nam', toggle: 'TRACKASIA_ENABLED', required: ['TRACKASIA_API_KEY'], fields: {
     TRACKASIA_API_KEY: secret('TrackAsia API key'),
   } },
-  google_maps: { label: 'Google Maps Platform (Places / Geocoding / Routes)', toggle: 'GOOGLE_MAPS_ENABLED', required: ['GOOGLE_MAPS_API_KEY'], fields: {
+  google_maps: { label: 'Google Maps Platform', toggle: 'GOOGLE_MAPS_ENABLED', required: ['GOOGLE_MAPS_API_KEY'], fields: {
     GOOGLE_MAPS_API_KEY: secret('Google Maps API key'),
   } },
   osrm: { label: 'OSRM tuyến đường / ETA', toggle: 'OSRM_ENABLED', required: ['OSRM_BASE_URL'], fields: {
@@ -71,7 +71,7 @@ export const INTEGRATION_DEFINITIONS = {
   telegram: { label: 'Telegram cảnh báo', toggle: 'TELEGRAM_ALERTS_ENABLED', required: ['TELEGRAM_BOT_TOKEN', 'TELEGRAM_CHAT_ID'], fields: {
     TELEGRAM_BOT_TOKEN: secret('Bot token'), TELEGRAM_CHAT_ID: field('Chat ID'),
   } },
-  gemini: { label: 'AI Chatbot & Trợ lý (Gemini / OpenAI API)', toggle: 'GEMINI_ENABLED', required: ['GEMINI_BASE_URL', 'GEMINI_API_KEY', 'GEMINI_MODEL'], fields: {
+  gemini: { label: 'AI Chatbot & Trợ lý Gemini / OpenAI', toggle: 'GEMINI_ENABLED', required: ['GEMINI_BASE_URL', 'GEMINI_API_KEY', 'GEMINI_MODEL'], fields: {
     GEMINI_BASE_URL: url('API Base URL', 'https://generativelanguage.googleapis.com/v1beta'),
     GEMINI_API_KEY: secret('API key'),
     GEMINI_MODEL: field('Model', { defaultValue: 'gemini-2.5-flash' }),
@@ -110,6 +110,20 @@ export class ConfigError extends Error {
 }
 export function configValue(key, env = process.env) {
   return String(env[key] ?? fieldsByKey.get(key)?.defaultValue ?? '').trim();
+}
+export function normalizeAiApiKey(raw) {
+  return String(raw ?? '')
+    .replace(/\\\s*[\r\n]+/g, '')
+    .replace(/[\r\n]+/g, '')
+    .trim()
+    .replace(/^["']+|["']+$/g, '')
+    .trim()
+    .replace(
+      /^(?:authorization\s*:\s*|ủy\s+quyền\s*:\s*|uy\s+quyen\s*:\s*)?(?:bearer|người\s+mang|nguoi\s+mang)\s+/i,
+      '',
+    )
+    .replace(/^["']+|["']+$/g, '')
+    .trim();
 }
 function providerReady(provider, env) {
   const definition = INTEGRATION_DEFINITIONS[provider];
@@ -166,7 +180,7 @@ export function assertSafeAiUrl(rawUrl, { allowLoopback = true } = {}) {
   let parsed;
   try { parsed = new URL(String(rawUrl || '').trim()); } catch { throw new ConfigError('URL AI không hợp lệ.'); }
   if (parsed.search) {
-    throw new ConfigError('URL AI không được chứa tham số truy vấn (?key=...). Hãy nhập API key vào ô riêng.');
+    throw new ConfigError('URL AI không được chứa tham số truy vấn ?key=.... Hãy nhập API key vào ô riêng.');
   }
   if (!['https:', 'http:'].includes(parsed.protocol) || parsed.username || parsed.password || parsed.hash) {
     throw new ConfigError('URL AI không hợp lệ.');
@@ -182,7 +196,7 @@ export function assertSafeAiUrl(rawUrl, { allowLoopback = true } = {}) {
     /^(?:fc|fd)[0-9a-f]{0,2}:/.test(host) || /^fe[89ab][0-9a-f]:/.test(host) || /^::ffff:/.test(host);
   if (isPrivateOrReserved) throw new ConfigError('Không cho phép kết nối địa chỉ mạng nội bộ hoặc metadata.');
   if (isLoopback) {
-    if (!allowLoopback) throw new ConfigError('URL AI trên Cloud yêu cầu HTTPS công khai.');
+    if (!allowLoopback) throw new ConfigError('URL AI từ xa yêu cầu HTTPS công khai.');
   } else if (parsed.protocol !== 'https:') {
     throw new ConfigError('URL AI công khai yêu cầu giao thức HTTPS.');
   }
@@ -353,7 +367,8 @@ export async function updateIntegrationConfig(values, { clear = [], actor = 'unk
   const allowLiveDb = Boolean(db || connectPool) || env === process.env;
   const patch = Object.fromEntries(Object.entries(values).map(([key, value]) => {
     if (!['string', 'number', 'boolean'].includes(typeof value) && value !== null) throw new ConfigError(`Giá trị không hợp lệ: ${key}`);
-    return [key, String(value ?? '').trim()];
+    const text = String(value ?? '').trim();
+    return [key, key === 'GEMINI_API_KEY' ? normalizeAiApiKey(text) : text];
   }));
   for (const key of clear) patch[key] = '';
   for (const [key, value] of Object.entries(patch)) {
@@ -378,7 +393,7 @@ export async function updateIntegrationConfig(values, { clear = [], actor = 'unk
       } catch (error) {
         if (error?.code !== '42P01') {
           if (db) throw error;
-          throw new ConfigError('Không lưu được cấu hình lên database cloud. Kiểm tra kết nối PostgreSQL.', 503);
+          throw new ConfigError('Không lưu được cấu hình vào cơ sở dữ liệu. Kiểm tra kết nối PostgreSQL.', 503);
         }
       }
     }
@@ -425,7 +440,7 @@ export async function updateIntegrationConfig(values, { clear = [], actor = 'unk
         } catch (error) {
           if (error?.code !== '42P01') {
             if (db) throw error;
-            throw new ConfigError('Không lưu được cấu hình lên database cloud. Kiểm tra kết nối PostgreSQL.', 503);
+            throw new ConfigError('Không lưu được cấu hình vào cơ sở dữ liệu. Kiểm tra kết nối PostgreSQL.', 503);
           }
         }
       }
@@ -519,7 +534,7 @@ export async function testIntegration(provider, { env = process.env, fetcher = f
       ]);
       const missing = [!placesOk && 'Autocomplete', !geoOk && 'Geocoding', !routeOk && 'Routing'].filter(Boolean);
       if (missing.length) return finish(false, `Kiểm tra TrackAsia thất bại tại: ${missing.join(', ')}.`);
-      return finish(true, 'Đã xác minh đủ 3 dịch vụ TrackAsia (Autocomplete, Geocoding, Routing).');
+      return finish(true, 'Đã xác minh đủ 3 dịch vụ TrackAsia: Autocomplete, Geocoding, Routing.');
     } else if (provider === 'google_maps') {
       const geocodeUrl = new URL('https://maps.googleapis.com/maps/api/geocode/json');
       geocodeUrl.search = new URLSearchParams({ latlng: '10.77251,106.69802', language: 'vi', key: env.GOOGLE_MAPS_API_KEY, solution_id: 'gmp_git_agentskills_v1' }).toString();
@@ -546,14 +561,14 @@ export async function testIntegration(provider, { env = process.env, fetcher = f
         }).then(d => Array.isArray(d.routes) && d.routes.length > 0).catch(() => false),
       ]);
       const missingApis = [
-        !placesOk && 'Places API (New)',
+        !placesOk && 'Places API New',
         !geoOk && 'Geocoding API',
         !routesOk && 'Routes API',
       ].filter(Boolean);
       if (missingApis.length) {
         return finish(false, `Kiểm tra thất bại hoặc chưa bật đủ API trên Google Cloud: ${missingApis.join(', ')}.`);
       }
-      return finish(true, 'Đã xác minh đủ 3 dịch vụ Google Maps (Places API New, Geocoding API, Routes API).');
+      return finish(true, 'Đã xác minh đủ 3 dịch vụ Google Maps: Places API New, Geocoding API, Routes API.');
     } else if (provider === 'osrm') {
       const data = await getJson(new URL('route/v1/driving/106.7,10.77;106.71,10.78?overview=false', `${configValue('OSRM_BASE_URL', env).replace(/\/$/, '')}/`));
       if (data.code !== 'Ok') throw new Error('invalid');
@@ -567,7 +582,7 @@ export async function testIntegration(provider, { env = process.env, fetcher = f
     } else if (provider === 'gemini') {
       const rawBase = configValue('GEMINI_BASE_URL', env).replace(/\/+$/, '');
       const model = configValue('GEMINI_MODEL', env).replace(/^models\//, '');
-      const apiKey = configValue('GEMINI_API_KEY', env);
+      const apiKey = normalizeAiApiKey(configValue('GEMINI_API_KEY', env));
       const { parsed } = assertSafeAiUrl(rawBase, { allowLoopback: env.RENDER !== 'true' && !env.RAILWAY_ENVIRONMENT });
       const cleanPath = parsed.pathname.replace(/\/+$/, '');
       const isNativeGemini =
@@ -582,18 +597,26 @@ export async function testIntegration(provider, { env = process.env, fetcher = f
         const modelsUrl = rawBase.endsWith('/chat/completions')
           ? `${rawBase.slice(0, -'/chat/completions'.length)}/models`
           : `${rawBase}/models`;
-        const headers = { Authorization: `Bearer ${apiKey}` };
-        const probe = await fetcher(modelsUrl, { headers, redirect: 'error', signal: AbortSignal.timeout(10000) });
+        const headers = {
+          Accept: 'application/json',
+          'User-Agent': 'GHSTExpress/1.0',
+          Authorization: `Bearer ${apiKey}`,
+        };
+        const probe = await fetcher(modelsUrl, { headers, redirect: 'error', signal: AbortSignal.timeout(20000) });
         if (probe.ok) {
           const data = await probe.json();
           if (!Array.isArray(data?.data) && data?.object !== 'list') throw new Error('invalid');
         } else if (probe.status === 404 || probe.status === 405) {
           const chatUrl = rawBase.endsWith('/chat/completions') ? rawBase : `${rawBase}/chat/completions`;
-          const chatData = await getJson(chatUrl, {
+          const chatProbe = await fetcher(chatUrl, {
             method: 'POST',
             headers: { ...headers, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model, messages: [{ role: 'user', content: 'ping' }], max_tokens: 4, temperature: 0 }),
+            body: JSON.stringify({ model, messages: [{ role: 'user', content: 'ping' }], max_tokens: 32, temperature: 0 }),
+            redirect: 'error',
+            signal: AbortSignal.timeout(25000),
           });
+          if (!chatProbe.ok) throw new Error('upstream');
+          const chatData = await chatProbe.json();
           if (!Array.isArray(chatData?.choices)) throw new Error('invalid');
         } else {
           throw new Error('upstream');

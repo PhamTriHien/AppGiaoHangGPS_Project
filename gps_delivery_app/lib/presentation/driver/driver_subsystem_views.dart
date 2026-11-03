@@ -822,7 +822,7 @@ class _DriverSubsystemEntryState extends State<DriverSubsystemEntry> {
                 ),
               ),
               IconButton(
-                tooltip: 'Đơn hàng cloud',
+                tooltip: 'Đơn hàng trực tuyến',
                 onPressed: () => Navigator.of(context).pushNamed('/cloud'),
                 icon: const Icon(Icons.cloud_outlined),
               ),
@@ -955,7 +955,7 @@ class _DriverSubsystemEntryState extends State<DriverSubsystemEntry> {
             ),
           ),
           IconButton(
-            tooltip: 'Đơn hàng cloud',
+            tooltip: 'Đơn hàng trực tuyến',
             color: Colors.white,
             onPressed: () => Navigator.of(context).pushNamed('/cloud'),
             icon: const Icon(Icons.cloud_outlined),

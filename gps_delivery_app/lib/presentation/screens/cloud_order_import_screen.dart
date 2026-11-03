@@ -326,9 +326,9 @@ class _CloudOrderImportScreenState extends State<CloudOrderImportScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Text(
-                  'Xuất đơn từ sàn TMĐT/POS ra tệp CSV (UTF-8) theo thứ tự cột: '
-                  'tên người nhận, số điện thoại, địa chỉ giao, hàng hóa, khối lượng (kg), '
-                  'COD, dịch vụ (tùy chọn), vĩ độ và kinh độ giao (tùy chọn). '
+                  'Xuất đơn từ sàn TMĐT/POS ra tệp CSV chuẩn UTF-8 theo thứ tự cột: '
+                  'tên người nhận, số điện thoại, địa chỉ giao, hàng hóa, khối lượng kg, '
+                  'COD, dịch vụ không bắt buộc, vĩ độ và kinh độ giao không bắt buộc. '
                   'Tối đa $cloudCsvMaxRows đơn mỗi lần.',
                 ),
                 const SizedBox(height: 12),

@@ -6,6 +6,7 @@ class AppColors {
   // Bảng màu Neo-Brutalist Editorial & Industrial Cyber-Studio (nghienai.click)
   static const Color ink = Color(0xFF15131E);
   static const Color paper = Color(0xFFF5F1E8);
+  static const Color studioDark = Color(0xFF171421);
   static const Color techBg = Color(0xFF080B0F);
   static const Color techPanel = Color(0xFF0E131A);
   static const Color violet = Color(0xFF5B33E6);

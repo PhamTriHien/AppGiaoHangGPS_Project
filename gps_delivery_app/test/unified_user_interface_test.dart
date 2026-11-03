@@ -6,6 +6,7 @@ import 'package:gps_delivery_app/core/theme/app_theme.dart';
 import 'package:gps_delivery_app/main.dart';
 import 'package:gps_delivery_app/presentation/customer/ghst_home_screen.dart';
 import 'package:gps_delivery_app/presentation/customer/ghst_user_shell.dart';
+import 'package:gps_delivery_app/presentation/screens/admin_portal_screen.dart';
 import 'package:gps_delivery_app/presentation/screens/cloud_orders_screen.dart';
 import 'package:gps_delivery_app/presentation/screens/marketplace_screen.dart';
 import 'package:gps_delivery_app/presentation/screens/marketplace_view.dart';
@@ -17,7 +18,9 @@ import 'marketplace_test.dart' show MarketFixture;
 
 class UnifiedUserFixture extends MarketFixture {
   Set<String> roles = {};
+  bool operatorRole = false;
   bool incomplete = false;
+  List<Map<String, dynamic>> staffShops = const [];
   List<({bool enabled, bool authoritative})> googleProbes = const [];
   int googleProbeCalls = 0;
 
@@ -41,19 +44,31 @@ class UnifiedUserFixture extends MarketFixture {
       if (body != null) incomplete = false;
       final data = await super.request(path, body: body, query: query);
       if (incomplete) {
-        return {'operator': false, 'schema_version': 3, 'account': null};
+        return {
+          'operator': operatorRole,
+          'schema_version': 3,
+          'account': null,
+        };
       }
       final base = Map<String, dynamic>.from(data['account'] as Map);
       if (body != null) {
         base['full_name'] = body['full_name'];
         base['phone'] = body['phone'];
       }
+      final primaryRole = roles.contains('driver') && !roles.contains('merchant')
+          ? 'driver'
+          : roles.contains('merchant')
+          ? 'merchant'
+          : 'customer';
       return {
         ...data,
+        'operator': operatorRole,
         'schema_version': 3,
         'account': {
           ...base,
+          'role': primaryRole,
           'approved_roles': roles.toList(),
+          'staff_shops': staffShops,
           'memberships': [
             for (final role in roles)
               {'role': role, 'state': 'active', 'version': 1, 'reason': ''},
@@ -61,9 +76,57 @@ class UnifiedUserFixture extends MarketFixture {
         },
       };
     }
-    if (path == 'orders') return {'orders': []};
+    if (path == 'orders') {
+      calls.add({'path': path, 'query': query});
+      return {'orders': [], 'schema_version': 3};
+    }
     if (path == 'merchants') return {'merchants': []};
+    if (path == 'logistics/pickup_list') {
+      return {'pickups': [], 'drivers': []};
+    }
+    if (path == 'logistics/stats') {
+      return {
+        'scope': 'self',
+        'summary': {
+          'total': 0,
+          'delivered': 0,
+          'failed_or_returned': 0,
+          'cancelled': 0,
+          'active': 0,
+          'by_service': [],
+        },
+      };
+    }
     return super.request(path, body: body, query: query);
+  }
+
+  @override
+  Future<Map<String, dynamic>> market(
+    String action, [
+    Map<String, dynamic> payload = const {},
+  ]) async {
+    if (action == 'admin_analytics') {
+      calls.add({'action': action, 'payload': payload});
+      return {
+        'shipping': {
+          'total': 2,
+          'delivered': 1,
+          'active': 1,
+          'gmv_shipping_fee': 50000,
+        },
+        'commerce': {'purchases': 1, 'gmv': 80000},
+        'shops': {'active': 1, 'pending': 0, 'suspended': 0},
+        'accounts': {
+          'total': 3,
+          'operators': 1,
+          'blocked': 0,
+          'pending_memberships': 0,
+        },
+        'moderation': {'open_reports': 0},
+        'finance': {'pending_entries': 0},
+      };
+    }
+    return super.market(action, payload);
   }
 }
 
@@ -86,13 +149,11 @@ void main() {
     return (api, session);
   }
 
-  Future<void> navigate(WidgetTester tester, String label, double width) async {
-    final section = switch (label) {
-      'Tài khoản' => GhstUserSection.profile,
-      'Khám phá' => GhstUserSection.food,
-      'Trang chủ' => GhstUserSection.home,
-      _ => GhstUserSection.orders,
-    };
+  Future<void> navigate(
+    WidgetTester tester,
+    GhstUserSection section,
+    double width,
+  ) async {
     final target = width < 860
         ? find.byKey(ValueKey('ghst-nav-${section.name}'))
         : find
@@ -102,6 +163,10 @@ void main() {
                   GhstUserSection.profile => 'Hồ sơ cá nhân',
                   GhstUserSection.food => 'Ăn uống & Mua sắm',
                   GhstUserSection.home => 'Trang chủ',
+                  GhstUserSection.workspace => 'Cửa hàng của tôi',
+                  GhstUserSection.merchantOrders => 'Đơn của cửa hàng',
+                  GhstUserSection.driverQueue => 'Sàn chuyến chờ nhận',
+                  GhstUserSection.driverTrips => 'Chuyến giao của tôi',
                   _ => 'Đơn hàng',
                 }),
               )
@@ -118,7 +183,7 @@ void main() {
       {'merchant', 'driver'},
     ]) {
       testWidgets(
-        'One user shell retains navigation for roles $roles at $width',
+        'Role-synchronized shell opens dedicated workspace and switches modes cleanly for $roles at $width',
         (tester) async {
           final (api, session) = await setup(tester, width);
           api.roles = roles;
@@ -130,58 +195,100 @@ void main() {
             ),
           );
           await tester.pumpAndSettle();
-          expect(find.byType(GhstHomeScreen), findsOneWidget);
-          expect(find.byType(NavigationBar), findsNothing);
-          expect(
-            find.text('Bạn muốn giao hàng hay đặt món đến đâu?'),
-            findsOneWidget,
-          );
-          if (width >= 860) expect(find.text('GHST EXPRESS'), findsOneWidget);
           final root = tester.element(find.byType(MarketplaceScreen));
           expect(Navigator.of(root).canPop(), isFalse);
-          await navigate(tester, 'Tài khoản', width);
-          expect(find.text('account@example.com'), findsOneWidget);
-          expect(
-            find.text('Cửa hàng của tôi'),
-            roles.contains('merchant') ? findsWidgets : findsNothing,
-          );
-          expect(
-            find.text('Chuyến giao của tôi'),
-            roles.contains('driver') ? findsWidgets : findsNothing,
-          );
-          if (roles.contains('merchant')) {
-            await tester.tap(find.text('Cửa hàng của tôi').last);
-            await tester.pumpAndSettle();
+          expect(find.byType(NavigationBar), findsNothing);
+          expect(find.byType(StudioUserAuthFrame), findsNothing);
+
+          if (roles.isEmpty) {
+            expect(find.byType(GhstHomeScreen), findsOneWidget);
+            expect(
+              find.text('Bạn muốn giao hàng hay đặt món đến đâu?'),
+              findsOneWidget,
+            );
+            expect(
+              find.byKey(const ValueKey('ghst-role-customer')),
+              findsNothing,
+            );
+            if (width >= 860) expect(find.text('GHST EXPRESS'), findsOneWidget);
+            await navigate(tester, GhstUserSection.profile, width);
+            expect(find.text('account@example.com'), findsOneWidget);
+            expect(find.text('Cửa hàng của tôi'), findsNothing);
+            expect(find.text('Chuyến giao của tôi'), findsNothing);
+          } else if (roles.contains('merchant')) {
+            final shell = tester.widget<GhstUserShell>(
+              find.byType(GhstUserShell),
+            );
+            expect(shell.roleMode, GhstRoleMode.merchant);
+            expect(shell.section, GhstUserSection.workspace);
             expect(
               tester.widget<MarketplaceView>(find.byType(MarketplaceView)).view,
               MarketView.workspace,
             );
-            expect(Navigator.of(root).canPop(), isFalse);
-            await navigate(tester, 'Tài khoản', width);
-            await tester.tap(find.text('Đơn của cửa hàng').last);
-            await tester.pumpAndSettle();
+            expect(
+              find.text(
+                width >= 860
+                    ? 'GHST MERCHANT'
+                    : 'GHST MERCHANT • CỬA HÀNG B2B',
+              ),
+              findsOneWidget,
+            );
+            await navigate(tester, GhstUserSection.merchantOrders, width);
             expect(
               tester.widget<MarketplaceView>(find.byType(MarketplaceView)).view,
               MarketView.merchantOrders,
             );
-            expect(Navigator.of(root).canPop(), isFalse);
-            await navigate(tester, 'Tài khoản', width);
-          }
-          if (roles.contains('driver')) {
-            await tester.tap(find.text('Chuyến giao của tôi').last);
+            if (roles.contains('driver')) {
+              await tester.tap(find.byKey(const ValueKey('ghst-role-driver')));
+              await tester.pumpAndSettle();
+              expect(
+                tester
+                    .widget<GhstUserShell>(find.byType(GhstUserShell))
+                    .roleMode,
+                GhstRoleMode.driver,
+              );
+              expect(
+                tester
+                    .widget<CloudOrdersScreen>(find.byType(CloudOrdersScreen))
+                    .initialQueue,
+                isTrue,
+              );
+            }
+            await tester.tap(find.byKey(const ValueKey('ghst-role-customer')));
             await tester.pumpAndSettle();
+            expect(find.byType(GhstHomeScreen), findsOneWidget);
           } else {
-            await navigate(tester, 'Gửi hàng', width);
+            final shell = tester.widget<GhstUserShell>(
+              find.byType(GhstUserShell),
+            );
+            expect(shell.roleMode, GhstRoleMode.driver);
+            expect(shell.section, GhstUserSection.driverQueue);
+            expect(
+              tester
+                  .widget<CloudOrdersScreen>(find.byType(CloudOrdersScreen))
+                  .initialQueue,
+              isTrue,
+            );
+            expect(
+              find.text(
+                width >= 860 ? 'GHST DRIVER' : 'GHST DRIVER • ĐỐI TÁC TÀI XẾ',
+              ),
+              findsOneWidget,
+            );
+            expect(
+              api.calls.any(
+                (c) =>
+                    c['path'] == 'orders' &&
+                    (c['query'] as Map?)?['queue'] == 'true',
+              ),
+              isTrue,
+            );
+            await tester.tap(find.byKey(const ValueKey('ghst-role-customer')));
+            await tester.pumpAndSettle();
+            expect(find.byType(GhstHomeScreen), findsOneWidget);
           }
-          expect(
-            tester
-                .widget<CloudOrdersScreen>(find.byType(CloudOrdersScreen))
-                .embedded,
-            isTrue,
-          );
-          expect(Navigator.of(root).canPop(), isFalse);
-          expect(find.byType(StudioUserAuthFrame), findsNothing);
-          await navigate(tester, 'Khám phá', width);
+
+          await navigate(tester, GhstUserSection.food, width);
           expect(find.text(api.product['name']), findsOneWidget);
           expect(tester.takeException(), isNull);
           await tester.pumpWidget(const SizedBox.shrink());
@@ -190,10 +297,10 @@ void main() {
     }
 
     testWidgets(
-      'Role revocation removes partner content within the common shell at $width',
+      'Operator account opens Cloud Admin Portal directly in app and switches to Customer and back at $width',
       (tester) async {
         final (api, session) = await setup(tester, width);
-        api.roles = {'merchant', 'driver'};
+        api.operatorRole = true;
         await session.refresh();
         await tester.pumpWidget(
           MaterialApp(
@@ -202,12 +309,75 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        await navigate(tester, 'Tài khoản', width);
-        await tester.tap(find.text('Cửa hàng của tôi').last);
+        expect(find.byType(AdminPortalScreen), findsOneWidget);
+        expect(find.text('GHST ADMIN'), findsOneWidget);
+        expect(find.byType(GhstHomeScreen), findsNothing);
+
+        await tester.tap(find.byKey(const ValueKey('admin-switch-user-mode')));
         await tester.pumpAndSettle();
+        expect(find.byType(AdminPortalScreen), findsNothing);
+        expect(find.byType(GhstHomeScreen), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('ghst-role-operator')),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.byKey(const ValueKey('ghst-role-operator')));
+        await tester.pumpAndSettle();
+        expect(find.byType(AdminPortalScreen), findsOneWidget);
+
+        api.operatorRole = false;
+        await session.refresh();
+        await tester.pumpAndSettle();
+        expect(find.byType(AdminPortalScreen), findsNothing);
+        expect(find.byType(GhstHomeScreen), findsOneWidget);
+        expect(find.byKey(const ValueKey('ghst-role-operator')), findsNothing);
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+
+    testWidgets(
+      'Live role grant upgrades signed-in customer UI and live revocation removes partner workspace at $width',
+      (tester) async {
+        final (api, session) = await setup(tester, width);
+        api.roles = {};
+        await session.refresh();
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: MarketplaceScreen(session: session),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.byType(GhstHomeScreen), findsOneWidget);
+
+        api.roles = {'driver'};
+        await session.refresh();
+        await tester.pumpAndSettle();
+        expect(
+          tester.widget<GhstUserShell>(find.byType(GhstUserShell)).roleMode,
+          GhstRoleMode.driver,
+        );
+        expect(find.byType(CloudOrdersScreen), findsOneWidget);
+
+        api.roles = {'merchant', 'driver'};
+        await session.refresh();
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('ghst-role-merchant')));
+        await tester.pumpAndSettle();
+        expect(
+          tester.widget<MarketplaceView>(find.byType(MarketplaceView)).view,
+          MarketView.workspace,
+        );
+
         api.roles = {};
         await session.refresh();
         await tester.pumpAndSettle();
+        expect(
+          tester.widget<GhstUserShell>(find.byType(GhstUserShell)).roleMode,
+          GhstRoleMode.customer,
+        );
         expect(find.text('Cửa hàng của tôi'), findsNothing);
         expect(find.text('Chuyến giao của tôi'), findsNothing);
         expect(
@@ -287,7 +457,9 @@ void main() {
             .where((c) => c['path'] == 'profile')
             .length;
         tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
-        expect(session.verified, isFalse);
+        await tester.pump();
+        expect(session.verified, isTrue);
+        expect(find.byType(GhstUserShell), findsOneWidget);
         await tester.pump(const Duration(seconds: 31));
         expect(
           api.calls.where((c) => c['path'] == 'profile').length,
@@ -342,7 +514,7 @@ void main() {
   }
 
   testWidgets(
-    'Desktop sidebar driver trips shortcut resets purchase orders to shipping trips',
+    'Desktop sidebar driver trips shortcut switches from Customer orders into Driver trips workspace',
     (tester) async {
       final (api, session) = await setup(tester, 1440.0);
       api.roles = {'merchant', 'driver'};
@@ -354,12 +526,20 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await navigate(tester, 'Đơn hàng', 1440.0);
+      await tester.tap(find.byKey(const ValueKey('ghst-role-customer')));
+      await tester.pumpAndSettle();
+      await navigate(tester, GhstUserSection.orders, 1440.0);
       await tester.tap(find.text('Đơn mua'));
       await tester.pumpAndSettle();
       expect(find.byType(CloudOrdersScreen), findsNothing);
+      await tester.ensureVisible(find.text('Chuyến giao của tôi').first);
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Chuyến giao của tôi').first);
       await tester.pumpAndSettle();
+      expect(
+        tester.widget<GhstUserShell>(find.byType(GhstUserShell)).roleMode,
+        GhstRoleMode.driver,
+      );
       expect(find.byType(CloudOrdersScreen), findsOneWidget);
       expect(find.text('Chuyến của tôi'), findsOneWidget);
       expect(find.text('Chờ nhận'), findsOneWidget);
@@ -448,15 +628,18 @@ void main() {
       expect(find.text('Gửi lại mã xác nhận'), findsOneWidget);
       await tester.tap(find.text('Gửi lại mã xác nhận'));
       await tester.pumpAndSettle();
-      expect(
-        api.calls.where((c) => c['action'] == 'reset').length,
-        2,
-      );
+      expect(api.calls.where((c) => c['action'] == 'reset').length, 2);
       api.authenticated = true;
       api.changes.add(const AuthState(AuthChangeEvent.passwordRecovery, null));
       await tester.pumpAndSettle();
-      expect(find.widgetWithText(TextFormField, 'Mã xác nhận email'), findsNothing);
-      expect(find.widgetWithText(TextFormField, 'Mật khẩu mới'), findsOneWidget);
+      expect(
+        find.widgetWithText(TextFormField, 'Mã xác nhận email'),
+        findsNothing,
+      );
+      expect(
+        find.widgetWithText(TextFormField, 'Mật khẩu mới'),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
     },

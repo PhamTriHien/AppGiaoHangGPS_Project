@@ -12,6 +12,10 @@ export const paymentDto = p => p ? {
   ...(p.purchase_id ? { purchase_id: p.purchase_id } : {}),
 } : null;
 
+const orderPayableFee = order => Number(
+  order.payable_fee ?? Math.max(0, Number(order.shipping_fee) - Number(order.coin_discount || 0)),
+);
+
 export function createPaymentGateway({ env = process.env, authenticate,
   database = createCommerceDatabase(env), clientFactory = () => new PayOS({
     clientId: env.PAYOS_CLIENT_ID, apiKey: env.PAYOS_API_KEY, checksumKey: env.PAYOS_CHECKSUM_KEY,
@@ -100,7 +104,7 @@ export function createPaymentGateway({ env = process.env, authenticate,
       }
       await db.query('insert into public.delivery_payment_receipts(payment_id,reference,amount) values($1,$2,$3)', [current.id, data.reference, data.amount]);
       const total = Number((await db.query('select sum(amount) as amount from public.delivery_payment_receipts where payment_id=$1', [current.id])).rows[0].amount);
-      const status = total === Number(current.amount) && Number(order.shipping_fee) === total &&
+      const status = total === Number(current.amount) && orderPayableFee(order) === total &&
         !['cancelled','returned'].includes(order.status) && !['CANCELLED','EXPIRED','REVIEW'].includes(current.status) ? 'PAID' : 'REVIEW';
       await db.query('update public.delivery_payment_transactions set status=$1,payment_link_id=$2,updated_at=now() where id=$3', [status, data.paymentLinkId, current.id]);
       await db.query('update public.delivery_cloud_orders set payment_status=$1,updated_at=now() where id=$2', [status, current.order_id]);
@@ -129,13 +133,14 @@ export function createPaymentGateway({ env = process.env, authenticate,
       const order = await ownedOrder(db, req, req.params.id, { lock: true });
       if (req.deliveryIdentity.role !== 'operator' && order.owner_id !== req.deliveryIdentity.id) throw new IntegrationError(403, 'Chỉ chủ đơn hoặc operator được mở thanh toán.');
       if (order.payment_status !== 'UNPAID') throw new IntegrationError(409, 'Đơn đã thanh toán hoặc đang cần đối soát.');
-      if (order.status !== 'searching' || order.driver_id || order.fulfillment_provider || order.details.payment_method !== 'sender_cash' || order.shipping_fee <= 0) {
+      const payableFee = orderPayableFee(order);
+      if (order.status !== 'searching' || order.driver_id || order.fulfillment_provider || order.details.payment_method !== 'sender_cash' || payableFee <= 0) {
         throw new IntegrationError(409, 'Thanh toán trước chỉ áp dụng đơn người gửi trả phí, chưa điều phối.');
       }
       const existing = (await db.query("select * from public.delivery_payment_transactions where order_id=$1 and status in ('CREATING','PENDING','PAID','REVIEW') for update", [order.id])).rows[0];
       if (existing) return existing;
       return (await db.query(`insert into public.delivery_payment_transactions(order_id,owner_id,amount,status)
-        values($1,$2,$3,'CREATING') returning *`, [order.id, order.owner_id, order.shipping_fee])).rows[0];
+        values($1,$2,$3,'CREATING') returning *`, [order.id, order.owner_id, payableFee])).rows[0];
     });
     if (reserved.checkout_url || ['PAID','REVIEW'].includes(reserved.status)) return res.json({ payment: paymentDto(reserved) });
     const { link, checkoutHref } = await createOrRecoverPayosLink(reserved);

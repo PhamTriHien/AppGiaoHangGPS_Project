@@ -694,7 +694,7 @@ class OfflineQueueBanner extends StatelessWidget {
               border: Border.all(color: AppColors.ink),
             ),
             child: Text(
-              'CHẾ ĐỘ NGOẠI TUYẾN • Thao tác và vị trí đang lưu tạm trên thiết bị (${store.offlineQueueCount} mục chờ đồng bộ)',
+              'CHẾ ĐỘ NGOẠI TUYẾN • Thao tác và vị trí đang lưu tạm trên thiết bị · ${store.offlineQueueCount} mục chờ đồng bộ',
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: AppColors.acid,
@@ -918,10 +918,14 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
   double _manualPitchRadians = -0.38;
   bool? _local3dOverride;
   int _zoomLevel = 15;
+  int? _previousZoomLevel;
   bool _userAdjustedZoom = false;
   Offset _panPixelOffset = Offset.zero;
   Offset? _scaleLastFocalPoint;
+  Offset? _doubleTapPosition;
   int _scaleStartZoom = 15;
+  double _pinchVisualScale = 1.0;
+  Offset _pinchFocalPoint = Offset.zero;
   GeoPoint? _customCenterGeoOverride;
   GeoPoint? _lastKnownLiveDeviceLocation;
   String _googleLayer = 'm';
@@ -987,12 +991,33 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
     }
   }
 
-  static String _formatAccuracyMetersText(double? accuracyMeters) {
-    if (accuracyMeters == null || !accuracyMeters.isFinite) return '';
-    if (accuracyMeters >= 2000.0) {
-      return ' ±${(accuracyMeters / 1000.0).round()}km';
+  void _applyZoom(
+    int targetZoom, {
+    Offset? anchor,
+    Size? viewSize,
+    bool userInitiated = true,
+  }) {
+    final clamped = targetZoom.clamp(5, 20);
+    if (clamped == _zoomLevel) {
+      if (userInitiated) _userAdjustedZoom = true;
+      return;
     }
-    return ' ±${accuracyMeters.round()}m';
+    final prev = _zoomLevel;
+    final factor = math.pow(2.0, (clamped - prev).toDouble()).toDouble();
+    _previousZoomLevel = prev;
+    if (anchor != null &&
+        viewSize != null &&
+        viewSize.width > 0 &&
+        viewSize.height > 0) {
+      final deltaFromCenter =
+          anchor - Offset(viewSize.width * 0.5, viewSize.height * 0.5);
+      _panPixelOffset =
+          _panPixelOffset * factor + deltaFromCenter * (1.0 - factor);
+    } else {
+      _panPixelOffset *= factor;
+    }
+    _zoomLevel = clamped;
+    if (userInitiated) _userAdjustedZoom = true;
   }
 
   @override
@@ -1054,24 +1079,13 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
         _customCenterGeoOverride = livePos;
         _panPixelOffset = Offset.zero;
         _manualYawRadians = 0.0;
-        _userAdjustedZoom = true;
-        _zoomLevel = 16;
+        _pinchVisualScale = 1.0;
+        if (!_userAdjustedZoom && _zoomLevel < 16) {
+          _previousZoomLevel = _zoomLevel;
+          _zoomLevel = 16;
+        }
       });
       onAcquiredForModal?.call(livePos);
-      if (context.mounted) {
-        final addrLabel = store.liveDeviceAddress.trim().isNotEmpty
-            ? store.liveDeviceAddress.trim()
-            : '(${livePos.latitude.toStringAsFixed(5)}, ${livePos.longitude.toStringAsFixed(5)})';
-        final accLabel = store.liveDeviceAccuracyMeters != null
-            ? ' (±${store.liveDeviceAccuracyMeters!.round()}m)'
-            : '';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            duration: const Duration(seconds: 3),
-            content: Text('Đã định vị GPS thật: $addrLabel$accLabel'),
-          ),
-        );
-      }
       return;
     }
     if (context.mounted) {
@@ -1377,6 +1391,9 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
                     Expanded(
                       child: LayoutBuilder(
                         builder: (context, modalConstraints) {
+                          final modalDpr = MediaQuery.devicePixelRatioOf(
+                            context,
+                          );
                           final modalSize = Size(
                             modalConstraints.maxWidth,
                             modalConstraints.maxHeight,
@@ -1384,25 +1401,68 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
                           return Listener(
                             onPointerSignal: (signal) {
                               if (signal is PointerScrollEvent) {
-                                final delta = signal.scrollDelta.dy < 0 ? 1 : -1;
-                                setModalState(() {
-                                  modalZoom = (modalZoom + delta).clamp(5, 19);
-                                });
-                                setState(() {
-                                  _userAdjustedZoom = true;
-                                  _zoomLevel = modalZoom;
-                                });
+                                final delta = signal.scrollDelta.dy < 0
+                                    ? 1
+                                    : -1;
+                                final nextZ = (modalZoom + delta).clamp(5, 20);
+                                if (nextZ != modalZoom) {
+                                  final factor = math
+                                      .pow(2.0, (nextZ - modalZoom).toDouble())
+                                      .toDouble();
+                                  final d =
+                                      signal.localPosition -
+                                      Offset(
+                                        modalSize.width * 0.5,
+                                        modalSize.height * 0.5,
+                                      );
+                                  setModalState(() {
+                                    modalPan =
+                                        modalPan * factor + d * (1.0 - factor);
+                                    modalZoom = nextZ;
+                                  });
+                                  setState(() {
+                                    _previousZoomLevel = _zoomLevel;
+                                    _panPixelOffset = modalPan;
+                                    _userAdjustedZoom = true;
+                                    _zoomLevel = modalZoom;
+                                  });
+                                }
                               }
                             },
                             child: GestureDetector(
+                              onDoubleTapDown: (d) {
+                                _doubleTapPosition = d.localPosition;
+                              },
                               onDoubleTap: () {
-                                setModalState(() {
-                                  modalZoom = (modalZoom + 1).clamp(5, 19);
-                                });
-                                setState(() {
-                                  _userAdjustedZoom = true;
-                                  _zoomLevel = modalZoom;
-                                });
+                                final nextZ = (modalZoom + 1).clamp(5, 20);
+                                if (nextZ != modalZoom) {
+                                  final factor = math
+                                      .pow(2.0, (nextZ - modalZoom).toDouble())
+                                      .toDouble();
+                                  final anchor =
+                                      _doubleTapPosition ??
+                                      Offset(
+                                        modalSize.width * 0.5,
+                                        modalSize.height * 0.5,
+                                      );
+                                  final d =
+                                      anchor -
+                                      Offset(
+                                        modalSize.width * 0.5,
+                                        modalSize.height * 0.5,
+                                      );
+                                  setModalState(() {
+                                    modalPan =
+                                        modalPan * factor + d * (1.0 - factor);
+                                    modalZoom = nextZ;
+                                  });
+                                  setState(() {
+                                    _previousZoomLevel = _zoomLevel;
+                                    _panPixelOffset = modalPan;
+                                    _userAdjustedZoom = true;
+                                    _zoomLevel = modalZoom;
+                                  });
+                                }
                               },
                               onScaleStart: (d) {
                                 modalLastFocalPoint = d.localFocalPoint;
@@ -1414,11 +1474,11 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
                                     : Offset.zero;
                                 modalLastFocalPoint = d.localFocalPoint;
                                 int nextZoom = modalZoom;
-                                if ((d.scale - 1.0).abs() > 0.08) {
+                                if ((d.scale - 1.0).abs() > 0.04) {
                                   final zDelta =
                                       (math.log(d.scale) / math.ln2).round();
-                                  nextZoom =
-                                      (modalScaleStartZoom + zDelta).clamp(5, 19);
+                                  nextZoom = (modalScaleStartZoom + zDelta)
+                                      .clamp(5, 20);
                                 }
                                 setModalState(() {
                                   modalPan += focalDelta;
@@ -1429,13 +1489,22 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
                                           (nextZoom - modalZoom).toDouble(),
                                         )
                                         .toDouble();
-                                    modalPan *= factor;
+                                    final anchorDelta =
+                                        d.localFocalPoint -
+                                        Offset(
+                                          modalSize.width * 0.5,
+                                          modalSize.height * 0.5,
+                                        );
+                                    modalPan =
+                                        modalPan * factor +
+                                        anchorDelta * (1.0 - factor);
                                     modalZoom = nextZoom;
                                   }
                                 });
                                 setState(() {
                                   _panPixelOffset = modalPan;
                                   if (nextZoom != _zoomLevel) {
+                                    _previousZoomLevel = _zoomLevel;
                                     _userAdjustedZoom = true;
                                     _zoomLevel = nextZoom;
                                   }
@@ -1506,6 +1575,9 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
                                         zoom: modalZoom,
                                         pan: modalPan,
                                         layer: modalLayer,
+                                        devicePixelRatio: modalDpr,
+                                        snapToPixelGrid: !modalIs3d,
+                                        backdropZoom: _previousZoomLevel,
                                       ),
                                     ],
                                   ),
@@ -1588,7 +1660,7 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
                                             alpha: 0.86,
                                           ),
                                           child: Text(
-                                            'Tọa độ tâm: (${modalCenterGeo.latitude.toStringAsFixed(5)}, ${modalCenterGeo.longitude.toStringAsFixed(5)}) • Thu phóng: ${modalZoom}x',
+                                            'Tọa độ tâm: ${modalCenterGeo.latitude.toStringAsFixed(5)}, ${modalCenterGeo.longitude.toStringAsFixed(5)} • Thu phóng: ${modalZoom}x',
                                             style: const TextStyle(
                                               color: Colors.white,
                                               fontSize: 11.5,
@@ -1675,7 +1747,7 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
                                 ),
                               ],
                               IconButton(
-                                tooltip: 'Định vị GPS thật của tôi',
+                                tooltip: 'Vị trí hiện tại của tôi',
                                 onPressed: () => _handleFocusMyRealGps(
                                   ctx,
                                   onAcquiredForModal: (livePos) {
@@ -1684,7 +1756,7 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
                                       modalCenterGeo = livePos;
                                       modalPan = Offset.zero;
                                       modalYaw = 0.0;
-                                      modalZoom = 16;
+                                      modalZoom = _zoomLevel;
                                     });
                                   },
                                 ),
@@ -1713,6 +1785,7 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
                                     modalZoom = autoZ;
                                   });
                                   setState(() {
+                                    _previousZoomLevel = _zoomLevel;
                                     _panPixelOffset = Offset.zero;
                                     _manualYawRadians = 0.0;
                                     _userAdjustedZoom = false;
@@ -1727,11 +1800,18 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
                               IconButton(
                                 tooltip: 'Phóng to',
                                 onPressed: () {
-                                  setModalState(
-                                    () => modalZoom =
-                                        (modalZoom + 1).clamp(5, 19),
-                                  );
+                                  final nextZ = (modalZoom + 1).clamp(5, 20);
+                                  if (nextZ == modalZoom) return;
+                                  final factor = math
+                                      .pow(2.0, (nextZ - modalZoom).toDouble())
+                                      .toDouble();
+                                  setModalState(() {
+                                    modalPan *= factor;
+                                    modalZoom = nextZ;
+                                  });
                                   setState(() {
+                                    _previousZoomLevel = _zoomLevel;
+                                    _panPixelOffset = modalPan;
                                     _userAdjustedZoom = true;
                                     _zoomLevel = modalZoom;
                                   });
@@ -1744,11 +1824,18 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
                               IconButton(
                                 tooltip: 'Thu nhỏ',
                                 onPressed: () {
-                                  setModalState(
-                                    () => modalZoom =
-                                        (modalZoom - 1).clamp(5, 19),
-                                  );
+                                  final nextZ = (modalZoom - 1).clamp(5, 20);
+                                  if (nextZ == modalZoom) return;
+                                  final factor = math
+                                      .pow(2.0, (nextZ - modalZoom).toDouble())
+                                      .toDouble();
+                                  setModalState(() {
+                                    modalPan *= factor;
+                                    modalZoom = nextZ;
+                                  });
                                   setState(() {
+                                    _previousZoomLevel = _zoomLevel;
+                                    _panPixelOffset = modalPan;
                                     _userAdjustedZoom = true;
                                     _zoomLevel = modalZoom;
                                   });
@@ -1877,7 +1964,11 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
         const GeoPoint(latitude: 10.7769, longitude: 106.7009);
   }
 
-  Widget _buildGoogleMapTileLayer(Size viewSize, GeoPoint centerGeo) {
+  Widget _buildGoogleMapTileLayer(
+    Size viewSize,
+    GeoPoint centerGeo, {
+    required double devicePixelRatio,
+  }) {
     return _buildGoogleMapTileLayerCustom(
       viewSize,
       centerGeo,
@@ -1885,23 +1976,23 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
       pan: _panPixelOffset,
       layer: _googleLayer,
       hideLabels: widget.isFullScreenBackground,
+      devicePixelRatio: devicePixelRatio,
+      snapToPixelGrid: !_effective3d && (_pinchVisualScale - 1.0).abs() < 0.002,
+      backdropZoom: _previousZoomLevel,
     );
   }
 
-  Widget _buildGoogleMapTileLayerCustom(
+  Widget _buildSingleZoomTileStack(
     Size viewSize,
     GeoPoint centerGeo, {
     required int zoom,
     required Offset pan,
     required String layer,
-    bool hideLabels = false,
+    required bool hideLabels,
+    required double devicePixelRatio,
+    required bool snapToPixelGrid,
+    String keyPrefix = 'ggtile',
   }) {
-    if (_isAutomatedTestBinding ||
-        AppStateStore.instance.isOfflineMode ||
-        viewSize.width <= 0 ||
-        viewSize.height <= 0) {
-      return const SizedBox.shrink();
-    }
     final maxTileIndex = (1 << zoom) - 1;
     final centerWorldX = _lonToWorldX(centerGeo.longitude, zoom) - pan.dx;
     final centerWorldY = _latToWorldY(centerGeo.latitude, zoom) - pan.dy;
@@ -1916,6 +2007,10 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
     final minTileY = (topLeftWorldY / 256.0).floor();
     final maxTileY = (bottomRightWorldY / 256.0).floor();
 
+    double snap(double v) => snapToPixelGrid && devicePixelRatio > 0
+        ? (v * devicePixelRatio).roundToDouble() / devicePixelRatio
+        : v;
+
     final tiles = <Widget>[];
     final labelTag = hideLabels ? 'nolbl' : 'lbl';
     for (var ty = minTileY; ty <= maxTileY; ty++) {
@@ -1923,8 +2018,12 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
       for (var tx = minTileX; tx <= maxTileX; tx++) {
         final wrappedTx = ((tx % (maxTileIndex + 1)) + (maxTileIndex + 1)) %
             (maxTileIndex + 1);
-        final left = tx * 256.0 - topLeftWorldX;
-        final top = ty * 256.0 - topLeftWorldY;
+        final rawLeft = tx * 256.0 - topLeftWorldX;
+        final rawTop = ty * 256.0 - topLeftWorldY;
+        final left = snap(rawLeft);
+        final top = snap(rawTop);
+        final tileW = snapToPixelGrid ? snap(rawLeft + 256.0) - left : 256.4;
+        final tileH = snapToPixelGrid ? snap(rawTop + 256.0) - top : 256.4;
         final tileUrl = EnvConfig.buildGoogleMapTileUrl(
           x: wrappedTx,
           y: ty,
@@ -1936,20 +2035,24 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
             'https://tile.openstreetmap.org/$zoom/$wrappedTx/$ty.png';
         tiles.add(
           Positioned(
-            key: ValueKey('ggtile_${layer}_${labelTag}_${zoom}_${wrappedTx}_$ty'),
+            key: ValueKey(
+              '${keyPrefix}_${layer}_${labelTag}_${zoom}_${wrappedTx}_$ty',
+            ),
             left: left,
             top: top,
-            width: 256.5,
-            height: 256.5,
+            width: tileW,
+            height: tileH,
             child: Image.network(
               tileUrl,
-              fit: BoxFit.cover,
-              filterQuality: FilterQuality.low,
+              fit: BoxFit.fill,
+              gaplessPlayback: true,
+              filterQuality: FilterQuality.medium,
               errorBuilder: (_, _, _) => (layer.startsWith('m') || layer == 'p')
                   ? Image.network(
                       osmFallbackUrl,
-                      fit: BoxFit.cover,
-                      filterQuality: FilterQuality.low,
+                      fit: BoxFit.fill,
+                      gaplessPlayback: true,
+                      filterQuality: FilterQuality.medium,
                       errorBuilder: (_, _, _) => const SizedBox.shrink(),
                     )
                   : const SizedBox.shrink(),
@@ -1959,6 +2062,66 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
       }
     }
     return Stack(clipBehavior: Clip.hardEdge, children: tiles);
+  }
+
+  Widget _buildGoogleMapTileLayerCustom(
+    Size viewSize,
+    GeoPoint centerGeo, {
+    required int zoom,
+    required Offset pan,
+    required String layer,
+    bool hideLabels = false,
+    double devicePixelRatio = 1.0,
+    bool snapToPixelGrid = true,
+    int? backdropZoom,
+  }) {
+    if (_isAutomatedTestBinding ||
+        AppStateStore.instance.isOfflineMode ||
+        viewSize.width <= 0 ||
+        viewSize.height <= 0) {
+      return const SizedBox.shrink();
+    }
+    final activeStack = _buildSingleZoomTileStack(
+      viewSize,
+      centerGeo,
+      zoom: zoom,
+      pan: pan,
+      layer: layer,
+      hideLabels: hideLabels,
+      devicePixelRatio: devicePixelRatio,
+      snapToPixelGrid: snapToPixelGrid,
+    );
+    if (backdropZoom == null ||
+        backdropZoom == zoom ||
+        (zoom - backdropZoom).abs() > 2) {
+      return activeStack;
+    }
+    final scaleDiff = math.pow(2.0, (zoom - backdropZoom).toDouble()).toDouble();
+    final backdropPan = pan / scaleDiff;
+    return Stack(
+      clipBehavior: Clip.hardEdge,
+      fit: StackFit.expand,
+      children: [
+        IgnorePointer(
+          child: Transform.scale(
+            scale: scaleDiff,
+            alignment: Alignment.center,
+            child: _buildSingleZoomTileStack(
+              viewSize,
+              centerGeo,
+              zoom: backdropZoom,
+              pan: backdropPan,
+              layer: layer,
+              hideLabels: hideLabels,
+              devicePixelRatio: devicePixelRatio,
+              snapToPixelGrid: false,
+              keyPrefix: 'ggbg',
+            ),
+          ),
+        ),
+        activeStack,
+      ],
+    );
   }
 
   IconData _topBannerIcon() {
@@ -1992,6 +2155,7 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
             : baseRoute;
     final centerGeo = _resolveCenterGeo(effectiveRoute);
     final viewportHeight = MediaQuery.sizeOf(context).height;
+    final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
     final double adaptiveHeight =
         (widget.isFullScreenBackground || widget.expandToParent
                 ? (viewportHeight > 0 ? viewportHeight : widget.height)
@@ -2042,176 +2206,223 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
             if (signal is PointerScrollEvent) {
               final delta = signal.scrollDelta.dy < 0 ? 1 : -1;
               setState(() {
-                _userAdjustedZoom = true;
-                _zoomLevel = (_zoomLevel + delta).clamp(5, 19);
+                _applyZoom(
+                  _zoomLevel + delta,
+                  anchor: signal.localPosition,
+                  viewSize: viewSize,
+                );
               });
             }
           },
-          child: GestureDetector(
-            onDoubleTap: () {
-              setState(() {
-                _userAdjustedZoom = true;
-                _zoomLevel = (_zoomLevel + 1).clamp(5, 19);
-              });
-            },
-            onScaleStart: (details) {
-              _scaleLastFocalPoint = details.localFocalPoint;
-              _scaleStartZoom = _zoomLevel;
-            },
-            onScaleUpdate: (details) {
-              final focalDelta = _scaleLastFocalPoint != null
-                  ? (details.localFocalPoint - _scaleLastFocalPoint!)
-                  : Offset.zero;
-              _scaleLastFocalPoint = details.localFocalPoint;
-              int nextZoom = _zoomLevel;
-              if ((details.scale - 1.0).abs() > 0.08) {
-                final zDelta = (math.log(details.scale) / math.ln2).round();
-                nextZoom = (_scaleStartZoom + zDelta).clamp(5, 19);
-              }
-              setState(() {
-                _panPixelOffset += focalDelta;
-                if (nextZoom != _zoomLevel) {
-                  final factor = math
-                      .pow(2.0, (nextZoom - _zoomLevel).toDouble())
-                      .toDouble();
-                  _panPixelOffset *= factor;
-                  _zoomLevel = nextZoom;
-                  _userAdjustedZoom = true;
-                }
-              });
-            },
-            onTapUp: (widget.onTapGeoPoint == null &&
-                    widget.onTapRelativePoint == null)
-                ? null
-                : (details) {
-                    if (viewSize.width <= 0 || viewSize.height <= 0) return;
-                    if (widget.onTapGeoPoint != null) {
-                      final tappedGeo = _screenOffsetToGeoPoint(
-                        details.localPosition,
-                        viewSize,
-                        centerGeo,
-                      );
-                      widget.onTapGeoPoint!(tappedGeo);
-                    }
-                    if (widget.onTapRelativePoint != null) {
-                      final relX =
-                          (details.localPosition.dx / viewSize.width)
-                              .clamp(0.0, 1.0);
-                      final relY =
-                          (details.localPosition.dy / viewSize.height)
-                              .clamp(0.0, 1.0);
-                      widget.onTapRelativePoint!(Offset(relX, relY));
-                    }
-                  },
-            child: AnimatedBuilder(
-              animation: _animController,
-              child: RepaintBoundary(
+          child: AnimatedBuilder(
+            animation: _animController,
+            child: RepaintBoundary(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  CustomPaint(
+                    painter: _Map3dCanvasPainter(
+                      is3dMode: _effective3d,
+                      progressFraction: widget.progressFraction,
+                      driverLocation: widget.driverLocation,
+                      drawnPolygonPoints: widget.drawnPolygonPoints,
+                      drawnPolygonGeoPoints: widget.drawnPolygonGeoPoints,
+                      geofenceZones: widget.geofenceZones,
+                      singlePinPoint: widget.singlePinPoint,
+                      singlePinLabel: widget.singlePinLabel,
+                      liveDeviceLocation:
+                          AppStateStore.instance.liveDeviceLocation,
+                      liveDeviceAccuracyMeters:
+                          AppStateStore.instance.liveDeviceAccuracyMeters,
+                      nearbySearchingOrders: widget.nearbySearchingOrders,
+                      routePoints: effectiveRoute,
+                      animPhase: 0.25,
+                      mode: widget.mode,
+                      zoomLevel: _zoomLevel,
+                      panPixelOffset: _panPixelOffset,
+                      centerGeo: centerGeo,
+                      drawBackgroundOnly: true,
+                      pickupLabel: widget.pickupLabel,
+                      dropoffLabel: widget.dropoffLabel,
+                      fleetDrivers: _effectiveFleetDrivers,
+                    ),
+                  ),
+                  _buildGoogleMapTileLayer(
+                    viewSize,
+                    centerGeo,
+                    devicePixelRatio: devicePixelRatio,
+                  ),
+                ],
+              ),
+            ),
+            builder: (context, staticMapBase) {
+              final phase = _animController.value;
+              final matrix = Matrix4.identity()
+                ..setEntry(3, 2, 0.0012)
+                ..rotateX(
+                  _effective3d
+                      ? (_manualPitchRadians + _cameraPitchOffset)
+                      : 0.0,
+                )
+                ..rotateZ(
+                  _effective3d ? (_manualYawRadians + _cameraYawOffset) : 0.0,
+                )
+                ..scaleByDouble(
+                  _effective3d ? 1.14 : 1.0,
+                  _effective3d ? 1.14 : 1.0,
+                  1.0,
+                  1.0,
+                );
+              final pinchActive =
+                  (_pinchVisualScale - 1.0).abs() > 0.002 &&
+                  viewSize.width > 0 &&
+                  viewSize.height > 0;
+              final pinchAlignment = pinchActive
+                  ? Alignment(
+                      (_pinchFocalPoint.dx / viewSize.width) * 2.0 - 1.0,
+                      (_pinchFocalPoint.dy / viewSize.height) * 2.0 - 1.0,
+                    )
+                  : Alignment.center;
+
+              Widget transformedMap = Transform(
+                alignment: Alignment.center,
+                transform: matrix,
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    CustomPaint(
-                      painter: _Map3dCanvasPainter(
-                        is3dMode: _effective3d,
-                        progressFraction: widget.progressFraction,
-                        driverLocation: widget.driverLocation,
-                        drawnPolygonPoints: widget.drawnPolygonPoints,
-                        drawnPolygonGeoPoints: widget.drawnPolygonGeoPoints,
-                        geofenceZones: widget.geofenceZones,
-                        singlePinPoint: widget.singlePinPoint,
-                        singlePinLabel: widget.singlePinLabel,
-                        liveDeviceLocation:
-                            AppStateStore.instance.liveDeviceLocation,
-                        liveDeviceAccuracyMeters:
-                            AppStateStore.instance.liveDeviceAccuracyMeters,
-                        nearbySearchingOrders: widget.nearbySearchingOrders,
-                        routePoints: effectiveRoute,
-                        animPhase: 0.25,
-                        mode: widget.mode,
-                        zoomLevel: _zoomLevel,
-                        panPixelOffset: _panPixelOffset,
-                        centerGeo: centerGeo,
-                        drawBackgroundOnly: true,
-                        pickupLabel: widget.pickupLabel,
-                        dropoffLabel: widget.dropoffLabel,
-                        fleetDrivers: _effectiveFleetDrivers,
-                      ),
-                    ),
-                    _buildGoogleMapTileLayer(viewSize, centerGeo),
-                  ],
-                ),
-              ),
-              builder: (context, staticMapBase) {
-                final phase = _animController.value;
-                final matrix = Matrix4.identity()
-                  ..setEntry(3, 2, 0.0012)
-                  ..rotateX(
-                    _effective3d
-                        ? (_manualPitchRadians + _cameraPitchOffset)
-                        : 0.0,
-                  )
-                  ..rotateZ(
-                    _effective3d
-                        ? (_manualYawRadians + _cameraYawOffset)
-                        : 0.0,
-                  )
-                  ..scaleByDouble(
-                    _effective3d ? 1.14 : 1.0,
-                    _effective3d ? 1.14 : 1.0,
-                    1.0,
-                    1.0,
-                  );
-
-                return Stack(
-                  children: [
-                    Positioned.fill(
-                      child: Container(color: const Color(0xFFE2E8F0)),
-                    ),
-                    Positioned.fill(
-                      child: Transform(
-                        alignment: Alignment.center,
-                        transform: matrix,
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            staticMapBase!,
-                            RepaintBoundary(
-                              child: CustomPaint(
-                                painter: _Map3dCanvasPainter(
-                                  is3dMode: _effective3d,
-                                  progressFraction: widget.progressFraction,
-                                  driverLocation: widget.driverLocation,
-                                  drawnPolygonPoints: widget.drawnPolygonPoints,
-                                  drawnPolygonGeoPoints:
-                                      widget.drawnPolygonGeoPoints,
-                                  geofenceZones: widget.geofenceZones,
-                                  singlePinPoint: widget.singlePinPoint,
-                                  singlePinLabel: widget.singlePinLabel,
-                                  liveDeviceLocation:
-                                      AppStateStore.instance.liveDeviceLocation,
-                                  liveDeviceAccuracyMeters: AppStateStore
-                                      .instance
-                                      .liveDeviceAccuracyMeters,
-                                  nearbySearchingOrders:
-                                      widget.nearbySearchingOrders,
-                                  routePoints: effectiveRoute,
-                                  animPhase: phase,
-                                  mode: widget.mode,
-                                  zoomLevel: _zoomLevel,
-                                  panPixelOffset: _panPixelOffset,
-                                  centerGeo: centerGeo,
-                                  drawBackgroundOnly: false,
-                                  showCalloutLabels:
-                                      !widget.isFullScreenBackground,
-                                  pickupLabel: widget.pickupLabel,
-                                  dropoffLabel: widget.dropoffLabel,
-                                  fleetDrivers: _effectiveFleetDrivers,
-                                ),
-                              ),
-                            ),
-                          ],
+                    staticMapBase!,
+                    RepaintBoundary(
+                      child: CustomPaint(
+                        painter: _Map3dCanvasPainter(
+                          is3dMode: _effective3d,
+                          progressFraction: widget.progressFraction,
+                          driverLocation: widget.driverLocation,
+                          drawnPolygonPoints: widget.drawnPolygonPoints,
+                          drawnPolygonGeoPoints: widget.drawnPolygonGeoPoints,
+                          geofenceZones: widget.geofenceZones,
+                          singlePinPoint: widget.singlePinPoint,
+                          singlePinLabel: widget.singlePinLabel,
+                          liveDeviceLocation:
+                              AppStateStore.instance.liveDeviceLocation,
+                          liveDeviceAccuracyMeters:
+                              AppStateStore.instance.liveDeviceAccuracyMeters,
+                          nearbySearchingOrders: widget.nearbySearchingOrders,
+                          routePoints: effectiveRoute,
+                          animPhase: phase,
+                          mode: widget.mode,
+                          zoomLevel: _zoomLevel,
+                          panPixelOffset: _panPixelOffset,
+                          centerGeo: centerGeo,
+                          drawBackgroundOnly: false,
+                          showCalloutLabels: !widget.isFullScreenBackground,
+                          pickupLabel: widget.pickupLabel,
+                          dropoffLabel: widget.dropoffLabel,
+                          fleetDrivers: _effectiveFleetDrivers,
                         ),
                       ),
                     ),
+                  ],
+                ),
+              );
+              if (pinchActive) {
+                transformedMap = Transform.scale(
+                  scale: _pinchVisualScale,
+                  alignment: pinchAlignment,
+                  child: transformedMap,
+                );
+              }
+
+              final hasTapCallback = widget.onTapGeoPoint != null ||
+                  widget.onTapRelativePoint != null;
+
+              return Stack(
+                children: [
+                  Positioned.fill(
+                    child: Container(color: const Color(0xFFE2E8F0)),
+                  ),
+                  Positioned.fill(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onDoubleTapDown: hasTapCallback
+                          ? null
+                          : (details) {
+                              _doubleTapPosition = details.localPosition;
+                            },
+                      onDoubleTap: hasTapCallback
+                          ? null
+                          : () {
+                              setState(() {
+                                _applyZoom(
+                                  _zoomLevel + 1,
+                                  anchor: _doubleTapPosition,
+                                  viewSize: viewSize,
+                                );
+                              });
+                            },
+                      onScaleStart: (details) {
+                        _scaleLastFocalPoint = details.localFocalPoint;
+                        _scaleStartZoom = _zoomLevel;
+                        _pinchFocalPoint = details.localFocalPoint;
+                      },
+                      onScaleUpdate: (details) {
+                        final focalDelta = _scaleLastFocalPoint != null
+                            ? (details.localFocalPoint - _scaleLastFocalPoint!)
+                            : Offset.zero;
+                        _scaleLastFocalPoint = details.localFocalPoint;
+                        setState(() {
+                          _panPixelOffset += focalDelta;
+                          if ((details.scale - 1.0).abs() > 0.015) {
+                            final continuousZoom = (_scaleStartZoom +
+                                    math.log(details.scale) / math.ln2)
+                                .clamp(5.0, 20.0);
+                            final nextZoom = continuousZoom.round().clamp(5, 20);
+                            if (nextZoom != _zoomLevel) {
+                              _applyZoom(
+                                nextZoom,
+                                anchor: details.localFocalPoint,
+                                viewSize: viewSize,
+                              );
+                            }
+                            _pinchVisualScale = math
+                                .pow(2.0, continuousZoom - _zoomLevel)
+                                .toDouble();
+                            _pinchFocalPoint = details.localFocalPoint;
+                          }
+                        });
+                      },
+                      onScaleEnd: (_) {
+                        if ((_pinchVisualScale - 1.0).abs() > 0.001) {
+                          setState(() => _pinchVisualScale = 1.0);
+                        }
+                      },
+                      onTapUp: !hasTapCallback
+                          ? null
+                          : (details) {
+                              if (viewSize.width <= 0 ||
+                                  viewSize.height <= 0) {
+                                return;
+                              }
+                              if (widget.onTapGeoPoint != null) {
+                                final tappedGeo = _screenOffsetToGeoPoint(
+                                  details.localPosition,
+                                  viewSize,
+                                  centerGeo,
+                                );
+                                widget.onTapGeoPoint!(tappedGeo);
+                              }
+                              if (widget.onTapRelativePoint != null) {
+                                final relX =
+                                    (details.localPosition.dx / viewSize.width)
+                                        .clamp(0.0, 1.0);
+                                final relY =
+                                    (details.localPosition.dy / viewSize.height)
+                                        .clamp(0.0, 1.0);
+                                widget.onTapRelativePoint!(Offset(relX, relY));
+                              }
+                            },
+                      child: transformedMap,
+                    ),
+                  ),
                     if (hasTopOverlay)
                       Positioned(
                         top: 10,
@@ -2323,14 +2534,14 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
                       Positioned(
                         bottom: 10,
                         left: 10,
-                        right: 52,
+                        right: 58,
                         child: Align(
                           alignment: Alignment.bottomLeft,
                           child: SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
+                                horizontal: 7,
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
@@ -2345,57 +2556,6 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  InkWell(
-                                    onTap: () =>
-                                        _handleFocusMyRealGps(context),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 6,
-                                        vertical: 2,
-                                      ),
-                                      color: AppStateStore
-                                              .instance
-                                              .hasRealDeviceGpsFix
-                                          ? const Color(0xFF0284C7)
-                                          : Colors.white12,
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            AppStateStore
-                                                    .instance
-                                                    .hasRealDeviceGpsFix
-                                                ? Icons.my_location_rounded
-                                                : Icons
-                                                    .location_searching_rounded,
-                                            size: 11,
-                                            color: AppStateStore
-                                                    .instance
-                                                    .hasRealDeviceGpsFix
-                                                ? Colors.white
-                                                : AppColors.acid,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            AppStateStore
-                                                    .instance
-                                                    .hasRealDeviceGpsFix
-                                                ? 'GPS Thật (${AppStateStore.instance.liveDeviceLocation!.latitude.toStringAsFixed(4)}, ${AppStateStore.instance.liveDeviceLocation!.longitude.toStringAsFixed(4)}${_formatAccuracyMetersText(AppStateStore.instance.liveDeviceAccuracyMeters)})'
-                                                : (AppStateStore.instance
-                                                        .isAcquiringLiveGps
-                                                    ? 'Đang lấy GPS...'
-                                                    : 'Định vị GPS thật'),
-                                            style: const TextStyle(
-                                              fontSize: 9.5,
-                                              fontWeight: FontWeight.w800,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
                                   const Icon(
                                     Icons.layers_outlined,
                                     size: 13,
@@ -2431,47 +2591,52 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
                                 centerGeo,
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 5),
                             _buildMapControlBtn(
                               buttonKey: const ValueKey('btn_map_my_real_gps'),
                               icon: Icons.my_location_rounded,
                               isHighlighted:
                                   AppStateStore.instance.hasRealDeviceGpsFix,
-                              tooltip:
-                                  'Định vị & đưa bản đồ tới Vị trí GPS thật của bạn',
+                              tooltip: 'Vị trí hiện tại của tôi',
                               onTap: () => _handleFocusMyRealGps(context),
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 5),
                             _buildMapControlBtn(
                               label: '+',
-                              tooltip: 'Phóng to (hoặc cuộn chuột lên)',
+                              tooltip: 'Phóng to bản đồ',
                               onTap: () {
                                 setState(() {
-                                  _userAdjustedZoom = true;
-                                  _zoomLevel = (_zoomLevel + 1).clamp(5, 19);
+                                  _applyZoom(
+                                    _zoomLevel + 1,
+                                    viewSize: viewSize,
+                                  );
                                 });
                               },
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 5),
                             _buildMapControlBtn(
                               label: '−',
-                              tooltip: 'Thu nhỏ (hoặc cuộn chuột xuống)',
+                              tooltip: 'Thu nhỏ bản đồ',
                               onTap: () {
                                 setState(() {
-                                  _userAdjustedZoom = true;
-                                  _zoomLevel = (_zoomLevel - 1).clamp(5, 19);
+                                  _applyZoom(
+                                    _zoomLevel - 1,
+                                    viewSize: viewSize,
+                                  );
                                 });
                               },
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 5),
                             _buildMapControlBtn(
                               icon: Icons.center_focus_strong_rounded,
                               tooltip: 'Căn giữa lộ trình / khung bản đồ',
                               onTap: () {
                                 setState(() {
+                                  _previousZoomLevel = _zoomLevel;
                                   _customCenterGeoOverride = null;
                                   _panPixelOffset = Offset.zero;
                                   _manualYawRadians = 0.0;
+                                  _pinchVisualScale = 1.0;
                                   _userAdjustedZoom = false;
                                   _zoomLevel = _computeInitialAutoZoom(
                                     viewport: viewSize,
@@ -2479,12 +2644,12 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
                                 });
                               },
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 5),
                             InkWell(
                               onTap: _handleToggle3d,
                               child: Container(
-                                width: 29,
-                                height: 29,
+                                width: 34,
+                                height: 34,
                                 alignment: Alignment.center,
                                 decoration: BoxDecoration(
                                   color: _effective3d
@@ -2501,7 +2666,7 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
                                 child: Text(
                                   _effective3d ? '3D' : '2D',
                                   style: TextStyle(
-                                    fontSize: 10.0,
+                                    fontSize: 10.5,
                                     fontWeight: FontWeight.w800,
                                     color: _effective3d
                                         ? Colors.white
@@ -2518,11 +2683,10 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
               },
             ),
           ),
-        ),
-      );
-    }
+        );
+      }
 
-    if (widget.expandToParent) {
+      if (widget.expandToParent) {
       return ClipRect(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -2591,8 +2755,8 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
         key: buttonKey,
         onTap: onTap,
         child: Container(
-          width: 29,
-          height: 29,
+          width: 34,
+          height: 34,
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: bgColor,
@@ -2605,11 +2769,11 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
             ],
           ),
           child: icon != null
-              ? Icon(icon, size: 14.5, color: fgColor)
+              ? Icon(icon, size: 16.5, color: fgColor)
               : Text(
                   label ?? '',
                   style: TextStyle(
-                    fontSize: 14.5,
+                    fontSize: 16.0,
                     fontWeight: FontWeight.w900,
                     color: fgColor,
                   ),
@@ -3024,27 +3188,6 @@ class _Map3dCanvasPainter extends CustomPainter {
       1.7,
       Paint()..color = Colors.white.withValues(alpha: 0.85),
     );
-
-    final overlapsSinglePin = singlePinPoint != null &&
-        GeoMath.distanceMeters(singlePinPoint!, livePt) <= 25.0;
-    final overlapsRadarDriver = mode == MapViewMode.driverRadar &&
-        GeoMath.distanceMeters(
-              AppStateStore.instance.activeDriverLocation,
-              livePt,
-            ) <=
-            25.0;
-    if (!overlapsSinglePin && !overlapsRadarDriver) {
-      final accBadge = _Map3dPerspectiveWidgetState._formatAccuracyMetersText(
-        liveDeviceAccuracyMeters,
-      );
-      _drawCalloutBadge(
-        canvas,
-        screenPt,
-        'GPS của bạn$accBadge',
-        const Color(0xFF0369A1),
-        offset: const Offset(0, -20),
-      );
-    }
   }
 
   @override

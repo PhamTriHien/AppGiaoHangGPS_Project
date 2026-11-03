@@ -141,7 +141,7 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
         !RegExp(r'^[0-9]{4}$').hasMatch(last4)) {
       setState(
         () => _error =
-            'Nhập đúng mã vận đơn Cloud (CL-...) và đủ 4 số cuối SĐT người nhận, hoặc dán mã chia sẻ 64 ký tự.',
+            'Nhập đúng mã vận đơn và đủ 4 số cuối SĐT người nhận, hoặc dán mã chia sẻ 64 ký tự.',
       );
       return;
     }
@@ -230,7 +230,7 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'TRA CỨU HÀNH TRÌNH CLOUD BẢO MẬT',
+                        'TRA CỨU HÀNH TRÌNH VẬN ĐƠN BẢO MẬT',
                         style: TextStyle(
                           fontWeight: FontWeight.w900,
                           fontSize: 12.5,
@@ -239,7 +239,7 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
                       ),
                       const SizedBox(height: 4),
                       const Text(
-                        'Nhập mã vận đơn Cloud (CL-...) kèm 4 số cuối SĐT người nhận, hoặc dán mã chia sẻ 64 ký tự. Địa chỉ, SĐT đầy đủ và mã OTP nhận hàng được bảo vệ trên Cloud.',
+                        'Nhập mã vận đơn kèm 4 số cuối SĐT người nhận, hoặc dán mã chia sẻ 64 ký tự. Địa chỉ, SĐT đầy đủ và mã OTP nhận hàng luôn được bảo mật.',
                         style: TextStyle(
                           fontSize: 11.5,
                           color: AppColors.textSecondary,
@@ -254,7 +254,7 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
                             onChanged: (_) => setState(() {}),
                             onSubmitted: (_) => _submitSearch(),
                             decoration: const InputDecoration(
-                              labelText: 'Mã vận đơn (CL-...) hoặc mã chia sẻ',
+                              labelText: 'Mã vận đơn hoặc mã chia sẻ',
                               prefixIcon: Icon(Icons.search_rounded),
                             ),
                           );
@@ -329,9 +329,9 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
                   _buildShareDetail(_shareData!)
                 else
                   _buildStatusBox(
-                    title: 'Sẵn sàng tra cứu hành trình Cloud trực tiếp',
+                    title: 'Sẵn sàng tra cứu hành trình trực tiếp',
                     subtitle:
-                        'Nhập mã vận đơn Cloud (CL-...) và 4 số cuối SĐT người nhận, hoặc mở liên kết chia sẻ từ người gửi để xem tiến độ giao hàng thời gian thực.',
+                        'Nhập mã vận đơn và 4 số cuối SĐT người nhận, hoặc mở liên kết chia sẻ từ người gửi để xem tiến độ giao hàng thời gian thực.',
                     icon: Icons.share_location_rounded,
                   ),
               ],
@@ -500,7 +500,7 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
           ),
           const Divider(height: 24),
           const Text(
-            'NHẬT KÝ HÀNH TRÌNH XÁC THỰC CLOUD',
+            'NHẬT KÝ HÀNH TRÌNH XÁC THỰC',
             style: TextStyle(
               fontWeight: FontWeight.w900,
               fontSize: 12,

@@ -412,7 +412,7 @@ class _LegacyAdminPortalScreenState extends State<LegacyAdminPortalScreen> {
                                         context,
                                       ).pushNamed('/admin'),
                                 icon: const Icon(Icons.cloud_outlined),
-                                label: const Text('Đăng nhập quản trị cloud'),
+                                label: const Text('Mở Cổng Quản trị'),
                               ),
                               if (_setup || _pendingAdmin != null)
                                 TextButton(

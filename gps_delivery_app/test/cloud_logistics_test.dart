@@ -319,7 +319,7 @@ void main() {
       ),
     );
     await settle(tester);
-    expect(find.text('Thống kê giao hàng toàn mạng (30 ngày)'), findsOneWidget);
+    expect(find.text('Thống kê giao hàng toàn mạng · 30 ngày'), findsOneWidget);
     expect(find.text('90.0%'), findsOneWidget);
     expect(find.text('1 giờ 35 phút'), findsOneWidget);
     expect(find.text('5 / 2'), findsOneWidget);
@@ -351,7 +351,7 @@ void main() {
       '20',
     );
     await tester.enterText(
-      find.widgetWithText(TextFormField, 'Tổng khối lượng (kg)'),
+      find.widgetWithText(TextFormField, 'Tổng khối lượng'),
       '600',
     );
     await tester.tap(find.text('Chọn ngày thu gom'));
@@ -364,7 +364,7 @@ void main() {
     expect(service.calls.where((c) => c['method'] == 'command'), isEmpty);
 
     await tester.enterText(
-      find.widgetWithText(TextFormField, 'Tổng khối lượng (kg)'),
+      find.widgetWithText(TextFormField, 'Tổng khối lượng'),
       '48.5',
     );
     await tester.tap(find.text('Đặt lịch xe thu gom'));
@@ -463,12 +463,12 @@ void main() {
     final optimize = find.text('Tối ưu thứ tự điểm dừng theo đường bộ');
     await tester.ensureVisible(
       find.text(
-        'Tùy chọn nâng cao (Kích thước, Bảo hiểm, Đa điểm dừng, POD/OTP)',
+        'Tùy chọn nâng cao: Kích thước, Bảo hiểm & Điểm dừng',
       ),
     );
     await tester.tap(
       find.text(
-        'Tùy chọn nâng cao (Kích thước, Bảo hiểm, Đa điểm dừng, POD/OTP)',
+        'Tùy chọn nâng cao: Kích thước, Bảo hiểm & Điểm dừng',
       ),
     );
     await tester.pumpAndSettle();

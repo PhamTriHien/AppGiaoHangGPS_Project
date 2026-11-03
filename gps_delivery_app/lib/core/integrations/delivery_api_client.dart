@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -8,9 +9,22 @@ import '../config/env_config.dart';
 import '../network/public_json_api.dart';
 
 class DeliveryApiClient {
-  DeliveryApiClient({http.Client? client}) : _client = client ?? http.Client();
+  DeliveryApiClient({http.Client? client})
+    : _ownsClient = client == null,
+      _client = client ?? http.Client();
   static final instance = DeliveryApiClient();
-  final http.Client _client;
+  final bool _ownsClient;
+  http.Client _client;
+  Future<void>? _refreshingSession;
+
+  /// Replaces the pooled HTTP client after OS background/tab resume so stale
+  /// half-closed keep-alive sockets cannot fail the first foreground request.
+  void resetConnectionPool() {
+    if (!_ownsClient) return;
+    final previous = _client;
+    _client = http.Client();
+    previous.close();
+  }
 
   static Uri uri(String path, {Map<String, String>? query}) {
     final base = EnvConfig.deliveryApiBaseUrl;
@@ -35,7 +49,7 @@ class DeliveryApiClient {
     } catch (_) {}
     if (token.isEmpty) {
       throw const PublicApiException(
-        'Cần đăng nhập tài khoản cloud để tiếp tục.',
+        'Vui lòng đăng nhập tài khoản để tiếp tục.',
       );
     }
     return {
@@ -43,6 +57,71 @@ class DeliveryApiClient {
       'Content-Type': 'application/json',
     };
   }
+
+  bool get _hasRefreshableCloudSession {
+    try {
+      final refresh =
+          Supabase.instance.client.auth.currentSession?.refreshToken;
+      return refresh != null && refresh.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> _ensureFreshCloudSession({bool force = false}) async {
+    GoTrueClient? auth;
+    Session? session;
+    try {
+      auth = Supabase.instance.client.auth;
+      session = auth.currentSession;
+    } catch (_) {
+      return false;
+    }
+    final refreshToken = session?.refreshToken;
+    if (session == null || refreshToken == null || refreshToken.isEmpty) {
+      return false;
+    }
+    final expiresAt = session.expiresAt;
+    final nowSeconds = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    final expiringSoon = expiresAt != null && expiresAt <= nowSeconds + 30;
+    if (!force && !session.isExpired && !expiringSoon) {
+      return false;
+    }
+    if (_refreshingSession != null) {
+      await _refreshingSession;
+      final after = auth.currentSession;
+      return after != null && !after.isExpired;
+    }
+    final operation = () async {
+      try {
+        await auth!.refreshSession();
+      } catch (_) {}
+    }();
+    _refreshingSession = operation;
+    try {
+      await operation;
+    } finally {
+      if (identical(_refreshingSession, operation)) {
+        _refreshingSession = null;
+      }
+    }
+    final updated = auth.currentSession;
+    return updated != null && !updated.isExpired;
+  }
+
+  Future<http.Response> _send(
+    Uri requestUri, {
+    required Map<String, String> headers,
+    required Map<String, dynamic>? body,
+    required Duration timeout,
+  }) => (body == null
+          ? _client.get(requestUri, headers: headers)
+          : _client.post(
+              requestUri,
+              headers: headers,
+              body: jsonEncode(body),
+            ))
+      .timeout(timeout);
 
   Future<Map<String, dynamic>> request(
     String path, {
@@ -56,8 +135,11 @@ class DeliveryApiClient {
     if (localAuth &&
         !const ['localhost', '127.0.0.1', '::1'].contains(requestUri.host)) {
       throw const PublicApiException(
-        'Kết nối backend từ xa cần đăng nhập tài khoản cloud.',
+        'Vui lòng đăng nhập tài khoản để kết nối dịch vụ.',
       );
+    }
+    if (!localAuth) {
+      await _ensureFreshCloudSession();
     }
     if (cloudOnly) {
       try {
@@ -65,30 +147,54 @@ class DeliveryApiClient {
           throw StateError('No cloud session');
         }
       } catch (_) {
-        throw const PublicApiException('Cần đăng nhập tài khoản cloud.');
+        throw const PublicApiException('Vui lòng đăng nhập tài khoản.');
       }
     }
-    final headers = localAuth
+    final effectiveTimeout =
+        (path == 'cloud/ai-chat' ||
+                path == 'ai/chat' ||
+                path == 'support-summary') &&
+                timeout == const Duration(seconds: 20)
+            ? const Duration(seconds: 90)
+            : timeout;
+    Map<String, String> buildHeaders() => localAuth
         ? {
             'Authorization': 'Bearer ${EnvConfig.otpEmailWebhookToken}',
             'Content-Type': 'application/json',
           }
         : authorizationHeaders;
     try {
-      final response =
-          await (body == null
-                  ? _client.get(requestUri, headers: headers)
-                  : _client.post(
-                      requestUri,
-                      headers: headers,
-                      body: jsonEncode(body),
-                    ))
-              .timeout(
-                (path == 'cloud/ai-chat' || path == 'ai/chat') &&
-                        timeout == const Duration(seconds: 20)
-                    ? const Duration(seconds: 30)
-                    : timeout,
-              );
+      http.Response response;
+      try {
+        response = await _send(
+          requestUri,
+          headers: buildHeaders(),
+          body: body,
+          timeout: effectiveTimeout,
+        );
+      } catch (error) {
+        if (!_ownsClient || body != null || error is TimeoutException) {
+          rethrow;
+        }
+        resetConnectionPool();
+        response = await _send(
+          requestUri,
+          headers: buildHeaders(),
+          body: null,
+          timeout: effectiveTimeout,
+        );
+      }
+      if (response.statusCode == 401 &&
+          !localAuth &&
+          _hasRefreshableCloudSession &&
+          await _ensureFreshCloudSession(force: true)) {
+        response = await _send(
+          requestUri,
+          headers: buildHeaders(),
+          body: body,
+          timeout: effectiveTimeout,
+        );
+      }
       final value = jsonDecode(utf8.decode(response.bodyBytes));
       if (response.statusCode != 200 || value is! Map<String, dynamic>) {
         final message = value is Map ? value['error'] : null;

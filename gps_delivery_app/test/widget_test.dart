@@ -143,7 +143,7 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpWidget(const GpsDeliveryApp(initialRoute: '/admin'));
       await tester.pump();
-      expect(find.text('GHST CLOUD ADMIN'), findsOneWidget);
+      expect(find.text('GHST ADMIN'), findsOneWidget);
       expect(find.text('Email quản trị'), findsOneWidget);
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpWidget(
@@ -289,7 +289,7 @@ void main() {
       layer: 'm,traffic',
     );
     expect(tileUrl.contains('.google.com/vt/lyrs=m,traffic'), isTrue);
-    expect(tileUrl.contains('x=26018&y=15416&z=15'), isTrue);
+    expect(tileUrl.contains('x=26018&y=15416&z=15&scale=2'), isTrue);
     expect(tileUrl.contains('apistyle='), isFalse);
 
     final cleanBgTileUrl = EnvConfig.buildGoogleMapTileUrl(
@@ -2614,7 +2614,7 @@ void main() {
             .queryRows('order_tracking_logs');
         expect(trackingRows.any((r) => r['order_id'] == 'NO_ORDER'), isFalse);
 
-        // 2. Map3dPerspectiveWidget hiển thị nhãn GPS Thật, nút Định vị thật của tôi & hỗ trợ thu phóng sâu 5..19
+        // 2. Map3dPerspectiveWidget ẩn chữ GPS Thật thừa, giữ mức thu phóng khi bấm Định vị & hỗ trợ zoom 5..20
         tester.view.physicalSize = const Size(1280, 900);
         tester.view.devicePixelRatio = 1.0;
         addTearDown(() {
@@ -2630,11 +2630,65 @@ void main() {
         await tester.pump(const Duration(milliseconds: 120));
         expect(tester.takeException(), isNull);
         expect(find.byKey(const ValueKey('btn_map_my_real_gps')), findsWidgets);
-        expect(
-          find.textContaining('GPS Thật (10.9533, 106.8703 ±250m)'),
-          findsWidgets,
-        );
+        expect(find.textContaining('GPS Thật'), findsNothing);
+        expect(find.textContaining('GPS của bạn'), findsNothing);
         expect(find.textContaining('Biên Hòa'), findsWidgets);
+
+        GeoPoint? tappedGeo;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                width: 800,
+                height: 440,
+                child: Map3dPerspectiveWidget(
+                  key: const ValueKey('zoom-preserve-map'),
+                  height: 440,
+                  is3dMode: false,
+                  useGlobalFallbackRoute: false,
+                  onTapGeoPoint: (pt) => tappedGeo = pt,
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 80));
+
+        // Mặc định không có route -> zoom = 15; bấm '+' 3 lần liên tiếp lên zoom = 18
+        await tester.tap(find.text('+'));
+        await tester.pump();
+        await tester.tap(find.text('+'));
+        await tester.pump();
+        await tester.tap(find.text('+'));
+        await tester.pump();
+
+        // Bấm nút Định vị hiện tại: phải căn tâm về realBienHoaFix nhưng GIỮ NGUYÊN zoom = 18 (không reset thu nhỏ về 16)
+        await tester.tap(find.byKey(const ValueKey('btn_map_my_real_gps')));
+        await tester.pump(const Duration(milliseconds: 80));
+        expect(find.textContaining('Đã định vị GPS thật'), findsNothing);
+
+        final mapBox = find.byKey(const ValueKey('zoom-preserve-map'));
+        final mapCenter = tester.getCenter(mapBox);
+        await tester.tapAt(mapCenter + const Offset(128, 0));
+        await tester.pump(const Duration(milliseconds: 80));
+        expect(tappedGeo, isNotNull);
+        // Ở zoom 18, 128px tương ứng nửa tile = 360 / (2 * 2^18) ≈ 0.0006866 độ kinh độ (zoom 16 là ≈ 0.0027466)
+        final lonDeltaAtZoom18 =
+            (tappedGeo!.longitude - realBienHoaFix.longitude).abs();
+        expect(lonDeltaAtZoom18, closeTo(360.0 / (2 * (1 << 18)), 1e-4));
+
+        // Khi thu nhỏ về zoom = 14 (bấm '−' 4 lần) rồi bấm lại Định vị hiện tại: vẫn giữ nguyên zoom = 14
+        for (var i = 0; i < 4; i++) {
+          await tester.tap(find.text('−'));
+          await tester.pump();
+        }
+        await tester.tap(find.byKey(const ValueKey('btn_map_my_real_gps')));
+        await tester.pump(const Duration(milliseconds: 80));
+        await tester.tapAt(mapCenter + const Offset(128, 0));
+        await tester.pump(const Duration(milliseconds: 80));
+        final lonDeltaAtZoom14 =
+            (tappedGeo!.longitude - realBienHoaFix.longitude).abs();
+        expect(lonDeltaAtZoom14, closeTo(360.0 / (2 * (1 << 14)), 1e-4));
 
         // Kiểm tra màn hình Tạo đơn tự động nạp điểm lấy theo GPS thật của thiết bị
         await tester.pumpWidget(

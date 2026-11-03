@@ -2062,7 +2062,7 @@ extension AppStateAuthAndGpsOps on AppStateStore {
     required String anonKey,
   }) async {
     if (!hasAdminPermission('Hệ thống: Bảo mật')) {
-      return 'Từ chối: Chỉ vai trò có quyền "Hệ thống: Bảo mật" mới được cấu hình Cloud.';
+      return 'Từ chối: Chỉ vai trò có quyền "Hệ thống: Bảo mật" mới được cấu hình kết nối.';
     }
     final uri = Uri.tryParse(url.trim());
     final publicKey = anonKey.trim();
@@ -2118,7 +2118,7 @@ extension AppStateAuthAndGpsOps on AppStateStore {
       isOfflineMode = false;
       offlineQueueCount = await _sqliteDb.getPendingQueueCount();
       lastSyncStatusMessage =
-          'Đã kết nối Cloud Supabase PostGIS thành công (${rows.length} bản ghi orders trên mây)';
+          'Đã kết nối máy chủ dữ liệu thành công (${rows.length} bản ghi đơn hàng)';
       _notifyStoreChanged();
       return lastSyncStatusMessage;
     } catch (e) {

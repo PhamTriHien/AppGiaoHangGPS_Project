@@ -180,7 +180,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('Mật khẩu'), findsOneWidget);
-      expect(find.byTooltip('Bảng giá cloud'), findsNothing);
+      expect(find.byTooltip('Bảng giá cước'), findsNothing);
       expect(api.calls, isEmpty);
       await tester.enterText(find.byType(TextField).at(0), 'user@example.com');
       await tester.enterText(find.byType(TextField).at(1), 'password-test');
@@ -265,12 +265,12 @@ void main() {
         MaterialApp(home: CloudOrdersScreen(service: api, admin: true)),
       );
       await tester.pumpAndSettle();
-      expect(find.byTooltip('Bảng giá cloud'), findsOneWidget);
+      expect(find.byTooltip('Bảng giá cước'), findsOneWidget);
       expect(find.textContaining('CL-TEST'), findsWidgets);
       api.missingSchema = true;
       await tester.tap(find.byTooltip('Tải lại đơn hàng'));
       await tester.pumpAndSettle();
-      expect(find.byTooltip('Bảng giá cloud'), findsNothing);
+      expect(find.byTooltip('Bảng giá cước'), findsNothing);
       expect(find.textContaining('CL-TEST'), findsNothing);
       expect(find.text('Chưa cài schema đơn hàng cloud.'), findsOneWidget);
       await finish(tester, api);
@@ -333,13 +333,20 @@ void main() {
           AppLifecycleState.inactive,
         );
         await tester.pumpAndSettle();
-        expect(find.textContaining('CL-TEST'), findsNothing);
+        expect(find.textContaining('CL-TEST'), findsWidgets);
+        tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
         tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+        await tester.pump();
+        expect(find.textContaining('CL-TEST'), findsWidgets);
         final reads = api.calls.length;
         await tester.pump(const Duration(seconds: 21));
         expect(api.calls, hasLength(reads));
         api.blocked = true;
         api.missingSchema = verificationFails;
+        tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.inactive,
+        );
         tester.binding.handleAppLifecycleStateChanged(
           AppLifecycleState.resumed,
         );
@@ -475,10 +482,10 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(
-        find.text('Tài khoản cloud chưa có quyền operator.'),
+        find.text('Tài khoản chưa có quyền quản trị.'),
         findsOneWidget,
       );
-      expect(find.byTooltip('Bảng giá cloud'), findsNothing);
+      expect(find.byTooltip('Bảng giá cước'), findsNothing);
       expect(api.calls.any((c) => c['path'] == 'accounts'), isFalse);
       await finish(tester, api);
     },
@@ -498,14 +505,14 @@ void main() {
       expect(find.text('Operator'), findsOneWidget);
       expect(find.text('Họ và tên'), findsNothing);
       expect(
-        find.textContaining('Cơ sở dữ liệu cloud cần cập nhật'),
+        find.textContaining('Cơ sở dữ liệu cần cập nhật'),
         findsOneWidget,
       );
       expect(
         tester
             .widget<IconButton>(
               find.byWidgetPredicate(
-                (w) => w is IconButton && w.tooltip == 'Bảng giá cloud',
+                (w) => w is IconButton && w.tooltip == 'Bảng giá cước',
               ),
             )
             .onPressed,
@@ -915,8 +922,8 @@ void main() {
         'Tên người nhận': 'Receiver',
         'Số điện thoại người nhận': '0912345678',
         'Hàng hóa': 'Documents',
-        'Khối lượng (kg)': '1',
-        'Tiền thu hộ (đồng)': '100000',
+        'Khối lượng': '1',
+        'Tiền thu hộ': '100000',
       }.entries) {
         final f = find.widgetWithText(TextFormField, entry.key);
         await tester.ensureVisible(f);
