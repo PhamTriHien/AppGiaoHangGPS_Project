@@ -5,7 +5,7 @@ extension _CustomerAuthAndAddressViews on _CustomerSubsystemEntryState {
   Widget _buildSavedAddressesView() {
     final mySavedAddresses = _store.customerSavedAddresses;
     return Card(
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero, side: BorderSide(color: AppColors.ink, width: 1.5)),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12)), side: BorderSide(color: AppColors.ink, width: 1.5)),
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -122,7 +122,7 @@ extension _CustomerAuthAndAddressViews on _CustomerSubsystemEntryState {
                       backgroundColor: const Color(0xFFF43F5E),
                       foregroundColor: Colors.white,
                       shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.zero),
+                        borderRadius: BorderRadius.all(Radius.circular(12)),
                       ),
                     ),
                     onPressed: () async {
@@ -220,7 +220,7 @@ extension _CustomerAuthAndAddressViews on _CustomerSubsystemEntryState {
                           color: isFocused
                               ? const Color(0xFFF4F7FA)
                               : Colors.white,
-                          borderRadius: BorderRadius.all(Radius.zero),
+                          borderRadius: BorderRadius.all(Radius.circular(12)),
                           border: Border.all(
                             color: isFocused
                                 ? const Color(0xFF2563EB)
@@ -239,7 +239,7 @@ extension _CustomerAuthAndAddressViews on _CustomerSubsystemEntryState {
                                   height: 40,
                                   decoration: const BoxDecoration(
                                     color: Color(0xFFEFF3F8),
-                                    borderRadius: BorderRadius.all(Radius.zero),
+                                    borderRadius: BorderRadius.all(Radius.circular(12)),
                                   ),
                                   child: Icon(
                                     addr.label.contains('Nhà')
@@ -474,7 +474,7 @@ extension _CustomerAuthAndAddressViews on _CustomerSubsystemEntryState {
                           vertical: 12,
                         ),
                         shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.all(Radius.zero),
+                          borderRadius: BorderRadius.all(Radius.circular(12)),
                         ),
                       ),
                       onPressed: () {

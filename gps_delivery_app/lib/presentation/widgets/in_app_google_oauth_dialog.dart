@@ -191,21 +191,12 @@ class _InAppGoogleOAuthDialogState extends State<InAppGoogleOAuthDialog> {
           maxHeight: 680,
         ),
         child: Container(
+          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: AppColors.ink, width: 2.0),
-            boxShadow: const [
-              BoxShadow(
-                color: AppColors.ink,
-                offset: Offset(6, 6),
-                blurRadius: 0,
-              ),
-              BoxShadow(
-                color: AppColors.violet,
-                offset: Offset(12, 12),
-                blurRadius: 0,
-              ),
-            ],
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.line),
+            boxShadow: AppColors.elevatedShadow,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -217,9 +208,9 @@ class _InAppGoogleOAuthDialogState extends State<InAppGoogleOAuthDialog> {
                   vertical: 10,
                 ),
                 decoration: const BoxDecoration(
-                  color: AppColors.paper,
+                  color: AppColors.surfaceSubtle,
                   border: Border(
-                    bottom: BorderSide(color: AppColors.ink, width: 1.5),
+                    bottom: BorderSide(color: AppColors.line),
                   ),
                 ),
                 child: Row(
@@ -230,7 +221,8 @@ class _InAppGoogleOAuthDialogState extends State<InAppGoogleOAuthDialog> {
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        border: Border.all(color: AppColors.ink, width: 1.4),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.line),
                       ),
                       child: const Text(
                         'G',

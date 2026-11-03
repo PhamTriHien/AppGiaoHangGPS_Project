@@ -109,7 +109,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
         ? _selectedBank
         : bankOptions.first;
     return Card(
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero, side: BorderSide(color: AppColors.ink, width: 1.5)),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12)), side: BorderSide(color: AppColors.ink, width: 1.5)),
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -144,7 +144,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                   ),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.all(Radius.zero),
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
                   ),
                   child: Text(
                     'Đã hoàn tất ${deliveredOrders.length}/${personalOrders.length} chuyến • Số dư khả dụng: ${CurrencyFormatter.formatVnd(availableWallet)}',
@@ -191,7 +191,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF4F7FA),
-                    borderRadius: BorderRadius.all(Radius.zero),
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
                     border: Border.all(color: const Color(0xFF0F172A)),
                   ),
                   child: SizedBox(
@@ -222,7 +222,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                                   color: b.$2 > 0.9
                                       ? const Color(0xFF14B866)
                                       : const Color(0xFF86EFAC),
-                                  borderRadius: BorderRadius.all(Radius.zero),
+                                  borderRadius: BorderRadius.all(Radius.circular(12)),
                                 ),
                               ),
                               const SizedBox(height: 6),
@@ -247,7 +247,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.all(Radius.zero),
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
                     border: Border.all(color: const Color(0xFF0F172A)),
                   ),
                   child: Column(
@@ -303,7 +303,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                                     vertical: 12,
                                   ),
                                   shape: const RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.all(Radius.zero),
+                                    borderRadius: BorderRadius.all(Radius.circular(12)),
                                   ),
                                 ),
                                 onPressed: () {
@@ -554,7 +554,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
             ? personalOrders.where((o) => o.daysAgoFrom(now) <= 6).toList()
             : personalOrders.where((o) => o.daysAgoFrom(now) <= 29).toList();
     return Card(
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero, side: BorderSide(color: AppColors.ink, width: 1.5)),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12)), side: BorderSide(color: AppColors.ink, width: 1.5)),
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -645,7 +645,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.all(Radius.zero),
+                        borderRadius: BorderRadius.all(Radius.circular(12)),
                         border: Border.all(color: const Color(0xFF0F172A)),
                         boxShadow: [
                           BoxShadow(
@@ -664,7 +664,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                             height: 72,
                             decoration: BoxDecoration(
                               color: const Color(0xFFDCFCE7),
-                              borderRadius: BorderRadius.all(Radius.zero),
+                              borderRadius: BorderRadius.all(Radius.circular(12)),
                               border: Border.all(color: const Color(0xFF86EFAC)),
                             ),
                             child: const Stack(
@@ -725,7 +725,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                                         color: isCancelledOrFailed
                                             ? const Color(0xFFFEE2E2)
                                             : const Color(0xFFFEF3C7),
-                                        borderRadius: BorderRadius.all(Radius.zero),
+                                        borderRadius: BorderRadius.all(Radius.circular(12)),
                                       ),
                                       child: Text(
                                         isCancelledOrFailed
@@ -816,7 +816,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
     if (activeOrder == null) {
       return Card(
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.all(Radius.circular(12)),
           side: BorderSide(color: AppColors.ink, width: 1.5),
         ),
         child: Padding(
@@ -856,7 +856,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
       'Kẹt xe nghiêm trọng / Khác',
     ];
     return Card(
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero, side: BorderSide(color: AppColors.ink, width: 1.5)),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12)), side: BorderSide(color: AppColors.ink, width: 1.5)),
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1035,7 +1035,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                   ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFDCFCE7),
-                    borderRadius: BorderRadius.all(Radius.zero),
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
                     border: Border.all(color: const Color(0xFF86EFAC)),
                   ),
                   child: Row(
@@ -1067,7 +1067,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                       backgroundColor: const Color(0xFF14B866),
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.zero),
+                        borderRadius: BorderRadius.all(Radius.circular(12)),
                       ),
                     ),
                     onPressed: activeOrder.status == OrderStatus.delivered ||
@@ -1261,7 +1261,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: const Color(0xFF0F172A),
-        borderRadius: BorderRadius.all(Radius.zero),
+        borderRadius: BorderRadius.all(Radius.circular(12)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1309,7 +1309,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: const Color(0xFF0F172A),
-              borderRadius: BorderRadius.all(Radius.zero),
+              borderRadius: BorderRadius.all(Radius.circular(12)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1351,7 +1351,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: const Color(0xFF0F172A),
-                    borderRadius: BorderRadius.all(Radius.zero),
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1396,7 +1396,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: const Color(0xFF0F172A),
-                    borderRadius: BorderRadius.all(Radius.zero),
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1475,7 +1475,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: const Color(0xFF0F172A),
-              borderRadius: BorderRadius.all(Radius.zero),
+              borderRadius: BorderRadius.all(Radius.circular(12)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1514,7 +1514,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                                 color: bar.$2 == 1.0
                                     ? const Color(0xFF14B866)
                                     : const Color(0xFF38BDF8),
-                                borderRadius: BorderRadius.all(Radius.zero),
+                                borderRadius: BorderRadius.all(Radius.circular(12)),
                               ),
                             ),
                             const SizedBox(height: 6),
@@ -1561,7 +1561,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: const Color(0xFF0F172A),
-                  borderRadius: BorderRadius.all(Radius.zero),
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

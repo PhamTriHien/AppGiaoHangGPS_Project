@@ -757,7 +757,7 @@ class _MerchantSubsystemEntryState extends State<MerchantSubsystemEntry> {
                         ? AppColors.acid
                         : Colors.white.withValues(alpha: 0.16),
                     shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.zero,
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
                     ),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
@@ -867,7 +867,7 @@ class _MerchantSubsystemEntryState extends State<MerchantSubsystemEntry> {
                     foregroundColor: AppColors.techBg,
                     backgroundColor: AppColors.acid,
                     shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.zero,
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
                     ),
                     padding: EdgeInsets.symmetric(
                       horizontal: isCompact ? 8 : 12,
@@ -1053,7 +1053,7 @@ class _MerchantSubsystemEntryState extends State<MerchantSubsystemEntry> {
             final items = _store.merchantNotifications;
             return AlertDialog(
               shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.zero,
+                borderRadius: BorderRadius.all(Radius.circular(12)),
                 side: BorderSide(color: AppColors.ink, width: 1.8),
               ),
               titlePadding: const EdgeInsets.fromLTRB(16, 14, 16, 8),

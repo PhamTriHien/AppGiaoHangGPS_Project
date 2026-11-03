@@ -6,6 +6,7 @@ class AdminStudioColors {
   static const Color paper = Color(0xFFF4F7FA);
   static const Color paperWarm = Color(0xFFEFF3F8);
   static const Color surface = Color(0xFFFFFFFF);
+  static const Color surfaceSubtle = Color(0xFFF8FAFC);
   static const Color ink = Color(0xFF0F172A);
   static const Color shellDark = Color(0xFF0F172A);
   static const Color shellDeep = Color(0xFF090E1A);
@@ -14,6 +15,7 @@ class AdminStudioColors {
   static const Color shellLine = Color(0x26CBD5E1);
   static const Color violet = Color(0xFF2563EB);
   static const Color violetSoft = Color(0xFFEFF6FF);
+  static const Color violetInk = Color(0xFF1E3A8A);
   static const Color acid = Color(0xFF6EE7B7);
   static const Color acidSoft = Color(0xFFECFDF5);
   static const Color acidInk = Color(0xFF065F46);
@@ -38,7 +40,7 @@ class AdminStudioTheme {
       primary: AdminStudioColors.violet,
       onPrimary: Colors.white,
       secondary: AdminStudioColors.ink,
-      onSecondary: AdminStudioColors.acid,
+      onSecondary: Colors.white,
       surface: AdminStudioColors.surface,
       onSurface: AdminStudioColors.ink,
       error: AdminStudioColors.danger,
@@ -47,22 +49,24 @@ class AdminStudioTheme {
       useMaterial3: true,
       colorScheme: scheme,
       scaffoldBackgroundColor: AdminStudioColors.paper,
-      cardTheme: const CardThemeData(
+      cardTheme: CardThemeData(
         elevation: 0,
         color: AdminStudioColors.surface,
+        surfaceTintColor: Colors.transparent,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.zero,
-          side: BorderSide(color: AdminStudioColors.ink, width: 1.5),
+          borderRadius: BorderRadius.circular(14),
+          side: const BorderSide(color: AdminStudioColors.line, width: 1),
         ),
       ),
-      dialogTheme: const DialogThemeData(
-        elevation: 0,
-        backgroundColor: AdminStudioColors.paper,
+      dialogTheme: DialogThemeData(
+        elevation: 6,
+        shadowColor: const Color(0x1F0F172A),
+        backgroundColor: AdminStudioColors.surface,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.zero,
-          side: BorderSide(color: AdminStudioColors.ink, width: 2),
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: AdminStudioColors.line, width: 1),
         ),
       ),
       dividerTheme: const DividerThemeData(
@@ -72,109 +76,140 @@ class AdminStudioTheme {
       ),
       chipTheme: ChipThemeData(
         backgroundColor: AdminStudioColors.surface,
-        selectedColor: AdminStudioColors.acid,
+        selectedColor: AdminStudioColors.violetSoft,
+        secondarySelectedColor: AdminStudioColors.violet,
+        checkmarkColor: AdminStudioColors.violet,
         disabledColor: AdminStudioColors.paperWarm,
-        side: const BorderSide(color: AdminStudioColors.ink, width: 1.2),
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-        labelStyle: const TextStyle(
-          color: AdminStudioColors.ink,
-          fontWeight: FontWeight.w700,
-          fontSize: 12.5,
-        ),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      ),
-      segmentedButtonTheme: SegmentedButtonThemeData(
-        style: ButtonStyle(
-          shape: const WidgetStatePropertyAll(
-            RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-          ),
-          side: const WidgetStatePropertyAll(
-            BorderSide(color: AdminStudioColors.ink, width: 1.4),
-          ),
-          backgroundColor: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.selected)) {
-              return AdminStudioColors.ink;
-            }
-            return AdminStudioColors.surface;
-          }),
-          foregroundColor: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.selected)) {
-              return AdminStudioColors.acid;
-            }
-            return AdminStudioColors.ink;
-          }),
-          textStyle: const WidgetStatePropertyAll(
-            TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
-          ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(999),
+          side: const BorderSide(color: Color(0xFFCBD5E1), width: 1),
+        ),
+        labelStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: AdminStudioColors.ink,
+        ),
+        secondaryLabelStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
         ),
       ),
-      inputDecorationTheme: const InputDecorationTheme(
+      inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AdminStudioColors.surface,
-        contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        fillColor: const Color(0xFFF8FAFC),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 13,
+        ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.zero,
-          borderSide: BorderSide(color: AdminStudioColors.ink, width: 1.4),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.1),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.zero,
-          borderSide: BorderSide(color: AdminStudioColors.ink, width: 1.4),
-        ),
-        disabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.zero,
-          borderSide: BorderSide(color: AdminStudioColors.line, width: 1.2),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.1),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.zero,
-          borderSide: BorderSide(color: AdminStudioColors.violet, width: 2),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: AdminStudioColors.violet,
+            width: 1.8,
+          ),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.zero,
-          borderSide: BorderSide(color: AdminStudioColors.danger, width: 1.6),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: AdminStudioColors.danger,
+            width: 1.4,
+          ),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.zero,
-          borderSide: BorderSide(color: AdminStudioColors.danger, width: 2),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: AdminStudioColors.danger,
+            width: 1.8,
+          ),
+        ),
+        labelStyle: const TextStyle(
+          color: AdminStudioColors.muted,
+          fontWeight: FontWeight.w600,
+          fontSize: 13,
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: AdminStudioColors.ink,
-          foregroundColor: AdminStudioColors.acid,
-          disabledBackgroundColor: const Color(0xFFD7D2C6),
+          backgroundColor: AdminStudioColors.violet,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: const Color(0xFFCBD5E1),
           disabledForegroundColor: AdminStudioColors.muted,
           elevation: 0,
+          minimumSize: const Size(44, 46),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-          textStyle: const TextStyle(
-            fontWeight: FontWeight.w800,
-            fontSize: 13.5,
-            letterSpacing: 0.2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.zero,
-            side: BorderSide(color: AdminStudioColors.ink, width: 1.4),
+          textStyle: const TextStyle(
+            fontSize: 13.5,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.1,
+          ),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AdminStudioColors.violet,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          minimumSize: const Size(44, 46),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          textStyle: const TextStyle(
+            fontSize: 13.5,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          backgroundColor: AdminStudioColors.surface,
           foregroundColor: AdminStudioColors.ink,
-          disabledForegroundColor: AdminStudioColors.muted,
-          side: const BorderSide(color: AdminStudioColors.ink, width: 1.4),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-          textStyle: const TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 13,
+          backgroundColor: AdminStudioColors.surface,
+          minimumSize: const Size(44, 46),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          side: const BorderSide(color: Color(0xFFCBD5E1), width: 1),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
-          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+          textStyle: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: AdminStudioColors.ink,
-          textStyle: const TextStyle(fontWeight: FontWeight.w800),
-          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+          foregroundColor: AdminStudioColors.violet,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          textStyle: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: AdminStudioColors.ink,
+        contentTextStyle: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+        ),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
         ),
       ),
     );
@@ -182,23 +217,22 @@ class AdminStudioTheme {
 }
 
 class AdminStudioMark extends StatelessWidget {
-  const AdminStudioMark({
-    super.key,
-    this.size = 40,
-    this.onDark = true,
-  });
+  const AdminStudioMark({super.key, this.size = 38, this.inverted = false});
 
   final double size;
-  final bool onDark;
+  final bool inverted;
 
   @override
   Widget build(BuildContext context) {
-    final bg = onDark ? AdminStudioColors.acid : AdminStudioColors.ink;
-    final fg = onDark ? AdminStudioColors.ink : Colors.white;
-    final stripe = onDark ? AdminStudioColors.pink : AdminStudioColors.acid;
-    final tagColor = onDark ? AdminStudioColors.violet : AdminStudioColors.acid;
-    return ClipPath(
-      clipper: const _ChamferStudioClipper(),
+    final bg = inverted ? AdminStudioColors.acid : AdminStudioColors.violet;
+    final fg = inverted ? AdminStudioColors.ink : Colors.white;
+    final stripe = inverted ? AdminStudioColors.pink : AdminStudioColors.acid;
+    final tagColor = inverted
+        ? AdminStudioColors.ink.withValues(alpha: 0.72)
+        : AdminStudioColors.acid;
+    final radius = (size * 0.28).clamp(8.0, 14.0);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(radius),
       child: Container(
         width: size,
         height: size,
@@ -213,7 +247,7 @@ class AdminStudioMark extends StatelessWidget {
               child: ColoredBox(color: stripe),
             ),
             Align(
-              alignment: const Alignment(-0.1, 0.1),
+              alignment: const Alignment(-0.08, 0.1),
               child: Text(
                 'G',
                 style: TextStyle(
@@ -221,7 +255,7 @@ class AdminStudioMark extends StatelessWidget {
                   fontSize: size * 0.48,
                   fontWeight: FontWeight.w900,
                   height: 1,
-                  letterSpacing: -0.8,
+                  letterSpacing: -0.6,
                 ),
               ),
             ),
@@ -244,22 +278,6 @@ class AdminStudioMark extends StatelessWidget {
       ),
     );
   }
-}
-
-class _ChamferStudioClipper extends CustomClipper<Path> {
-  const _ChamferStudioClipper();
-
-  @override
-  Path getClip(Size size) => Path()
-    ..moveTo(0, 0)
-    ..lineTo(size.width, 0)
-    ..lineTo(size.width, size.height * 0.72)
-    ..lineTo(size.width * 0.72, size.height)
-    ..lineTo(0, size.height)
-    ..close();
-
-  @override
-  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }
 
 class AdminStudioGridBackdrop extends StatelessWidget {
@@ -303,14 +321,14 @@ class _StudioGridPainter extends CustomPainter {
     final glowPaint = Paint()
       ..shader = RadialGradient(
         colors: [
-          AdminStudioColors.violet.withValues(alpha: 0.34),
+          AdminStudioColors.violet.withValues(alpha: 0.28),
           AdminStudioColors.violet.withValues(alpha: 0.0),
         ],
       ).createShader(Rect.fromCircle(center: glowCenter, radius: glowRadius));
     canvas.drawCircle(glowCenter, glowRadius, glowPaint);
 
     final gridPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.04)
+      ..color = Colors.white.withValues(alpha: 0.035)
       ..strokeWidth = 1;
     for (double x = 0; x <= size.width; x += gridSpacing) {
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
@@ -333,10 +351,11 @@ class AdminNeoBox extends StatelessWidget {
     this.padding = EdgeInsets.zero,
     this.margin = EdgeInsets.zero,
     this.backgroundColor = AdminStudioColors.surface,
-    this.borderColor = AdminStudioColors.ink,
-    this.shadowColor = AdminStudioColors.ink,
-    this.borderWidth = 1.5,
-    this.shadowOffset = const Offset(3, 3),
+    this.borderColor = AdminStudioColors.line,
+    this.shadowColor = const Color(0x0D0F172A),
+    this.borderWidth = 1.0,
+    this.borderRadius = 14.0,
+    this.shadowOffset = const Offset(0, 4),
   });
 
   final Widget child;
@@ -346,32 +365,47 @@ class AdminNeoBox extends StatelessWidget {
   final Color borderColor;
   final Color shadowColor;
   final double borderWidth;
+  final double borderRadius;
   final Offset shadowOffset;
 
   @override
-  Widget build(BuildContext context) => Semantics(
-    container: true,
-    child: Container(
-      margin: margin,
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        border: Border.all(color: borderColor, width: borderWidth),
-        boxShadow: shadowOffset == Offset.zero
-            ? null
-            : [
-                BoxShadow(
-                  color: shadowColor,
-                  offset: shadowOffset,
-                  blurRadius: 0,
-                ),
-              ],
+  Widget build(BuildContext context) {
+    final effectiveBorder = borderColor == AdminStudioColors.ink
+        ? AdminStudioColors.line
+        : borderColor;
+    return Semantics(
+      container: true,
+      child: Container(
+        margin: margin,
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(borderRadius),
+          border: Border.all(color: effectiveBorder, width: borderWidth),
+          boxShadow: shadowOffset == Offset.zero
+              ? null
+              : const [
+                  BoxShadow(
+                    color: Color(0x0A0F172A),
+                    offset: Offset(0, 4),
+                    blurRadius: 14,
+                  ),
+                  BoxShadow(
+                    color: Color(0x050F172A),
+                    offset: Offset(0, 1),
+                    blurRadius: 3,
+                  ),
+                ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(borderRadius),
+          child: Material(
+            type: MaterialType.transparency,
+            child: padding == EdgeInsets.zero
+                ? child
+                : Padding(padding: padding, child: child),
+          ),
+        ),
       ),
-      child: Material(
-        type: MaterialType.transparency,
-        child: padding == EdgeInsets.zero
-            ? child
-            : Padding(padding: padding, child: child),
-      ),
-    ),
-  );
+    );
+  }
 }

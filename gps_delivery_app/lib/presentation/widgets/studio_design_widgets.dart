@@ -6,22 +6,6 @@ import '../../data/datasources/local/app_state_store.dart';
 import 'animated_3d_ui_icons.dart';
 import 'system_state_screens.dart';
 
-class _StudioPolygonMarkClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    return Path()
-      ..moveTo(0, 0)
-      ..lineTo(size.width, 0)
-      ..lineTo(size.width, size.height * 0.72)
-      ..lineTo(size.width * 0.72, size.height)
-      ..lineTo(0, size.height)
-      ..close();
-  }
-
-  @override
-  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
-}
-
 class StudioMarkWordmark extends StatelessWidget {
   final bool light;
   final String title;
@@ -48,8 +32,8 @@ class StudioMarkWordmark extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        ClipPath(
-          clipper: _StudioPolygonMarkClipper(),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(11),
           child: Container(
             width: 40,
             height: 40,
@@ -354,7 +338,8 @@ class _Studio3dStartupSplashScreenState
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border.all(color: AppColors.ink, width: 1.2),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.line),
       ),
       child: Text(
         '$label: $value',
@@ -438,15 +423,15 @@ class _Studio3dStartupSplashScreenState
                               ),
                               decoration: BoxDecoration(
                                 color: AppColors.techPanel,
+                                borderRadius: BorderRadius.circular(999),
                                 border: Border.all(
-                                  color: AppColors.acid,
-                                  width: 1.4,
+                                  color: AppColors.acid.withValues(alpha: 0.55),
                                 ),
                                 boxShadow: const [
                                   BoxShadow(
-                                    color: AppColors.violet,
-                                    offset: Offset(4, 4),
-                                    blurRadius: 0,
+                                    color: Color(0x330F172A),
+                                    offset: Offset(0, 6),
+                                    blurRadius: 16,
                                   ),
                                 ],
                               ),
@@ -497,15 +482,17 @@ class _Studio3dStartupSplashScreenState
                                         .clamp(172.0, 340.0),
                                     decoration: BoxDecoration(
                                       color: const Color(0xCC0A0E14),
+                                      borderRadius: BorderRadius.circular(20),
                                       border: Border.all(
-                                        color: AppColors.acid,
-                                        width: 1.6,
+                                        color: AppColors.acid.withValues(
+                                          alpha: 0.45,
+                                        ),
                                       ),
                                       boxShadow: const [
                                         BoxShadow(
-                                          color: AppColors.violet,
-                                          offset: Offset(12, 12),
-                                          blurRadius: 0,
+                                          color: Color(0x45000000),
+                                          offset: Offset(0, 18),
+                                          blurRadius: 36,
                                         ),
                                       ],
                                     ),
@@ -552,18 +539,10 @@ class _Studio3dStartupSplashScreenState
                                       .clamp(240.0, 650.0),
                                   padding: const EdgeInsets.all(14),
                                   decoration: BoxDecoration(
-                                    color: AppColors.paper,
-                                    border: Border.all(
-                                      color: AppColors.ink,
-                                      width: 2.0,
-                                    ),
-                                    boxShadow: const [
-                                      BoxShadow(
-                                        color: AppColors.violet,
-                                        offset: Offset(6, 6),
-                                        blurRadius: 0,
-                                      ),
-                                    ],
+                                    color: AppColors.surface,
+                                    borderRadius: BorderRadius.circular(18),
+                                    border: Border.all(color: AppColors.line),
+                                    boxShadow: AppColors.elevatedShadow,
                                   ),
                                   child: Column(
                                     crossAxisAlignment:
@@ -589,10 +568,14 @@ class _Studio3dStartupSplashScreenState
                                           Flexible(
                                             child: Container(
                                               padding: const EdgeInsets.symmetric(
-                                                horizontal: 7,
-                                                vertical: 2,
+                                                horizontal: 8,
+                                                vertical: 2.5,
                                               ),
-                                              color: AppColors.ink,
+                                              decoration: BoxDecoration(
+                                                color: AppColors.ink,
+                                                borderRadius:
+                                                    BorderRadius.circular(999),
+                                              ),
                                               child: Text(
                                                 '$percent%',
                                                 overflow: TextOverflow.ellipsis,
@@ -608,21 +591,26 @@ class _Studio3dStartupSplashScreenState
                                         ],
                                       ),
                                       const SizedBox(height: 8),
-                                      Container(
-                                        height: 13,
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          border: Border.all(
-                                            color: AppColors.ink,
-                                            width: 1.5,
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(999),
+                                        child: Container(
+                                          height: 11,
+                                          decoration: BoxDecoration(
+                                            color: AppColors.warmStone,
+                                            borderRadius:
+                                                BorderRadius.circular(999),
                                           ),
-                                        ),
-                                        child: FractionallySizedBox(
-                                          alignment: Alignment.centerLeft,
-                                          widthFactor: effectiveProgress
-                                              .clamp(0.04, 1.0),
-                                          child: Container(
-                                            color: AppColors.acid,
+                                          child: FractionallySizedBox(
+                                            alignment: Alignment.centerLeft,
+                                            widthFactor: effectiveProgress
+                                                .clamp(0.04, 1.0),
+                                            child: Container(
+                                              decoration: BoxDecoration(
+                                                color: AppColors.primary,
+                                                borderRadius:
+                                                    BorderRadius.circular(999),
+                                              ),
+                                            ),
                                           ),
                                         ),
                                       ),

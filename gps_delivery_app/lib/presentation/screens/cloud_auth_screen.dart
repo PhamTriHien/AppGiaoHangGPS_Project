@@ -112,10 +112,12 @@ class _CloudAuthScreenState extends State<CloudAuthScreen>
       'over_email_send_rate_limit' =>
         'Vui lòng đợi ít giây trước khi yêu cầu gửi lại mã xác nhận.',
       'same_password' => 'Mật khẩu mới phải khác mật khẩu hiện tại.',
-      'otp_expired' || 'otp_disabled' => 'Mã xác nhận email không đúng hoặc đã hết hạn. Vui lòng kiểm tra lại hoặc gửi lại mã.',
+      'otp_expired' || 'otp_disabled' =>
+        'Mã xác nhận email không đúng hoặc đã hết hạn. Vui lòng kiểm tra lại hoặc gửi lại mã.',
       _ when error.statusCode == '429' =>
         'Vui lòng đợi ít giây trước khi yêu cầu gửi lại mã xác nhận.',
-      _ => 'Không xác thực được. Kiểm tra thông tin, email xác nhận hoặc thử lại sau.',
+      _ =>
+        'Không xác thực được. Kiểm tra thông tin, email xác nhận hoặc thử lại sau.',
     };
   }
 
@@ -249,65 +251,38 @@ class _CloudAuthScreenState extends State<CloudAuthScreen>
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const StudioUserAuthBrand(),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             if ([_AuthMode.login, _AuthMode.register].contains(_mode)) ...[
-              SegmentedButton<_AuthMode>(
-                segments: const [
-                  ButtonSegment(
-                    value: _AuthMode.login,
-                    label: Text('Đăng nhập'),
-                  ),
-                  ButtonSegment(
-                    value: _AuthMode.register,
-                    label: Text('Đăng ký tài khoản'),
-                  ),
-                ],
-                selected: {_mode},
-                showSelectedIcon: false,
-                onSelectionChanged: _busy
-                    ? null
-                    : (value) => _switch(value.first),
-                style: SegmentedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: AppColors.ink,
-                  selectedBackgroundColor: AppColors.violet,
-                  selectedForegroundColor: Colors.white,
-                  textStyle: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0,
-                  ),
-                  side: const BorderSide(color: AppColors.ink, width: 1.5),
-                  shape: const RoundedRectangleBorder(),
-                  minimumSize: const Size(0, 44),
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                ),
+              StudioAuthTabBar(
+                loginSelected: _mode == _AuthMode.login,
+                enabled: !_busy,
+                onSelectLogin: () => _switch(_AuthMode.login),
+                onSelectRegister: () => _switch(_AuthMode.register),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 18),
             ],
             Text(
               _mode == _AuthMode.login ? 'Đăng nhập hệ thống' : title,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 21,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w800,
                 color: AppColors.ink,
-                letterSpacing: 0,
+                letterSpacing: -0.3,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 5),
             if (_mode == _AuthMode.login)
               const Text(
                 'Nhập Email và mật khẩu đã đăng ký',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 12.5,
                   color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 18),
             if (_mode != _AuthMode.password) ...[
               TextFormField(
                 controller: _email,
@@ -324,7 +299,7 @@ class _CloudAuthScreenState extends State<CloudAuthScreen>
                     ? null
                     : 'Nhập email hợp lệ.',
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
             ],
             if (_mode == _AuthMode.recover) ...[
               TextFormField(
@@ -339,7 +314,7 @@ class _CloudAuthScreenState extends State<CloudAuthScreen>
                 validator: (v) =>
                     (v?.trim().length ?? 0) >= 6 ? null : 'Nhập mã xác nhận.',
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
             ],
             if (_mode != _AuthMode.reset) ...[
               TextFormField(
@@ -375,37 +350,81 @@ class _CloudAuthScreenState extends State<CloudAuthScreen>
               const SizedBox(height: 16),
             ],
             if (_error != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+              Container(
+                margin: const EdgeInsets.only(bottom: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF2F2),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: AppColors.danger.withValues(alpha: 0.28),
+                  ),
+                ),
                 child: Text(
                   _error!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  style: const TextStyle(
+                    color: Color(0xFFB91C1C),
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             if (_notice != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Text(_notice!),
+              Container(
+                margin: const EdgeInsets.only(bottom: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFECFDF5),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: AppColors.success.withValues(alpha: 0.30),
+                  ),
+                ),
+                child: Text(
+                  _notice!,
+                  style: const TextStyle(
+                    color: Color(0xFF065F46),
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
-            if (_busy) const LinearProgressIndicator(),
+            if (_busy)
+              const Padding(
+                padding: EdgeInsets.only(bottom: 10),
+                child: LinearProgressIndicator(minHeight: 3),
+              ),
             DecoratedBox(
-              decoration: const BoxDecoration(
-                boxShadow: [
-                  BoxShadow(color: AppColors.ink, offset: Offset(5, 5)),
-                ],
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: _busy
+                    ? null
+                    : [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.24),
+                          blurRadius: 14,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
               ),
               child: FilledButton(
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.violet,
+                  backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 15),
                   textStyle: const TextStyle(
-                    fontSize: 15.5,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.1,
                   ),
-                  shape: const RoundedRectangleBorder(
-                    side: BorderSide(color: AppColors.ink, width: 1.5),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
                 onPressed: _busy ? null : _submit,
@@ -415,22 +434,26 @@ class _CloudAuthScreenState extends State<CloudAuthScreen>
               ),
             ),
             if (_mode == _AuthMode.login) ...[
+              const SizedBox(height: 6),
               TextButton(
                 onPressed: _busy ? null : () => _switch(_AuthMode.reset),
                 child: const Text('Quên mật khẩu?'),
               ),
-              if (_googleAvailable)
+              if (_googleAvailable) ...[
+                const SizedBox(height: 4),
                 OutlinedButton.icon(
                   onPressed: _busy ? null : () => _submit(google: true),
                   icon: const Icon(Icons.account_circle_outlined),
                   label: const Text('Tiếp tục với Google'),
                 ),
-            ] else if (_mode == _AuthMode.password)
+              ],
+            ] else if (_mode == _AuthMode.password) ...[
+              const SizedBox(height: 6),
               TextButton(
                 onPressed: _busy ? null : _cancelRecovery,
                 child: const Text('Trở về đăng nhập'),
-              )
-            else ...[
+              ),
+            ] else ...[
               if (_mode == _AuthMode.register && _googleAvailable)
                 Padding(
                   padding: const EdgeInsets.only(top: 10),

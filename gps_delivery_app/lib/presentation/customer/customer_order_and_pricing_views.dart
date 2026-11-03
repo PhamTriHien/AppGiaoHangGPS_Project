@@ -48,8 +48,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
           boxShadow: const [
             BoxShadow(
               color: AppColors.ink,
-              offset: Offset(4, 4),
-              blurRadius: 0,
+              offset: Offset(0, 4), blurRadius: 14,
             ),
           ],
         ),
@@ -1018,8 +1017,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
           boxShadow: const [
             BoxShadow(
               color: AppColors.ink,
-              offset: Offset(4, 4),
-              blurRadius: 0,
+              offset: Offset(0, 4), blurRadius: 14,
             ),
           ],
         ),
@@ -1608,13 +1606,13 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
     required VoidCallback onTap,
   }) {
     return InkWell(
-      borderRadius: BorderRadius.all(Radius.zero),
+      borderRadius: BorderRadius.all(Radius.circular(12)),
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: selected ? const Color(0xFFF4F7FA) : Colors.white,
-          borderRadius: BorderRadius.all(Radius.zero),
+          borderRadius: BorderRadius.all(Radius.circular(12)),
           border: Border.all(
             color: selected ? const Color(0xFF2563EB) : const Color(0xFF0F172A),
             width: selected ? 2.0 : 1.0,
@@ -1640,7 +1638,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                   height: 36,
                   decoration: BoxDecoration(
                     color: iconColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.all(Radius.zero),
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
                   ),
                   child: Icon(icon, color: iconColor, size: 22),
                 ),
@@ -1811,7 +1809,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
 
     return Card(
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.all(Radius.circular(12)),
         side: BorderSide(color: AppColors.ink, width: 1.5),
       ),
       child: Padding(
@@ -1874,7 +1872,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.all(Radius.zero),
+                borderRadius: BorderRadius.all(Radius.circular(12)),
                 border: Border.all(color: const Color(0xFF0F172A)),
               ),
               clipBehavior: Clip.antiAlias,
@@ -2038,8 +2036,8 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
               ),
               decoration: BoxDecoration(
                 color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.all(Radius.zero),
-                border: Border.all(color: const Color(0xFF0F172A)),
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
               ),
               child: LayoutBuilder(
                 builder: (context, constraints) {
@@ -2321,7 +2319,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
     if (activeOrder == null) {
       return Card(
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.all(Radius.circular(12)),
           side: BorderSide(color: AppColors.ink, width: 1.5),
         ),
         child: Padding(
@@ -2509,7 +2507,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
 
     return Card(
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.all(Radius.circular(12)),
         side: BorderSide(color: AppColors.ink, width: 1.5),
       ),
       child: Padding(
@@ -2536,7 +2534,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEFF6FF),
+                    color: const Color(0xFFF5F3FF),
                     border: Border.all(color: const Color(0xFF2563EB)),
                   ),
                   child: Column(
@@ -2616,7 +2614,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                   ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF4F7FA),
-                    borderRadius: BorderRadius.all(Radius.zero),
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
                     border: Border.all(color: const Color(0xFF93C5FD)),
                   ),
                   child: Text(
@@ -2799,8 +2797,8 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
               decoration: BoxDecoration(
                 color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.all(Radius.zero),
-                border: Border.all(color: const Color(0xFF0F172A)),
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
               ),
               child: Row(
                 children: [
@@ -2841,7 +2839,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.all(Radius.zero),
+                borderRadius: BorderRadius.all(Radius.circular(12)),
                 border: Border.all(color: const Color(0xFF0F172A)),
               ),
               child: Row(

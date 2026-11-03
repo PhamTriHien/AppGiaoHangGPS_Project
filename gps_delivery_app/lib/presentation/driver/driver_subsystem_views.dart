@@ -913,7 +913,7 @@ class _DriverSubsystemEntryState extends State<DriverSubsystemEntry> {
         color: AppColors.techBg,
         border: Border.all(color: AppColors.ink, width: 1.5),
         boxShadow: const [
-          BoxShadow(color: AppColors.pink, offset: Offset(6, 6), blurRadius: 0),
+          BoxShadow(color: AppColors.pink, offset: Offset(0, 4), blurRadius: 14),
         ],
       ),
       child: Row(
@@ -1041,7 +1041,7 @@ class _DriverSubsystemEntryState extends State<DriverSubsystemEntry> {
         color: AppColors.techBg,
         border: Border.all(color: AppColors.ink, width: 1.5),
         boxShadow: const [
-          BoxShadow(color: AppColors.pink, offset: Offset(5, 5), blurRadius: 0),
+          BoxShadow(color: AppColors.pink, offset: Offset(0, 4), blurRadius: 14),
         ],
       ),
       child: Row(
@@ -1093,7 +1093,7 @@ class _DriverSubsystemEntryState extends State<DriverSubsystemEntry> {
         color: Colors.white,
         border: Border.all(color: AppColors.ink, width: 1.4),
         boxShadow: const [
-          BoxShadow(color: AppColors.ink, offset: Offset(3, 3), blurRadius: 0),
+          BoxShadow(color: AppColors.ink, offset: Offset(0, 4), blurRadius: 14),
         ],
       ),
       child: Row(
@@ -1163,7 +1163,7 @@ class _DriverSubsystemEntryState extends State<DriverSubsystemEntry> {
             final items = _store.driverNotifications;
             return AlertDialog(
               shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.zero,
+                borderRadius: BorderRadius.all(Radius.circular(12)),
                 side: BorderSide(color: AppColors.ink, width: 1.8),
               ),
               titlePadding: const EdgeInsets.fromLTRB(16, 14, 16, 8),

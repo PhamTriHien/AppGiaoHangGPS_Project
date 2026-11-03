@@ -613,7 +613,7 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.all(Radius.zero),
+        borderRadius: BorderRadius.all(Radius.circular(12)),
         border: Border.all(color: const Color(0xFF0F172A)),
       ),
       child: Column(
@@ -849,7 +849,7 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF4F7FA),
-                      borderRadius: BorderRadius.all(Radius.zero),
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
                       border: Border.all(color: const Color(0xFF0F172A)),
                     ),
                     child: Column(
@@ -907,7 +907,7 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF4F7FA),
-                      borderRadius: BorderRadius.all(Radius.zero),
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
                       border: Border.all(color: const Color(0xFF0F172A)),
                     ),
                     child: Column(

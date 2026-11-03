@@ -301,7 +301,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.all(Radius.zero),
+                borderRadius: BorderRadius.all(Radius.circular(12)),
                 border: Border.all(color: const Color(0xFF0F172A)),
               ),
               child: Column(
@@ -358,7 +358,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.all(Radius.zero),
+                borderRadius: BorderRadius.all(Radius.circular(12)),
                 border: Border.all(color: const Color(0xFF0F172A)),
               ),
               child: Column(
@@ -415,7 +415,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.all(Radius.zero),
+                borderRadius: BorderRadius.all(Radius.circular(12)),
                 border: Border.all(color: const Color(0xFF0F172A)),
               ),
               child: Column(
@@ -593,7 +593,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.all(Radius.zero),
+        borderRadius: BorderRadius.all(Radius.circular(12)),
         border: Border.all(color: const Color(0xFF0F172A)),
       ),
       child: Column(
@@ -606,7 +606,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                 height: 44,
                 decoration: BoxDecoration(
                   color: badgeColor,
-                  borderRadius: BorderRadius.all(Radius.zero),
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
                 ),
                 child: Icon(icon, color: Colors.white, size: 22),
               ),
@@ -750,7 +750,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
                 color: pillBg,
-                borderRadius: BorderRadius.all(Radius.zero),
+                borderRadius: BorderRadius.all(Radius.circular(12)),
               ),
               child: Text(
                 statusLabel,
@@ -777,7 +777,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.all(Radius.zero),
+        borderRadius: BorderRadius.all(Radius.circular(12)),
         border: Border.all(color: const Color(0xFF0F172A)),
       ),
       child: Column(
@@ -1159,7 +1159,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.all(Radius.zero),
+            borderRadius: BorderRadius.all(Radius.circular(12)),
             border: Border.all(color: const Color(0xFF0F172A)),
           ),
           child: Column(
@@ -1212,7 +1212,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                         color: isSelected
                             ? const Color(0xFFEDE9FE)
                             : const Color(0xFFF4F7FA),
-                        borderRadius: BorderRadius.all(Radius.zero),
+                        borderRadius: BorderRadius.all(Radius.circular(12)),
                         border: Border.all(
                           color: isSelected
                               ? AppColors.violet
@@ -1394,7 +1394,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                         color: isMerSelected
                             ? const Color(0xFFEDE9FE)
                             : const Color(0xFFF4F7FA),
-                        borderRadius: BorderRadius.all(Radius.zero),
+                        borderRadius: BorderRadius.all(Radius.circular(12)),
                         border: Border.all(
                           color: isMerSelected
                               ? AppColors.violet
@@ -1495,7 +1495,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.all(Radius.zero),
+            borderRadius: BorderRadius.all(Radius.circular(12)),
             border: Border.all(color: const Color(0xFF0F172A)),
           ),
           child: (_selectedKycIsMerchant && featuredMerchant != null)

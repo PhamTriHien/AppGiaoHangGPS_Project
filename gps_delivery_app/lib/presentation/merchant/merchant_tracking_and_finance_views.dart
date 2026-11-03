@@ -9,7 +9,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.all(Radius.zero),
+          borderRadius: BorderRadius.all(Radius.circular(12)),
           border: Border.all(color: AppColors.divider),
         ),
         child: Column(
@@ -189,7 +189,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.all(Radius.zero),
+                borderRadius: BorderRadius.all(Radius.circular(12)),
                 border: Border.all(color: AppColors.divider),
               ),
               child: filtered.isEmpty
@@ -443,7 +443,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: const BorderRadius.all(Radius.zero),
+                borderRadius: const BorderRadius.all(Radius.circular(12)),
                 border: Border.all(color: AppColors.divider),
               ),
               child: Column(
@@ -511,7 +511,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF4F7FA),
-                      borderRadius: const BorderRadius.all(Radius.zero),
+                      borderRadius: const BorderRadius.all(Radius.circular(12)),
                       border: Border.all(color: AppColors.divider),
                     ),
                     child: Row(
@@ -801,7 +801,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.all(Radius.zero),
+              borderRadius: BorderRadius.all(Radius.circular(12)),
               border: Border.all(color: AppColors.divider),
             ),
             child: Column(
@@ -858,7 +858,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.all(Radius.zero),
+            borderRadius: BorderRadius.all(Radius.circular(12)),
             border: Border.all(color: AppColors.divider),
           ),
           child: Column(
@@ -907,7 +907,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                 ),
                 decoration: BoxDecoration(
                   color: const Color(0xFF2563EB),
-                  borderRadius: BorderRadius.all(Radius.zero),
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
                 ),
                 child: Text(
                   'Chỉnh sửa đơn hàng ${ord.trackingCode} (${ord.status.displayName})',
@@ -1051,7 +1051,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.all(Radius.zero),
+                borderRadius: BorderRadius.all(Radius.circular(12)),
                 border: Border.all(color: AppColors.divider),
               ),
               child: Column(
@@ -1064,7 +1064,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                     ),
                     decoration: BoxDecoration(
                       color: AppColors.danger,
-                      borderRadius: BorderRadius.all(Radius.zero),
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
                     ),
                     child: Text(
                       'Hủy đơn hàng ${ord.trackingCode}',
@@ -1147,7 +1147,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.all(Radius.zero),
+                borderRadius: BorderRadius.all(Radius.circular(12)),
                 border: Border.all(color: AppColors.divider),
               ),
               child: Column(
@@ -1324,7 +1324,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.all(Radius.zero),
+        borderRadius: BorderRadius.all(Radius.circular(12)),
         border: Border.all(color: AppColors.divider),
       ),
       child: Column(
@@ -1573,7 +1573,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: const Color(0xFFF4F7FA),
-        borderRadius: BorderRadius.all(Radius.zero),
+        borderRadius: BorderRadius.all(Radius.circular(12)),
         border: Border.all(color: AppColors.divider),
       ),
       child: Column(
@@ -1613,7 +1613,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.all(Radius.zero),
+            borderRadius: BorderRadius.all(Radius.circular(12)),
             border: Border.all(color: AppColors.divider),
           ),
           child: Column(
@@ -1735,7 +1735,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.all(Radius.zero),
+            borderRadius: BorderRadius.all(Radius.circular(12)),
             border: Border.all(color: AppColors.divider),
           ),
           child: Material(
@@ -1880,7 +1880,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.all(Radius.zero),
+        borderRadius: BorderRadius.all(Radius.circular(12)),
         border: Border.all(color: AppColors.divider),
       ),
       child: Column(
@@ -2004,7 +2004,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF4F7FA),
-                  borderRadius: BorderRadius.all(Radius.zero),
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
                   border: Border.all(color: AppColors.divider),
                 ),
                 child: Column(
@@ -2075,7 +2075,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF4F7FA),
-                  borderRadius: BorderRadius.all(Radius.zero),
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
                   border: Border.all(color: AppColors.divider),
                 ),
                 child: Material(
@@ -2177,7 +2177,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.all(Radius.zero),
+            borderRadius: BorderRadius.all(Radius.circular(12)),
             border: Border.all(color: AppColors.divider),
           ),
           child: Column(
@@ -2296,7 +2296,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF4F7FA),
-                    borderRadius: BorderRadius.all(Radius.zero),
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
                     border: Border.all(color: AppColors.divider),
                   ),
                   child: Row(
@@ -2418,7 +2418,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.all(Radius.zero),
+            borderRadius: BorderRadius.all(Radius.circular(12)),
             border: Border.all(color: AppColors.divider),
           ),
           child: Column(
@@ -2446,7 +2446,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF4F7FA),
-                    borderRadius: BorderRadius.all(Radius.zero),
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
                     border: Border.all(color: AppColors.divider),
                   ),
                   child: Column(

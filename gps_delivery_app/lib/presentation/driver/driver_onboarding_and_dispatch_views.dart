@@ -23,7 +23,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
         _store.activeDriverRecord?.approvalStatus == 'Đã duyệt';
     return Card(
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.all(Radius.circular(12)),
         side: BorderSide(color: AppColors.ink, width: 1.5),
       ),
       clipBehavior: Clip.antiAlias,
@@ -288,7 +288,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
                       backgroundColor: const Color(0xFF0F172A),
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.zero),
+                        borderRadius: BorderRadius.all(Radius.circular(12)),
                       ),
                     ),
                     onPressed: () {
@@ -384,7 +384,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
         ? matchedDoc.substring(label.length + 1).trim()
         : '';
     return InkWell(
-      borderRadius: const BorderRadius.all(Radius.zero),
+      borderRadius: const BorderRadius.all(Radius.circular(12)),
       onTap: () async {
         if (isAttached) {
           _rebuildDriverUi(() => _attachedKycDocs.remove(matchedDoc));
@@ -404,7 +404,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
         decoration: BoxDecoration(
           color: isAttached ? const Color(0xFFDCFCE7) : const Color(0xFFF4F7FA),
-          borderRadius: const BorderRadius.all(Radius.zero),
+          borderRadius: const BorderRadius.all(Radius.circular(12)),
           border: Border.all(
             color: const Color(0xFF14B866),
             width: isAttached ? 1.8 : 1.0,
@@ -463,7 +463,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
 
     return Card(
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.all(Radius.circular(12)),
         side: BorderSide(color: AppColors.ink, width: 1.5),
       ),
       clipBehavior: Clip.antiAlias,
@@ -550,7 +550,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
                         color: _store.isDriverOnline
                             ? const Color(0xFFDCFCE7)
                             : const Color(0xFFF4F7FA),
-                        borderRadius: const BorderRadius.all(Radius.zero),
+                        borderRadius: const BorderRadius.all(Radius.circular(12)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -589,7 +589,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
                         ),
                         decoration: const BoxDecoration(
                           color: Color(0xFFF4F7FA),
-                          borderRadius: BorderRadius.all(Radius.zero),
+                          borderRadius: BorderRadius.all(Radius.circular(12)),
                         ),
                         child: Text(
                           'Đơn hôm nay: $todayOrderCount',
@@ -611,7 +611,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
                         ),
                         decoration: const BoxDecoration(
                           color: Color(0xFFF4F7FA),
-                          borderRadius: BorderRadius.all(Radius.zero),
+                          borderRadius: BorderRadius.all(Radius.circular(12)),
                         ),
                         child: Text(
                           'Ví: ${CurrencyFormatter.formatVnd(availableWallet)}',
@@ -635,7 +635,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
                         ),
                         decoration: const BoxDecoration(
                           color: Color(0xFFF4F7FA),
-                          borderRadius: BorderRadius.all(Radius.zero),
+                          borderRadius: BorderRadius.all(Radius.circular(12)),
                         ),
                         child: Text(
                           driverRating > 0
@@ -972,7 +972,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
     if (targetOrder == null) {
       return Card(
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.all(Radius.circular(12)),
           side: BorderSide(color: AppColors.ink, width: 1.5),
         ),
         child: Padding(
@@ -1054,7 +1054,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
 
     return Card(
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.all(Radius.circular(12)),
         side: BorderSide(color: AppColors.ink, width: 1.5),
       ),
       clipBehavior: Clip.antiAlias,
@@ -1104,7 +1104,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
                         ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFDCFCE7),
-                          borderRadius: BorderRadius.all(Radius.zero),
+                          borderRadius: BorderRadius.all(Radius.circular(12)),
                         ),
                         child: Text(
                           '${targetOrder.serviceType.displayName.toUpperCase()} • ${(targetOrder.distanceMeters / 1000).toStringAsFixed(1)} KM',
@@ -1160,7 +1160,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF4F7FA),
-                  borderRadius: BorderRadius.all(Radius.zero),
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
                   border: Border.all(color: const Color(0xFFBBF7D0)),
                 ),
                 child: Row(
@@ -1189,7 +1189,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: const Color(0xFFF4F7FA),
-                borderRadius: BorderRadius.all(Radius.zero),
+                borderRadius: BorderRadius.all(Radius.circular(12)),
                 border: Border.all(color: const Color(0xFF14B866), width: 1.5),
               ),
               child: Column(
@@ -1476,7 +1476,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
     if (activeOrder == null) {
       return Card(
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.all(Radius.circular(12)),
           side: BorderSide(color: AppColors.ink, width: 1.5),
         ),
         child: Padding(
@@ -1542,7 +1542,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
 
     return Card(
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.all(Radius.circular(12)),
         side: BorderSide(color: AppColors.ink, width: 1.5),
       ),
       clipBehavior: Clip.antiAlias,
@@ -1633,7 +1633,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
                   padding: const EdgeInsets.all(10),
                   decoration: const BoxDecoration(
                     color: Color(0xFF14B866),
-                    borderRadius: BorderRadius.all(Radius.zero),
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
                   ),
                   child: Icon(
                     remMeters <= 100
@@ -2019,7 +2019,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
     if (ord == null) {
       return Card(
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.all(Radius.circular(12)),
           side: BorderSide(color: AppColors.ink, width: 1.5),
         ),
         child: Padding(
@@ -2062,7 +2062,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
         ord.paymentStatus == 'RETURNED';
     return Card(
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.all(Radius.circular(12)),
         side: BorderSide(color: AppColors.ink, width: 1.5),
       ),
       child: Padding(
@@ -2075,7 +2075,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
                 color: const Color(0xFF14B866),
-                borderRadius: BorderRadius.all(Radius.zero),
+                borderRadius: BorderRadius.all(Radius.circular(12)),
               ),
               child: Text(
                 'Cập nhật trạng thái đơn ${ord.trackingCode}',
@@ -2282,7 +2282,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
     if (ord == null) {
       return Card(
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.all(Radius.circular(12)),
           side: BorderSide(color: AppColors.ink, width: 1.5),
         ),
         child: Padding(
@@ -2328,7 +2328,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
 
     return Card(
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.all(Radius.circular(12)),
         side: BorderSide(color: AppColors.ink, width: 1.5),
       ),
       child: Padding(
@@ -2341,7 +2341,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
                 color: const Color(0xFF14B866),
-                borderRadius: BorderRadius.all(Radius.zero),
+                borderRadius: BorderRadius.all(Radius.circular(12)),
               ),
               child: Text(
                 'Xác nhận Giao hàng POD & Mã OTP (${ord.trackingCode})',

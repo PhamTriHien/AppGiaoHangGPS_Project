@@ -493,7 +493,7 @@ class _AdminSubsystemEntryState extends State<AdminSubsystemEntry> {
                     backgroundColor: AppColors.acid,
                     side: const BorderSide(color: AppColors.ink, width: 1.2),
                     shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.zero,
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
                     ),
                     padding: EdgeInsets.symmetric(
                       horizontal: compact ? 8 : 10,

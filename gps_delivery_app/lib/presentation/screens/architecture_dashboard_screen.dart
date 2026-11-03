@@ -620,15 +620,10 @@ class _ArchitectureDashboardScreenState
                     margin: const EdgeInsets.all(20),
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border.all(color: AppColors.ink, width: 2.0),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: AppColors.ink,
-                          offset: Offset(5, 5),
-                          blurRadius: 0,
-                        ),
-                      ],
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppColors.line),
+                      boxShadow: AppColors.cardShadow,
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -644,7 +639,7 @@ class _ArchitectureDashboardScreenState
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 18,
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w800,
                             color: AppColors.ink,
                           ),
                         ),
@@ -653,29 +648,18 @@ class _ArchitectureDashboardScreenState
                           'Tài khoản ${authUser.fullName} (${authUser.phone}) hiện đang bị khóa bởi Quản trị viên hệ thống. Mọi thao tác nghiệp vụ đã được tạm dừng.',
                           textAlign: TextAlign.center,
                           style: const TextStyle(
-                            fontSize: 12.5,
+                            fontSize: 13,
                             color: AppColors.textSecondary,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                         const SizedBox(height: 18),
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.ink,
-                              foregroundColor: Colors.white,
-                              shape: const RoundedRectangleBorder(
-                                borderRadius: BorderRadius.zero,
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 13),
-                            ),
                             onPressed: _handleLogout,
                             icon: const Icon(Icons.logout_rounded, size: 18),
-                            label: const Text(
-                              'Đăng xuất',
-                              style: TextStyle(fontWeight: FontWeight.w900),
-                            ),
+                            label: const Text('Đăng xuất'),
                           ),
                         ),
                       ],
@@ -753,61 +737,16 @@ class _ArchitectureDashboardScreenState
   Widget _buildNeoBrutalistAuthCard(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const StudioUserAuthBrand(),
-        const SizedBox(height: 12),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: AppColors.ink, width: 1.5),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => _switchAuthView(),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    color: !_isRegisterMode
-                        ? AppColors.violet
-                        : Colors.transparent,
-                    alignment: Alignment.center,
-                    child: Text(
-                      'Đăng nhập',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w900,
-                        color: !_isRegisterMode ? Colors.white : AppColors.ink,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              Container(width: 1.5, height: 38, color: AppColors.ink),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => _switchAuthView(register: true),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    color: _isRegisterMode
-                        ? AppColors.violet
-                        : Colors.transparent,
-                    alignment: Alignment.center,
-                    child: Text(
-                      'Đăng ký tài khoản',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w900,
-                        color: _isRegisterMode ? Colors.white : AppColors.ink,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+        const SizedBox(height: 18),
+        StudioAuthTabBar(
+          loginSelected: !_isRegisterMode,
+          onSelectLogin: () => _switchAuthView(),
+          onSelectRegister: () => _switchAuthView(register: true),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 20),
         Text(
           _isRegisterMode
               ? 'Tạo tài khoản mới'
@@ -816,13 +755,13 @@ class _ArchitectureDashboardScreenState
                     : 'Đăng nhập hệ thống'),
           textAlign: TextAlign.center,
           style: const TextStyle(
-            fontSize: 21,
-            fontWeight: FontWeight.w900,
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
             color: AppColors.ink,
-            letterSpacing: -0.6,
+            letterSpacing: -0.4,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
         Text(
           _isRegisterMode
               ? 'Nhập Số điện thoại, Họ tên và Mật khẩu để tạo tài khoản'
@@ -833,31 +772,44 @@ class _ArchitectureDashboardScreenState
                           : 'Nhập Số điện thoại hoặc Email để nhận mã xác thực OTP')),
           textAlign: TextAlign.center,
           style: const TextStyle(
-            fontSize: 12,
+            fontSize: 13,
             color: AppColors.textSecondary,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
+            height: 1.4,
           ),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 18),
         if (!_isRegisterMode) ...[
           Row(
             children: [
               Expanded(
                 child: ChoiceChip(
-                  label: const SizedBox(
+                  label: SizedBox(
                     width: double.infinity,
                     child: Text(
                       'Mã OTP',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.ink,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: !_usePasswordLogin && !_isForgotPasswordMode
+                            ? const Color(0xFF1E3A8A)
+                            : AppColors.textSecondary,
                       ),
                     ),
                   ),
                   selected: !_usePasswordLogin && !_isForgotPasswordMode,
-                  selectedColor: AppColors.acid,
+                  selectedColor: AppColors.primarySoft,
+                  backgroundColor: AppColors.surfaceSubtle,
+                  checkmarkColor: AppColors.primary,
+                  side: BorderSide(
+                    color: !_usePasswordLogin && !_isForgotPasswordMode
+                        ? AppColors.primaryBorder
+                        : AppColors.line,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                   onSelected: (_) => setState(() {
                     _usePasswordLogin = false;
                     _isForgotPasswordMode = false;
@@ -865,23 +817,35 @@ class _ArchitectureDashboardScreenState
                   }),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               Expanded(
                 child: ChoiceChip(
-                  label: const SizedBox(
+                  label: SizedBox(
                     width: double.infinity,
                     child: Text(
                       'Mật khẩu',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.ink,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: _usePasswordLogin && !_isForgotPasswordMode
+                            ? const Color(0xFF1E3A8A)
+                            : AppColors.textSecondary,
                       ),
                     ),
                   ),
                   selected: _usePasswordLogin && !_isForgotPasswordMode,
-                  selectedColor: AppColors.acid,
+                  selectedColor: AppColors.primarySoft,
+                  backgroundColor: AppColors.surfaceSubtle,
+                  checkmarkColor: AppColors.primary,
+                  side: BorderSide(
+                    color: _usePasswordLogin && !_isForgotPasswordMode
+                        ? AppColors.primaryBorder
+                        : AppColors.line,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                   onSelected: (_) => setState(() {
                     _usePasswordLogin = true;
                     _isForgotPasswordMode = false;
@@ -892,7 +856,7 @@ class _ArchitectureDashboardScreenState
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
         ],
         if (_isRegisterMode) ...[
           TextField(
@@ -903,11 +867,11 @@ class _ArchitectureDashboardScreenState
               labelText: 'Họ và tên',
               prefixIcon: Icon(
                 Icons.person_outline_rounded,
-                color: AppColors.violet,
+                color: AppColors.textSecondary,
               ),
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
         ],
         TextField(
           controller: _phoneCtrl,
@@ -933,12 +897,12 @@ class _ArchitectureDashboardScreenState
               _phoneCtrl.text.contains('@')
                   ? Icons.alternate_email_rounded
                   : Icons.phone_iphone_rounded,
-              color: AppColors.violet,
+              color: AppColors.textSecondary,
             ),
           ),
         ),
         if (_isRegisterMode) ...[
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           TextField(
             controller: _emailCtrl,
             keyboardType: TextInputType.emailAddress,
@@ -953,12 +917,15 @@ class _ArchitectureDashboardScreenState
             decoration: const InputDecoration(
               hintText: 'Không bắt buộc (Ví dụ: ban@gmail.com)',
               labelText: 'Địa chỉ Email (Tùy chọn)',
-              prefixIcon: Icon(Icons.email_outlined, color: AppColors.violet),
+              prefixIcon: Icon(
+                Icons.email_outlined,
+                color: AppColors.textSecondary,
+              ),
             ),
           ),
         ],
         if (_isRegisterMode || _usePasswordLogin) ...[
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           TextField(
             controller: _passwordCtrl,
             obscureText: _obscurePassword,
@@ -970,14 +937,14 @@ class _ArchitectureDashboardScreenState
                   : 'Mật khẩu',
               prefixIcon: const Icon(
                 Icons.lock_outline_rounded,
-                color: AppColors.violet,
+                color: AppColors.textSecondary,
               ),
               suffixIcon: IconButton(
                 icon: Icon(
                   _obscurePassword
                       ? Icons.visibility_off_outlined
                       : Icons.visibility_outlined,
-                  size: 18,
+                  size: 19,
                   color: AppColors.textSecondary,
                 ),
                 onPressed: () =>
@@ -987,11 +954,16 @@ class _ArchitectureDashboardScreenState
           ),
         ],
         if (!_isRegisterMode && _usePasswordLogin) ...[
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerRight,
-            child: GestureDetector(
-              onTap: () => setState(() {
+            child: TextButton(
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                minimumSize: const Size(44, 32),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              onPressed: () => setState(() {
                 _isForgotPasswordMode = true;
                 _usePasswordLogin = false;
                 _otpSent = false;
@@ -1000,17 +972,16 @@ class _ArchitectureDashboardScreenState
               child: const Text(
                 'Quên mật khẩu? Lấy mã OTP qua SĐT / Email',
                 style: TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.violet,
-                  decoration: TextDecoration.underline,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primary,
                 ),
               ),
             ),
           ),
         ],
         if (_otpSent && !_usePasswordLogin) ...[
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           Builder(
             builder: (context) {
               final remainSec = _store.getRemainingOtpSeconds(_phoneCtrl.text);
@@ -1019,95 +990,94 @@ class _ArchitectureDashboardScreenState
                         _lastOtpReceipt!.channel == 'SMTP_TLS')
                   : _phoneCtrl.text.trim().contains('@');
 
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 7,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.acid.withValues(alpha: 0.35),
-                      border: Border.all(color: AppColors.ink, width: 1.0),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              return Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFECFDF5),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.success.withValues(alpha: 0.28),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       children: [
-                        Row(
-                          children: [
-                            Icon(
-                              isEmailChannel
-                                  ? Icons.mark_email_read_outlined
-                                  : Icons.sms_outlined,
-                              size: 15,
+                        Icon(
+                          isEmailChannel
+                              ? Icons.mark_email_read_outlined
+                              : Icons.sms_outlined,
+                          size: 16,
+                          color: AppColors.success,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            _isDeliveringOtp
+                                ? 'Đang gửi mã xác thực OTP thật...'
+                                : (_lastOtpReceipt?.message ??
+                                      'Mã xác thực OTP đã được gửi đi.'),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
                               color: AppColors.ink,
                             ),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                _isDeliveringOtp
-                                    ? 'Đang gửi mã xác thực OTP thật...'
-                                    : (_lastOtpReceipt?.message ??
-                                          'Mã xác thực OTP đã được gửi đi.'),
-                                style: const TextStyle(
-                                  fontSize: 11.0,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.ink,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 5),
-                        Wrap(
-                          spacing: 10,
-                          runSpacing: 4,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              color: remainSec > 0
-                                  ? AppColors.ink
-                                  : AppColors.danger,
-                              child: Text(
-                                remainSec > 0
-                                    ? 'Hiệu lực: ${remainSec}s'
-                                    : 'Đã hết hạn (0s)',
-                                style: const TextStyle(
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w900,
-                                  color: Colors.white,
-                                  fontFamily: 'Consolas',
-                                ),
-                              ),
-                            ),
-                            GestureDetector(
-                              onTap: _handleSendOtp,
-                              child: const Text(
-                                'Gửi lại mã',
-                                style: TextStyle(
-                                  fontSize: 11.2,
-                                  fontWeight: FontWeight.w900,
-                                  color: AppColors.violet,
-                                  decoration: TextDecoration.underline,
-                                ),
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                       ],
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: remainSec > 0
+                                ? AppColors.success
+                                : AppColors.danger,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            remainSec > 0
+                                ? 'Hiệu lực: ${remainSec}s'
+                                : 'Đã hết hạn (0s)',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: _handleSendOtp,
+                          child: const Text(
+                            'Gửi lại mã',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               );
             },
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           TextField(
             controller: _otpCtrl,
             keyboardType: TextInputType.number,
@@ -1118,12 +1088,12 @@ class _ArchitectureDashboardScreenState
               counterText: '',
               prefixIcon: Icon(
                 Icons.verified_user_outlined,
-                color: AppColors.ink,
+                color: AppColors.textSecondary,
               ),
             ),
           ),
           if (_isForgotPasswordMode) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             TextField(
               controller: _newPasswordCtrl,
               obscureText: _obscurePassword,
@@ -1133,52 +1103,46 @@ class _ArchitectureDashboardScreenState
                 labelText: 'Mật khẩu mới',
                 prefixIcon: Icon(
                   Icons.lock_reset_rounded,
-                  color: AppColors.violet,
+                  color: AppColors.textSecondary,
                 ),
               ),
             ),
           ],
         ],
         if (_authErrorMessage != null) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              color: AppColors.gold,
-              border: Border.all(color: AppColors.ink, width: 1.2),
+              color: const Color(0xFFFEF2F2),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.danger.withValues(alpha: 0.32),
+              ),
             ),
             child: Text(
               _authErrorMessage!,
               style: const TextStyle(
-                color: AppColors.ink,
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
+                color: AppColors.danger,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
         ],
-        const SizedBox(height: 14),
-        Container(
+        const SizedBox(height: 16),
+        SizedBox(
           width: double.infinity,
-          decoration: const BoxDecoration(
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.ink,
-                offset: Offset(5, 5),
-                blurRadius: 0,
-              ),
-            ],
-          ),
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.violet,
+              backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 15),
+              minimumSize: const Size.fromHeight(50),
+              padding: const EdgeInsets.symmetric(vertical: 14),
               elevation: 0,
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.zero,
-                side: BorderSide(color: AppColors.ink, width: 1.5),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
             onPressed: () {
@@ -1208,8 +1172,8 @@ class _ArchitectureDashboardScreenState
                               ? 'Tạo tài khoản'
                               : 'Gửi mã OTP'))),
               style: const TextStyle(
-                fontSize: 15.5,
-                fontWeight: FontWeight.w900,
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
@@ -1225,25 +1189,25 @@ class _ArchitectureDashboardScreenState
                 style: TextStyle(
                   color: AppColors.textSecondary,
                   fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  fontFamily: 'Consolas',
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
             Expanded(child: Divider(color: AppColors.line)),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         SizedBox(
           width: double.infinity,
           child: OutlinedButton(
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.ink,
-              backgroundColor: AppColors.acid.withValues(alpha: 0.45),
-              side: const BorderSide(color: AppColors.ink, width: 1.5),
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.zero,
+              backgroundColor: AppColors.surface,
+              side: const BorderSide(color: AppColors.controlBorder),
+              minimumSize: const Size.fromHeight(48),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
             onPressed: () => _showMobileQrPhoneAuthDialog(context),
@@ -1253,7 +1217,7 @@ class _ArchitectureDashboardScreenState
                 Icon(
                   Icons.qr_code_scanner_rounded,
                   size: 18,
-                  color: AppColors.ink,
+                  color: AppColors.primary,
                 ),
                 SizedBox(width: 8),
                 Flexible(
@@ -1261,8 +1225,8 @@ class _ArchitectureDashboardScreenState
                     'Đăng nhập bằng mã QR',
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 13.0,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13.5,
                       color: AppColors.ink,
                     ),
                   ),
@@ -1272,17 +1236,21 @@ class _ArchitectureDashboardScreenState
           ),
         ),
         if (EnvConfig.isGoogleOAuthConfigured) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           SizedBox(
             width: double.infinity,
             child: OutlinedButton(
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.ink,
-                backgroundColor: Colors.white,
-                side: const BorderSide(color: AppColors.ink, width: 1.4),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.zero,
+                backgroundColor: AppColors.surface,
+                side: const BorderSide(color: AppColors.controlBorder),
+                minimumSize: const Size.fromHeight(48),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 14,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
               onPressed: () => _handleOAuthLogin(context, 'Google'),
@@ -1292,9 +1260,9 @@ class _ArchitectureDashboardScreenState
                   Text(
                     'G',
                     style: TextStyle(
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w800,
                       fontSize: 16,
-                      color: AppColors.pink,
+                      color: AppColors.primary,
                     ),
                   ),
                   SizedBox(width: 10),
@@ -1303,7 +1271,7 @@ class _ArchitectureDashboardScreenState
                       'Tiếp tục với Google',
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                         fontSize: 13.5,
                         color: AppColors.ink,
                       ),
@@ -1315,14 +1283,15 @@ class _ArchitectureDashboardScreenState
           ),
         ],
         if (_isRegisterMode) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           const Text(
             'Bạn muốn trở thành Đối tác Tài xế hoặc Cửa hàng? Hãy đăng ký tài khoản rồi gửi hồ sơ tại mục Cá nhân.',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: AppColors.textSecondary,
-              fontSize: 11.2,
-              fontWeight: FontWeight.w600,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w500,
+              height: 1.4,
             ),
           ),
         ],
@@ -1592,20 +1561,21 @@ class _ArchitectureDashboardScreenState
                   : session.buildVerifyUrl(session.lanIp);
 
               return AlertDialog(
-                backgroundColor: AppColors.paper,
+                backgroundColor: AppColors.surface,
+                surfaceTintColor: Colors.transparent,
                 insetPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 20,
                 ),
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.zero,
-                  side: BorderSide(color: AppColors.ink, width: 2.0),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: const BorderSide(color: AppColors.line),
                 ),
                 title: const Row(
                   children: [
                     Icon(
                       Icons.qr_code_scanner_rounded,
-                      color: AppColors.violet,
+                      color: AppColors.primary,
                       size: 20,
                     ),
                     SizedBox(width: 8),
@@ -1613,8 +1583,8 @@ class _ArchitectureDashboardScreenState
                       child: Text(
                         'Đăng nhập bằng mã QR',
                         style: TextStyle(
-                          fontSize: 15.0,
-                          fontWeight: FontWeight.w900,
+                          fontSize: 15.5,
+                          fontWeight: FontWeight.w800,
                           color: AppColors.ink,
                         ),
                       ),
@@ -1631,24 +1601,19 @@ class _ArchitectureDashboardScreenState
                         'Mở Camera điện thoại hoặc Zalo để quét mã QR',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 12.0,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.ink,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary,
                         ),
                       ),
                       const SizedBox(height: 14),
                       Container(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          border: Border.all(color: AppColors.ink, width: 2.0),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: AppColors.ink,
-                              offset: Offset(4, 4),
-                              blurRadius: 0,
-                            ),
-                          ],
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppColors.line),
+                          boxShadow: AppColors.cardShadow,
                         ),
                         child: QrMatrixPainterWidget(
                           payload: activeQrPayload,
@@ -1659,14 +1624,15 @@ class _ArchitectureDashboardScreenState
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 8,
+                          horizontal: 12,
+                          vertical: 9,
                         ),
                         decoration: BoxDecoration(
                           color: isDeviceConnected
-                              ? AppColors.acid.withValues(alpha: 0.55)
-                              : AppColors.surface,
-                          border: Border.all(color: AppColors.ink, width: 1.2),
+                              ? const Color(0xFFECFDF5)
+                              : AppColors.surfaceSubtle,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppColors.line),
                         ),
                         child: Text(
                           scanStatusText,
@@ -1760,9 +1726,9 @@ class _ArchitectureDashboardScreenState
                 for (final roleOption in unlockedRoles)
                   ChoiceChip(
                     visualDensity: VisualDensity.compact,
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.zero,
-                      side: BorderSide(color: AppColors.ink, width: 1.2),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(999),
+                      side: const BorderSide(color: AppColors.techLine),
                     ),
                     label: Text(
                       labelForRole(roleOption),

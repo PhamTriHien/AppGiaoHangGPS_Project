@@ -116,7 +116,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.all(Radius.zero),
+            borderRadius: BorderRadius.all(Radius.circular(12)),
             border: Border.all(color: const Color(0xFF0F172A)),
             boxShadow: [
               BoxShadow(
@@ -335,7 +335,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                     backgroundColor: const Color(0xFFF43F5E),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(Radius.zero),
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
                     ),
                   ),
                   onPressed: () {
@@ -487,7 +487,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
         padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
         decoration: BoxDecoration(
           color: isAttached ? const Color(0xFFDCFCE7) : const Color(0xFFF4F7FA),
-          borderRadius: const BorderRadius.all(Radius.zero),
+          borderRadius: const BorderRadius.all(Radius.circular(12)),
           border: Border.all(
             color: isAttached ? AppColors.success : const Color(0xFF0F172A),
             width: isAttached ? 1.5 : 1.0,
@@ -562,7 +562,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: const BorderRadius.all(Radius.zero),
+                borderRadius: const BorderRadius.all(Radius.circular(12)),
                 border: Border.all(color: const Color(0xFF0F172A)),
               ),
               child: Column(
@@ -611,7 +611,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                           color: isSelected
                               ? const Color(0xFFF4F7FA)
                               : Colors.white,
-                          borderRadius: const BorderRadius.all(Radius.zero),
+                          borderRadius: const BorderRadius.all(Radius.circular(12)),
                           border: Border.all(
                             color: isSelected
                                 ? const Color(0xFFF43F5E)
@@ -774,7 +774,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: const BorderRadius.all(Radius.zero),
+                borderRadius: const BorderRadius.all(Radius.circular(12)),
                 border: Border.all(color: const Color(0xFF0F172A)),
               ),
               child: Material(
@@ -995,7 +995,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: const BorderRadius.all(Radius.zero),
+                borderRadius: const BorderRadius.all(Radius.circular(12)),
                 border: Border.all(color: const Color(0xFF0F172A)),
               ),
               child: Column(
@@ -1100,7 +1100,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                   const SizedBox(height: 10),
                   Container(
                     decoration: BoxDecoration(
-                      borderRadius: const BorderRadius.all(Radius.zero),
+                      borderRadius: const BorderRadius.all(Radius.circular(12)),
                       border: Border.all(color: const Color(0xFF0F172A)),
                     ),
                     clipBehavior: Clip.antiAlias,
@@ -1445,7 +1445,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.all(Radius.zero),
+                borderRadius: BorderRadius.all(Radius.circular(12)),
                 border: Border.all(color: const Color(0xFF0F172A)),
               ),
               child: Material(
@@ -2002,7 +2002,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: const BorderRadius.all(Radius.zero),
+                    borderRadius: const BorderRadius.all(Radius.circular(12)),
                     border: Border.all(color: const Color(0xFF0F172A)),
                   ),
                   clipBehavior: Clip.antiAlias,
@@ -2053,7 +2053,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.all(Radius.zero),
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
                     border: Border.all(color: const Color(0xFF0F172A)),
                   ),
                   child: Column(
@@ -2147,7 +2147,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                       backgroundColor: const Color(0xFFF43F5E),
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.zero),
+                        borderRadius: BorderRadius.all(Radius.circular(12)),
                       ),
                     ),
                     onPressed: () {
@@ -2387,7 +2387,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.all(Radius.zero),
+        borderRadius: BorderRadius.all(Radius.circular(12)),
         border: Border.all(color: AppColors.divider),
       ),
       child: Column(
@@ -2569,7 +2569,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF4F7FA),
-                    borderRadius: BorderRadius.all(Radius.zero),
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
                     border: Border.all(color: AppColors.divider),
                   ),
                   child: Column(
@@ -2631,7 +2631,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                           ),
                           decoration: BoxDecoration(
                             color: AppColors.success.withValues(alpha: 0.14),
-                            borderRadius: BorderRadius.all(Radius.zero),
+                            borderRadius: BorderRadius.all(Radius.circular(12)),
                           ),
                           child: Text(
                             'Hợp lệ: $validCount đơn',
@@ -2649,7 +2649,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                           ),
                           decoration: BoxDecoration(
                             color: AppColors.danger.withValues(alpha: 0.14),
-                            borderRadius: BorderRadius.all(Radius.zero),
+                            borderRadius: BorderRadius.all(Radius.circular(12)),
                           ),
                           child: Text(
                             'Lỗi: $errorCount đơn',
@@ -2827,7 +2827,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.all(Radius.zero),
+          borderRadius: BorderRadius.all(Radius.circular(12)),
           border: Border.all(color: AppColors.divider),
         ),
         child: Column(
@@ -2872,7 +2872,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.all(Radius.zero),
+            borderRadius: BorderRadius.all(Radius.circular(12)),
             border: Border.all(color: AppColors.divider),
           ),
           child: Column(
@@ -2990,7 +2990,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.all(Radius.zero),
+            borderRadius: BorderRadius.all(Radius.circular(12)),
             border: Border.all(color: AppColors.divider),
           ),
           child: Column(
@@ -3005,7 +3005,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.all(Radius.zero),
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
                   border: Border.all(color: Colors.black87, width: 1.5),
                 ),
                 child: Column(
@@ -3153,8 +3153,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
           boxShadow: const [
             BoxShadow(
               color: Color(0xFF00B14F),
-              offset: Offset(4, 4),
-              blurRadius: 0,
+              offset: Offset(0, 4), blurRadius: 14,
             ),
           ],
         ),

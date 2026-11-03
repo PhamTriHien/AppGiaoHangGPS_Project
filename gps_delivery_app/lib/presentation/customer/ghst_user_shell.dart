@@ -323,18 +323,19 @@ class GhstUserShell extends StatelessWidget {
       excludeSemantics: true,
       child: InkWell(
         key: ValueKey('ghst-role-${mode.name}'),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(999),
         onTap: () => onRoleModeChanged?.call(mode),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
           decoration: BoxDecoration(
             color: active
-                ? chipAccent.withValues(alpha: 0.32)
+                ? chipAccent.withValues(alpha: 0.30)
                 : const Color(0xFF1E293B),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(999),
             border: Border.all(
-              color: active ? chipHighlight : AppColors.techLine,
-              width: active ? 1.3 : 1,
+              color: active
+                  ? chipHighlight.withValues(alpha: 0.72)
+                  : AppColors.techLine,
             ),
           ),
           child: Row(
@@ -364,14 +365,10 @@ class GhstUserShell extends StatelessWidget {
 
   Widget _mobileRoleSwitcher() => Container(
     width: double.infinity,
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
     decoration: const BoxDecoration(
       color: Color(0xFF0F172A),
-      border: Border(
-        left: BorderSide(color: AppColors.ink, width: 1.5),
-        right: BorderSide(color: AppColors.ink, width: 1.5),
-        bottom: BorderSide(color: AppColors.ink, width: 1.5),
-      ),
+      border: Border(bottom: BorderSide(color: AppColors.techLine)),
     ),
     child: Wrap(
       spacing: 6,
@@ -628,7 +625,7 @@ class GhstUserShell extends StatelessWidget {
       width: width,
       decoration: const BoxDecoration(
         color: AppColors.techBg,
-        border: Border(right: BorderSide(color: AppColors.ink, width: 1.6)),
+        border: Border(right: BorderSide(color: AppColors.techLine)),
       ),
       child: Material(
         type: MaterialType.transparency,
@@ -639,16 +636,17 @@ class GhstUserShell extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(20, 18, 16, 16),
               child: Row(
                 children: [
-                  SizedBox(
+                  Container(
                     width: 40,
                     height: 40,
-                    child: ColoredBox(
+                    decoration: BoxDecoration(
                       color: _highlight,
-                      child: Icon(
-                        _brandIcon,
-                        color: AppColors.techBg,
-                        size: 22,
-                      ),
+                      borderRadius: BorderRadius.circular(11),
+                    ),
+                    child: Icon(
+                      _brandIcon,
+                      color: AppColors.techBg,
+                      size: 22,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -710,16 +708,15 @@ class GhstUserShell extends StatelessWidget {
       button: true,
       selected: selected,
       child: InkWell(
+        borderRadius: BorderRadius.circular(10),
         onTap: action,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
           decoration: BoxDecoration(
             color: selected
                 ? _accent.withValues(alpha: .28)
                 : Colors.transparent,
-            border: selected
-                ? Border(left: BorderSide(color: _highlight, width: 4))
-                : null,
+            borderRadius: BorderRadius.circular(10),
           ),
           child: Row(
             children: [
@@ -781,7 +778,7 @@ class GhstUserShell extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         color: _accent,
-        border: Border.all(color: AppColors.ink, width: 1.4),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Icon(_brandIcon, color: Colors.white, size: size * 0.54),
     );
@@ -793,7 +790,8 @@ class GhstUserShell extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 24),
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(bottom: BorderSide(color: AppColors.ink, width: 1.5)),
+        border: Border(bottom: BorderSide(color: AppColors.line)),
+        boxShadow: AppColors.cardShadow,
       ),
       child: Row(
         children: [
@@ -861,39 +859,44 @@ class GhstUserShell extends StatelessWidget {
           Tooltip(
             message: 'Hồ sơ cá nhân',
             child: InkWell(
+              borderRadius: BorderRadius.circular(10),
               onTap: () => onNavigate(GhstUserSection.profile),
-              child: Row(
-                children: [
-                  Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: _highlight,
-                      border: Border.all(color: AppColors.ink, width: 1.2),
-                    ),
-                    child: const Icon(
-                      Icons.person,
-                      size: 19,
-                      color: AppColors.ink,
-                    ),
-                  ),
-                  if (constraints.maxWidth >= 920) ...[
-                    const SizedBox(width: 8),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 150),
-                      child: Text(
-                        name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: AppColors.ink,
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w900,
-                        ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: AppColors.primarySoft,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppColors.primaryBorder),
+                      ),
+                      child: const Icon(
+                        Icons.person_rounded,
+                        size: 19,
+                        color: AppColors.primary,
                       ),
                     ),
+                    if (constraints.maxWidth >= 920) ...[
+                      const SizedBox(width: 8),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 150),
+                        child: Text(
+                          name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppColors.ink,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),
@@ -917,10 +920,16 @@ class GhstUserShell extends StatelessWidget {
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppColors.techBg,
-        border: Border.all(color: AppColors.ink, width: 1.5),
-        boxShadow: [BoxShadow(color: _accent, offset: const Offset(6, 6))],
+        border: Border(bottom: BorderSide(color: AppColors.techLine)),
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x240F172A),
+            blurRadius: 12,
+            offset: Offset(0, 3),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -1023,11 +1032,17 @@ class GhstUserShell extends StatelessWidget {
     final items = _bottomItems;
     final activeIdx = _bottomIndex;
     return Container(
-      height: 62,
-      decoration: BoxDecoration(
+      height: 64,
+      decoration: const BoxDecoration(
         color: AppColors.techBg,
-        border: Border.all(color: AppColors.ink, width: 1.5),
-        boxShadow: [BoxShadow(color: _accent, offset: const Offset(5, 5))],
+        border: Border(top: BorderSide(color: AppColors.techLine)),
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x220F172A),
+            blurRadius: 14,
+            offset: Offset(0, -3),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -1038,14 +1053,18 @@ class GhstUserShell extends StatelessWidget {
                 selected: activeIdx == i,
                 child: InkWell(
                   key: ValueKey('ghst-nav-${items[i].$3.name}'),
+                  borderRadius: BorderRadius.circular(12),
                   onTap: () => onNavigate(items[i].$3),
                   child: Container(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
-                      border: activeIdx == i
-                          ? Border(
-                              top: BorderSide(color: _highlight, width: 3),
-                            )
-                          : null,
+                      color: activeIdx == i
+                          ? _accent.withValues(alpha: 0.24)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,

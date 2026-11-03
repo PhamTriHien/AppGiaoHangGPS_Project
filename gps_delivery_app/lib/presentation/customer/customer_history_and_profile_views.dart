@@ -275,7 +275,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
     if (activeOrder == null) {
       return Card(
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.all(Radius.circular(12)),
           side: BorderSide(color: AppColors.ink, width: 1.5),
         ),
         child: Padding(
@@ -337,7 +337,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
         .toList();
     return Card(
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.all(Radius.circular(12)),
         side: BorderSide(color: AppColors.ink, width: 1.5),
       ),
       clipBehavior: Clip.antiAlias,
@@ -532,7 +532,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                               color: msg.isCustomer
                                   ? const Color(0xFF2563EB)
                                   : const Color(0xFFF4F7FA),
-                              borderRadius: BorderRadius.all(Radius.zero),
+                              borderRadius: BorderRadius.all(Radius.circular(12)),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -570,7 +570,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
                               color: const Color(0xFFF4F7FA),
-                              borderRadius: BorderRadius.all(Radius.zero),
+                              borderRadius: BorderRadius.all(Radius.circular(12)),
                               border: Border.all(
                                 color: const Color(0xFF0F172A),
                               ),
@@ -676,7 +676,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
     if (targetOrder == null) {
       return Card(
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.all(Radius.circular(12)),
           side: BorderSide(color: AppColors.ink, width: 1.5),
         ),
         child: Padding(
@@ -719,7 +719,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
     ];
     return Card(
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.all(Radius.circular(12)),
         side: BorderSide(color: AppColors.ink, width: 1.5),
       ),
       child: Padding(
@@ -824,7 +824,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: const Color(0xFFF4F7FA),
-                borderRadius: BorderRadius.all(Radius.zero),
+                borderRadius: BorderRadius.all(Radius.circular(12)),
                 border: Border.all(color: const Color(0xFFFDBA74)),
               ),
               child: Row(
@@ -862,7 +862,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                       : AppColors.textSecondary,
                   foregroundColor: Colors.white,
                   shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.all(Radius.zero),
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
                   ),
                 ),
                 onPressed: canCancel
@@ -910,7 +910,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
               child: OutlinedButton(
                 style: OutlinedButton.styleFrom(
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.all(Radius.zero),
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
                   ),
                 ),
                 onPressed: () =>
@@ -981,7 +981,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
 
     return Card(
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.all(Radius.circular(12)),
         side: BorderSide(color: AppColors.ink, width: 1.5),
       ),
       clipBehavior: Clip.antiAlias,
@@ -1119,7 +1119,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                         ? const Color(0xFFDCFCE7)
                         : isCancelled
                         ? const Color(0xFFFEE2E2)
-                        : const Color(0xFFEFF3F8);
+                        : const Color(0xFFE9E9E4);
                     final badgeFg = isDone
                         ? const Color(0xFF14B866)
                         : isCancelled
@@ -1131,7 +1131,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.all(Radius.zero),
+                        borderRadius: BorderRadius.all(Radius.circular(12)),
                         border: Border.all(color: const Color(0xFF0F172A)),
                       ),
                       child: Column(
@@ -1384,7 +1384,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
     if (activeOrder == null) {
       return Card(
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.all(Radius.circular(12)),
           side: BorderSide(color: AppColors.ink, width: 1.5),
         ),
         child: Padding(
@@ -1448,7 +1448,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
 
     return Card(
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.all(Radius.circular(12)),
         side: BorderSide(color: AppColors.ink, width: 1.5),
       ),
       clipBehavior: Clip.antiAlias,
@@ -1515,7 +1515,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                 ],
                 const CircleAvatar(
                   radius: 32,
-                  backgroundColor: Color(0xFFEFF3F8),
+                  backgroundColor: Color(0xFFE9E9E4),
                   child: Icon(
                     Icons.person_rounded,
                     size: 38,
@@ -1618,7 +1618,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                     return FilterChip(
                       label: Text(chip),
                       selected: selected,
-                      selectedColor: const Color(0xFFEFF3F8),
+                      selectedColor: const Color(0xFFE9E9E4),
                       onSelected: (v) {
                         _rebuildCustomerUi(() {
                           if (v) {
@@ -1699,7 +1699,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                       backgroundColor: const Color(0xFFF43F5E),
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.zero),
+                        borderRadius: BorderRadius.all(Radius.circular(12)),
                       ),
                     ),
                     onPressed: canRateOrder
@@ -1760,7 +1760,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
     if (targetOrder == null) {
       return Card(
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.all(Radius.circular(12)),
           side: BorderSide(color: AppColors.ink, width: 1.5),
         ),
         child: Padding(
@@ -1810,7 +1810,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
     ];
     return Card(
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.all(Radius.circular(12)),
         side: BorderSide(color: AppColors.ink, width: 1.5),
       ),
       child: Padding(
@@ -2093,7 +2093,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
 
     return Card(
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.all(Radius.circular(12)),
         side: BorderSide(color: AppColors.ink, width: 1.5),
       ),
       clipBehavior: Clip.antiAlias,
@@ -2120,7 +2120,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                       builder: (context) {
                         const avatarThemes = [
                           (
-                            Color(0xFFEFF3F8),
+                            Color(0xFFE9E9E4),
                             Color(0xFF2563EB),
                             Icons.person_rounded,
                           ),
@@ -2223,7 +2223,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                   ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF59E0B),
-                    borderRadius: BorderRadius.all(Radius.zero),
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -2281,7 +2281,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                               color: hasPhone
                                   ? const Color(0xFFDCFCE7)
                                   : const Color(0xFFFEF3C7),
-                              borderRadius: BorderRadius.all(Radius.zero),
+                              borderRadius: BorderRadius.all(Radius.circular(12)),
                             ),
                             child: Text(
                               hasPhone ? 'Đã xác thực' : 'Chưa cập nhật',
@@ -2430,7 +2430,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                         backgroundColor: const Color(0xFF2563EB),
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.all(Radius.zero),
+                          borderRadius: BorderRadius.all(Radius.circular(12)),
                         ),
                       ),
                       onPressed: () {
@@ -2528,7 +2528,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: BorderRadius.all(Radius.zero),
+          borderRadius: BorderRadius.all(Radius.circular(12)),
         ),
         child: Text(
           label,
@@ -3134,7 +3134,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
 
     return Card(
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.all(Radius.circular(12)),
         side: BorderSide(color: AppColors.ink, width: 1.5),
       ),
       clipBehavior: Clip.antiAlias,
@@ -3260,7 +3260,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                         color: !n.isRead
                             ? const Color(0xFFF4F7FA)
                             : Colors.white,
-                        borderRadius: BorderRadius.all(Radius.zero),
+                        borderRadius: BorderRadius.all(Radius.circular(12)),
                         border: Border.all(color: const Color(0xFF0F172A)),
                       ),
                       child: Row(

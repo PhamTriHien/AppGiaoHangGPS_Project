@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 
 import '../../core/config/env_config.dart';
 import '../../core/integrations/bank_directory_service.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/utils/security_and_barcode_utils.dart';
 
@@ -199,9 +198,15 @@ class _VietQrBankPaymentPanelState extends State<VietQrBankPaymentPanel> {
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.zero,
-        border: Border.all(color: AppColors.ink, width: 1.2),
-        boxShadow: const [BoxShadow(color: AppColors.ink, offset: Offset(3, 3))],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A0F172A),
+            blurRadius: 12,
+            offset: Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -313,9 +318,9 @@ class _VietQrBankPaymentPanelState extends State<VietQrBankPaymentPanel> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.paper,
-        border: Border.all(color: AppColors.ink, width: 1.5),
-        borderRadius: BorderRadius.zero,
+        color: const Color(0xFFF8FAFC),
+        border: Border.all(color: const Color(0xFFCBD5E1)),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

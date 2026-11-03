@@ -931,8 +931,8 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
         boxShadow: const [
           BoxShadow(
             color: AppColors.violet,
-            offset: Offset(6, 6),
-            blurRadius: 0,
+            offset: Offset(0, 3),
+            blurRadius: 12,
           ),
         ],
       ),
@@ -1048,7 +1048,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
                 backgroundColor: Colors.transparent,
                 side: const BorderSide(color: AppColors.techLine),
                 shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.zero,
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
                 minimumSize: Size.zero,
@@ -1085,8 +1085,8 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
         boxShadow: const [
           BoxShadow(
             color: AppColors.violet,
-            offset: Offset(5, 5),
-            blurRadius: 0,
+            offset: Offset(0, -2),
+            blurRadius: 12,
           ),
         ],
       ),
@@ -1234,8 +1234,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
           boxShadow: const [
             BoxShadow(
               color: AppColors.ink,
-              offset: Offset(3, 3),
-              blurRadius: 0,
+              offset: Offset(0, 4), blurRadius: 14,
             ),
           ],
         ),
@@ -1486,8 +1485,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
           boxShadow: const [
             BoxShadow(
               color: AppColors.ink,
-              offset: Offset(3, 3),
-              blurRadius: 0,
+              offset: Offset(0, 4), blurRadius: 14,
             ),
           ],
         ),
@@ -1676,8 +1674,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
           boxShadow: const [
             BoxShadow(
               color: AppColors.ink,
-              offset: Offset(3, 3),
-              blurRadius: 0,
+              offset: Offset(0, 4), blurRadius: 14,
             ),
           ],
         ),
@@ -1815,8 +1812,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
             boxShadow: const [
               BoxShadow(
                 color: AppColors.ink,
-                offset: Offset(3, 3),
-                blurRadius: 0,
+                offset: Offset(0, 4), blurRadius: 14,
               ),
             ],
           ),
@@ -1951,7 +1947,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
                       backgroundColor: AppColors.ink,
                       foregroundColor: AppColors.acid,
                       shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.zero,
+                        borderRadius: BorderRadius.all(Radius.circular(12)),
                       ),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,

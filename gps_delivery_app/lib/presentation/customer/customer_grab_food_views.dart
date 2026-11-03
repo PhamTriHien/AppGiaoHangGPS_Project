@@ -169,7 +169,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
         color: Colors.white,
         border: Border.all(color: AppColors.ink, width: 1.5),
         boxShadow: const [
-          BoxShadow(color: AppColors.ink, offset: Offset(4, 4), blurRadius: 0),
+          BoxShadow(color: AppColors.ink, offset: Offset(0, 4), blurRadius: 14),
         ],
       ),
       child: Column(
@@ -520,8 +520,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
             boxShadow: const [
               BoxShadow(
                 color: Color(0xFF00B14F),
-                offset: Offset(5, 5),
-                blurRadius: 0,
+                offset: Offset(0, 4), blurRadius: 14,
               ),
             ],
           ),
@@ -1023,8 +1022,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
             boxShadow: const [
               BoxShadow(
                 color: AppColors.ink,
-                offset: Offset(4, 4),
-                blurRadius: 0,
+                offset: Offset(0, 4), blurRadius: 14,
               ),
             ],
           ),
@@ -1474,8 +1472,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
         boxShadow: const [
           BoxShadow(
             color: Color(0xFF00B14F),
-            offset: Offset(4, 4),
-            blurRadius: 0,
+            offset: Offset(0, 4), blurRadius: 14,
           ),
         ],
       ),

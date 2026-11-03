@@ -39,7 +39,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
       builder: (dialogCtx) {
         return AlertDialog(
           shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.zero,
+            borderRadius: BorderRadius.all(Radius.circular(12)),
             side: BorderSide(color: AppColors.ink, width: 2),
           ),
           backgroundColor: Colors.white,
@@ -95,8 +95,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                     boxShadow: [
                       BoxShadow(
                         color: rarityColor,
-                        offset: const Offset(4, 4),
-                        blurRadius: 0,
+                        offset: const Offset(0, 4), blurRadius: 14,
                       ),
                     ],
                   ),
@@ -170,7 +169,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                           backgroundColor: AppColors.violet,
                           foregroundColor: Colors.white,
                           shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.zero,
+                            borderRadius: BorderRadius.all(Radius.circular(12)),
                           ),
                         ),
                         onPressed: () {
@@ -195,7 +194,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                           backgroundColor: const Color(0xFF00B14F),
                           foregroundColor: Colors.white,
                           shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.zero,
+                            borderRadius: BorderRadius.all(Radius.circular(12)),
                           ),
                         ),
                         onPressed: () {
@@ -253,8 +252,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
         boxShadow: const [
           BoxShadow(
             color: Color(0xFFEE4D2D),
-            offset: Offset(4, 4),
-            blurRadius: 0,
+            offset: Offset(0, 4), blurRadius: 14,
           ),
         ],
       ),
@@ -359,7 +357,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                   backgroundColor: const Color(0xFFEE4D2D),
                   foregroundColor: Colors.white,
                   shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.zero,
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
                   ),
                 ),
                 onPressed: () => _openPromoHubAtTab(0),
@@ -378,7 +376,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                   backgroundColor: AppColors.acid,
                   foregroundColor: AppColors.ink,
                   shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.zero,
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
                   ),
                 ),
                 onPressed: () => _openPromoHubAtTab(1),
@@ -397,7 +395,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                   foregroundColor: Colors.white,
                   side: const BorderSide(color: AppColors.pink, width: 1.4),
                   shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.zero,
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
                   ),
                 ),
                 onPressed: () => _openPromoHubAtTab(2),
@@ -494,8 +492,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
             boxShadow: const [
               BoxShadow(
                 color: Color(0xFFEE4D2D),
-                offset: Offset(5, 5),
-                blurRadius: 0,
+                offset: Offset(0, 4), blurRadius: 14,
               ),
             ],
           ),
@@ -797,8 +794,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
             boxShadow: const [
               BoxShadow(
                 color: Color(0xFFF59E0B),
-                offset: Offset(4, 4),
-                blurRadius: 0,
+                offset: Offset(0, 4), blurRadius: 14,
               ),
             ],
           ),
@@ -839,7 +835,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                           : const Color(0xFFEE4D2D),
                       foregroundColor: Colors.white,
                       shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.zero,
+                        borderRadius: BorderRadius.all(Radius.circular(12)),
                       ),
                     ),
                     onPressed: checkedInToday
@@ -954,8 +950,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
             boxShadow: const [
               BoxShadow(
                 color: Color(0xFFEE4D2D),
-                offset: Offset(4, 4),
-                blurRadius: 0,
+                offset: Offset(0, 4), blurRadius: 14,
               ),
             ],
           ),
@@ -1137,7 +1132,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                                             backgroundColor: badgeColor,
                                             foregroundColor: Colors.white,
                                             shape: const RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.zero,
+                                              borderRadius: BorderRadius.all(Radius.circular(12)),
                                             ),
                                           ),
                                           onPressed: () {
@@ -1177,7 +1172,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                                                 shape:
                                                     const RoundedRectangleBorder(
                                                       borderRadius:
-                                                          BorderRadius.zero,
+                                                          BorderRadius.all(Radius.circular(12)),
                                                     ),
                                               ),
                                               onPressed: () =>
@@ -1203,7 +1198,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                                                 shape:
                                                     const RoundedRectangleBorder(
                                                       borderRadius:
-                                                          BorderRadius.zero,
+                                                          BorderRadius.all(Radius.circular(12)),
                                                     ),
                                               ),
                                               onPressed: () =>
@@ -1356,7 +1351,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                                     backgroundColor: const Color(0xFF00B14F),
                                     foregroundColor: Colors.white,
                                     shape: const RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.zero,
+                                      borderRadius: BorderRadius.all(Radius.circular(12)),
                                     ),
                                   ),
                                   onPressed: () {
@@ -1380,7 +1375,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                                   style: OutlinedButton.styleFrom(
                                     visualDensity: VisualDensity.compact,
                                     shape: const RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.zero,
+                                      borderRadius: BorderRadius.all(Radius.circular(12)),
                                     ),
                                   ),
                                   onPressed: () => _rebuildCustomerUi(() {
@@ -1553,7 +1548,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
               backgroundColor: affordable ? accent : AppColors.textSecondary,
               foregroundColor: Colors.white,
               shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.zero,
+                borderRadius: BorderRadius.all(Radius.circular(12)),
               ),
             ),
             onPressed: () {
@@ -1611,7 +1606,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                 style: OutlinedButton.styleFrom(
                   visualDensity: VisualDensity.compact,
                   shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.zero,
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
                   ),
                 ),
                 onPressed: () =>
@@ -1787,7 +1782,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                             backgroundColor: AppColors.violet,
                             foregroundColor: Colors.white,
                             shape: const RoundedRectangleBorder(
-                              borderRadius: BorderRadius.zero,
+                              borderRadius: BorderRadius.all(Radius.circular(12)),
                             ),
                           ),
                           onPressed: () =>
@@ -1810,7 +1805,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                             backgroundColor: const Color(0xFF00B14F),
                             foregroundColor: Colors.white,
                             shape: const RoundedRectangleBorder(
-                              borderRadius: BorderRadius.zero,
+                              borderRadius: BorderRadius.all(Radius.circular(12)),
                             ),
                           ),
                           onPressed: () =>
@@ -1995,8 +1990,7 @@ class _LuckySpinWheelSectionState extends State<_LuckySpinWheelSection>
             boxShadow: const [
               BoxShadow(
                 color: AppColors.violet,
-                offset: Offset(4, 4),
-                blurRadius: 0,
+                offset: Offset(0, 4), blurRadius: 14,
               ),
             ],
           ),
@@ -2130,7 +2124,7 @@ class _LuckySpinWheelSectionState extends State<_LuckySpinWheelSection>
                         vertical: 12,
                       ),
                       shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.zero,
+                        borderRadius: BorderRadius.all(Radius.circular(12)),
                       ),
                     ),
                     onPressed: _isSpinning ? null : _triggerSpin,
@@ -2152,7 +2146,7 @@ class _LuckySpinWheelSectionState extends State<_LuckySpinWheelSection>
                         vertical: 12,
                       ),
                       shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.zero,
+                        borderRadius: BorderRadius.all(Radius.circular(12)),
                       ),
                     ),
                     onPressed: widget.onGoToExchangeOrMissions,
@@ -2454,8 +2448,7 @@ class _MysteryBlindBoxSectionState extends State<_MysteryBlindBoxSection>
         boxShadow: const [
           BoxShadow(
             color: AppColors.pink,
-            offset: Offset(4, 4),
-            blurRadius: 0,
+            offset: Offset(0, 4), blurRadius: 14,
           ),
         ],
       ),
@@ -2497,7 +2490,7 @@ class _MysteryBlindBoxSectionState extends State<_MysteryBlindBoxSection>
                       style: OutlinedButton.styleFrom(
                         visualDensity: VisualDensity.compact,
                         shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.zero,
+                          borderRadius: BorderRadius.all(Radius.circular(12)),
                         ),
                       ),
                       onPressed: () {
@@ -2525,7 +2518,7 @@ class _MysteryBlindBoxSectionState extends State<_MysteryBlindBoxSection>
                       backgroundColor: AppColors.pink,
                       foregroundColor: Colors.white,
                       shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.zero,
+                        borderRadius: BorderRadius.all(Radius.circular(12)),
                       ),
                     ),
                     onPressed: widget.onGoToExchange,
@@ -2616,8 +2609,7 @@ class _MysteryBlindBoxSectionState extends State<_MysteryBlindBoxSection>
                           boxShadow: [
                             BoxShadow(
                               color: accentColor,
-                              offset: const Offset(3, 3),
-                              blurRadius: 0,
+                              offset: const Offset(0, 4), blurRadius: 14,
                             ),
                           ],
                         ),
@@ -2708,7 +2700,7 @@ class _MysteryBlindBoxSectionState extends State<_MysteryBlindBoxSection>
                                       backgroundColor: AppColors.ink,
                                       foregroundColor: AppColors.acid,
                                       shape: const RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.zero,
+                                        borderRadius: BorderRadius.all(Radius.circular(12)),
                                       ),
                                     ),
                                     onPressed: isShaking
@@ -2798,7 +2790,7 @@ class _MysteryBlindBoxSectionState extends State<_MysteryBlindBoxSection>
                                             visualDensity:
                                                 VisualDensity.compact,
                                             shape: const RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.zero,
+                                              borderRadius: BorderRadius.all(Radius.circular(12)),
                                             ),
                                           ),
                                           onPressed: () =>
@@ -2821,7 +2813,7 @@ class _MysteryBlindBoxSectionState extends State<_MysteryBlindBoxSection>
                                               0xFF00853B,
                                             ),
                                             shape: const RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.zero,
+                                              borderRadius: BorderRadius.all(Radius.circular(12)),
                                             ),
                                           ),
                                           onPressed: () =>
