@@ -416,7 +416,7 @@ begin
     jsonb_build_object(
       'id', 'first_shipping',
       'title', 'Chuyến giao hàng đầu tiên',
-      'subtitle', 'Hoàn thành 1 đơn giao hàng Cloud thành công',
+      'subtitle', 'Hoàn thành 1 đơn giao hàng thành công',
       'progress', least(1, ship_done),
       'target', 1,
       'coins', 100,
@@ -428,7 +428,7 @@ begin
     jsonb_build_object(
       'id', 'first_market',
       'title', 'Đơn Ăn uống / Mua sắm đầu tiên',
-      'subtitle', 'Nhận thành công 1 đơn đặt món hoặc mua sắm Cloud',
+      'subtitle', 'Nhận thành công 1 đơn đặt món hoặc mua sắm',
       'progress', least(1, market_done),
       'target', 1,
       'coins', 120,
@@ -451,8 +451,8 @@ begin
     ),
     jsonb_build_object(
       'id', 'three_orders',
-      'title', 'Mốc 3 đơn Cloud hoàn tất',
-      'subtitle', 'Hoàn tất tổng cộng 3 đơn giao hàng hoặc mua sắm trên Cloud',
+      'title', 'Mốc 3 đơn hàng hoàn tất',
+      'subtitle', 'Hoàn tất tổng cộng 3 đơn giao hàng hoặc mua sắm',
       'progress', least(3, total_done),
       'target', 3,
       'coins', 300,
@@ -500,7 +500,7 @@ begin
       jsonb_build_object(
         'id', 'spin_ticket',
         'title', '+1 Vé Vòng Xoay May Mắn',
-        'subtitle', 'Quay thưởng Voucher Cloud hoặc Xu ngay lập tức',
+        'subtitle', 'Quay thưởng Voucher hoặc Xu ngay lập tức',
         'coin_cost', s.spin_ticket_coin_cost,
         'kind', 'ticket'
       ),
@@ -527,10 +527,10 @@ begin
       )
     ),
     'wheel_segments', jsonb_build_array(
-      jsonb_build_object('index', 0, 'label', '+50 Xu', 'subtitle', 'Cộng thẳng Ví Xu Cloud', 'rarity', 'Common'),
+      jsonb_build_object('index', 0, 'label', '+50 Xu', 'subtitle', 'Cộng thẳng Ví Xu', 'rarity', 'Common'),
       jsonb_build_object('index', 1, 'label', 'Voucher 15K', 'subtitle', 'Đơn từ 60.000đ (7 ngày)', 'rarity', 'Common'),
       jsonb_build_object('index', 2, 'label', '+1 Vé Hộp Mù', 'subtitle', 'Mở 1 Hộp Mù Bí Ẩn', 'rarity', 'Rare'),
-      jsonb_build_object('index', 3, 'label', '+150 Xu', 'subtitle', 'Cộng thẳng Ví Xu Cloud', 'rarity', 'Rare'),
+      jsonb_build_object('index', 3, 'label', '+150 Xu', 'subtitle', 'Cộng thẳng Ví Xu', 'rarity', 'Rare'),
       jsonb_build_object('index', 4, 'label', 'Voucher 25K', 'subtitle', 'Đơn từ 99.000đ (7 ngày)', 'rarity', 'Rare'),
       jsonb_build_object('index', 5, 'label', '+30 Xu Lộc', 'subtitle', 'Xu may mắn mỗi lượt', 'rarity', 'Common'),
       jsonb_build_object('index', 6, 'label', 'Giảm 50% (35K)', 'subtitle', 'Đơn từ 70.000đ (7 ngày)', 'rarity', 'Epic'),
@@ -676,7 +676,7 @@ declare
   v_eligible boolean := false;
 begin
   if uid is null then
-    raise sqlstate 'PT401' using message = 'Cần đăng nhập tài khoản Cloud.';
+    raise sqlstate 'PT401' using message = 'Vui lòng đăng nhập tài khoản.';
   end if;
   if jsonb_typeof(d) is distinct from 'object' or octet_length(d::text) > 4000 then
     raise sqlstate 'PT400' using message = 'Dữ liệu sự kiện khuyến mãi không hợp lệ.';
@@ -684,14 +684,14 @@ begin
 
   if p_action = 'status' then
     if not op and not public.delivery_cloud_active() then
-      raise sqlstate 'PT403' using message = 'Cần hồ sơ Cloud đang hoạt động.';
+      raise sqlstate 'PT403' using message = 'Cần hồ sơ tài khoản đang hoạt động.';
     end if;
     return public.delivery_promo_status_payload(uid, op);
   end if;
 
   if p_action = 'admin_settings_save' then
     if not op then
-      raise sqlstate 'PT403' using message = 'Chỉ Quản trị viên Cloud mới được cấu hình sự kiện.';
+      raise sqlstate 'PT403' using message = 'Chỉ Quản trị viên mới được cấu hình sự kiện.';
     end if;
     insert into public.delivery_promo_settings(id) values(true) on conflict(id) do nothing;
     select * into s from public.delivery_promo_settings where id = true for update;
@@ -727,7 +727,7 @@ begin
   end if;
 
   if not public.delivery_cloud_active() then
-    raise sqlstate 'PT403' using message = 'Cần hoàn tất hồ sơ Cloud đang hoạt động để tham gia sự kiện.';
+    raise sqlstate 'PT403' using message = 'Cần hoàn tất hồ sơ tài khoản đang hoạt động để tham gia sự kiện.';
   end if;
 
   perform pg_advisory_xact_lock(hashtextextended('promo:' || uid::text, 0));
@@ -837,11 +837,11 @@ begin
     else
       v_eligible := (ship_done + market_done) >= 3;
       v_coins := 300; v_spins := 1; v_boxes := 1; v_rarity := 'Epic';
-      v_title := 'Thưởng nhiệm vụ: Mốc 3 đơn Cloud';
+      v_title := 'Thưởng nhiệm vụ: Mốc 3 đơn hoàn tất';
     end if;
 
     if not v_eligible then
-      raise sqlstate 'PT409' using message = 'Bạn chưa hoàn thành đủ điều kiện đơn hàng Cloud cho nhiệm vụ này.';
+      raise sqlstate 'PT409' using message = 'Bạn chưa hoàn thành đủ điều kiện đơn hàng cho nhiệm vụ này.';
     end if;
 
     v_summary := '+' || v_coins || ' Xu'
@@ -912,7 +912,7 @@ begin
       set balance = balance - v_cost, updated_at = now()
       where user_id = uid and balance >= v_cost;
     if not found then
-      raise sqlstate 'PT409' using message = 'Số dư Xu Cloud không đủ để đổi phần thưởng này.';
+      raise sqlstate 'PT409' using message = 'Số dư Xu không đủ để đổi phần thưởng này.';
     end if;
 
     if v_item = 'voucher_20k' then
@@ -962,8 +962,8 @@ begin
     v_roll := floor(random() * 100)::integer;
     if v_roll < 28 then
       v_segment := 0; v_coins := 50; v_rarity := 'Common';
-      v_title := 'Trúng +50 Xu Cloud';
-      v_summary := 'Đã cộng trực tiếp +50 Xu vào Ví Xu Cloud của bạn.';
+      v_title := 'Trúng +50 Xu';
+      v_summary := 'Đã cộng trực tiếp +50 Xu vào Ví Xu của bạn.';
     elsif v_roll < 48 then
       v_segment := 1; v_rarity := 'Common';
       v_minted := public.delivery_promo_mint_voucher(uid, 'SPIN15', 'Vòng Xoay Giảm 15.000đ', 'fixed', 15000, 15000, 60000, 7);
@@ -975,8 +975,8 @@ begin
       v_summary := 'Đã cộng +1 Vé mở Hộp Mù Bí Ẩn vào kho vé của bạn.';
     elsif v_roll < 75 then
       v_segment := 3; v_coins := 150; v_rarity := 'Rare';
-      v_title := 'Trúng +150 Xu Cloud';
-      v_summary := 'Đã cộng trực tiếp +150 Xu vào Ví Xu Cloud của bạn.';
+      v_title := 'Trúng +150 Xu';
+      v_summary := 'Đã cộng trực tiếp +150 Xu vào Ví Xu của bạn.';
     elsif v_roll < 85 then
       v_segment := 4; v_rarity := 'Rare';
       v_minted := public.delivery_promo_mint_voucher(uid, 'SPIN25', 'Vòng Xoay Giảm 25.000đ', 'fixed', 25000, 25000, 99000, 7);
@@ -985,7 +985,7 @@ begin
     elsif v_roll < 93 then
       v_segment := 5; v_coins := 30; v_rarity := 'Common';
       v_title := 'Lộc May Mắn +30 Xu';
-      v_summary := 'Đã cộng +30 Xu lộc may mắn vào Ví Xu Cloud.';
+      v_summary := 'Đã cộng +30 Xu lộc may mắn vào Ví Xu.';
     elsif v_roll < 98 then
       v_segment := 6; v_rarity := 'Epic';
       v_minted := public.delivery_promo_mint_voucher(uid, 'SPIN50P', 'Vòng Xoay Giảm 50% (Tối đa 35K)', 'percent', 50, 35000, 70000, 7);
@@ -1060,8 +1060,8 @@ begin
     v_roll := floor(random() * 100)::integer;
     if v_roll < 35 then
       v_rarity := 'R'; v_coins := 80;
-      v_title := 'Hộp Mù [R]: +80 Xu Cloud';
-      v_summary := 'Đã cộng trực tiếp +80 Xu vào Ví Xu Cloud.';
+      v_title := 'Hộp Mù [R]: +80 Xu';
+      v_summary := 'Đã cộng trực tiếp +80 Xu vào Ví Xu.';
     elsif v_roll < 60 then
       v_rarity := 'R';
       v_minted := public.delivery_promo_mint_voucher(uid, 'BOX20K', 'Hộp Mù Giảm 20.000đ', 'fixed', 20000, 20000, 80000, 7);
@@ -1070,7 +1070,7 @@ begin
     elsif v_roll < 78 then
       v_rarity := 'SR'; v_coins := 60; v_spins := 1;
       v_title := 'Hộp Mù [SR]: +1 Vé Quay & +60 Xu';
-      v_summary := 'Nhận combo +1 Vé Vòng Xoay May Mắn và +60 Xu Cloud.';
+      v_summary := 'Nhận combo +1 Vé Vòng Xoay May Mắn và +60 Xu.';
     elsif v_roll < 92 then
       v_rarity := 'SR';
       v_minted := public.delivery_promo_mint_voucher(uid, 'BOX35K', 'Hộp Mù SR Giảm 35.000đ', 'fixed', 35000, 35000, 120000, 7);
@@ -1079,7 +1079,7 @@ begin
     elsif v_roll < 98 then
       v_rarity := 'SSR'; v_coins := 300;
       v_title := 'Hộp Mù [SSR]: Kho Báu +300 Xu!';
-      v_summary := 'Đại thắng! Đã cộng +300 Xu vào Ví Xu Cloud.';
+      v_summary := 'Đại thắng! Đã cộng +300 Xu vào Ví Xu.';
     else
       v_rarity := 'SSR';
       v_minted := public.delivery_promo_mint_voucher(uid, 'SSR60K', 'Hộp Mù SSR Giảm 60.000đ', 'fixed', 60000, 60000, 180000, 7);

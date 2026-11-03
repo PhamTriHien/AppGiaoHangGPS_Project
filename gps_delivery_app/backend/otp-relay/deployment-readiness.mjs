@@ -187,8 +187,8 @@ export function createDeploymentReadiness({ env = process.env, database = create
         add('database','PostgreSQL backend','error','Không kiểm tra được database. Kiểm tra kết nối, TLS và quyền truy cập.');
       }
     }
-    add('cloud_schema','Schema đơn hàng cloud',schema ? schema.cloud_schema ? 'ok' : 'missing' : 'unchecked',
-      schema?.cloud_schema ? 'Đã tìm thấy các hàm tạo đơn và chuyển trạng thái.' : 'Cần kiểm tra database và chạy migration cloud.');
+    add('cloud_schema','Cấu trúc dữ liệu đơn hàng',schema ? schema.cloud_schema ? 'ok' : 'missing' : 'unchecked',
+      schema?.cloud_schema ? 'Đã tìm thấy các hàm tạo đơn và chuyển trạng thái.' : 'Cần kiểm tra database và chạy cập nhật dữ liệu.');
     add('membership_schema','Tư cách cửa hàng và tài xế',schema ? schema.membership_schema ? 'ok' : 'missing' : 'unchecked',
       schema?.membership_schema ? 'Đã có quyền đối tác độc lập và bảng riêng tư.' : 'Cần migration 20261101_partner_memberships.sql.');
     add('import_schema','Nhập địa chỉ có xác nhận',schema ? schema.import_schema ? 'ok' : 'missing' : 'unchecked',
@@ -201,13 +201,13 @@ export function createDeploymentReadiness({ env = process.env, database = create
       schema?.browse_schema ? 'Đã có tìm kiếm, lọc giá/tồn và phân trang tại server.' : 'Cần migration 20261105_market_browse.sql.');
     add('configuration_schema','Lựa chọn, lịch bán và giỏ hàng',schema ? schema.configuration_schema ? 'ok' : 'missing' : 'unchecked',
       schema?.configuration_schema ? 'Đã có giá lựa chọn tại server, giỏ theo từng dòng và giới hạn hoàn hàng.' : 'Cần migration 20261106_catalog_configuration.sql.');
-    add('commercial_suite_schema','Thương mại cloud toàn diện (P1–P6)',schema ? schema.commercial_suite_schema ? 'ok' : 'missing' : 'unchecked',
+    add('commercial_suite_schema','Thương mại điện tử toàn diện (P1–P6)',schema ? schema.commercial_suite_schema ? 'ok' : 'missing' : 'unchecked',
       schema?.commercial_suite_schema ? 'Đã có biến thể SKU, nhân sự shop, trả trước multi-shop, bằng chứng riêng tư, voucher, flash sale và xu.' : 'Cần migration 20261107_cloud_commercial_suite.sql.');
     add('logistics_schema','Thu gom, tín nhiệm người nhận và thống kê giao hàng',schema ? schema.logistics_schema ? 'ok' : 'missing' : 'unchecked',
-      schema?.logistics_schema ? 'Đã có phiếu thu gom, chỉ dẫn giao hàng, cờ rủi ro người nhận riêng tư và thống kê từ đơn cloud.' : 'Cần migration 20261108_cloud_logistics.sql.');
+      schema?.logistics_schema ? 'Đã có phiếu thu gom, chỉ dẫn giao hàng, cờ rủi ro người nhận riêng tư và thống kê từ đơn hàng.' : 'Cần migration 20261108_cloud_logistics.sql.');
     add('admin_accounts_schema','Quản trị danh tính và phân quyền tài khoản',schema ? schema.admin_accounts_schema ? 'ok' : 'missing' : 'unchecked',
       schema?.admin_accounts_schema ? 'Đã có quản trị danh tính Auth, cấp quyền đối tác trực tiếp, bảo vệ tự khóa Operator và nhật ký kiểm toán.' : 'Cần migration 20261109_admin_account_management.sql.');
-    add('promo_events_schema','Sự kiện Vòng xoay, Hộp mù & Voucher cá nhân Cloud',schema ? schema.promo_events_schema ? 'ok' : 'missing' : 'unchecked',
+    add('promo_events_schema','Sự kiện Vòng xoay, Hộp mù & Voucher cá nhân',schema ? schema.promo_events_schema ? 'ok' : 'missing' : 'unchecked',
       schema?.promo_events_schema ? 'Đã có vòng xoay, hộp mù, điểm danh, nhiệm vụ đơn thật và voucher cá nhân đồng bộ tại server.' : 'Cần migration 20261110_cloud_promo_events.sql.');
     const commerceSchema = schema?.commerce_schema && schema?.commerce_guard;
     add('address_schema','Sổ địa chỉ tài khoản',schema ? schema.address_schema ? 'ok' : 'missing' : 'unchecked',
@@ -235,7 +235,7 @@ export function createDeploymentReadiness({ env = process.env, database = create
     }
     const base = publicBackendUrl(configValue('PUBLIC_BASE_URL',env));
     add('public_https','Webhook HTTPS công khai',base ? 'ok' : 'missing',
-      base ? 'URL HTTPS hợp lệ về định dạng; chưa xác minh truy cập từ ngoài hoặc đăng ký callback.' : 'Đặt PUBLIC_BASE_URL thành URL HTTPS công khai; localhost không nhận được callback cloud.');
+      base ? 'URL HTTPS hợp lệ về định dạng; chưa xác minh truy cập từ ngoài hoặc đăng ký callback.' : 'Đặt PUBLIC_BASE_URL thành URL HTTPS công khai; localhost không nhận được callback từ xa.');
     const callbacks = [
       {provider:'payos',label:'payOS',path:'delivery/payments/webhook',authentication:'Chữ ký checksum payOS'},
       {provider:'ghn',label:'GHN',path:'delivery/webhooks/ghn',authentication:'Header X-GHN-Webhook-Secret'},

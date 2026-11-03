@@ -35,7 +35,7 @@ export const INTEGRATION_DEFINITIONS = {
     SMS_API_KEY: secret('API key / Account SID'), SMS_API_SECRET: secret('API secret / Auth token'),
     SMS_BRANDNAME: field('Device ID / Brandname / From / Verify SID'),
   } },
-  supabase: { label: 'Supabase Cloud', toggle: 'SUPABASE_ENABLED', required: ['SUPABASE_URL', 'SUPABASE_ANON_KEY'], fields: {
+  supabase: { label: 'Supabase Auth & Dữ liệu', toggle: 'SUPABASE_ENABLED', required: ['SUPABASE_URL', 'SUPABASE_ANON_KEY'], fields: {
     SUPABASE_URL: url('Project URL'), SUPABASE_ANON_KEY: secret('Publishable / anon key'),
     SUPABASE_SERVICE_ROLE_KEY: secret('Server secret / service role key'), DELIVERY_WEBHOOK_SECRET: secret('Webhook secret'),
   } },
@@ -182,7 +182,7 @@ export function assertSafeAiUrl(rawUrl, { allowLoopback = true } = {}) {
     /^(?:fc|fd)[0-9a-f]{0,2}:/.test(host) || /^fe[89ab][0-9a-f]:/.test(host) || /^::ffff:/.test(host);
   if (isPrivateOrReserved) throw new ConfigError('Không cho phép kết nối địa chỉ mạng nội bộ hoặc metadata.');
   if (isLoopback) {
-    if (!allowLoopback) throw new ConfigError('URL AI trên Cloud yêu cầu HTTPS công khai.');
+    if (!allowLoopback) throw new ConfigError('URL AI từ xa yêu cầu HTTPS công khai.');
   } else if (parsed.protocol !== 'https:') {
     throw new ConfigError('URL AI công khai yêu cầu giao thức HTTPS.');
   }
@@ -378,7 +378,7 @@ export async function updateIntegrationConfig(values, { clear = [], actor = 'unk
       } catch (error) {
         if (error?.code !== '42P01') {
           if (db) throw error;
-          throw new ConfigError('Không lưu được cấu hình lên database cloud. Kiểm tra kết nối PostgreSQL.', 503);
+          throw new ConfigError('Không lưu được cấu hình vào cơ sở dữ liệu. Kiểm tra kết nối PostgreSQL.', 503);
         }
       }
     }
@@ -425,7 +425,7 @@ export async function updateIntegrationConfig(values, { clear = [], actor = 'unk
         } catch (error) {
           if (error?.code !== '42P01') {
             if (db) throw error;
-            throw new ConfigError('Không lưu được cấu hình lên database cloud. Kiểm tra kết nối PostgreSQL.', 503);
+            throw new ConfigError('Không lưu được cấu hình vào cơ sở dữ liệu. Kiểm tra kết nối PostgreSQL.', 503);
           }
         }
       }
