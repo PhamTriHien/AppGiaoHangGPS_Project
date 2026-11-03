@@ -1,5 +1,19 @@
 # Current Handoff
 
+## Bank Transfer & VietQR Payment (`VietQrBankPaymentPanel`, ISO/IEC 18004 V1-V9), Modern Super-App UI Refresh & Live Local Web Preview (`:8080`) - 2026-11-03
+
+- Completed three user-requested upgrades and launched a live dual-stack local Web test server:
+  1. **Bank Transfer (`Chuyển khoản ngân hàng`) & Scannable VietQR (`NAPAS 247` / EMVCo TLV + CRC16)**:
+     - Extended `SecurityAndBarcodeUtils.generateEmvVietQrPayload` and upgraded `_QrMatrixPainter._encodeIso18004Matrix` to ISO/IEC 18004 Versions `1..9` Level L (`<= 230` bytes, 2-block RS interleaving for V6-V9, Annex E multi-alignment centers, Golay `(18,6)` Version Info for V7-V9) in `gps_delivery_app/lib/core/utils/security_and_barcode_utils.dart`.
+     - Added reusable responsive `VietQrBankPaymentPanel` (`gps_delivery_app/lib/presentation/widgets/vietqr_bank_payment_panel.dart`) with 10 built-in Vietnam NAPAS 247 banks + live `BankDirectoryService` enrichment, scannable `QrMatrixPainterWidget`, beneficiary details, and 1-tap copy actions (account number, exact VND amount, and `GHST <shortRef>` transfer memo).
+     - Integrated across canonical Cloud shipping & marketplace flows (`cloud_commerce_dialog.dart`, `cloud_order_form.dart`, `marketplace_view.dart`, `cloud_order_details_screen.dart` with server-authoritative `PAID` invariant preserved) and Legacy multi-role demo flows (`app_state_order_and_admin_ops.dart`, `customer_subsystem_views.dart`, `customer_order_and_pricing_views.dart`, `customer_grab_food_views.dart`, `customer_history_and_profile_views.dart`).
+  2. **Clean, High-Contrast Modern Super-App UI Restyle**:
+     - Refreshed `app_colors.dart`, `app_theme.dart`, `admin_studio_theme.dart`, `ghst_user_shell.dart`, `ghst_home_screen.dart`, `studio_user_auth_frame.dart`, `cloud_auth_screen.dart`, `vietqr_bank_payment_panel.dart`, and legacy customer views from harsh Neo-Brutalist `#F5F1E8` beige / `0px` square black borders / `Offset(5, 5)` hard shadows / `#CBFF3E` neon button text to a calm daylight palette (`#F4F7FA` soft slate background, `#FFFFFF` cards, `10px-16px` rounded geometry, `#E2E8F0` subtle borders, diffused shadows, `#2563EB` primary buttons with crisp white text, and `#0F172A`/`#475569` WCAG-compliant typography).
+  3. **Live Dual-Stack Local Web Preview (`http://localhost:8080`)**:
+     - Built `gps_delivery_app/build/web` (`--no-wasm-dry-run --no-web-resources-cdn --dart-define=DELIVERY_API_BASE_URL=/delivery/`) and started dual-stack `127.0.0.1:8080` + `[::1]:8080` preview server (`serve-test-preview.cjs`) with `/health` and `/delivery/*` proxied to `https://ghst-backend-admin.onrender.com` per explicit user test-link request.
+- Checks run: `flutter analyze --no-pub` (`No issues found!`), `flutter test --no-pub` across `unified_user_interface_test.dart`, `ghst_home_test.dart`, `cloud_commerce_test.dart`, `cloud_order_details_test.dart`, `cloud_orders_test.dart`, `cloud_commercial_suite_test.dart`, `admin_accounts_panel_test.dart`, `backend_integration_settings_test.dart`, `cloud_account_session_test.dart`, `competitor_features_test.dart`, and `widget_test.dart` (`TC-01`) -> all passed at `360px` & `1440px`; `flutter build web` (exit `0`); HTTP `200` verified on `http://localhost:8080/`, `http://127.0.0.1:8080/`, `/legacy`, `/admin`, and `/health`.
+- Remaining limits & next step: Local preview server `:8080` is intentionally kept running for active browser testing; commit/push to `origin/main` & `origin/backend-admin` when user confirms visual style and payment UX.
+
 ## Driver Cash/COD Settlement (`collect_cash`), `payOS` Webhook Auto-Verification (`20261112_shipping_cash_settlement`, workflow 18) & Multi-Platform Release Deploy - 2026-11-03
 
 - Implemented both end-to-end payment workflows (`100%` server-authoritative PostgreSQL + Node Gateway + Flutter UI, `0` mock receipts or placeholder keys):

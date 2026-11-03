@@ -22,6 +22,7 @@ import '../widgets/photon_address_lookup.dart';
 import '../widgets/shipping_label_scanner.dart';
 import '../widgets/live_order_connection.dart';
 import '../widgets/system_state_screens.dart';
+import '../widgets/vietqr_bank_payment_panel.dart';
 
 part 'customer_auth_and_address_views.dart';
 part 'customer_order_and_pricing_views.dart';
@@ -77,7 +78,10 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
   bool _greenFundContributed = false;
   bool _isRoundTrip = false;
   int? _lastTspSavedMeters;
-  final String _selectedPaymentMethod = 'Tiền mặt (COD)';
+  String _selectedPaymentMethod = 'Tiền mặt (COD)';
+  String _selectedBankBin = '970436';
+  String _selectedBankShortName = 'Vietcombank';
+  String _foodPaymentMethod = 'Tiền mặt khi nhận món';
   String _cashFeePayer = 'Người gửi trả phí';
   List<GeoPoint>? _osrmPreviewPoints;
   int? _osrmDistMeters;
@@ -927,8 +931,8 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
         boxShadow: const [
           BoxShadow(
             color: AppColors.violet,
-            offset: Offset(6, 6),
-            blurRadius: 0,
+            offset: Offset(0, 3),
+            blurRadius: 12,
           ),
         ],
       ),
@@ -1081,8 +1085,8 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
         boxShadow: const [
           BoxShadow(
             color: AppColors.violet,
-            offset: Offset(5, 5),
-            blurRadius: 0,
+            offset: Offset(0, -2),
+            blurRadius: 12,
           ),
         ],
       ),
@@ -2127,6 +2131,69 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
         ),
       ],
     );
+  }
+
+  Future<void> _showLegacyBankQrPaymentDialog(ActiveOrderRecord ord) async {
+    if (!mounted) return;
+    String pickedBin = _selectedBankBin;
+    String pickedShortName = _selectedBankShortName;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Text('Thanh toán Ngân hàng · VietQR · ${ord.trackingCode}'),
+          content: SizedBox(
+            width: 500,
+            child: SingleChildScrollView(
+              child: VietQrBankPaymentPanel(
+                amountVnd: ord.totalAmount,
+                orderReference: ord.trackingCode,
+                selectedPayerBankBin: pickedBin,
+                onPayerBankChanged: (bank) {
+                  setDialogState(() {
+                    pickedBin = bank.bin;
+                    pickedShortName = bank.shortName;
+                  });
+                  _rebuildCustomerUi(() {
+                    _selectedBankBin = bank.bin;
+                    _selectedBankShortName = bank.shortName;
+                  });
+                },
+                reconciliationNote:
+                    'Quét mã QR bằng ứng dụng ngân hàng hoặc sao chép thông tin chuyển khoản nhanh NAPAS 247.',
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Thanh toán sau'),
+            ),
+            FilledButton.icon(
+              onPressed: () => Navigator.pop(ctx, true),
+              icon: const Icon(Icons.check_circle_outline),
+              label: const Text('Tôi đã chuyển khoản'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (confirmed == true && mounted) {
+      final ok = _store.confirmOrderBankQrPayment(
+        trackingCode: ord.trackingCode,
+        bankLabel: pickedShortName,
+      );
+      if (ok && mounted) {
+        _rebuildCustomerUi(() {});
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Đã ghi nhận thanh toán đơn ${ord.trackingCode} qua $pickedShortName!',
+            ),
+          ),
+        );
+      }
+    }
   }
 
   void _rebuildCustomerUi(VoidCallback fn) {

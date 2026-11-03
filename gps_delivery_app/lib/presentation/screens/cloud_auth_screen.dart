@@ -112,10 +112,12 @@ class _CloudAuthScreenState extends State<CloudAuthScreen>
       'over_email_send_rate_limit' =>
         'Vui lòng đợi ít giây trước khi yêu cầu gửi lại mã xác nhận.',
       'same_password' => 'Mật khẩu mới phải khác mật khẩu hiện tại.',
-      'otp_expired' || 'otp_disabled' => 'Mã xác nhận email không đúng hoặc đã hết hạn. Vui lòng kiểm tra lại hoặc gửi lại mã.',
+      'otp_expired' || 'otp_disabled' =>
+        'Mã xác nhận email không đúng hoặc đã hết hạn. Vui lòng kiểm tra lại hoặc gửi lại mã.',
       _ when error.statusCode == '429' =>
         'Vui lòng đợi ít giây trước khi yêu cầu gửi lại mã xác nhận.',
-      _ => 'Không xác thực được. Kiểm tra thông tin, email xác nhận hoặc thử lại sau.',
+      _ =>
+        'Không xác thực được. Kiểm tra thông tin, email xác nhận hoặc thử lại sau.',
     };
   }
 
@@ -249,7 +251,7 @@ class _CloudAuthScreenState extends State<CloudAuthScreen>
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const StudioUserAuthBrand(),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             if ([_AuthMode.login, _AuthMode.register].contains(_mode)) ...[
               SegmentedButton<_AuthMode>(
                 segments: const [
@@ -268,31 +270,33 @@ class _CloudAuthScreenState extends State<CloudAuthScreen>
                     ? null
                     : (value) => _switch(value.first),
                 style: SegmentedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: AppColors.ink,
+                  backgroundColor: const Color(0xFFF8FAFC),
+                  foregroundColor: AppColors.textSecondary,
                   selectedBackgroundColor: AppColors.violet,
                   selectedForegroundColor: Colors.white,
                   textStyle: const TextStyle(
                     fontSize: 13,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                     letterSpacing: 0,
                   ),
-                  side: const BorderSide(color: AppColors.ink, width: 1.5),
-                  shape: const RoundedRectangleBorder(),
-                  minimumSize: const Size(0, 44),
+                  side: const BorderSide(color: Color(0xFFCBD5E1), width: 1),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  minimumSize: const Size(0, 42),
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 16),
             ],
             Text(
               _mode == _AuthMode.login ? 'Đăng nhập hệ thống' : title,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 21,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w800,
                 color: AppColors.ink,
-                letterSpacing: 0,
+                letterSpacing: -0.2,
               ),
             ),
             const SizedBox(height: 4),
@@ -301,13 +305,12 @@ class _CloudAuthScreenState extends State<CloudAuthScreen>
                 'Nhập Email và mật khẩu đã đăng ký',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 12.5,
                   color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 16),
             if (_mode != _AuthMode.password) ...[
               TextFormField(
                 controller: _email,
@@ -319,12 +322,13 @@ class _CloudAuthScreenState extends State<CloudAuthScreen>
                   prefixIcon: Icon(Icons.alternate_email),
                 ),
                 validator: (v) =>
-                    RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
-                        .hasMatch(v?.trim() ?? '')
+                    RegExp(
+                      r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
+                    ).hasMatch(v?.trim() ?? '')
                     ? null
                     : 'Nhập email hợp lệ.',
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
             ],
             if (_mode == _AuthMode.recover) ...[
               TextFormField(
@@ -339,7 +343,7 @@ class _CloudAuthScreenState extends State<CloudAuthScreen>
                 validator: (v) =>
                     (v?.trim().length ?? 0) >= 6 ? null : 'Nhập mã xác nhận.',
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
             ],
             if (_mode != _AuthMode.reset) ...[
               TextFormField(
@@ -389,23 +393,28 @@ class _CloudAuthScreenState extends State<CloudAuthScreen>
               ),
             if (_busy) const LinearProgressIndicator(),
             DecoratedBox(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
                 boxShadow: [
-                  BoxShadow(color: AppColors.ink, offset: Offset(5, 5)),
+                  BoxShadow(
+                    color: AppColors.violet.withValues(alpha: 0.25),
+                    blurRadius: 14,
+                    offset: const Offset(0, 4),
+                  ),
                 ],
               ),
               child: FilledButton(
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.violet,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                   textStyle: const TextStyle(
-                    fontSize: 15.5,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.1,
                   ),
-                  shape: const RoundedRectangleBorder(
-                    side: BorderSide(color: AppColors.ink, width: 1.5),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
                 onPressed: _busy ? null : _submit,

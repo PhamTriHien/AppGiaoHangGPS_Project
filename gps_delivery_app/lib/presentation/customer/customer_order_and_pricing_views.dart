@@ -1616,7 +1616,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
           color: selected ? const Color(0xFFF5F1E8) : Colors.white,
           borderRadius: BorderRadius.all(Radius.zero),
           border: Border.all(
-            color: selected ? const Color(0xFF5B33E6) : const Color(0xFF15131E),
+            color: selected ? const Color(0xFF2563EB) : const Color(0xFF15131E),
             width: selected ? 2.0 : 1.0,
           ),
         ),
@@ -1669,7 +1669,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                     fontWeight: FontWeight.w900,
                     color: selected
                         ? const Color(0xFFFF5E83)
-                        : const Color(0xFF5B33E6),
+                        : const Color(0xFF2563EB),
                   ),
                 ),
               ],
@@ -1886,7 +1886,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                       horizontal: 16,
                       vertical: 10,
                     ),
-                    color: const Color(0xFF5B33E6),
+                    color: const Color(0xFF2563EB),
                     child: const Text(
                       'Tóm tắt ước tính',
                       style: TextStyle(
@@ -1990,80 +1990,118 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
               style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
             ),
             const SizedBox(height: 8),
-            if (_selectedPaymentMethod == 'Tiền mặt (COD)') ...[
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final method in const [
+                  'Tiền mặt (COD)',
+                  'Chuyển khoản Ngân hàng',
+                  'Quét mã VietQR',
+                ])
+                  ChoiceChip(
+                    label: Text(method),
+                    selected: _selectedPaymentMethod == method,
+                    selectedColor: const Color(0xFF2563EB),
+                    labelStyle: TextStyle(
+                      color: _selectedPaymentMethod == method
+                          ? Colors.white
+                          : const Color(0xFF15131E),
+                      fontWeight: FontWeight.w700,
+                    ),
+                    onSelected: (_) => _rebuildCustomerUi(
+                      () => _selectedPaymentMethod = method,
+                    ),
+                  ),
+              ],
+            ),
+            if (_selectedPaymentMethod != 'Tiền mặt (COD)') ...[
               const SizedBox(height: 10),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF5F1E8),
-                  borderRadius: BorderRadius.all(Radius.zero),
-                  border: Border.all(color: const Color(0xFF15131E)),
-                ),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final codField = TextField(
-                      controller: _codCtrl,
-                      keyboardType: TextInputType.number,
-                      onChanged: (_) => _rebuildCustomerUi(() {}),
-                      decoration: const InputDecoration(
-                        isDense: true,
-                        labelText: 'Tiền thu hộ COD (đ)',
-                        hintText: '0',
-                      ),
-                    );
-                    if (constraints.maxWidth < 480) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.account_balance_wallet_rounded,
-                                color: Color(0xFF5B33E6),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  'Phương thức đã chọn: $_selectedPaymentMethod',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    color: Color(0xFF5B33E6),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          codField,
-                        ],
-                      );
-                    }
-                    return Row(
-                      children: [
-                        const Icon(
-                          Icons.account_balance_wallet_rounded,
-                          color: Color(0xFF5B33E6),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            'Phương thức đã chọn: $_selectedPaymentMethod',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF5B33E6),
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 170, child: codField),
-                      ],
-                    );
-                  },
-                ),
+              VietQrBankPaymentPanel(
+                amountVnd: estimate.totalAmount,
+                orderReference: 'DON GIAO HANG',
+                selectedPayerBankBin: _selectedBankBin,
+                compact: true,
+                onPayerBankChanged: (bank) => _rebuildCustomerUi(() {
+                  _selectedBankBin = bank.bin;
+                  _selectedBankShortName = bank.shortName;
+                }),
+                reconciliationNote:
+                    'Sau khi tạo đơn, hệ thống sẽ cấp mã vận đơn riêng để đối soát chuyển khoản.',
               ),
             ],
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 10,
+              ),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final codField = TextField(
+                    controller: _codCtrl,
+                    keyboardType: TextInputType.number,
+                    onChanged: (_) => _rebuildCustomerUi(() {}),
+                    decoration: const InputDecoration(
+                      isDense: true,
+                      labelText: 'Tiền thu hộ COD (đ)',
+                      hintText: '0',
+                    ),
+                  );
+                  if (constraints.maxWidth < 480) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.account_balance_wallet_rounded,
+                              color: Color(0xFF5B33E6),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'Phương thức đã chọn: $_selectedPaymentMethod',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF5B33E6),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        codField,
+                      ],
+                    );
+                  }
+                  return Row(
+                    children: [
+                      const Icon(
+                        Icons.account_balance_wallet_rounded,
+                        color: Color(0xFF5B33E6),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Phương thức đã chọn: $_selectedPaymentMethod',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF5B33E6),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 170, child: codField),
+                    ],
+                  );
+                },
+              ),
+            ),
             if (_selectedPaymentMethod == 'Tiền mặt (COD)') ...[
               const SizedBox(height: 8),
               Wrap(
@@ -2086,7 +2124,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                         style: const TextStyle(fontSize: 11.5),
                       ),
                       selected: _cashFeePayer == payer,
-                      selectedColor: const Color(0xFF5B33E6),
+                      selectedColor: const Color(0xFF2563EB),
                       labelStyle: TextStyle(
                         color: _cashFeePayer == payer
                             ? Colors.white
@@ -2105,10 +2143,10 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
               height: 48,
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFF5E83),
+                  backgroundColor: const Color(0xFF2563EB),
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.all(Radius.zero),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
                 onPressed: () async {
@@ -2124,11 +2162,13 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                   final descText = _pkgDescCtrl.text.trim().isEmpty
                       ? '$_pkgCategory$scheduleNote'
                       : '$_pkgCategory - ${_pkgDescCtrl.text.trim()}$scheduleNote';
-                  final effectivePaymentMethod =
-                      (_selectedPaymentMethod == 'Tiền mặt (COD)' &&
-                          _cashFeePayer == 'Người nhận trả phí')
-                      ? 'Người nhận trả phí'
-                      : _selectedPaymentMethod;
+                  final isBankQrSelected =
+                      _selectedPaymentMethod != 'Tiền mặt (COD)';
+                  final effectivePaymentMethod = isBankQrSelected
+                      ? 'Ngân hàng · VietQR · $_selectedBankShortName'
+                      : (_cashFeePayer == 'Người nhận trả phí'
+                            ? 'Người nhận trả phí'
+                            : _selectedPaymentMethod);
                   final created = _store.createNewOrder(
                     pickupAddress: _pickupCtrl.text.trim(),
                     dropoffAddress: _dropoffCtrl.text.trim(),
@@ -2194,6 +2234,9 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                       ),
                     ),
                   );
+                  if (isBankQrSelected && context.mounted) {
+                    await _showLegacyBankQrPaymentDialog(created);
+                  }
                   _rebuildCustomerUi(() {
                     _dropoffCtrl.clear();
                     _recipientNameCtrl.clear();
@@ -2494,7 +2537,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF5F3FF),
-                    border: Border.all(color: const Color(0xFF5B33E6)),
+                    border: Border.all(color: const Color(0xFF2563EB)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -2526,7 +2569,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                                 ),
                               ),
                               selected: selected,
-                              selectedColor: const Color(0xFF5B33E6),
+                              selectedColor: const Color(0xFF2563EB),
                               onSelected: (_) {
                                 _store.setQuickDeliveryInstruction(
                                   activeOrder.trackingCode,
@@ -2711,7 +2754,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                       ),
                     ),
                     selected: isCurrent,
-                    selectedColor: const Color(0xFF5B33E6),
+                    selectedColor: const Color(0xFF2563EB),
                     onSelected: (_) => _rebuildCustomerUi(() {
                       _store.selectCustomerOrder(ordItem.trackingCode);
                     }),
@@ -2755,9 +2798,9 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
             Container(
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
               decoration: BoxDecoration(
-                color: const Color(0xFFF5F1E8),
-                borderRadius: BorderRadius.all(Radius.zero),
-                border: Border.all(color: const Color(0xFF15131E)),
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
               ),
               child: Row(
                 children: [
@@ -2841,7 +2884,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                   if (activeOrder.assignedDriverName != null) ...[
                     IconButton.filled(
                       style: IconButton.styleFrom(
-                        backgroundColor: const Color(0xFF5B33E6),
+                        backgroundColor: const Color(0xFF2563EB),
                       ),
                       onPressed: () {
                         final rawPhone = assignedDriverRecord?.phone ?? '';
@@ -2884,7 +2927,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                     const SizedBox(width: 6),
                     IconButton.filled(
                       style: IconButton.styleFrom(
-                        backgroundColor: const Color(0xFF5B33E6),
+                        backgroundColor: const Color(0xFF2563EB),
                       ),
                       onPressed: () =>
                           _rebuildCustomerUi(() => _selectedScreenIndex = 5),
@@ -2937,7 +2980,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                 if (activeOrder.assignedDriverName != null)
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF5B33E6),
+                      backgroundColor: const Color(0xFF2563EB),
                       foregroundColor: Colors.white,
                     ),
                     onPressed: () =>

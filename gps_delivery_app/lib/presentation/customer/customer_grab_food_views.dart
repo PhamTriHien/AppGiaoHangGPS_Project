@@ -1800,17 +1800,67 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                   valueColor: AppColors.pink,
                 ),
             ],
+            const SizedBox(height: 8),
+            const Text(
+              'Phương thức thanh toán',
+              style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800),
+            ),
             const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                for (final method in const [
+                  'Tiền mặt khi nhận món',
+                  'Chuyển khoản Ngân hàng',
+                  'Quét mã VietQR',
+                ])
+                  ChoiceChip(
+                    visualDensity: VisualDensity.compact,
+                    label: Text(
+                      method,
+                      style: const TextStyle(fontSize: 11.5),
+                    ),
+                    selected: _foodPaymentMethod == method,
+                    selectedColor: const Color(0xFF00B14F),
+                    labelStyle: TextStyle(
+                      color: _foodPaymentMethod == method
+                          ? Colors.white
+                          : AppColors.ink,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    onSelected: (_) => _rebuildCustomerUi(
+                      () => _foodPaymentMethod = method,
+                    ),
+                  ),
+              ],
+            ),
+            if (_foodPaymentMethod != 'Tiền mặt khi nhận món') ...[
+              const SizedBox(height: 8),
+              VietQrBankPaymentPanel(
+                amountVnd: grandTotalVnd,
+                orderReference: 'DON DO AN',
+                selectedPayerBankBin: _selectedBankBin,
+                compact: true,
+                onPayerBankChanged: (bank) => _rebuildCustomerUi(() {
+                  _selectedBankBin = bank.bin;
+                  _selectedBankShortName = bank.shortName;
+                }),
+              ),
+            ],
+            const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.all(10),
               color: AppColors.paper,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Tổng thanh toán khi nhận món:',
-                      style: TextStyle(
+                      _foodPaymentMethod == 'Tiền mặt khi nhận món'
+                          ? 'Tổng thanh toán khi nhận món:'
+                          : 'Tổng thanh toán Ngân hàng · VietQR:',
+                      style: const TextStyle(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w900,
                         color: AppColors.ink,
@@ -1836,7 +1886,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 13),
               ),
-              onPressed: () {
+              onPressed: () async {
                 final dropAddr = _foodDropoffCtrl.text.trim().isNotEmpty
                     ? _foodDropoffCtrl.text.trim()
                     : _resolveGrabFoodDropoffText();
@@ -1857,6 +1907,8 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                         fallback: dropoffPt,
                       )
                     : dropoffPt;
+                final isFoodBankQr =
+                    _foodPaymentMethod != 'Tiền mặt khi nhận món';
                 final created = _store.createGrabFoodOrder(
                   cartEntries: List<GrabFoodCartEntry>.from(_grabFoodCart),
                   dropoffAddress: dropAddr,
@@ -1867,6 +1919,10 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                   greenFundContributed: _foodGreenFund,
                   kitchenNote: _foodKitchenNoteCtrl.text,
                 );
+                if (isFoodBankQr && context.mounted) {
+                  await _showLegacyBankQrPaymentDialog(created);
+                }
+                if (!context.mounted) return;
                 _rebuildCustomerUi(() {
                   _grabFoodCart.clear();
                   _foodKitchenNoteCtrl.clear();

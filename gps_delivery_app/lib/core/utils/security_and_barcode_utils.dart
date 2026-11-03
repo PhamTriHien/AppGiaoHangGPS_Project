@@ -115,15 +115,39 @@ class SecurityAndBarcodeUtils {
   static String generateEmvVietQrPayload({
     required String orderCode,
     required double amountVnd,
+    String bankBin = '970436',
+    String accountNumber = '0071000889',
   }) {
-    final amtStr = amountVnd.round().toString();
-    final amtLen = amtStr.length.toString().padLeft(2, '0');
-    final cleanCode = orderCode.replaceAll('#', '');
-    final infoLen = cleanCode.length.toString().padLeft(2, '0');
-    final tag62Len =
-        (infoLen.length + 2 + cleanCode.length).toString().padLeft(2, '0');
-    final bodyWithoutCrc =
-        '00020101021238540010A00000072701240006970436011000710008890208QRIBFTTA530370454$amtLen${amtStr}5802VN62${tag62Len}08$infoLen${cleanCode}6304';
+    String tlv(String id, String value) =>
+        '$id${value.length.toString().padLeft(2, '0')}$value';
+
+    final cleanBin = bankBin.replaceAll(RegExp(r'[^0-9]'), '');
+    final effectiveBin = cleanBin.length == 6 ? cleanBin : '970436';
+    final cleanAccount = accountNumber
+        .trim()
+        .replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
+    final effectiveAccount = cleanAccount.isNotEmpty
+        ? cleanAccount
+        : '0071000889';
+
+    final beneficiary =
+        '${tlv('00', effectiveBin)}${tlv('01', effectiveAccount)}';
+    final tag38 = tlv(
+      '38',
+      '${tlv('00', 'A000000727')}${tlv('01', beneficiary)}${tlv('02', 'QRIBFTTA')}',
+    );
+
+    final safeAmount = amountVnd.isFinite && amountVnd > 0
+        ? amountVnd.round()
+        : 0;
+    final tag54 = safeAmount > 0 ? tlv('54', safeAmount.toString()) : '';
+    final cleanCode = orderCode
+        .replaceAll('#', '')
+        .replaceAll(RegExp(r'[^\x20-\x7E]'), '')
+        .trim();
+    final effectiveCode = cleanCode.isEmpty ? 'GHST' : cleanCode;
+    final tag62 = tlv('62', tlv('08', effectiveCode));
+    final bodyWithoutCrc = '000201010212${tag38}5303704${tag54}5802VN${tag62}6304';
 
     var crc = 0xFFFF;
     for (final codeUnit in bodyWithoutCrc.codeUnits) {
@@ -647,15 +671,28 @@ class _QrMatrixPainter extends CustomPainter {
 
   static List<List<bool>> _encodeIso18004Matrix(String text) {
     var rawBytes = utf8.encode(text.isEmpty ? 'GHST' : text);
-    if (rawBytes.length > 106) {
-      rawBytes = rawBytes.sublist(0, 106);
+    if (rawBytes.length > 230) {
+      rawBytes = rawBytes.sublist(0, 230);
     }
 
-    const dataCapByVer = [0, 19, 34, 55, 80, 108];
-    const ecCodewordsByVer = [0, 7, 10, 15, 20, 26];
+    const dataCapByVer = [0, 19, 34, 55, 80, 108, 136, 156, 194, 232];
+    const numBlocksByVer = [0, 1, 1, 1, 1, 1, 2, 2, 2, 2];
+    const ecPerBlockByVer = [0, 7, 10, 15, 20, 26, 18, 20, 24, 30];
+    const alignCoordsByVer = <List<int>>[
+      [],
+      [],
+      [6, 18],
+      [6, 22],
+      [6, 26],
+      [6, 30],
+      [6, 34],
+      [6, 22, 38],
+      [6, 24, 42],
+      [6, 26, 46],
+    ];
 
-    var version = 1;
-    for (var v = 1; v <= 5; v++) {
+    var version = 9;
+    for (var v = 1; v <= 9; v++) {
       if (rawBytes.length + 2 <= dataCapByVer[v]) {
         version = v;
         break;
@@ -663,7 +700,8 @@ class _QrMatrixPainter extends CustomPainter {
     }
 
     final totalDataBytes = dataCapByVer[version];
-    final ecCount = ecCodewordsByVer[version];
+    final numBlocks = numBlocksByVer[version];
+    final ecCount = ecPerBlockByVer[version];
     final bits = <bool>[];
 
     void pushBits(int val, int count) {
@@ -701,8 +739,33 @@ class _QrMatrixPainter extends CustomPainter {
       padToggle = !padToggle;
     }
 
-    final eccCodewords = _computeReedSolomonEcc(dataCodewords, ecCount);
-    final allCodewords = <int>[...dataCodewords, ...eccCodewords];
+    final allCodewords = <int>[];
+    if (numBlocks == 1) {
+      final eccCodewords = _computeReedSolomonEcc(dataCodewords, ecCount);
+      allCodewords
+        ..addAll(dataCodewords)
+        ..addAll(eccCodewords);
+    } else {
+      final blockSize = totalDataBytes ~/ numBlocks;
+      final dataBlocks = <List<int>>[
+        for (var b = 0; b < numBlocks; b++)
+          dataCodewords.sublist(b * blockSize, (b + 1) * blockSize),
+      ];
+      final eccBlocks = <List<int>>[
+        for (final block in dataBlocks) _computeReedSolomonEcc(block, ecCount),
+      ];
+      for (var i = 0; i < blockSize; i++) {
+        for (var b = 0; b < numBlocks; b++) {
+          allCodewords.add(dataBlocks[b][i]);
+        }
+      }
+      for (var i = 0; i < ecCount; i++) {
+        for (var b = 0; b < numBlocks; b++) {
+          allCodewords.add(eccBlocks[b][i]);
+        }
+      }
+    }
+
     final fullBitStream = <bool>[];
     for (final cw in allCodewords) {
       for (var b = 7; b >= 0; b--) {
@@ -737,20 +800,47 @@ class _QrMatrixPainter extends CustomPainter {
     drawFinderPattern(0, dim - 7);
     drawFinderPattern(dim - 7, 0);
 
+    for (var i = 8; i < dim - 8; i++) {
+      setFunctionModule(6, i, i.isEven);
+      setFunctionModule(i, 6, i.isEven);
+    }
+
     if (version >= 2) {
-      final center = dim - 7;
-      for (var dr = -2; dr <= 2; dr++) {
-        for (var dc = -2; dc <= 2; dc++) {
-          final dark =
-              dr.abs() == 2 || dc.abs() == 2 || (dr == 0 && dc == 0);
-          setFunctionModule(center + dr, center + dc, dark);
+      final coords = alignCoordsByVer[version];
+      final last = coords.last;
+      for (final cr in coords) {
+        for (final cc in coords) {
+          final onFinder =
+              (cr == 6 && cc == 6) ||
+              (cr == 6 && cc == last) ||
+              (cr == last && cc == 6);
+          if (onFinder) continue;
+          for (var dr = -2; dr <= 2; dr++) {
+            for (var dc = -2; dc <= 2; dc++) {
+              final dark =
+                  dr.abs() == 2 || dc.abs() == 2 || (dr == 0 && dc == 0);
+              setFunctionModule(cr + dr, cc + dc, dark);
+            }
+          }
         }
       }
     }
 
-    for (var i = 8; i < dim - 8; i++) {
-      setFunctionModule(6, i, i.isEven);
-      setFunctionModule(i, 6, i.isEven);
+    if (version >= 7) {
+      var rem = version << 12;
+      for (var i = 17; i >= 12; i--) {
+        if (((rem >> i) & 1) != 0) {
+          rem ^= 0x1F25 << (i - 12);
+        }
+      }
+      final verInfo = (version << 12) | rem;
+      for (var i = 0; i < 18; i++) {
+        final bit = ((verInfo >> i) & 1) == 1;
+        final a = i ~/ 3;
+        final b = (dim - 11) + (i % 3);
+        setFunctionModule(b, a, bit);
+        setFunctionModule(a, b, bit);
+      }
     }
 
     setFunctionModule(4 * version + 9, 8, true);

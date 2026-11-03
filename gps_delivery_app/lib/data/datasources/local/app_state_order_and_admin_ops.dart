@@ -712,6 +712,9 @@ extension AppStateOrderAndAdminOps on AppStateStore {
           o.paymentMethod.contains('MoMo') ||
           o.paymentMethod.contains('VNPay') ||
           o.paymentMethod.contains('ZaloPay') ||
+          o.paymentMethod.contains('Ngân hàng') ||
+          o.paymentMethod.contains('VietQR') ||
+          o.paymentStatus == 'PAID' ||
           o.paymentMethod.contains('thanh toán trước');
       final shipFee = isRecipientOrPrepaid ? 0.0 : o.totalAmount;
       final codHandling = o.codAmount > 2000000
@@ -780,6 +783,48 @@ extension AppStateOrderAndAdminOps on AppStateStore {
       }),
       'updated_at_ms': nowMs,
     });
+  }
+
+  /// Xác nhận thanh toán cước đơn hàng bằng Chuyển khoản Ngân hàng / VietQR (Chế độ Demo cục bộ)
+  bool confirmOrderBankQrPayment({
+    required String trackingCode,
+    required String bankLabel,
+  }) {
+    final ord = orders.where((o) => o.trackingCode == trackingCode).firstOrNull;
+    if (ord == null || ord.status == OrderStatus.cancelled) return false;
+    if (ord.paymentStatus == 'PAID') return true;
+    final cleanBank = bankLabel.trim().isEmpty ? 'Vietcombank' : bankLabel.trim();
+    ord.paymentStatus = 'PAID';
+    ord.paymentMethod = 'Ngân hàng · VietQR · $cleanBank';
+    _sqliteDb.upsertRow('orders', ord.toSqlRow());
+    _recordOrderStatusHistory(
+      ord.id,
+      ord.status,
+      'Đã thanh toán trực tuyến qua Ngân hàng / VietQR ($cleanBank).',
+    );
+    unawaited(
+      recordLedgerEntry(
+        ownerType: 'PLATFORM',
+        direction: 'CREDIT',
+        entryType: 'ORDER_BANK_QR_PAYMENT',
+        amount: ord.totalAmount,
+        orderId: ord.id,
+        idempotencyKey: 'BANKQR_${ord.id}',
+        metadata: {
+          'trackingCode': ord.trackingCode,
+          'bank': cleanBank,
+        },
+      ),
+    );
+    _pushRealtimeNotification(
+      category: 'Thanh toán',
+      title:
+          'Đơn ${ord.trackingCode} đã ghi nhận thanh toán ${ord.totalAmount.toStringAsFixed(0)}đ qua Ngân hàng / VietQR ($cleanBank).',
+      targetGroup: 'Khách hàng',
+      recipientKey: ord.customerName,
+    );
+    _notifyStoreChanged();
+    return true;
   }
 
   /// Tra cứu vận đơn công khai theo mã vận đơn hoặc mã token chia sẻ (không cần đăng nhập)

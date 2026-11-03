@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gps_delivery_app/core/integrations/cloud_orders_service.dart';
 import 'package:gps_delivery_app/core/network/public_json_api.dart';
+import 'package:gps_delivery_app/core/utils/security_and_barcode_utils.dart';
 import 'package:gps_delivery_app/presentation/widgets/cloud_commerce_dialog.dart';
+import 'package:gps_delivery_app/presentation/widgets/vietqr_bank_payment_panel.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CommerceFixture extends CloudOrdersService {
@@ -248,6 +250,59 @@ void main() {
 
       expect(api.calls.last['path'], 'orders/order-one/payment/refresh');
       expect(find.text('Đã thanh toán'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+
+  testWidgets(
+    'VietQR Bank payment panel renders scannable EMVCo QR, bank selector and copy actions at 360px',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final customPayload = SecurityAndBarcodeUtils.generateEmvVietQrPayload(
+        orderCode: 'GHST CL1234567890',
+        amountVnd: 45000,
+        bankBin: '970422',
+        accountNumber: '0987654321',
+      );
+      expect(customPayload, startsWith('000201010212'));
+      expect(customPayload, contains('970422'));
+      expect(customPayload, contains('0987654321'));
+      expect(customPayload.length, greaterThan(106));
+      expect(RegExp(r'6304[0-9A-F]{4}$').hasMatch(customPayload), isTrue);
+
+      final api = CommerceFixture()
+        ..configured = true
+        ..record = {
+          'status': 'PENDING',
+          'amount': 30000,
+          'provider_order_code': '987654321',
+          'qr_code': customPayload,
+        };
+      addTearDown(api.changes.close);
+      await open(tester, api);
+
+      expect(find.byType(VietQrBankPaymentPanel), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('vietqr-matrix-widget')),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Chuyển khoản ngân hàng & Quét mã VietQR'),
+        findsOneWidget,
+      );
+      expect(find.text('Mã QR đối soát tự động · NAPAS 247'), findsOneWidget);
+      expect(find.text('GHST 987654321'), findsOneWidget);
+      expect(find.text('Xác nhận đã thanh toán'), findsNothing);
+
+      await tester.ensureVisible(find.byTooltip('Sao chép số tài khoản'));
+      await tester.tap(find.byTooltip('Sao chép số tài khoản'));
+      await tester.pump();
+      expect(find.text('Đã sao chép số tài khoản'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
     },

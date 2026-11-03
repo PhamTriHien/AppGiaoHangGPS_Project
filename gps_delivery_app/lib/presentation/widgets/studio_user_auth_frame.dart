@@ -102,9 +102,9 @@ class _StudioUserAuthFrameState extends State<StudioUserAuthFrame>
               SafeArea(
                 child: Center(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(20, 24, 28, 40),
+                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 36),
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 480),
+                      constraints: const BoxConstraints(maxWidth: 460),
                       child: ValueListenableBuilder<Offset>(
                         valueListenable: _parallax,
                         builder: (_, value, child) => Container(
@@ -116,26 +116,27 @@ class _StudioUserAuthFrameState extends State<StudioUserAuthFrame>
                             26,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.paper,
-                            border: Border.all(color: AppColors.ink, width: 2),
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.85),
+                              width: 1,
+                            ),
                             boxShadow: [
-                              const BoxShadow(
-                                color: AppColors.ink,
-                                offset: Offset(5, 5),
-                              ),
                               BoxShadow(
-                                color: AppColors.violet,
+                                color: const Color(
+                                  0xFF020617,
+                                ).withValues(alpha: 0.30),
+                                blurRadius: 32,
                                 offset: Offset(
-                                  11 - value.dx * 4,
-                                  11 - value.dy * 4,
+                                  -value.dx * 4,
+                                  14 - value.dy * 4,
                                 ),
                               ),
                               BoxShadow(
-                                color: AppColors.acid.withValues(alpha: 0.45),
-                                offset: Offset(
-                                  16 - value.dx * 5.6,
-                                  16 - value.dy * 5.6,
-                                ),
+                                color: AppColors.violet.withValues(alpha: 0.16),
+                                blurRadius: 20,
+                                offset: const Offset(0, 6),
                               ),
                             ],
                           ),
@@ -169,20 +170,20 @@ class StudioUserAuthBrand extends StatelessWidget {
       ),
       const SizedBox(height: 10),
       Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         decoration: BoxDecoration(
-          color: AppColors.acid,
-          border: Border.all(color: AppColors.ink, width: 1.2),
+          color: AppColors.violet.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: AppColors.violet.withValues(alpha: 0.25)),
         ),
         child: const Text(
           'GHST • GIAO HÀNG SIÊU TỐC',
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w900,
-            color: AppColors.ink,
-            fontFamily: 'Consolas',
-            letterSpacing: 0,
+            fontSize: 10.5,
+            fontWeight: FontWeight.w800,
+            color: AppColors.violet,
+            letterSpacing: 0.3,
           ),
         ),
       ),

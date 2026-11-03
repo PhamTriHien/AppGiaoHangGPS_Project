@@ -1272,6 +1272,20 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                                 ),
                                 label: const Text('Chi tiết'),
                               ),
+                              if (ord.status != OrderStatus.cancelled &&
+                                  ord.paymentStatus != 'PAID' &&
+                                  ord.paymentStatus != 'REFUNDED')
+                                TextButton.icon(
+                                  onPressed: () =>
+                                      _showLegacyBankQrPaymentDialog(ord),
+                                  icon: const Icon(
+                                    Icons.qr_code_2_rounded,
+                                    size: 15,
+                                  ),
+                                  label: const Text(
+                                    'Thanh toán QR · Ngân hàng',
+                                  ),
+                                ),
                               TextButton.icon(
                                 onPressed: () {
                                   Clipboard.setData(

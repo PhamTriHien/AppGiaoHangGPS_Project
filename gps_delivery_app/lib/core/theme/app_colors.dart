@@ -3,40 +3,40 @@ import 'package:flutter/material.dart';
 class AppColors {
   const AppColors._();
 
-  // Bảng màu Neo-Brutalist Editorial & Industrial Cyber-Studio (nghienai.click)
-  static const Color ink = Color(0xFF15131E);
-  static const Color paper = Color(0xFFF5F1E8);
-  static const Color studioDark = Color(0xFF171421);
-  static const Color techBg = Color(0xFF080B0F);
-  static const Color techPanel = Color(0xFF0E131A);
-  static const Color violet = Color(0xFF5B33E6);
-  static const Color pink = Color(0xFFFF5E83);
-  static const Color acid = Color(0xFFCBFF3E);
-  static const Color gold = Color(0xFFFFD75E);
-  static const Color warmStone = Color(0xFFE9E9E4);
-  static const Color line = Color(0x2B15131E);
-  static const Color techLine = Color(0x2ED1E7FF);
-  static const Color techMuted = Color(0xFF94A0AE);
+  // Bảng màu Modern Super-App Daylight & Clean Slate (dịu mắt, tương phản cao)
+  static const Color ink = Color(0xFF0F172A);
+  static const Color paper = Color(0xFFF4F7FA);
+  static const Color studioDark = Color(0xFF0F172A);
+  static const Color techBg = Color(0xFF0F172A);
+  static const Color techPanel = Color(0xFF1E293B);
+  static const Color violet = Color(0xFF2563EB);
+  static const Color pink = Color(0xFFF43F5E);
+  static const Color acid = Color(0xFF6EE7B7);
+  static const Color gold = Color(0xFFF59E0B);
+  static const Color warmStone = Color(0xFFEFF3F8);
+  static const Color line = Color(0xFFE2E8F0);
+  static const Color techLine = Color(0x26CBD5E1);
+  static const Color techMuted = Color(0xFF94A3B8);
 
-  // Ánh xạ ngữ nghĩa toàn hệ thống sang bảng màu Studio
-  static const Color primary = Color(0xFF5B33E6);
-  static const Color accent = Color(0xFFFF5E83);
-  static const Color success = Color(0xFF16A34A);
-  static const Color warning = Color(0xFFFFD75E);
-  static const Color danger = Color(0xFFFF5E83);
+  // Ánh xạ ngữ nghĩa toàn hệ thống
+  static const Color primary = Color(0xFF2563EB);
+  static const Color accent = Color(0xFFF43F5E);
+  static const Color success = Color(0xFF10B981);
+  static const Color warning = Color(0xFFF59E0B);
+  static const Color danger = Color(0xFFEF4444);
 
   // Bảng màu trung tính & bề mặt
-  static const Color background = Color(0xFFF5F1E8);
+  static const Color background = Color(0xFFF4F7FA);
   static const Color surface = Color(0xFFFFFFFF);
-  static const Color darkSidebar = Color(0xFF080B0F);
-  static const Color textPrimary = Color(0xFF15131E);
-  static const Color textSecondary = Color(0xFF625E66);
-  static const Color divider = Color(0x2B15131E);
-  static const Color shimmerBase = Color(0xFFE9E9E4);
-  static const Color shimmerHighlight = Color(0xFFF5F1E8);
+  static const Color darkSidebar = Color(0xFF0F172A);
+  static const Color textPrimary = Color(0xFF0F172A);
+  static const Color textSecondary = Color(0xFF475569);
+  static const Color divider = Color(0xFFE2E8F0);
+  static const Color shimmerBase = Color(0xFFEFF3F8);
+  static const Color shimmerHighlight = Color(0xFFF8FAFC);
 
   // Bảng màu Bản đồ 3D & Dải lộ trình điều hướng
-  static const Color routeRibbonFill = Color(0xFF5B33E6);
-  static const Color routeRibbonCasing = Color(0xFF15131E);
-  static const Color buildingExtrusion = Color(0xFFD8D3DF);
+  static const Color routeRibbonFill = Color(0xFF2563EB);
+  static const Color routeRibbonCasing = Color(0xFF1E3A8A);
+  static const Color buildingExtrusion = Color(0xFFDAE2EC);
 }

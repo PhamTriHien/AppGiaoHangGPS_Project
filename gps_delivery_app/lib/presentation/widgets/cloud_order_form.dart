@@ -14,11 +14,13 @@ import '../../core/utils/currency_formatter.dart';
 import '../../data/datasources/local/app_state_store.dart';
 import '../../domain/entities/geo_point.dart';
 import '../screens/cloud_address_book_screen.dart';
+import 'cloud_commerce_dialog.dart';
 import 'cloud_logistics_panels.dart';
 import 'cloud_order_labels.dart';
 import 'cloud_session_boundary.dart';
 import 'photon_address_lookup.dart';
 import 'system_state_screens.dart';
+import 'vietqr_bank_payment_panel.dart';
 
 class _ExtraStopField {
   _ExtraStopField({required this.address, this.point});
@@ -475,7 +477,7 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
             : _fields['cod_amount']!.text.trim(),
       ),
       'service_type': _serviceType,
-      'payment_method': _payment,
+      'payment_method': _payment == 'sender_bank_qr' ? 'sender_cash' : _payment,
       if (_merchant.isNotEmpty) 'merchant_id': _merchant,
     };
     for (final dim in ['length_cm', 'width_cm', 'height_cm']) {
@@ -534,7 +536,7 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
         if (!_sameAccount) {
           throw StateError('Identity changed');
         }
-        await widget.service.command('orders', {
+        final createdResponse = await widget.service.command('orders', {
           'details': details,
           'pricing_version': _quote!['pricing_version'],
           'expected_fee': _quote!['payable_fee'] ?? _quote!['shipping_fee'],
@@ -543,6 +545,35 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
         if (!mounted || !_sameAccount) return;
         await widget.service.completeDraft(draft);
         unawaited(_accountSession?.refresh().catchError((Object _) {}));
+        final createdOrder = createdResponse['order'] is Map
+            ? Map<String, dynamic>.from(createdResponse['order'] as Map)
+            : null;
+        if (mounted &&
+            _sameAccount &&
+            _payment == 'sender_bank_qr' &&
+            createdOrder != null &&
+            createdOrder['id'] != null) {
+          setState(() => _busy = false);
+          await showDialog<void>(
+            context: context,
+            builder: (_) => widget.lease != null
+                ? CloudSessionBoundary(
+                    session: widget.lease!.session,
+                    operator: widget.lease!.session.isOperator,
+                    dialog: true,
+                    builder: (_, lease) => CloudCommerceDialog(
+                      service: widget.service,
+                      order: createdOrder,
+                      operator: lease.session.isOperator,
+                      lease: lease,
+                    ),
+                  )
+                : CloudCommerceDialog(
+                    service: widget.service,
+                    order: createdOrder,
+                  ),
+          );
+        }
         if (mounted && _sameAccount) {
           if (widget.embedded) {
             widget.onCreated?.call();
@@ -1045,6 +1076,10 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
                         child: Text('Người gửi trả tiền mặt'),
                       ),
                       DropdownMenuItem(
+                        value: 'sender_bank_qr',
+                        child: Text('Chuyển khoản ngân hàng · Mã QR'),
+                      ),
+                      DropdownMenuItem(
                         value: 'recipient_cash',
                         child: Text('Người nhận trả tiền mặt'),
                       ),
@@ -1478,6 +1513,19 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
                           ),
                     ],
                     const SizedBox(height: 16),
+                    if (_payment == 'sender_bank_qr') ...[
+                      VietQrBankPaymentPanel(
+                        amountVnd:
+                            ((_quote!['payable_fee'] ?? _quote!['shipping_fee'])
+                                    as num)
+                                .toDouble(),
+                        orderReference: 'CUOC VAN CHUYEN',
+                        compact: true,
+                        reconciliationNote:
+                            'Sau khi bấm Xác nhận tạo đơn, hệ thống sẽ tạo mã vận đơn riêng để đối soát chuyển khoản.',
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                   ],
                   if (_error != null)
                     Padding(

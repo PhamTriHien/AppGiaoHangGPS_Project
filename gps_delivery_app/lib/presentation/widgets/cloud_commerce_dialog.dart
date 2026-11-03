@@ -9,6 +9,7 @@ import '../../core/integrations/cloud_orders_service.dart';
 import '../../core/integrations/cloud_session_lease.dart';
 import '../../core/network/public_json_api.dart';
 import '../../core/utils/currency_formatter.dart';
+import 'vietqr_bank_payment_panel.dart';
 
 class CloudCommerceDialog extends StatefulWidget {
   const CloudCommerceDialog({
@@ -229,6 +230,20 @@ class _CloudCommerceDialogState extends State<CloudCommerceDialog>
               (widget.order['payment_status'] ?? 'UNPAID') == 'UNPAID' &&
               !cashCollectedFee &&
               !['PENDING', 'PAID', 'REVIEW'].contains(status);
+    final isEligibleOnline = widget.purchase
+        ? widget.order['payment_method'] == 'prepaid'
+        : (widget.order['details'] as Map?)?['payment_method'] == 'sender_cash';
+    final rawPayable = _record?['amount'] ??
+        (widget.purchase
+            ? widget.order['total']
+            : (widget.order['payable_fee'] ?? widget.order['shipping_fee']));
+    final payableAmount = (rawPayable as num? ?? 0).toDouble();
+    final showVietQrPanel = (_error == null || _record != null) &&
+        !cashCollectedFee &&
+        status != 'PAID' &&
+        (widget.order['payment_status'] ?? 'UNPAID') != 'PAID' &&
+        isEligibleOnline &&
+        payableAmount > 0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -256,6 +271,18 @@ class _CloudCommerceDialogState extends State<CloudCommerceDialog>
           Text(
             'Hết hạn: ${DateTime.tryParse('${_record!['expires_at']}')?.toLocal() ?? _record!['expires_at']}',
           ),
+        if (showVietQrPanel) ...[
+          const SizedBox(height: 14),
+          VietQrBankPaymentPanel(
+            amountVnd: payableAmount,
+            orderReference:
+                '${_record?['provider_order_code'] ?? widget.order['tracking_code'] ?? widget.order['id'] ?? 'GHST'}',
+            providerQrPayload: _record?['qr_code'] as String?,
+            compact: true,
+            reconciliationNote:
+                'Trạng thái đơn chỉ chuyển sang Đã thanh toán sau khi hệ thống đối soát giao dịch.',
+          ),
+        ],
         const SizedBox(height: 16),
         Wrap(
           spacing: 8,

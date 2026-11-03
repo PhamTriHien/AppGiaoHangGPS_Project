@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/integrations/cloud_session_lease.dart';
 import '../../core/network/public_json_api.dart';
 import '../../core/utils/currency_formatter.dart';
+import '../widgets/cloud_commerce_dialog.dart';
 import '../widgets/cloud_order_form.dart';
 import '../widgets/cloud_order_labels.dart';
 import '../widgets/cloud_session_boundary.dart';
@@ -29,9 +33,11 @@ class CloudOrderDetailsScreen extends StatefulWidget {
 class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
   List<Map<String, dynamic>>? _history;
   bool _busy = false;
+  bool _localRevoked = false;
   int _generation = 0;
   String? _error;
-  bool get _allowed => widget.lease.valid;
+  StreamSubscription<AuthState>? _auth;
+  bool get _allowed => !_localRevoked && widget.lease.valid;
   Map<String, dynamic> get _order => widget.order;
   Map get _details => _order['details'] as Map? ?? const {};
   bool get _isOwner => _order['owner_id'] == widget.lease.session.service.userId;
@@ -53,6 +59,17 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
   @override
   void initState() {
     super.initState();
+    final openingSession = widget.lease.session.service.authSession;
+    _auth = widget.lease.session.service.authChanges.listen((event) {
+      if (!_allowed ||
+          event.event == AuthChangeEvent.signedOut ||
+          event.event == AuthChangeEvent.signedIn &&
+              (event.session == null ||
+                  !identical(event.session, openingSession))) {
+        _localRevoked = true;
+        _invalidate();
+      }
+    });
     widget.lease.addListener(_invalidate);
     _load();
   }
@@ -61,6 +78,7 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
     if (!mounted) return;
     _generation++;
     setState(() {
+      if (!_allowed) _busy = false;
       _history = null;
       _error = null;
     });
@@ -69,6 +87,7 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
   @override
   void dispose() {
     _generation++;
+    _auth?.cancel();
     widget.lease.removeListener(_invalidate);
     super.dispose();
   }
@@ -545,6 +564,40 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
                               onPressed: _repeat,
                               icon: const Icon(Icons.replay),
                               label: const Text('Gửi lại đơn'),
+                            ),
+                          if ((_isOwner || widget.lease.session.isOperator) &&
+                              _details['payment_method'] == 'sender_cash' &&
+                              _order['payment_status'] != 'PAID')
+                            OutlinedButton.icon(
+                              onPressed: _busy
+                                  ? null
+                                  : () async {
+                                      await showDialog<void>(
+                                        context: context,
+                                        builder: (_) => CloudSessionBoundary(
+                                          session: widget.lease.session,
+                                          operator:
+                                              widget.lease.session.isOperator,
+                                          dialog: true,
+                                          builder: (_, lease) =>
+                                              CloudCommerceDialog(
+                                                service: widget
+                                                    .lease
+                                                    .session
+                                                    .service,
+                                                order: _order,
+                                                operator: widget
+                                                    .lease
+                                                    .session
+                                                    .isOperator,
+                                                lease: lease,
+                                              ),
+                                        ),
+                                      );
+                                      if (mounted && _allowed) await _load();
+                                    },
+                              icon: const Icon(Icons.qr_code_2_rounded),
+                              label: const Text('Thanh toán Ngân hàng · Mã QR'),
                             ),
                           if ((_isOwner || _isMerchantOrOperator) &&
                               _details['require_otp'] == true)

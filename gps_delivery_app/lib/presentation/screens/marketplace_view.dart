@@ -18,6 +18,7 @@ import '../widgets/market_catalog_fields.dart';
 import '../widgets/market_commercial_sheets.dart';
 import '../widgets/market_product_details.dart';
 import '../widgets/marketplace_editor.dart';
+import '../widgets/vietqr_bank_payment_panel.dart';
 import 'cloud_address_book_screen.dart';
 import 'cloud_local_import_screen.dart';
 import 'cloud_order_import_screen.dart';
@@ -130,6 +131,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
   final _buyerNote = TextEditingController();
   String _category = '', _sort = 'default';
   String _shippingMode = 'standard', _paymentMethod = 'cod';
+  bool _preferBankQr = false;
   bool _inStock = false;
   bool _useCoins = false,
       _preferEv = false,
@@ -1173,16 +1175,29 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                     ? null
                     : (_) => setState(() {
                         _paymentMethod = 'cod';
+                        _preferBankQr = false;
+                        _quote = null;
+                      }),
+              ),
+              ChoiceChip(
+                label: const Text('Chuyển khoản ngân hàng · Mã QR'),
+                selected: _paymentMethod == 'prepaid' && _preferBankQr,
+                onSelected: _busy || _loading
+                    ? null
+                    : (_) => setState(() {
+                        _paymentMethod = 'prepaid';
+                        _preferBankQr = true;
                         _quote = null;
                       }),
               ),
               ChoiceChip(
                 label: const Text('Trả trước trực tuyến payOS'),
-                selected: _paymentMethod == 'prepaid',
+                selected: _paymentMethod == 'prepaid' && !_preferBankQr,
                 onSelected: _busy || _loading
                     ? null
                     : (_) => setState(() {
                         _paymentMethod = 'prepaid';
+                        _preferBankQr = false;
                         _quote = null;
                       }),
               ),
@@ -1355,6 +1370,17 @@ class _MarketplaceViewState extends State<MarketplaceView> {
               'Tổng thanh toán: ${_money(quoteSnapshot['total'])}',
               style: Theme.of(context).textTheme.titleLarge,
             ),
+            if (_paymentMethod == 'prepaid' &&
+                ((quoteSnapshot['total'] as num? ?? 0) > 0)) ...[
+              const SizedBox(height: 12),
+              VietQrBankPaymentPanel(
+                amountVnd: (quoteSnapshot['total'] as num).toDouble(),
+                orderReference: '${_quote?['id'] ?? 'DON MUA'}',
+                compact: true,
+                reconciliationNote:
+                    'Bấm Đặt mua để xác nhận đơn hàng và nhận mã thanh toán chính thức.',
+              ),
+            ],
             const SizedBox(height: 12),
             FilledButton.icon(
               onPressed: _busy || _loading ? null : _checkout,
@@ -1477,7 +1503,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                                 );
                                 if (_allowed) await _load();
                               },
-                        icon: const Icon(Icons.payment),
+                        icon: const Icon(Icons.qr_code_2_rounded),
                         label: const Text('Thanh toán trả trước'),
                       ),
                     if (merchant && o['state'] == 'pending')

@@ -408,7 +408,7 @@ void main() {
 
       final shareToken = 'a' * 64;
       await tester.enterText(
-        find.widgetWithText(TextField, 'Mã vận đơn (CL-...) hoặc mã chia sẻ'),
+        find.widgetWithText(TextField, 'Mã vận đơn hoặc mã chia sẻ'),
         shareToken,
       );
       await tester.pump();
