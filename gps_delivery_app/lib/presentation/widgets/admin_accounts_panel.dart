@@ -124,8 +124,8 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
     if (!widget.lease.valid) return Future.value(null);
     return showDialog<T>(
       context: context,
-      builder: (_) => Theme(
-        data: AdminStudioTheme.themeData(),
+      builder: (dialogCtx) => Theme(
+        data: AdminStudioTheme.of(dialogCtx),
         child: CloudSessionBoundary(
           session: widget.session,
           operator: true,
@@ -381,15 +381,16 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
     required String filterKey,
     bool compact = false,
   }) {
+    final p = AdminStudioPalette.of(context);
     final selected = _filter == filterKey;
     return AdminNeoBox(
-      backgroundColor: selected
-          ? AdminStudioColors.acidSoft
-          : AdminStudioColors.surface,
-      borderWidth: selected ? 2 : 1.5,
-      shadowColor: selected ? AdminStudioColors.violet : AdminStudioColors.ink,
+      backgroundColor: selected ? p.acidSoft : p.surface,
+      borderColor: selected ? p.violet : p.line,
+      borderWidth: selected ? 1.8 : 1.0,
+      shadowColor: selected ? p.violet : p.ink,
       shadowOffset: selected ? const Offset(4, 4) : const Offset(3, 3),
       child: InkWell(
+        borderRadius: BorderRadius.circular(14),
         onTap: () => setState(() => _filter = filterKey),
         child: Padding(
           padding: EdgeInsets.all(compact ? 12 : 15),
@@ -403,9 +404,9 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                     height: compact ? 30 : 34,
                     decoration: BoxDecoration(
                       color: tint,
+                      borderRadius: BorderRadius.circular(9),
                       border: Border.all(
-                        color: AdminStudioColors.ink,
-                        width: 1.2,
+                        color: p.line,
                       ),
                     ),
                     child: Icon(icon, size: compact ? 16 : 18, color: accent),
@@ -419,7 +420,7 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                       style: TextStyle(
                         fontSize: compact ? 11.5 : 12.5,
                         fontWeight: FontWeight.w700,
-                        color: AdminStudioColors.muted,
+                        color: p.muted,
                       ),
                     ),
                   ),
@@ -433,7 +434,7 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                 style: TextStyle(
                   fontSize: compact ? 18 : 23,
                   fontWeight: FontWeight.w900,
-                  color: AdminStudioColors.ink,
+                  color: p.ink,
                   letterSpacing: -0.4,
                 ),
               ),
@@ -444,7 +445,7 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: compact ? 11 : 12,
-                  color: AdminStudioColors.muted,
+                  color: p.muted,
                 ),
               ),
             ],
@@ -489,35 +490,39 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
     ),
   );
 
-  Widget _metricPill(IconData icon, String text, {Color? accent}) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-    decoration: BoxDecoration(
-      color: AdminStudioColors.surfaceSubtle,
-      borderRadius: BorderRadius.circular(999),
-      border: Border.all(color: AdminStudioColors.line),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 14, color: accent ?? AdminStudioColors.muted),
-        const SizedBox(width: 5),
-        Flexible(
-          child: Text(
-            text,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: accent ?? AdminStudioColors.ink,
+  Widget _metricPill(IconData icon, String text, {Color? accent}) {
+    final p = AdminStudioPalette.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: p.surfaceSubtle,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: p.line),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: accent ?? p.muted),
+          const SizedBox(width: 5),
+          Flexible(
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: accent ?? p.ink,
+              ),
             ),
           ),
-        ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
 
   Widget _partnerRoleBlock(Map<String, dynamic> account, String role) {
+    final p = AdminStudioPalette.of(context);
     final roleLabel = partnerRoleNames[role] ?? role;
     final membership = _membershipFor(account, role);
     final state = membership?['state'] as String?;
@@ -528,42 +533,40 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
     final (statusText, fg, bg) = switch (state) {
       'active' => (
         '$roleLabel · Đã duyệt',
-        AdminStudioColors.ink,
-        AdminStudioColors.acid,
+        p.onAccentInk,
+        p.acid,
       ),
       'pending' => (
         '$roleLabel · Chờ duyệt',
-        AdminStudioColors.goldInk,
-        AdminStudioColors.gold,
+        p.onAccentInk,
+        p.gold,
       ),
       'rejected' => (
         '$roleLabel · Chưa được duyệt',
-        AdminStudioColors.danger,
-        AdminStudioColors.dangerSoft,
+        p.danger,
+        p.dangerSoft,
       ),
       'revoked' => (
         '$roleLabel · Đã thu hồi',
-        AdminStudioColors.muted,
-        AdminStudioColors.paperWarm,
+        p.muted,
+        p.paperWarm,
       ),
       _ => (
         '$roleLabel · Chưa đăng ký',
-        AdminStudioColors.muted,
-        AdminStudioColors.surface,
+        p.muted,
+        p.surface,
       ),
     };
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: state == 'pending'
-            ? AdminStudioColors.goldSoft
-            : AdminStudioColors.surfaceSubtle,
+        color: state == 'pending' ? p.goldSoft : p.surfaceSubtle,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: state == 'pending'
-              ? AdminStudioColors.goldInk.withValues(alpha: 0.35)
-              : AdminStudioColors.line,
+              ? p.goldInk.withValues(alpha: 0.35)
+              : p.line,
         ),
       ),
       child: Column(
@@ -588,10 +591,10 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                       ? null
                       : () => _decideMembership(account, role, 'approve'),
                   style: FilledButton.styleFrom(
-                    backgroundColor: AdminStudioColors.acidSoft,
-                    foregroundColor: AdminStudioColors.acidInk,
+                    backgroundColor: p.acidSoft,
+                    foregroundColor: p.acidInk,
                     side: BorderSide(
-                      color: AdminStudioColors.acidInk.withValues(alpha: 0.35),
+                      color: p.acidInk.withValues(alpha: 0.35),
                     ),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
@@ -610,9 +613,9 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                       ? null
                       : () => _decideMembership(account, role, 'reject'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AdminStudioColors.danger,
-                    side: const BorderSide(
-                      color: AdminStudioColors.danger,
+                    foregroundColor: p.danger,
+                    side: BorderSide(
+                      color: p.danger,
                       width: 1.3,
                     ),
                     padding: const EdgeInsets.symmetric(
@@ -630,9 +633,9 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                       ? null
                       : () => _decideMembership(account, role, 'revoke'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AdminStudioColors.danger,
-                    side: const BorderSide(
-                      color: AdminStudioColors.danger,
+                    foregroundColor: p.danger,
+                    side: BorderSide(
+                      color: p.danger,
                       width: 1.3,
                     ),
                     padding: const EdgeInsets.symmetric(
@@ -650,9 +653,9 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                       ? null
                       : () => _decideMembership(account, role, 'grant'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AdminStudioColors.violet,
-                    side: const BorderSide(
-                      color: AdminStudioColors.violet,
+                    foregroundColor: p.violet,
+                    side: BorderSide(
+                      color: p.violet,
                       width: 1.3,
                     ),
                     padding: const EdgeInsets.symmetric(
@@ -670,9 +673,9 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
             const SizedBox(height: 6),
             Text(
               'Ghi chú xét duyệt: $reason',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: AdminStudioColors.muted,
+                color: p.muted,
               ),
             ),
           ],
@@ -682,6 +685,7 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
   }
 
   Widget _accountCard(Map<String, dynamic> a) {
+    final p = AdminStudioPalette.of(context);
     final uid = '${a['user_id']}';
     final shortUid = uid.length > 12 ? '${uid.substring(0, 8)}…' : uid;
     final isSelf = uid == widget.session.service.userId;
@@ -704,20 +708,24 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
     final coins = _intVal(a['coin_balance']);
 
     final avatarBg = blocked
-        ? AdminStudioColors.dangerSoft
+        ? p.dangerSoft
         : isOp
-        ? AdminStudioColors.acid
-        : AdminStudioColors.violetSoft;
-    final avatarFg = blocked ? AdminStudioColors.danger : AdminStudioColors.ink;
+        ? p.acid
+        : p.violetSoft;
+    final avatarFg = blocked
+        ? p.danger
+        : isOp
+        ? p.onAccentInk
+        : p.violetInk;
 
     return AdminNeoBox(
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(16),
       shadowColor: blocked
-          ? AdminStudioColors.pink
+          ? p.pink
           : _hasPending(a)
-          ? AdminStudioColors.violet
-          : AdminStudioColors.ink,
+          ? p.violet
+          : p.ink,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -731,7 +739,7 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                 decoration: BoxDecoration(
                   color: avatarBg,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AdminStudioColors.line),
+                  border: Border.all(color: p.line),
                 ),
                 child: Text(
                   _initials(a),
@@ -754,62 +762,62 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                       children: [
                         Text(
                           _displayName(a),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 15.5,
                             fontWeight: FontWeight.w900,
-                            color: AdminStudioColors.ink,
+                            color: p.ink,
                           ),
                         ),
                         if (isSelf)
                           _badge(
                             label: 'Phiên hiện tại',
                             fg: Colors.white,
-                            bg: AdminStudioColors.violet,
+                            bg: p.violet,
                           ),
                         if (isOp)
                           _badge(
                             label: 'Operator',
-                            fg: AdminStudioColors.ink,
-                            bg: AdminStudioColors.acid,
+                            fg: p.onAccentInk,
+                            bg: p.acid,
                             icon: Icons.shield_outlined,
                           ),
                         if (blocked)
                           _badge(
                             label: 'Đang khóa',
-                            fg: AdminStudioColors.danger,
-                            bg: AdminStudioColors.dangerSoft,
+                            fg: p.danger,
+                            bg: p.dangerSoft,
                             icon: Icons.lock_outline_rounded,
                           )
                         else if (!hasProfile)
                           _badge(
                             label: 'Chưa hoàn tất hồ sơ',
-                            fg: AdminStudioColors.goldInk,
-                            bg: AdminStudioColors.gold,
+                            fg: p.onAccentInk,
+                            bg: p.gold,
                             icon: Icons.warning_amber_rounded,
                           )
                         else
                           _badge(
                             label: 'Đang hoạt động',
-                            fg: AdminStudioColors.acidInk,
-                            bg: AdminStudioColors.acidSoft,
+                            fg: p.acidInk,
+                            bg: p.acidSoft,
                           ),
                         if (kycVerified)
                           _badge(
                             label: 'Đã định danh CCCD',
-                            fg: AdminStudioColors.acidInk,
-                            bg: AdminStudioColors.acidSoft,
+                            fg: p.acidInk,
+                            bg: p.acidSoft,
                             icon: Icons.verified_user_outlined,
                           ),
-                        for (final p in providers)
+                        for (final prov in providers)
                           _badge(
-                            label: p == 'google'
+                            label: prov == 'google'
                                 ? 'Google OAuth'
-                                : p == 'email'
+                                : prov == 'email'
                                 ? 'Email / Mật khẩu'
-                                : p,
-                            fg: AdminStudioColors.ink,
-                            bg: AdminStudioColors.paper,
-                            icon: p == 'google'
+                                : prov,
+                            fg: p.ink,
+                            bg: p.paper,
+                            icon: prov == 'google'
                                 ? Icons.public_rounded
                                 : Icons.alternate_email_rounded,
                           ),
@@ -825,10 +833,10 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.mail_outline_rounded,
                                 size: 14,
-                                color: AdminStudioColors.muted,
+                                color: p.muted,
                               ),
                               const SizedBox(width: 4),
                               Flexible(
@@ -836,21 +844,21 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                                   email,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w700,
-                                    color: AdminStudioColors.ink,
+                                    color: p.ink,
                                   ),
                                 ),
                               ),
                               if (emailConfirmed) ...[
                                 const SizedBox(width: 4),
-                                const Tooltip(
+                                Tooltip(
                                   message: 'Email đã xác thực',
                                   child: Icon(
                                     Icons.verified_rounded,
                                     size: 14,
-                                    color: AdminStudioColors.violet,
+                                    color: p.violet,
                                   ),
                                 ),
                               ],
@@ -859,10 +867,10 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.phone_outlined,
                               size: 14,
-                              color: AdminStudioColors.muted,
+                              color: p.muted,
                             ),
                             const SizedBox(width: 4),
                             Flexible(
@@ -875,9 +883,7 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                                   fontWeight: phone.isNotEmpty
                                       ? FontWeight.w600
                                       : FontWeight.w500,
-                                  color: phone.isNotEmpty
-                                      ? AdminStudioColors.ink
-                                      : AdminStudioColors.muted,
+                                  color: phone.isNotEmpty ? p.ink : p.muted,
                                 ),
                               ),
                             ),
@@ -887,18 +893,18 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.cake_outlined,
                                 size: 14,
-                                color: AdminStudioColors.muted,
+                                color: p.muted,
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 birthDate,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
-                                  color: AdminStudioColors.ink,
+                                  color: p.ink,
                                 ),
                               ),
                             ],
@@ -907,18 +913,18 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.badge_outlined,
                                 size: 14,
-                                color: AdminStudioColors.muted,
+                                color: p.muted,
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 citizenMasked,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
-                                  color: AdminStudioColors.ink,
+                                  color: p.ink,
                                 ),
                               ),
                             ],
@@ -933,25 +939,25 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.fingerprint_rounded,
                                   size: 14,
-                                  color: AdminStudioColors.muted,
+                                  color: p.muted,
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
                                   shortUid,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontFamily: 'monospace',
-                                    color: AdminStudioColors.muted,
+                                    color: p.muted,
                                   ),
                                 ),
                                 const SizedBox(width: 3),
-                                const Icon(
+                                Icon(
                                   Icons.copy_rounded,
                                   size: 12,
-                                  color: AdminStudioColors.muted,
+                                  color: p.muted,
                                 ),
                               ],
                             ),
@@ -978,7 +984,7 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                 activeTrips > 0
                     ? 'Chuyến giao: $driverOrders · $activeTrips đang chạy'
                     : 'Chuyến giao: $driverOrders',
-                accent: activeTrips > 0 ? AdminStudioColors.violet : null,
+                accent: activeTrips > 0 ? p.violet : null,
               ),
               _metricPill(Icons.storefront_outlined, 'Gian hàng: $shopsCount'),
               _metricPill(Icons.monetization_on_outlined, 'Ví Xu: $coins Xu'),
@@ -1064,13 +1070,9 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                         ? null
                         : () => _toggleBlocked(a),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: blocked
-                          ? AdminStudioColors.acidInk
-                          : AdminStudioColors.danger,
+                      foregroundColor: blocked ? p.acidInk : p.danger,
                       side: BorderSide(
-                        color: blocked
-                            ? AdminStudioColors.ink
-                            : AdminStudioColors.danger,
+                        color: blocked ? p.acidInk : p.danger,
                         width: 1.4,
                       ),
                     ),
@@ -1155,8 +1157,9 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
       ('blocked', 'Đang khóa · $blockedCount'),
     ];
 
+    final p = AdminStudioPalette.of(context);
     return Theme(
-      data: AdminStudioTheme.themeData(),
+      data: AdminStudioTheme.of(context),
       child: RefreshIndicator(
         onRefresh: () => _load(force: true),
         child: ListView(
@@ -1184,12 +1187,12 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                               final compact = box.maxWidth < 520;
                               return Row(
                                 children: [
-                                  Expanded(
+                                  const Expanded(
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        const Text(
+                                        Text(
                                           'Trung tâm Quản trị Danh tính & Phân quyền',
                                           style: TextStyle(
                                             fontSize: 18,
@@ -1198,8 +1201,8 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                                             letterSpacing: -0.3,
                                           ),
                                         ),
-                                        const SizedBox(height: 4),
-                                        const Text(
+                                        SizedBox(height: 4),
+                                        Text(
                                           'Đồng bộ trực tiếp từ hồ sơ tài khoản, phân quyền đối tác và nhật ký kiểm toán.',
                                           style: TextStyle(
                                             fontSize: 12.5,
@@ -1239,7 +1242,7 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                                           : () => _load(force: true),
                                       style: FilledButton.styleFrom(
                                         backgroundColor: AdminStudioColors.acid,
-                                        foregroundColor: AdminStudioColors.ink,
+                                        foregroundColor: p.onAccentInk,
                                       ),
                                       icon: const Icon(
                                         Icons.refresh_rounded,
@@ -1255,12 +1258,12 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                       ),
                     ),
                     if (_busy)
-                      const Padding(
-                        padding: EdgeInsets.only(top: 10),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 10),
                         child: LinearProgressIndicator(
                           minHeight: 4,
-                          color: AdminStudioColors.violet,
-                          backgroundColor: AdminStudioColors.paperWarm,
+                          color: p.violet,
+                          backgroundColor: p.paperWarm,
                         ),
                       ),
                     if (_error != null)
@@ -1268,16 +1271,16 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                         margin: const EdgeInsets.only(top: 12),
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: AdminStudioColors.dangerSoft,
+                          color: p.dangerSoft,
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: AdminStudioColors.danger,
-                            width: 1.5,
+                            color: p.danger.withValues(alpha: 0.45),
                           ),
                         ),
                         child: SelectableText(
                           _error!,
-                          style: const TextStyle(
-                            color: AdminStudioColors.danger,
+                          style: TextStyle(
+                            color: p.danger,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -1287,25 +1290,25 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                         margin: const EdgeInsets.only(top: 12),
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: AdminStudioColors.acid,
+                          color: p.acidSoft,
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: AdminStudioColors.ink,
-                            width: 1.5,
+                            color: p.acidInk.withValues(alpha: 0.35),
                           ),
                         ),
                         child: Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.check_circle_outline_rounded,
-                              color: AdminStudioColors.ink,
+                              color: p.acidInk,
                               size: 18,
                             ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 _notice!,
-                                style: const TextStyle(
-                                  color: AdminStudioColors.ink,
+                                style: TextStyle(
+                                  color: p.acidInk,
                                   fontWeight: FontWeight.w800,
                                 ),
                               ),
@@ -1325,8 +1328,8 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                             _kpiTile(
                               compact: compact,
                               icon: Icons.people_alt_outlined,
-                              accent: AdminStudioColors.ink,
-                              tint: AdminStudioColors.acid,
+                              accent: p.onAccentInk,
+                              tint: p.acid,
                               label: 'Tổng tài khoản Auth',
                               value: '$total',
                               detail:
@@ -1337,7 +1340,7 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                               compact: compact,
                               icon: Icons.shield_outlined,
                               accent: Colors.white,
-                              tint: AdminStudioColors.violet,
+                              tint: p.violet,
                               label: 'Điều hành viên',
                               value: '$operators',
                               detail: 'Quyền quản trị Operator toàn hệ thống',
@@ -1348,10 +1351,10 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                               icon: pendingCount > 0
                                   ? Icons.pending_actions_rounded
                                   : Icons.task_alt_rounded,
-                              accent: AdminStudioColors.ink,
-                              tint: pendingCount > 0
-                                  ? AdminStudioColors.gold
-                                  : AdminStudioColors.acidSoft,
+                              accent: pendingCount > 0
+                                  ? p.onAccentInk
+                                  : p.acidInk,
+                              tint: pendingCount > 0 ? p.gold : p.acidSoft,
                               label: 'Hồ sơ đối tác chờ duyệt',
                               value: '$pendingCount',
                               detail: 'Yêu cầu Tài xế / Cửa hàng mới',
@@ -1360,8 +1363,8 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                             _kpiTile(
                               compact: compact,
                               icon: Icons.two_wheeler_rounded,
-                              accent: AdminStudioColors.violet,
-                              tint: AdminStudioColors.violetSoft,
+                              accent: p.violet,
+                              tint: p.violetSoft,
                               label: 'Tài xế đã phê duyệt',
                               value: '$drivers',
                               detail: 'Đủ điều kiện nhận chuyến',
@@ -1370,8 +1373,8 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                             _kpiTile(
                               compact: compact,
                               icon: Icons.storefront_outlined,
-                              accent: AdminStudioColors.ink,
-                              tint: AdminStudioColors.pinkSoft,
+                              accent: p.pinkInk,
+                              tint: p.pinkSoft,
                               label: 'Đối tác Cửa hàng',
                               value: '$merchants',
                               detail: 'Được tạo & vận hành gian hàng',
@@ -1380,12 +1383,10 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                             _kpiTile(
                               compact: compact,
                               icon: Icons.lock_outline_rounded,
-                              accent: blockedCount > 0
-                                  ? AdminStudioColors.danger
-                                  : AdminStudioColors.muted,
+                              accent: blockedCount > 0 ? p.danger : p.muted,
                               tint: blockedCount > 0
-                                  ? AdminStudioColors.dangerSoft
-                                  : AdminStudioColors.paperWarm,
+                                  ? p.dangerSoft
+                                  : p.paperWarm,
                               label: 'Tài khoản đang khóa',
                               value: '$blockedCount',
                               detail: 'Tạm đình chỉ giao dịch',
@@ -1434,14 +1435,16 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                                   ChoiceChip(
                                     label: Text(opt.$2),
                                     selected: _filter == opt.$1,
-                                    selectedColor: AdminStudioColors.acid,
-                                    backgroundColor: AdminStudioColors.surface,
+                                    selectedColor: p.acid,
+                                    backgroundColor: p.surfaceSubtle,
                                     labelStyle: TextStyle(
                                       fontSize: 12.5,
                                       fontWeight: _filter == opt.$1
                                           ? FontWeight.w800
                                           : FontWeight.w600,
-                                      color: AdminStudioColors.ink,
+                                      color: _filter == opt.$1
+                                          ? p.onAccentInk
+                                          : p.ink,
                                     ),
                                     onSelected: (_) =>
                                         setState(() => _filter = opt.$1),
@@ -1451,10 +1454,10 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                             const SizedBox(height: 10),
                             Text(
                               'Hiển thị ${visible.length} / ${_accounts.length} tài khoản đã tải',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w700,
-                                color: AdminStudioColors.muted,
+                                color: p.muted,
                               ),
                             ),
                           ],
@@ -1462,14 +1465,14 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                       ),
                       const SizedBox(height: 16),
                       if (_accounts.isEmpty && !_busy)
-                        const AdminNeoBox(
-                          padding: EdgeInsets.all(28),
+                        AdminNeoBox(
+                          padding: const EdgeInsets.all(28),
                           child: Center(
                             child: Text(
                               'Chưa có tài khoản nào trên hệ thống.',
                               style: TextStyle(
                                 fontWeight: FontWeight.w700,
-                                color: AdminStudioColors.muted,
+                                color: p.muted,
                               ),
                             ),
                           ),
@@ -1479,18 +1482,18 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                           padding: const EdgeInsets.all(28),
                           child: Column(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.person_search_outlined,
                                 size: 36,
-                                color: AdminStudioColors.muted,
+                                color: p.muted,
                               ),
                               const SizedBox(height: 10),
-                              const Text(
+                              Text(
                                 'Không tìm thấy tài khoản phù hợp bộ lọc hiện tại.',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontWeight: FontWeight.w700,
-                                  color: AdminStudioColors.ink,
+                                  color: p.ink,
                                 ),
                               ),
                               const SizedBox(height: 10),
@@ -1583,6 +1586,7 @@ class _EditAccountProfileDialogState extends State<_EditAccountProfileDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final p = AdminStudioPalette.of(context);
     final hasProfile = widget.account['has_profile'] == true;
     final email = '${widget.account['email'] ?? ''}'.trim();
     return AlertDialog(
@@ -1602,9 +1606,9 @@ class _EditAccountProfileDialogState extends State<_EditAccountProfileDialog> {
                 if (email.isNotEmpty) ...[
                   Text(
                     email,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w700,
-                      color: AdminStudioColors.muted,
+                      color: p.muted,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -1745,6 +1749,7 @@ class _BlockAccountDialogState extends State<_BlockAccountDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final p = AdminStudioPalette.of(context);
     final email = '${widget.account['email'] ?? ''}'.trim();
     final phone = '${widget.account['phone'] ?? ''}'.trim();
     return AlertDialog(
@@ -1769,9 +1774,9 @@ class _BlockAccountDialogState extends State<_BlockAccountDialog> {
                   child: Text(
                     [if (email.isNotEmpty) email, if (phone.isNotEmpty) phone]
                         .join(' · '),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: AdminStudioColors.muted,
+                      color: p.muted,
                     ),
                   ),
                 ),
@@ -1804,7 +1809,7 @@ class _BlockAccountDialogState extends State<_BlockAccountDialog> {
         FilledButton(
           style: widget.block
               ? FilledButton.styleFrom(
-                  backgroundColor: AdminStudioColors.danger,
+                  backgroundColor: p.danger,
                   foregroundColor: Colors.white,
                 )
               : null,
@@ -1885,6 +1890,7 @@ class _AccountGovernanceDetailDialogState
     padding: const EdgeInsets.symmetric(vertical: 4),
     child: LayoutBuilder(
       builder: (context, c) {
+        final p = AdminStudioPalette.of(context);
         final display = value.isEmpty ? '—' : value;
         if (c.maxWidth < 300) {
           return Column(
@@ -1892,18 +1898,18 @@ class _AccountGovernanceDetailDialogState
             children: [
               Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
-                  color: AdminStudioColors.muted,
+                  color: p.muted,
                 ),
               ),
               const SizedBox(height: 2),
               SelectableText(
                 display,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w700,
-                  color: AdminStudioColors.ink,
+                  color: p.ink,
                 ),
               ),
             ],
@@ -1916,19 +1922,19 @@ class _AccountGovernanceDetailDialogState
               width: 140,
               child: Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12.5,
-                  color: AdminStudioColors.muted,
+                  color: p.muted,
                 ),
               ),
             ),
             Expanded(
               child: SelectableText(
                 display,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w700,
-                  color: AdminStudioColors.ink,
+                  color: p.ink,
                 ),
               ),
             ),
@@ -1940,6 +1946,7 @@ class _AccountGovernanceDetailDialogState
 
   @override
   Widget build(BuildContext context) {
+    final p = AdminStudioPalette.of(context);
     final providers = (_account['auth_providers'] as List? ?? const [])
         .map((e) => '$e')
         .join(', ');
@@ -1968,8 +1975,8 @@ class _AccountGovernanceDetailDialogState
                   padding: const EdgeInsets.only(bottom: 10),
                   child: Text(
                     _error!,
-                    style: const TextStyle(
-                      color: AdminStudioColors.danger,
+                    style: TextStyle(
+                      color: p.danger,
                       fontSize: 13,
                     ),
                   ),
@@ -1977,10 +1984,10 @@ class _AccountGovernanceDetailDialogState
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: AdminStudioColors.surface,
+                  color: p.surfaceSubtle,
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: AdminStudioColors.ink,
-                    width: 1.4,
+                    color: p.line,
                   ),
                 ),
                 child: Column(
@@ -2039,12 +2046,12 @@ class _AccountGovernanceDetailDialogState
               ),
               if (_shops.isNotEmpty) ...[
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'Gian hàng sở hữu',
                   style: TextStyle(
                     fontWeight: FontWeight.w900,
                     fontSize: 14,
-                    color: AdminStudioColors.ink,
+                    color: p.ink,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -2053,10 +2060,10 @@ class _AccountGovernanceDetailDialogState
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AdminStudioColors.surface,
+                      color: p.surfaceSubtle,
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: AdminStudioColors.ink,
-                        width: 1.2,
+                        color: p.line,
                       ),
                     ),
                     child: Text(
@@ -2066,21 +2073,21 @@ class _AccountGovernanceDetailDialogState
                   ),
               ],
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'Nhật ký kiểm toán tài khoản này',
                 style: TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 14,
-                  color: AdminStudioColors.ink,
+                  color: p.ink,
                 ),
               ),
               const SizedBox(height: 8),
               if (_audit.isEmpty && !_busy)
-                const Text(
+                Text(
                   'Chưa có bản ghi kiểm toán nào cho tài khoản này.',
                   style: TextStyle(
                     fontSize: 12.5,
-                    color: AdminStudioColors.muted,
+                    color: p.muted,
                   ),
                 ),
               for (final e in _audit)
@@ -2088,10 +2095,10 @@ class _AccountGovernanceDetailDialogState
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AdminStudioColors.surface,
+                    color: p.surfaceSubtle,
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: AdminStudioColors.ink,
-                      width: 1.2,
+                      color: p.line,
                     ),
                   ),
                   child: Builder(

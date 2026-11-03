@@ -10,10 +10,12 @@ class GhstShippingScreen extends StatelessWidget {
     super.key,
     required this.session,
     required this.onCreated,
+    this.onOrderCreated,
     this.initialDetails,
   });
   final CloudAccountSession session;
   final VoidCallback onCreated;
+  final ValueChanged<Map<String, dynamic>>? onOrderCreated;
   final Map<String, dynamic>? initialDetails;
 
   @override
@@ -22,6 +24,7 @@ class GhstShippingScreen extends StatelessWidget {
     builder: (_, lease) => _ShippingFormHost(
       lease: lease,
       onCreated: onCreated,
+      onOrderCreated: onOrderCreated,
       initialDetails: initialDetails,
     ),
   );
@@ -31,10 +34,12 @@ class _ShippingFormHost extends StatefulWidget {
   const _ShippingFormHost({
     required this.lease,
     required this.onCreated,
+    this.onOrderCreated,
     this.initialDetails,
   });
   final CloudSessionLease lease;
   final VoidCallback onCreated;
+  final ValueChanged<Map<String, dynamic>>? onOrderCreated;
   final Map<String, dynamic>? initialDetails;
   @override
   State<_ShippingFormHost> createState() => _ShippingFormHostState();
@@ -112,6 +117,7 @@ class _ShippingFormHostState extends State<_ShippingFormHost> {
       merchants: _merchants!,
       embedded: true,
       onCreated: widget.onCreated,
+      onOrderCreated: widget.onOrderCreated,
       initialDetails: widget.initialDetails,
     );
   }

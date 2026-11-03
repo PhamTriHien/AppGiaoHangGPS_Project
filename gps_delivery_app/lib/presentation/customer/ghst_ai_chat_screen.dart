@@ -6,6 +6,7 @@ import '../../core/integrations/cloud_account_session.dart';
 import '../../core/integrations/cloud_session_lease.dart';
 import '../../core/network/public_json_api.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/ghst_theme_tokens.dart';
 import '../widgets/motion_3d_effects.dart';
 
 class GhstAiChatController extends ChangeNotifier {
@@ -28,6 +29,8 @@ class GhstAiChatController extends ChangeNotifier {
   String? _error;
   String? _retryPrompt;
   bool _busy = false;
+  bool _historyLoaded = false;
+  bool _loadingHistory = false;
   bool _disposed = false;
   int _generation = 0;
 
@@ -45,7 +48,49 @@ class GhstAiChatController extends ChangeNotifier {
     _error = null;
     _retryPrompt = null;
     _busy = false;
+    _historyLoaded = false;
+    _loadingHistory = false;
     notifyListeners();
+  }
+
+  Future<void> ensureHistoryLoaded() async {
+    if (!valid || _historyLoaded || _loadingHistory) return;
+    _loadingHistory = true;
+    final generation = _generation;
+    try {
+      final response = await session.service.aiHistory('list');
+      if (!valid || generation != _generation) return;
+      _historyLoaded = true;
+      if (_messages.isEmpty) {
+        final raw = response['messages'];
+        if (raw is List) {
+          final loaded = <({String role, String content})>[];
+          for (final item in raw) {
+            if (item is Map) {
+              final role = '${item['role'] ?? ''}'.trim();
+              final content = '${item['content'] ?? ''}'.trim();
+              if ((role == 'user' || role == 'assistant') &&
+                  content.isNotEmpty) {
+                loaded.add((role: role, content: content));
+              }
+            }
+          }
+          if (loaded.isNotEmpty) {
+            final bounded = loaded.length > 16
+                ? loaded.sublist(loaded.length - 16)
+                : loaded;
+            _messages
+              ..clear()
+              ..addAll(bounded);
+            notifyListeners();
+          }
+        }
+      }
+    } catch (_) {
+      _historyLoaded = true;
+    } finally {
+      _loadingHistory = false;
+    }
   }
 
   void reset() {
@@ -55,6 +100,13 @@ class GhstAiChatController extends ChangeNotifier {
     _error = null;
     _retryPrompt = null;
     notifyListeners();
+    if (valid) {
+      unawaited(
+        session.service
+            .aiHistory('clear')
+            .catchError((Object _) => <String, dynamic>{}),
+      );
+    }
   }
 
   Future<void> send(String rawText) async {
@@ -103,6 +155,14 @@ class GhstAiChatController extends ChangeNotifier {
         ..clear()
         ..addAll(updated);
       notifyListeners();
+      unawaited(
+        session.service
+            .aiHistory('append_exchange', {
+              'user_text': text,
+              'assistant_text': reply.trim(),
+            })
+            .catchError((Object _) => <String, dynamic>{}),
+      );
     } catch (err) {
       if (!valid ||
           generation != _generation ||
@@ -154,85 +214,85 @@ class _GhstAiChatScreenState extends State<GhstAiChatScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-    animation: _controller,
-    builder: (context, _) => Align(
-      alignment: Alignment.topCenter,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 920),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildBanner(),
-              const SizedBox(height: 12),
-              Expanded(
-                child: Container(
-                  clipBehavior: Clip.antiAlias,
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.line),
-                    boxShadow: AppColors.cardShadow,
-                  ),
-                  child: GhstAiChatBody(
-                    controller: _controller,
-                    inputKey: const ValueKey('ghst-ai-input'),
-                    sendKey: const ValueKey('ghst-ai-send'),
+  Widget build(BuildContext context) {
+    final tokens = GhstThemeTokens.of(context);
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) => Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 920),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildBanner(tokens),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: Container(
+                    clipBehavior: Clip.antiAlias,
+                    decoration: BoxDecoration(
+                      color: tokens.cardSurface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: tokens.border),
+                      boxShadow: tokens.cardShadow,
+                    ),
+                    child: GhstAiChatBody(
+                      controller: _controller,
+                      inputKey: const ValueKey('ghst-ai-input'),
+                      sendKey: const ValueKey('ghst-ai-send'),
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 
-  Widget _buildBanner() => Container(
+  Widget _buildBanner(GhstThemeTokens tokens) => GhstAuroraBanner(
+    gradient: tokens.aiGradient,
+    accentOrbColor: const Color(0x5522D3EE),
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-    decoration: BoxDecoration(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: AppColors.line),
-      boxShadow: AppColors.cardShadow,
-    ),
+    borderRadius: 16,
     child: Row(
       children: [
         Container(
-          width: 38,
-          height: 38,
+          width: 40,
+          height: 40,
           decoration: BoxDecoration(
-            color: AppColors.primarySoft,
+            color: Colors.white.withValues(alpha: 0.16),
             borderRadius: BorderRadius.circular(11),
-            border: Border.all(color: AppColors.primaryBorder),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
           ),
           child: const Icon(
             Icons.auto_awesome_rounded,
-            color: AppColors.primary,
-            size: 19,
+            color: Colors.white,
+            size: 20,
           ),
         ),
         const SizedBox(width: 12),
-        const Expanded(
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              const Text(
                 'TRỢ LÝ AI GHST EXPRESS',
                 style: TextStyle(
-                  color: AppColors.ink,
+                  color: Colors.white,
                   fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w800,
                   letterSpacing: 0.1,
                 ),
               ),
-              SizedBox(height: 2),
+              const SizedBox(height: 2),
               Text(
-                'Tra cứu đơn hàng & giải đáp dịch vụ',
+                'Tra cứu đơn hàng & giải đáp dịch vụ • Đồng bộ lịch sử hội thoại',
                 style: TextStyle(
-                  color: AppColors.textSecondary,
+                  color: Colors.white.withValues(alpha: 0.85),
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
@@ -246,7 +306,7 @@ class _GhstAiChatScreenState extends State<GhstAiChatScreen> {
             onPressed: _controller.busy ? null : _controller.reset,
             icon: const Icon(
               Icons.refresh_rounded,
-              color: AppColors.primary,
+              color: Colors.white,
               size: 20,
             ),
           ),
@@ -335,6 +395,7 @@ class _GhstAiFloatingBubbleState extends State<GhstAiFloatingBubble> {
               _dragOffset!.dy.clamp(8.0, maxTop),
             );
 
+      final tokens = GhstThemeTokens.of(context);
       if (!_open) {
         final hasMessages = widget.controller.messages.isNotEmpty;
         return Stack(
@@ -377,43 +438,43 @@ class _GhstAiFloatingBubbleState extends State<GhstAiFloatingBubble> {
                             child: Container(
                               width: bubbleWidth,
                               height: bubbleHeight,
-                          decoration: BoxDecoration(
-                            color: AppColors.primary,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.25),
-                            ),
-                            boxShadow: AppColors.elevatedShadow,
-                          ),
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              const Icon(
-                                Icons.auto_awesome_rounded,
-                                color: Colors.white,
-                                size: 23,
+                              decoration: BoxDecoration(
+                                gradient: tokens.aiGradient,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.28),
+                                ),
+                                boxShadow: tokens.elevatedShadow,
                               ),
-                              if (hasMessages)
-                                Positioned(
-                                  top: 8,
-                                  right: 8,
-                                  child: Container(
-                                    width: 9,
-                                    height: 9,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.acid,
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: AppColors.primary,
-                                        width: 1.5,
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  const Icon(
+                                    Icons.auto_awesome_rounded,
+                                    color: Colors.white,
+                                    size: 23,
+                                  ),
+                                  if (hasMessages)
+                                    Positioned(
+                                      top: 8,
+                                      right: 8,
+                                      child: Container(
+                                        width: 9,
+                                        height: 9,
+                                        decoration: BoxDecoration(
+                                          color: AppColors.acid,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: tokens.shellBg,
+                                            width: 1.5,
+                                          ),
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ),
-                            ],
+                                ],
+                              ),
+                            ),
                           ),
-                        ),
-                        ),
                         ),
                       ),
                     ),
@@ -450,27 +511,27 @@ class _GhstAiFloatingBubbleState extends State<GhstAiFloatingBubble> {
                 color: Colors.transparent,
                 child: Container(
                   key: const ValueKey('ghst-ai-floating-panel'),
-                clipBehavior: Clip.antiAlias,
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: AppColors.line),
-                  boxShadow: AppColors.elevatedShadow,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 9,
-                      ),
-                      decoration: const BoxDecoration(
-                        color: AppColors.techBg,
-                        border: Border(
-                          bottom: BorderSide(color: AppColors.techLine),
+                  clipBehavior: Clip.antiAlias,
+                  decoration: BoxDecoration(
+                    color: tokens.cardSurface,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: tokens.borderStrong),
+                    boxShadow: tokens.elevatedShadow,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 9,
                         ),
-                      ),
+                        decoration: BoxDecoration(
+                          gradient: tokens.aiGradient,
+                          border: Border(
+                            bottom: BorderSide(color: tokens.shellBorder),
+                          ),
+                        ),
                       child: Row(
                         children: [
                           Container(
@@ -605,6 +666,7 @@ class _GhstAiChatBodyState extends State<GhstAiChatBody> {
     super.initState();
     _lastCount = widget.controller.messages.length;
     widget.controller.addListener(_onChanged);
+    unawaited(widget.controller.ensureHistoryLoaded());
   }
 
   @override
@@ -614,6 +676,7 @@ class _GhstAiChatBodyState extends State<GhstAiChatBody> {
       oldWidget.controller.removeListener(_onChanged);
       _lastCount = widget.controller.messages.length;
       widget.controller.addListener(_onChanged);
+      unawaited(widget.controller.ensureHistoryLoaded());
     }
   }
 
@@ -654,197 +717,210 @@ class _GhstAiChatBodyState extends State<GhstAiChatBody> {
   @override
   Widget build(BuildContext context) {
     final c = widget.controller;
+    final tokens = GhstThemeTokens.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (c.error != null) _buildErrorStrip(c),
+        if (c.error != null) _buildErrorStrip(c, tokens),
         Expanded(
           child: c.messages.isEmpty && !c.busy
-              ? _buildEmptyState(c)
-              : _buildMessageList(c),
+              ? _buildEmptyState(c, tokens)
+              : _buildMessageList(c, tokens),
         ),
-        const Divider(color: AppColors.line, height: 1),
+        Divider(color: tokens.border, height: 1),
         _buildComposer(c),
       ],
     );
   }
 
-  Widget _buildErrorStrip(GhstAiChatController c) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-    decoration: BoxDecoration(
-      color: const Color(0xFFFEF2F2),
-      border: Border(
-        bottom: BorderSide(color: AppColors.danger.withValues(alpha: 0.25)),
-      ),
-    ),
-    child: Row(
-      children: [
-        const Icon(
-          Icons.error_outline_rounded,
-          color: AppColors.danger,
-          size: 17,
+  Widget _buildErrorStrip(GhstAiChatController c, GhstThemeTokens tokens) =>
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: tokens.rose.fill,
+          border: Border(bottom: BorderSide(color: tokens.rose.border)),
         ),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text(
-            c.error!,
-            style: const TextStyle(
-              color: AppColors.danger,
-              fontSize: 11.5,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        if (c.retryPrompt != null && !c.busy)
-          TextButton(
-            onPressed: () => unawaited(c.send(c.retryPrompt!)),
-            child: const Text('Gửi lại'),
-          ),
-      ],
-    ),
-  );
-
-  Widget _buildEmptyState(GhstAiChatController c) => SingleChildScrollView(
-    padding: EdgeInsets.all(widget.compact ? 12 : 16),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Xin chào! Tôi có thể hỗ trợ bạn kiểm tra trạng thái đơn hàng, tính cước vận chuyển 5 chế độ, chính sách bảo hiểm, Voucher & Xu hoặc hậu mãi.',
-          style: TextStyle(
-            color: AppColors.ink,
-            fontSize: widget.compact ? 12.5 : 13.5,
-            fontWeight: FontWeight.w500,
-            height: 1.45,
-          ),
-        ),
-        const SizedBox(height: 14),
-        const Text(
-          'Gợi ý câu hỏi nhanh',
-          style: TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 11.5,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
+        child: Row(
           children: [
-            for (final suggestion in GhstAiChatController.suggestions)
-              OutlinedButton(
-                onPressed: c.busy ? null : () => unawaited(c.send(suggestion)),
-                style: OutlinedButton.styleFrom(
-                  backgroundColor: AppColors.surfaceSubtle,
-                  foregroundColor: AppColors.ink,
-                  side: const BorderSide(color: AppColors.line),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: widget.compact ? 10 : 12,
-                    vertical: widget.compact ? 7 : 9,
-                  ),
+            Icon(
+              Icons.error_outline_rounded,
+              color: tokens.rose.icon,
+              size: 17,
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                c.error!,
+                style: TextStyle(
+                  color: tokens.rose.foreground,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
                 ),
-                child: Text(
-                  suggestion,
-                  style: TextStyle(
-                    color: AppColors.ink,
-                    fontSize: widget.compact ? 11.5 : 12.5,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+              ),
+            ),
+            if (c.retryPrompt != null && !c.busy)
+              TextButton(
+                onPressed: () => unawaited(c.send(c.retryPrompt!)),
+                child: const Text('Gửi lại'),
               ),
           ],
         ),
-      ],
-    ),
-  );
+      );
 
-  Widget _buildMessageList(GhstAiChatController c) => SelectionArea(
-    child: ListView.separated(
-      controller: _scroll,
-      padding: EdgeInsets.all(widget.compact ? 10 : 14),
-      itemCount: c.messages.length + (c.busy ? 1 : 0),
-      separatorBuilder: (_, _) => const SizedBox(height: 10),
-      itemBuilder: (context, index) {
-        if (index == c.messages.length) {
-          return Align(
-            alignment: Alignment.centerLeft,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceSubtle,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.line),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                  SizedBox(width: 8),
-                  Text(
-                    'Trợ lý AI đang phản hồi...',
-                    style: TextStyle(
-                      color: AppColors.ink,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+  Widget _buildEmptyState(GhstAiChatController c, GhstThemeTokens tokens) =>
+      SingleChildScrollView(
+        padding: EdgeInsets.all(widget.compact ? 12 : 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Xin chào! Tôi có thể hỗ trợ bạn kiểm tra trạng thái đơn hàng, tính cước vận chuyển 5 chế độ, chính sách bảo hiểm, Voucher & Xu hoặc hậu mãi.',
+              style: TextStyle(
+                color: tokens.ink,
+                fontSize: widget.compact ? 12.5 : 13.5,
+                fontWeight: FontWeight.w500,
+                height: 1.45,
               ),
             ),
-          );
-        }
-        final turn = c.messages[index];
-        final isUser = turn.role == 'user';
-        return Align(
-          alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: widget.compact ? 290 : 680),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
-              decoration: BoxDecoration(
-                color: isUser ? AppColors.primary : AppColors.surfaceSubtle,
-                borderRadius: BorderRadius.circular(14),
-                border: isUser ? null : Border.all(color: AppColors.line),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    isUser ? 'BẠN' : 'TRỢ LÝ AI',
-                    style: TextStyle(
-                      color: isUser
-                          ? Colors.white.withValues(alpha: 0.85)
-                          : AppColors.primary,
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    turn.content,
-                    style: TextStyle(
-                      color: isUser ? Colors.white : AppColors.ink,
-                      fontSize: widget.compact ? 12.5 : 13.5,
-                      fontWeight: FontWeight.w500,
-                      height: 1.45,
-                    ),
-                  ),
-                ],
+            const SizedBox(height: 14),
+            Text(
+              'Gợi ý câu hỏi nhanh',
+              style: TextStyle(
+                color: tokens.inkSecondary,
+                fontSize: 11.5,
+                fontWeight: FontWeight.w700,
               ),
             ),
-          ),
-        );
-      },
-    ),
-  );
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final suggestion in GhstAiChatController.suggestions)
+                  OutlinedButton(
+                    onPressed: c.busy
+                        ? null
+                        : () => unawaited(c.send(suggestion)),
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: tokens.cardSubtle,
+                      foregroundColor: tokens.ink,
+                      side: BorderSide(color: tokens.border),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: widget.compact ? 10 : 12,
+                        vertical: widget.compact ? 7 : 9,
+                      ),
+                    ),
+                    child: Text(
+                      suggestion,
+                      style: TextStyle(
+                        color: tokens.ink,
+                        fontSize: widget.compact ? 11.5 : 12.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      );
+
+  Widget _buildMessageList(GhstAiChatController c, GhstThemeTokens tokens) =>
+      SelectionArea(
+        child: ListView.separated(
+          controller: _scroll,
+          padding: EdgeInsets.all(widget.compact ? 10 : 14),
+          itemCount: c.messages.length + (c.busy ? 1 : 0),
+          separatorBuilder: (_, _) => const SizedBox(height: 10),
+          itemBuilder: (context, index) {
+            if (index == c.messages.length) {
+              return Align(
+                alignment: Alignment.centerLeft,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: tokens.cardSubtle,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: tokens.border),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Trợ lý AI đang phản hồi...',
+                        style: TextStyle(
+                          color: tokens.ink,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+            final turn = c.messages[index];
+            final isUser = turn.role == 'user';
+            return Align(
+              alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: widget.compact ? 290 : 680,
+                ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 13,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isUser ? null : tokens.cardSubtle,
+                    gradient: isUser ? tokens.aiGradient : null,
+                    borderRadius: BorderRadius.circular(14),
+                    border: isUser ? null : Border.all(color: tokens.border),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isUser ? 'BẠN' : 'TRỢ LÝ AI',
+                        style: TextStyle(
+                          color: isUser
+                              ? Colors.white.withValues(alpha: 0.85)
+                              : tokens.sapphire.foreground,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        turn.content,
+                        style: TextStyle(
+                          color: isUser ? Colors.white : tokens.ink,
+                          fontSize: widget.compact ? 12.5 : 13.5,
+                          fontWeight: FontWeight.w500,
+                          height: 1.45,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      );
 
   Widget _buildComposer(GhstAiChatController c) => Padding(
     padding: EdgeInsets.all(widget.compact ? 8 : 10),

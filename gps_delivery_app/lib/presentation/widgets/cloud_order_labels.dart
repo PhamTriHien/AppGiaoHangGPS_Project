@@ -24,6 +24,7 @@ const cloudActions = {
   'cancel': 'Hủy đơn',
   'instruction': 'Cập nhật chỉ dẫn giao hàng',
   'collect_cash': 'Xác nhận thu tiền mặt',
+  'checkpoint': 'Xác nhận điểm dừng',
 };
 
 const cloudPickupVehicles = {

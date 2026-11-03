@@ -295,6 +295,87 @@ class SmartDispatchEngine {
     );
   }
 
+  static Future<OsrmRouteResult> fetchLiveOsrmWaypointsRoute(
+    List<GeoPoint> waypoints, {
+    DeliveryApiClient? api,
+  }) async {
+    if (waypoints.length < 2) {
+      return OsrmRouteResult(
+        distanceMeters: 0,
+        durationSeconds: 0,
+        polylinePoints: List<GeoPoint>.from(waypoints),
+        isLiveOsrm: false,
+      );
+    }
+    if (waypoints.length == 2) {
+      return fetchLiveOsrmRoute(waypoints.first, waypoints.last, api: api);
+    }
+    if (waypoints.length <= 7) {
+      try {
+        final waypointQuery = waypoints
+            .map((p) => '${p.longitude},${p.latitude}')
+            .join(';');
+        final decoded = await (api ?? DeliveryApiClient.instance).request(
+          'route',
+          query: {'waypoints': waypointQuery},
+        );
+        final route = (decoded['routes'] as List).first as Map;
+        final distance = route['distance'];
+        final duration = route['duration'];
+        final coordinates = (route['geometry'] as Map)['coordinates'] as List;
+        final points = coordinates
+            .map(
+              (row) => GeoPoint(
+                latitude: (row[1] as num).toDouble(),
+                longitude: (row[0] as num).toDouble(),
+              ),
+            )
+            .toList();
+        if (distance is num &&
+            duration is num &&
+            distance.isFinite &&
+            duration.isFinite &&
+            distance >= 0 &&
+            duration >= 0 &&
+            points.length >= 2) {
+          _lastLiveOsrmPolyline = points;
+          return OsrmRouteResult(
+            distanceMeters: distance.round(),
+            durationSeconds: duration.round(),
+            polylinePoints: points,
+            isLiveOsrm: true,
+          );
+        }
+      } catch (_) {
+        // Fallback to multi-segment road estimation when offline.
+      }
+    }
+
+    var totalMeters = 0.0;
+    final stitched = <GeoPoint>[];
+    for (var i = 0; i < waypoints.length - 1; i++) {
+      final a = waypoints[i];
+      final b = waypoints[i + 1];
+      totalMeters += GeoMath.distanceMeters(a, b) * 1.28;
+      final seg = generateRoutePolyline(a, b, segments: 6);
+      if (stitched.isNotEmpty && seg.isNotEmpty) {
+        stitched.addAll(seg.skip(1));
+      } else {
+        stitched.addAll(seg);
+      }
+    }
+    final rounded = totalMeters < 1
+        ? 0
+        : totalMeters.round().clamp(50, 3000000);
+    return OsrmRouteResult(
+      distanceMeters: rounded,
+      durationSeconds:
+          ((rounded / 1000) * 185).round() + (waypoints.length - 2) * 150,
+      polylinePoints: stitched,
+      isLiveOsrm: false,
+    );
+  }
+
   static Future<String> reverseGeocodeCoordinate(GeoPoint point) async {
     try {
       final response = await DeliveryApiClient.instance.request(

@@ -261,15 +261,16 @@ class _BackendIntegrationSettingsState
       );
     }
     if (field['type'] == 'boolean') {
+      final p = AdminStudioPalette.of(context);
       return SwitchListTile.adaptive(
         contentPadding: EdgeInsets.zero,
-        activeTrackColor: AdminStudioColors.violet,
+        activeTrackColor: p.violet,
         title: Text(
           field['label'].toString(),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13.5,
             fontWeight: FontWeight.w700,
-            color: AdminStudioColors.ink,
+            color: p.ink,
           ),
         ),
         value: _booleans[key] ?? false,
@@ -337,21 +338,22 @@ class _BackendIntegrationSettingsState
   }
 
   Widget _providerStatusBadge(bool available, Map provider) {
+    final p = AdminStudioPalette.of(context);
     final (String text, Color fg, Color bg) = !available
         ? (
             'Chưa có luồng giao dịch',
-            AdminStudioColors.muted,
-            AdminStudioColors.paperWarm,
+            p.muted,
+            p.paperWarm,
           )
         : provider['configured'] != true
         ? (
             'Thiếu cấu hình',
-            AdminStudioColors.goldInk,
-            AdminStudioColors.goldSoft,
+            p.goldInk,
+            p.goldSoft,
           )
         : provider['enabled'] == true
-        ? ('Đang bật', AdminStudioColors.acidInk, AdminStudioColors.acidSoft)
-        : ('Đang tắt', AdminStudioColors.muted, AdminStudioColors.paperWarm);
+        ? ('Đang bật', p.acidInk, p.acidSoft)
+        : ('Đang tắt', p.muted, p.paperWarm);
 
     return Align(
       alignment: Alignment.centerLeft,
@@ -361,7 +363,7 @@ class _BackendIntegrationSettingsState
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: fg.withValues(alpha: 0.22)),
+          border: Border.all(color: fg.withValues(alpha: 0.28)),
         ),
         child: Text(
           text,
@@ -378,16 +380,17 @@ class _BackendIntegrationSettingsState
   Widget _cardSurface({
     required Widget child,
     EdgeInsetsGeometry padding = EdgeInsets.zero,
-    Color borderColor = AdminStudioColors.ink,
+    Color? borderColor,
     Offset shadowOffset = const Offset(3, 3),
   }) => AdminNeoBox(
     padding: padding,
-    borderColor: borderColor,
+    borderColor: borderColor ?? AdminStudioColors.line,
     shadowOffset: shadowOffset,
     child: child,
   );
 
   Widget _provider(String id, Map provider) {
+    final p = AdminStudioPalette.of(context);
     final available = provider['available'] != false;
     final active =
         available &&
@@ -398,7 +401,6 @@ class _BackendIntegrationSettingsState
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: _cardSurface(
-        borderColor: AdminStudioColors.ink,
         shadowOffset: active ? const Offset(4, 4) : const Offset(2, 2),
         child: Theme(
           data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
@@ -413,58 +415,54 @@ class _BackendIntegrationSettingsState
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: active
-                    ? AdminStudioColors.acidSoft
-                    : AdminStudioColors.paperWarm,
+                color: active ? p.acidSoft : p.paperWarm,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AdminStudioColors.line),
+                border: Border.all(color: p.line),
               ),
               child: Icon(
                 _providerIcon(id),
                 size: 19,
-                color: active
-                    ? AdminStudioColors.acidInk
-                    : AdminStudioColors.ink,
+                color: active ? p.acidInk : p.ink,
               ),
             ),
             title: Text(
               provider['label'].toString(),
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w800,
                 fontSize: 14.5,
-                color: AdminStudioColors.ink,
+                color: p.ink,
               ),
             ),
             subtitle: _providerStatusBadge(available, provider),
             children: [
-              const Divider(height: 16, color: AdminStudioColors.line),
+              Divider(height: 16, color: p.line),
               if (id == 'payos' && _payosWebhookUrl.isNotEmpty)
                 Container(
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AdminStudioColors.surfaceSubtle,
+                    color: p.surfaceSubtle,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AdminStudioColors.line),
+                    border: Border.all(color: p.line),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.webhook_outlined,
                             size: 17,
-                            color: AdminStudioColors.ink,
+                            color: p.ink,
                           ),
                           const SizedBox(width: 8),
-                          const Expanded(
+                          Expanded(
                             child: Text(
                               'WEBHOOK THANH TOÁN PAYOS',
                               style: TextStyle(
                                 fontWeight: FontWeight.w800,
                                 fontSize: 12.5,
-                                color: AdminStudioColors.ink,
+                                color: p.ink,
                               ),
                             ),
                           ),
@@ -482,10 +480,10 @@ class _BackendIntegrationSettingsState
                                 });
                               }
                             },
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.copy_rounded,
                               size: 17,
-                              color: AdminStudioColors.ink,
+                              color: p.ink,
                             ),
                           ),
                         ],
@@ -493,19 +491,19 @@ class _BackendIntegrationSettingsState
                       SelectableText(
                         _payosWebhookUrl,
                         key: const ValueKey('payos-webhook-url'),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'monospace',
                           fontSize: 12.5,
                           fontWeight: FontWeight.w700,
-                          color: AdminStudioColors.ink,
+                          color: p.ink,
                         ),
                       ),
                       const SizedBox(height: 6),
-                      const Text(
+                      Text(
                         'Nhập Client ID, API Key, Checksum Key rồi bấm Lưu và Kiểm tra kết nối để tự động xác thực và đăng ký Webhook này với payOS.',
                         style: TextStyle(
                           fontSize: 12,
-                          color: AdminStudioColors.muted,
+                          color: p.muted,
                         ),
                       ),
                     ],
@@ -520,10 +518,11 @@ class _BackendIntegrationSettingsState
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: check['verified'] == true
-                        ? AdminStudioColors.acidSoft
-                        : AdminStudioColors.paper,
+                        ? p.acidSoft
+                        : p.surfaceSubtle,
+                    borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: AdminStudioColors.ink,
+                      color: check['verified'] == true ? p.acidInk : p.line,
                       width: 1.2,
                     ),
                   ),
@@ -535,9 +534,7 @@ class _BackendIntegrationSettingsState
                             ? Icons.check_circle_outline
                             : Icons.info_outline,
                         size: 18,
-                        color: check['verified'] == true
-                            ? AdminStudioColors.acidInk
-                            : AdminStudioColors.muted,
+                        color: check['verified'] == true ? p.acidInk : p.muted,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -546,19 +543,19 @@ class _BackendIntegrationSettingsState
                           children: [
                             Text(
                               check['message'].toString(),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 13,
-                                color: AdminStudioColors.ink,
+                                color: p.ink,
                               ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               '${check['checkedAt']} · ${check['latencyMs']} ms',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 11.5,
                                 fontFamily: 'monospace',
-                                color: AdminStudioColors.muted,
+                                color: p.muted,
                               ),
                             ),
                           ],
@@ -613,30 +610,32 @@ class _BackendIntegrationSettingsState
     );
   }
 
-  Widget _statusBanner({EdgeInsetsGeometry margin = EdgeInsets.zero}) =>
-      Container(
-        margin: margin,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: _failed
-              ? AdminStudioColors.dangerSoft
-              : AdminStudioColors.acidSoft,
-          border: Border.all(
-            color: _failed ? AdminStudioColors.danger : AdminStudioColors.ink,
-            width: 1.4,
-          ),
+  Widget _statusBanner({EdgeInsetsGeometry margin = EdgeInsets.zero}) {
+    final p = AdminStudioPalette.of(context);
+    return Container(
+      margin: margin,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _failed ? p.dangerSoft : p.acidSoft,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: _failed ? p.danger : p.acidInk,
+          width: 1.4,
         ),
-        child: Text(
-          _message!,
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            color: _failed ? AdminStudioColors.danger : AdminStudioColors.ink,
-          ),
+      ),
+      child: Text(
+        _message!,
+        style: TextStyle(
+          fontWeight: FontWeight.w700,
+          color: _failed ? p.dangerInk : p.acidInk,
         ),
-      );
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final p = AdminStudioPalette.of(context);
     final activeCount =
         _providers?.values
             .whereType<Map>()
@@ -650,7 +649,7 @@ class _BackendIntegrationSettingsState
         0;
 
     return Theme(
-      data: AdminStudioTheme.themeData(),
+      data: AdminStudioTheme.of(context),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -722,7 +721,7 @@ class _BackendIntegrationSettingsState
                           onPressed: _busy ? null : _load,
                           style: FilledButton.styleFrom(
                             backgroundColor: AdminStudioColors.acid,
-                            foregroundColor: AdminStudioColors.ink,
+                            foregroundColor: p.onAccentInk,
                           ),
                           icon: const Icon(Icons.settings_outlined, size: 18),
                           label: Text(
@@ -812,11 +811,11 @@ class _BackendIntegrationSettingsState
             ),
           ),
           if (_busy)
-            const Padding(
-              padding: EdgeInsets.only(top: 10),
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
               child: LinearProgressIndicator(
-                color: AdminStudioColors.violet,
-                backgroundColor: AdminStudioColors.paperWarm,
+                color: p.violet,
+                backgroundColor: p.paperWarm,
               ),
             ),
           if (_message != null &&
@@ -834,32 +833,32 @@ class _BackendIntegrationSettingsState
                   width: 34,
                   height: 34,
                   decoration: BoxDecoration(
-                    color: AdminStudioColors.violetSoft,
+                    color: p.violetSoft,
+                    borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: AdminStudioColors.ink,
-                      width: 1.2,
+                      color: p.line,
                     ),
                   ),
                   child: Icon(
                     _loopback ? Icons.computer_outlined : Icons.cloud_outlined,
                     size: 18,
-                    color: AdminStudioColors.violet,
+                    color: p.violet,
                   ),
                 ),
                 title: Text(
                   _loopback ? 'Backend local' : 'Backend từ xa',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 13.5,
-                    color: AdminStudioColors.ink,
+                    color: p.ink,
                   ),
                 ),
                 subtitle: SelectableText(
                   _backendAddress,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontFamily: 'monospace',
-                    color: AdminStudioColors.muted,
+                    color: p.muted,
                   ),
                 ),
               ),
@@ -876,21 +875,21 @@ class _BackendIntegrationSettingsState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Hoạt động API',
                     style: TextStyle(
                       fontWeight: FontWeight.w900,
                       fontSize: 15,
-                      color: AdminStudioColors.ink,
+                      color: p.ink,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Từ khi backend khởi động: ${_usage!['since']}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontFamily: 'monospace',
-                      color: AdminStudioColors.muted,
+                      color: p.muted,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -919,12 +918,12 @@ class _BackendIntegrationSettingsState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Lịch sử cấu hình',
                     style: TextStyle(
                       fontWeight: FontWeight.w900,
                       fontSize: 15,
-                      color: AdminStudioColors.ink,
+                      color: p.ink,
                     ),
                   ),
                   const SizedBox(height: 8),

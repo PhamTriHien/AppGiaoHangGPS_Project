@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import '../../core/integrations/cloud_account_session.dart';
 import '../../core/integrations/cloud_session_lease.dart';
 import '../../core/network/public_json_api.dart';
+import '../../core/theme/ghst_theme_tokens.dart';
 import '../../core/utils/currency_formatter.dart';
 import 'cloud_order_labels.dart';
 import 'cloud_session_boundary.dart';
@@ -1241,8 +1242,8 @@ class _CoinWalletDialogState extends State<_CoinWalletDialog> {
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       color: (row['delta'] as num) > 0
-                          ? Colors.green.shade700
-                          : Colors.red.shade700,
+                          ? GhstThemeTokens.of(context).emerald.foreground
+                          : GhstThemeTokens.of(context).rose.foreground,
                     ),
                   ),
                 ),

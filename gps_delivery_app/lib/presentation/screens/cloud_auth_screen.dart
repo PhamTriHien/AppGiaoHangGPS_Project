@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/integrations/cloud_orders_service.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/ghst_theme_tokens.dart';
 import '../widgets/studio_user_auth_frame.dart';
 
 enum _AuthMode { login, register, reset, recover, password }
@@ -238,6 +238,7 @@ class _CloudAuthScreenState extends State<CloudAuthScreen>
 
   @override
   Widget build(BuildContext context) {
+    final tokens = GhstThemeTokens.of(context);
     final title = switch (_mode) {
       _AuthMode.login => 'Đăng nhập',
       _AuthMode.register => 'Tạo tài khoản',
@@ -264,21 +265,21 @@ class _CloudAuthScreenState extends State<CloudAuthScreen>
             Text(
               _mode == _AuthMode.login ? 'Đăng nhập hệ thống' : title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 21,
                 fontWeight: FontWeight.w800,
-                color: AppColors.ink,
+                color: tokens.ink,
                 letterSpacing: -0.3,
               ),
             ),
             const SizedBox(height: 5),
             if (_mode == _AuthMode.login)
-              const Text(
+              Text(
                 'Nhập Email và mật khẩu đã đăng ký',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 12.5,
-                  color: AppColors.textSecondary,
+                  color: tokens.inkSecondary,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -357,16 +358,14 @@ class _CloudAuthScreenState extends State<CloudAuthScreen>
                   vertical: 10,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFEF2F2),
+                  color: tokens.rose.fill,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: AppColors.danger.withValues(alpha: 0.28),
-                  ),
+                  border: Border.all(color: tokens.rose.border),
                 ),
                 child: Text(
                   _error!,
-                  style: const TextStyle(
-                    color: Color(0xFFB91C1C),
+                  style: TextStyle(
+                    color: tokens.rose.foreground,
                     fontSize: 12.5,
                     fontWeight: FontWeight.w600,
                   ),
@@ -380,16 +379,14 @@ class _CloudAuthScreenState extends State<CloudAuthScreen>
                   vertical: 10,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFECFDF5),
+                  color: tokens.emerald.fill,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: AppColors.success.withValues(alpha: 0.30),
-                  ),
+                  border: Border.all(color: tokens.emerald.border),
                 ),
                 child: Text(
                   _notice!,
-                  style: const TextStyle(
-                    color: Color(0xFF065F46),
+                  style: TextStyle(
+                    color: tokens.emerald.foreground,
                     fontSize: 12.5,
                     fontWeight: FontWeight.w600,
                   ),
@@ -407,15 +404,15 @@ class _CloudAuthScreenState extends State<CloudAuthScreen>
                     ? null
                     : [
                         BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.24),
-                          blurRadius: 14,
+                          color: tokens.primary.withValues(alpha: 0.28),
+                          blurRadius: 16,
                           offset: const Offset(0, 4),
                         ),
                       ],
               ),
               child: FilledButton(
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: tokens.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 15),
                   textStyle: const TextStyle(

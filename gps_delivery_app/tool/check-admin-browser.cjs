@@ -74,6 +74,15 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(process.
         if (pathname === '/delivery/local-auth/config') {
           return route.fulfill({ json: { googleClientId: '', sms: false }, headers: cors });
         }
+        if (pathname.startsWith('/delivery/cloud/preferences/')) {
+          return route.fulfill({
+            headers: cors,
+            json: {
+              ui_preferences: body?.theme_mode ? { theme_mode: body.theme_mode } : {},
+              shipping_draft: body?.draft ?? null,
+            },
+          });
+        }
         if (pathname.startsWith('/delivery/cloud/notifications/')) {
           return route.fulfill({
             headers: cors,

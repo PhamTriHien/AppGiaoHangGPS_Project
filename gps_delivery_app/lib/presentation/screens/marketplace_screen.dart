@@ -18,6 +18,7 @@ import '../widgets/studio_user_auth_frame.dart';
 import 'admin_portal_screen.dart';
 import 'cloud_address_book_screen.dart';
 import 'cloud_auth_screen.dart';
+import 'cloud_order_details_screen.dart';
 import 'cloud_order_import_screen.dart';
 import 'cloud_orders_screen.dart';
 import 'cloud_pickup_screen.dart';
@@ -75,6 +76,18 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
 
   GhstRoleMode _defaultRoleMode({bool allowOperator = true}) {
     if (widget.initialShipping) return GhstRoleMode.customer;
+    final saved = _session.cloudPreferredRole;
+    if (saved != null) {
+      final preferred = switch (saved) {
+        'admin' || 'operator' =>
+          allowOperator && _session.isOperator ? GhstRoleMode.operator : null,
+        'merchant' => _session.hasMerchantAccess ? GhstRoleMode.merchant : null,
+        'driver' => _session.hasRole('driver') ? GhstRoleMode.driver : null,
+        'customer' => GhstRoleMode.customer,
+        _ => null,
+      };
+      if (preferred != null) return preferred;
+    }
     if (allowOperator && _session.isOperator) return GhstRoleMode.operator;
     final primary = _session.account?['role'];
     if (primary == 'driver' && _session.hasRole('driver')) {
@@ -175,6 +188,12 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
       _purchaseOrders = false;
       _section = _defaultSectionFor(mode);
     });
+    final cloudRole = mode == GhstRoleMode.operator ? 'admin' : mode.name;
+    unawaited(
+      _session
+          .saveUiPreferences(preferredRole: cloudRole)
+          .catchError((Object _) {}),
+    );
   }
 
   void _clearAiController({bool immediate = false}) {
@@ -382,6 +401,51 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
       _shippingDetails = details;
       _section = GhstUserSection.shipping;
     });
+  }
+
+  Future<void> _openShippingDetails(Map<String, dynamic> order) async {
+    if (!_session.canUseBusiness || !mounted) return;
+    final identity = _session.service.identityScope;
+    await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => CloudSessionBoundary(
+          session: _session,
+          builder: (_, lease) => CloudOrderDetailsScreen(
+            lease: lease,
+            order: order,
+          ),
+        ),
+      ),
+    );
+    if (mounted && identity == _session.service.identityScope) {
+      _refresh();
+    }
+  }
+
+  void _handleOrderCreated(
+    Map<String, dynamic> createdOrder, {
+    bool merchantMobile = false,
+  }) {
+    if (merchantMobile) {
+      setState(() => _merchantShipTab = 2);
+    } else {
+      _openShipping();
+    }
+    final code = '${createdOrder['tracking_code'] ?? ''}'.trim();
+    if (code.isEmpty || createdOrder['id'] == null || !mounted) return;
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 6),
+        content: Text('Đã tạo vận đơn $code · Đang điều phối tài xế'),
+        action: SnackBarAction(
+          label: 'Xem hành trình',
+          onPressed: () {
+            if (mounted) unawaited(_openShippingDetails(createdOrder));
+          },
+        ),
+      ),
+    );
   }
 
   Future<void> _addresses() async {
@@ -644,6 +708,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
                     session: _session,
                     initialDetails: _shippingDetails,
                     onCreated: () => setState(() => _merchantShipTab = 2),
+                    onOrderCreated: (created) =>
+                        _handleOrderCreated(created, merchantMobile: true),
                   ),
                 },
               ),
@@ -654,10 +720,25 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
             session: _session,
             initialDetails: _shippingDetails,
             onCreated: _openShipping,
+            onOrderCreated: _handleOrderCreated,
           );
 
     final Widget content = switch (_section) {
-      GhstUserSection.home || GhstUserSection.tracking => home,
+      GhstUserSection.home => home,
+      GhstUserSection.tracking =>
+        roleMode == GhstRoleMode.driver && _session.hasRole('driver')
+            ? CloudSessionBoundary(
+                key: ValueKey('$scope:driver-cockpit'),
+                session: _session,
+                roles: const {'driver'},
+                builder: (_, lease) => DriverLiveCockpitPanel(
+                  session: _session,
+                  lease: lease,
+                  onOpenQueue: () => _go(GhstUserSection.driverQueue),
+                  onOpenOrderDetails: _openShippingDetails,
+                ),
+              )
+            : home,
       GhstUserSection.shipping => shippingContent,
       GhstUserSection.food => market(MarketView.catalog),
       GhstUserSection.profile => market(MarketView.account),
@@ -752,9 +833,18 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
             Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 760),
-                child: CloudDeliveryStatsCard(
-                  service: _session.service,
-                  lease: lease,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    CloudDeliveryStatsCard(
+                      service: _session.service,
+                      lease: lease,
+                    ),
+                    DriverReviewsPanel(
+                      service: _session.service,
+                      lease: lease,
+                    ),
+                  ],
                 ),
               ),
             ),

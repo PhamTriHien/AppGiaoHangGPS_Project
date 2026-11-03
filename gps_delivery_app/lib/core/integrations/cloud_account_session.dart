@@ -77,6 +77,37 @@ class CloudAccountSession extends ChangeNotifier {
       canUseBusiness && _account!['identity_verified'] == true;
   int get unreadNotifications =>
       !canUseBusiness ? 0 : (_account!['unread_notifications'] as int? ?? 0);
+  Map<String, dynamic> get uiPreferences {
+    if (!verified || _account == null) return const {};
+    final raw = _account!['ui_preferences'];
+    if (raw is Map) {
+      return Map<String, dynamic>.unmodifiable(Map<String, dynamic>.from(raw));
+    }
+    return const {};
+  }
+
+  String? get cloudThemeMode {
+    final v = uiPreferences['theme_mode'];
+    return v is String && ['light', 'dark', 'system'].contains(v) ? v : null;
+  }
+
+  String? get cloudPreferredRole {
+    final v = uiPreferences['preferred_role'];
+    return v is String &&
+            ['customer', 'driver', 'merchant', 'admin'].contains(v)
+        ? v
+        : null;
+  }
+
+  Map<String, dynamic>? get shippingDraft {
+    if (!canUseBusiness) return null;
+    final raw = _account!['shipping_draft'];
+    if (raw is Map && raw.isNotEmpty) {
+      return Map<String, dynamic>.unmodifiable(Map<String, dynamic>.from(raw));
+    }
+    return null;
+  }
+
   bool get canCreateShippingOrder =>
       canUseBusiness && (_schemaVersion >= 3 || _account!['role'] != 'driver');
   int get schemaVersion => _schemaVersion;
@@ -432,6 +463,59 @@ class CloudAccountSession extends ChangeNotifier {
     } finally {
       _saving = false;
     }
+  }
+
+  Future<void> saveUiPreferences({
+    String? themeMode,
+    String? preferredRole,
+  }) async {
+    if (_disposed || !canUseBusiness) return;
+    final payload = <String, dynamic>{
+      if (themeMode != null && ['light', 'dark', 'system'].contains(themeMode))
+        'theme_mode': themeMode,
+      if (preferredRole != null &&
+          ['customer', 'driver', 'merchant', 'admin'].contains(preferredRole))
+        'preferred_role': preferredRole,
+    };
+    if (payload.isEmpty) return;
+    final epoch = _epoch, scope = _scope;
+    final currentAcc = _account;
+    if (currentAcc != null) {
+      final mergedUi = <String, dynamic>{
+        ...uiPreferences,
+        ...payload,
+      };
+      _account = Map<String, dynamic>.unmodifiable({
+        ...currentAcc,
+        'ui_preferences': Map<String, dynamic>.unmodifiable(mergedUi),
+      });
+      notifyListeners();
+    }
+    try {
+      final res = await service.accountPreferences('save_ui', payload);
+      if (_current(epoch, scope) &&
+          _account != null &&
+          res['ui_preferences'] is Map) {
+        _account = Map<String, dynamic>.unmodifiable({
+          ..._account!,
+          'ui_preferences': Map<String, dynamic>.unmodifiable(
+            Map<String, dynamic>.from(res['ui_preferences'] as Map),
+          ),
+        });
+        notifyListeners();
+      }
+    } catch (_) {}
+  }
+
+  void updateCachedShippingDraft(Map<String, dynamic>? draft) {
+    if (_disposed || _account == null) return;
+    _account = Map<String, dynamic>.unmodifiable({
+      ..._account!,
+      'shipping_draft': draft == null || draft.isEmpty
+          ? null
+          : Map<String, dynamic>.unmodifiable(Map<String, dynamic>.from(draft)),
+    });
+    notifyListeners();
   }
 
   @override

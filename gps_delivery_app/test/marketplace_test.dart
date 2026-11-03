@@ -120,6 +120,48 @@ class MarketFixture extends CloudOrdersService {
         },
       };
     }
+    if (path.startsWith('preferences/')) {
+      return {
+        'ui_preferences': {
+          if (body?['theme_mode'] != null) 'theme_mode': body!['theme_mode'],
+          if (body?['preferred_role'] != null)
+            'preferred_role': body!['preferred_role'],
+        },
+        'shipping_draft': body?['draft'],
+      };
+    }
+    if (path.startsWith('ai-history/')) {
+      return {'messages': const [], 'ok': true};
+    }
+    if (path.startsWith('order-live/')) {
+      return {
+        'order': const {},
+        'gps_trail': const [],
+        'messages': const [],
+        'ok': true,
+      };
+    }
+    if (path.startsWith('notifications/')) {
+      return {'unread_count': 0, 'items': const []};
+    }
+    if (path == 'logistics/driver_reviews') {
+      return {
+        'reviews': const [],
+        'summary': {'count': 0, 'average': 0},
+      };
+    }
+    if (path == 'logistics/recipient_trust') {
+      return {
+        'delivered': 0,
+        'failed': 0,
+        'returned': 0,
+        'flags': 0,
+        'score': 100,
+      };
+    }
+    if (path == 'logistics/service_eta') {
+      return {'services': const []};
+    }
     throw StateError('Unexpected request $path');
   }
 

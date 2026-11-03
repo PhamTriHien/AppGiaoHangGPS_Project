@@ -1494,6 +1494,7 @@ class Studio3dMainWorkspaceMapPainter extends CustomPainter {
   final double parallaxY;
   final Color accentColor;
   final bool lightweightBackdrop;
+  final bool isDark;
 
   const Studio3dMainWorkspaceMapPainter({
     this.phase = 0.35,
@@ -1501,6 +1502,7 @@ class Studio3dMainWorkspaceMapPainter extends CustomPainter {
     this.parallaxY = 0.0,
     this.accentColor = AppColors.violet,
     this.lightweightBackdrop = false,
+    this.isDark = false,
   });
 
   Offset _projectWorkspace3D(
@@ -1665,7 +1667,7 @@ class Studio3dMainWorkspaceMapPainter extends CustomPainter {
     }
     // 1. Lưới kỹ thuật vi mô 2D kết hợp Quầng sáng chiều sâu Kiến trúc (Studio Ambient Glow)
     final fineGridPaint = Paint()
-      ..color = const Color(0x0E15131E)
+      ..color = isDark ? const Color(0x1660A5FA) : const Color(0x0D15131E)
       ..strokeWidth = 1.0;
     const step = 42.0;
     for (double x = 0; x <= size.width; x += step) {
@@ -1678,34 +1680,34 @@ class Studio3dMainWorkspaceMapPainter extends CustomPainter {
     final topRightGlow = Offset(size.width * 0.84, size.height * 0.20);
     canvas.drawCircle(
       topRightGlow,
-      size.width * 0.36,
+      size.width * 0.38,
       Paint()
         ..shader = RadialGradient(
           colors: [
-            accentColor.withValues(alpha: 0.14),
-            const Color(0x0D00B4D8),
+            accentColor.withValues(alpha: isDark ? 0.22 : 0.14),
+            (isDark ? const Color(0x1E0891B2) : const Color(0x1200B4D8)),
             Colors.transparent,
           ],
           stops: const [0.0, 0.55, 1.0],
         ).createShader(
-          Rect.fromCircle(center: topRightGlow, radius: size.width * 0.36),
+          Rect.fromCircle(center: topRightGlow, radius: size.width * 0.38),
         ),
     );
 
     final bottomLeftGlow = Offset(size.width * 0.32, size.height * 0.84);
     canvas.drawCircle(
       bottomLeftGlow,
-      size.width * 0.34,
+      size.width * 0.36,
       Paint()
         ..shader = RadialGradient(
           colors: [
-            AppColors.acid.withValues(alpha: 0.18),
-            accentColor.withValues(alpha: 0.08),
+            AppColors.acid.withValues(alpha: isDark ? 0.14 : 0.18),
+            accentColor.withValues(alpha: isDark ? 0.12 : 0.08),
             Colors.transparent,
           ],
           stops: const [0.0, 0.5, 1.0],
         ).createShader(
-          Rect.fromCircle(center: bottomLeftGlow, radius: size.width * 0.34),
+          Rect.fromCircle(center: bottomLeftGlow, radius: size.width * 0.36),
         ),
     );
     if (lightweightBackdrop) {
@@ -2007,7 +2009,8 @@ class Studio3dMainWorkspaceMapPainter extends CustomPainter {
         oldDelegate.parallaxX != parallaxX ||
         oldDelegate.parallaxY != parallaxY ||
         oldDelegate.accentColor != accentColor ||
-        oldDelegate.lightweightBackdrop != lightweightBackdrop;
+        oldDelegate.lightweightBackdrop != lightweightBackdrop ||
+        oldDelegate.isDark != isDark;
   }
 }
 

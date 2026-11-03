@@ -49,6 +49,8 @@ All paths below are relative to this repository root.
 | Area | Entry Points |
 | --- | --- |
 | App and routes | `gps_delivery_app/lib/main.dart` |
+| Theme tokens, Light/Dark/System mode & 3D luminous surfaces | `gps_delivery_app/lib/core/theme/ghst_theme_tokens.dart`, `theme_controller.dart`, `app_theme.dart`, `admin_studio_theme.dart`, `gps_delivery_app/lib/presentation/widgets/theme_mode_toggle.dart` |
+| Live Customer ↔ Driver shipping journey, Cloud UI prefs & AI history (`workflowVersion: 19`) | `gps_delivery_app/database/migrations/20261113_cloud_sync_and_journey.sql`, `gps_delivery_app/lib/presentation/screens/cloud_order_details_screen.dart`, `gps_delivery_app/lib/presentation/widgets/cloud_logistics_panels.dart` |
 | Original shared user login presentation | `gps_delivery_app/lib/presentation/widgets/studio_user_auth_frame.dart` |
 | Default canonical app and shopping | `gps_delivery_app/lib/presentation/screens/marketplace_screen.dart`, `marketplace_view.dart` |
 | Original customer layout adapted to verified cloud data | `gps_delivery_app/lib/presentation/customer/ghst_user_shell.dart`, `ghst_home_screen.dart`, `ghst_shipping_screen.dart`, `ghst_ai_chat_screen.dart` |

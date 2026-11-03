@@ -512,27 +512,36 @@ class Code128BarcodeWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SizedBox(
-          height: height,
-          width: double.infinity,
-          child: CustomPaint(
-            painter: _Code128Painter(data: data),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFCBD5E1)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            height: height,
+            width: double.infinity,
+            child: CustomPaint(
+              painter: _Code128Painter(data: data),
+            ),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          data,
-          style: const TextStyle(
-            fontFamily: 'monospace',
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 2.0,
+          const SizedBox(height: 4),
+          Text(
+            data,
+            style: const TextStyle(
+              fontFamily: 'monospace',
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 2.0,
+              color: Color(0xFF0F172A),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -545,7 +554,7 @@ class _Code128Painter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = AppColors.textPrimary
+      ..color = const Color(0xFF0F172A)
       ..style = PaintingStyle.fill;
 
     final symbols = SecurityAndBarcodeUtils.encodeCode128BSymbols(data);

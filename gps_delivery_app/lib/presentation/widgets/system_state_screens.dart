@@ -1047,6 +1047,10 @@ class Map3dPerspectiveWidget extends StatefulWidget {
   final bool isFullScreenBackground;
   final String? pickupLabel;
   final String? dropoffLabel;
+  final GeoPoint? explicitDropoffPoint;
+  final List<GeoPoint> extraStopPoints;
+  final List<String> extraStopLabels;
+  final String? driverLabel;
 
   const Map3dPerspectiveWidget({
     super.key,
@@ -1076,6 +1080,10 @@ class Map3dPerspectiveWidget extends StatefulWidget {
     this.isFullScreenBackground = false,
     this.pickupLabel,
     this.dropoffLabel,
+    this.explicitDropoffPoint,
+    this.extraStopPoints = const [],
+    this.extraStopLabels = const [],
+    this.driverLabel,
   });
 
   @override
@@ -1301,7 +1309,14 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
   String _buildTargetSignature() {
     final base = _resolveBaseRoute();
     final routeKey = base.length >= 2
-        ? '${base.first.latitude.toStringAsFixed(4)},${base.first.longitude.toStringAsFixed(4)}->${base.last.latitude.toStringAsFixed(4)},${base.last.longitude.toStringAsFixed(4)}'
+        ? (base.length <= 7
+            ? base
+                .map(
+                  (p) =>
+                      '${p.latitude.toStringAsFixed(4)},${p.longitude.toStringAsFixed(4)}',
+                )
+                .join('->')
+            : '${base.first.latitude.toStringAsFixed(4)},${base.first.longitude.toStringAsFixed(4)}->${base.last.latitude.toStringAsFixed(4)},${base.last.longitude.toStringAsFixed(4)}')
         : 'none';
     final pinKey = widget.singlePinPoint != null
         ? '${widget.singlePinPoint!.latitude.toStringAsFixed(4)},${widget.singlePinPoint!.longitude.toStringAsFixed(4)}'
@@ -1309,7 +1324,7 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
     final focusKey = widget.focusedCenterPoint != null
         ? '${widget.focusedCenterPoint!.latitude.toStringAsFixed(4)},${widget.focusedCenterPoint!.longitude.toStringAsFixed(4)}'
         : 'nofocus';
-    return '${widget.mode.name}|$routeKey|$pinKey|$focusKey|${widget.geofenceZones.length}';
+    return '${widget.mode.name}|$routeKey|$pinKey|$focusKey|${widget.geofenceZones.length}|${widget.extraStopPoints.length}';
   }
 
   int _computeInitialAutoZoom({Size? viewport}) {
@@ -1375,17 +1390,23 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
       }
       return;
     }
-    final start = baseRoute.first;
-    final end = baseRoute.last;
-    final key =
-        '${start.latitude.toStringAsFixed(4)},${start.longitude.toStringAsFixed(4)}_${end.latitude.toStringAsFixed(4)},${end.longitude.toStringAsFixed(4)}';
+    final key = baseRoute.length <= 7
+        ? baseRoute
+            .map(
+              (p) =>
+                  '${p.latitude.toStringAsFixed(4)},${p.longitude.toStringAsFixed(4)}',
+            )
+            .join('_')
+        : '${baseRoute.first.latitude.toStringAsFixed(4)},${baseRoute.first.longitude.toStringAsFixed(4)}_${baseRoute.last.latitude.toStringAsFixed(4)},${baseRoute.last.longitude.toStringAsFixed(4)}';
     if (key == _lastFetchedRouteKey) return;
     _lastFetchedRouteKey = key;
-    if (baseRoute.length > 16) {
+    if (baseRoute.length > 7) {
       _liveOsrmRoutePoints = null;
       return;
     }
-    final res = await SmartDispatchEngine.fetchLiveOsrmRoute(start, end);
+    final res = await SmartDispatchEngine.fetchLiveOsrmWaypointsRoute(
+      baseRoute,
+    );
     if (!mounted) return;
     if (res.polylinePoints.length >= 2) {
       setState(() {
@@ -1738,8 +1759,16 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
                                           panPixelOffset: modalPan,
                                           centerGeo: modalCenterGeo,
                                           drawBackgroundOnly: true,
+                                          isDarkMode: true,
                                           pickupLabel: widget.pickupLabel,
                                           dropoffLabel: widget.dropoffLabel,
+                                          explicitDropoffPoint:
+                                              widget.explicitDropoffPoint,
+                                          extraStopPoints:
+                                              widget.extraStopPoints,
+                                          extraStopLabels:
+                                              widget.extraStopLabels,
+                                          driverLabel: widget.driverLabel,
                                           fleetDrivers: _effectiveFleetDrivers,
                                         ),
                                       ),
@@ -1815,6 +1844,13 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
                                                 pickupLabel: widget.pickupLabel,
                                                 dropoffLabel:
                                                     widget.dropoffLabel,
+                                                explicitDropoffPoint:
+                                                    widget.explicitDropoffPoint,
+                                                extraStopPoints:
+                                                    widget.extraStopPoints,
+                                                extraStopLabels:
+                                                    widget.extraStopLabels,
+                                                driverLabel: widget.driverLabel,
                                                 fleetDrivers:
                                                     _effectiveFleetDrivers,
                                               ),
@@ -2343,6 +2379,7 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
         (widget.nextTurnInstruction.trim().isNotEmpty ||
             widget.roadName.trim().isNotEmpty);
 
+    final isDarkMapUi = Theme.of(context).brightness == Brightness.dark;
     Widget buildInteractiveContent(Size viewSize) {
       return MouseRegion(
         cursor: widget.onTapGeoPoint != null
@@ -2416,8 +2453,13 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
                       panPixelOffset: _panPixelOffset,
                       centerGeo: centerGeo,
                       drawBackgroundOnly: true,
+                      isDarkMode: isDarkMapUi,
                       pickupLabel: widget.pickupLabel,
                       dropoffLabel: widget.dropoffLabel,
+                      explicitDropoffPoint: widget.explicitDropoffPoint,
+                      extraStopPoints: widget.extraStopPoints,
+                      extraStopLabels: widget.extraStopLabels,
+                      driverLabel: widget.driverLabel,
                       fleetDrivers: _effectiveFleetDrivers,
                     ),
                   ),
@@ -2488,9 +2530,14 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
                           panPixelOffset: _panPixelOffset,
                           centerGeo: centerGeo,
                           drawBackgroundOnly: false,
+                          isDarkMode: isDarkMapUi,
                           showCalloutLabels: !widget.isFullScreenBackground,
                           pickupLabel: widget.pickupLabel,
                           dropoffLabel: widget.dropoffLabel,
+                          explicitDropoffPoint: widget.explicitDropoffPoint,
+                          extraStopPoints: widget.extraStopPoints,
+                          extraStopLabels: widget.extraStopLabels,
+                          driverLabel: widget.driverLabel,
                           fleetDrivers: _effectiveFleetDrivers,
                         ),
                       ),
@@ -2512,7 +2559,11 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
               return Stack(
                 children: [
                   Positioned.fill(
-                    child: Container(color: const Color(0xFFE2E8F0)),
+                    child: Container(
+                      color: isDarkMapUi
+                          ? const Color(0xFF0B1426)
+                          : const Color(0xFFE2E8F0),
+                    ),
                   ),
                   Positioned.fill(
                     child: GestureDetector(
@@ -2920,9 +2971,10 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
     required String tooltip,
     required VoidCallback onTap,
   }) {
+    final scheme = Theme.of(context).colorScheme;
     final bgColor =
-        isHighlighted ? const Color(0xFF0284C7) : AppColors.surface;
-    final fgColor = isHighlighted ? Colors.white : AppColors.ink;
+        isHighlighted ? const Color(0xFF0284C7) : scheme.surface;
+    final fgColor = isHighlighted ? Colors.white : scheme.onSurface;
     return Tooltip(
       message: tooltip,
       child: InkWell(
@@ -2935,6 +2987,9 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
           decoration: BoxDecoration(
             color: bgColor,
             shape: BoxShape.circle,
+            border: Border.all(
+              color: isHighlighted ? Colors.white24 : scheme.outlineVariant,
+            ),
             boxShadow: const [
               BoxShadow(
                 color: Colors.black26,
@@ -2977,9 +3032,14 @@ class _Map3dCanvasPainter extends CustomPainter {
   final Offset panPixelOffset;
   final GeoPoint centerGeo;
   final bool drawBackgroundOnly;
+  final bool isDarkMode;
   final bool showCalloutLabels;
   final String? pickupLabel;
   final String? dropoffLabel;
+  final GeoPoint? explicitDropoffPoint;
+  final List<GeoPoint> extraStopPoints;
+  final List<String> extraStopLabels;
+  final String? driverLabel;
   final List<DriverApplicantRecord> fleetDrivers;
 
   const _Map3dCanvasPainter({
@@ -3001,9 +3061,14 @@ class _Map3dCanvasPainter extends CustomPainter {
     required this.panPixelOffset,
     required this.centerGeo,
     required this.drawBackgroundOnly,
+    this.isDarkMode = false,
     this.showCalloutLabels = true,
     required this.pickupLabel,
     required this.dropoffLabel,
+    this.explicitDropoffPoint,
+    this.extraStopPoints = const [],
+    this.extraStopLabels = const [],
+    this.driverLabel,
     required this.fleetDrivers,
   });
 
@@ -3373,15 +3438,20 @@ class _Map3dCanvasPainter extends CustomPainter {
       canvas.drawRect(
         groundRect,
         Paint()
-          ..shader = const LinearGradient(
+          ..shader = LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFE8EEF5), Color(0xFFD6E0EB)],
+            colors: isDarkMode
+                ? const [Color(0xFF0F1A2E), Color(0xFF0B1324)]
+                : const [Color(0xFFE8EEF5), Color(0xFFD6E0EB)],
           ).createShader(groundRect),
       );
 
       final gridPaint = Paint()
-        ..color = const Color(0xFF94A3B8).withValues(alpha: 0.28)
+        ..color = (isDarkMode
+                ? const Color(0xFF334155)
+                : const Color(0xFF94A3B8))
+            .withValues(alpha: 0.28)
         ..strokeWidth = 1.0;
       for (int i = 1; i <= 7; i++) {
         final y = size.height * (i / 8.0);
@@ -3482,9 +3552,26 @@ class _Map3dCanvasPainter extends CustomPainter {
         pulse: beaconPulse,
         label: pickupLabel ?? '[A] Điểm lấy',
       );
+      for (var i = 0; i < extraStopPoints.length; i++) {
+        final stopPt = _projectSingleGeoPoint(extraStopPoints[i], size);
+        final stopText = i < extraStopLabels.length &&
+                extraStopLabels[i].trim().isNotEmpty
+            ? extraStopLabels[i]
+            : 'Điểm #${i + 1}';
+        _drawLocationPin(
+          canvas,
+          stopPt,
+          AppColors.violet,
+          pulse: beaconPulse,
+          label: stopText,
+        );
+      }
+      final dropoffScreenPt = explicitDropoffPoint != null
+          ? _projectSingleGeoPoint(explicitDropoffPoint!, size)
+          : screenPts.last;
       _drawLocationPin(
         canvas,
-        screenPts.last,
+        dropoffScreenPt,
         AppColors.accent,
         pulse: beaconPulse,
         label: dropoffLabel ?? '[B] Điểm giao',
@@ -3500,7 +3587,8 @@ class _Map3dCanvasPainter extends CustomPainter {
           canvas,
           driverCenter,
           tangentDir,
-          label: mode == MapViewMode.driverRadar ? 'Vị trí của bạn' : 'Tài xế',
+          label: driverLabel ??
+              (mode == MapViewMode.driverRadar ? 'Vị trí của bạn' : 'Tài xế'),
           showRadarRings: mode == MapViewMode.driverRadar,
         );
       }
@@ -3602,6 +3690,10 @@ class _Map3dCanvasPainter extends CustomPainter {
       oldDelegate.liveDeviceAccuracyMeters != liveDeviceAccuracyMeters ||
       oldDelegate.pickupLabel != pickupLabel ||
       oldDelegate.dropoffLabel != dropoffLabel ||
+      oldDelegate.explicitDropoffPoint != explicitDropoffPoint ||
+      oldDelegate.extraStopPoints.length != extraStopPoints.length ||
+      oldDelegate.driverLabel != driverLabel ||
+      oldDelegate.isDarkMode != isDarkMode ||
       oldDelegate.drawBackgroundOnly != drawBackgroundOnly ||
       oldDelegate.showCalloutLabels != showCalloutLabels ||
       _driversChanged(oldDelegate.fleetDrivers, fleetDrivers) ||

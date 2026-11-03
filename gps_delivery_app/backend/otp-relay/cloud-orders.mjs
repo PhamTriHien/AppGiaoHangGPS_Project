@@ -65,7 +65,7 @@ export function createCloudOrders({ env = process.env, authenticate, fetcher = f
     catch { throw new IntegrationError(502, 'Phản hồi cloud không hợp lệ.'); }
     if (!response.ok) {
       if (['PGRST202', '42P01', '42883'].includes(data.code)) throw new IntegrationError(503,
-        ['delivery_marketplace','delivery_market_operations','delivery_market_browse','delivery_market_media_reserve','delivery_market_attachment_reserve','delivery_cloud_order_otp','delivery_cloud_share_manage','delivery_cloud_logistics','delivery_cloud_admin_accounts','delivery_cloud_promo_events','delivery_cloud_notifications'].includes(name)
+        ['delivery_marketplace','delivery_market_operations','delivery_market_browse','delivery_market_media_reserve','delivery_market_attachment_reserve','delivery_cloud_order_otp','delivery_cloud_share_manage','delivery_cloud_logistics','delivery_cloud_admin_accounts','delivery_cloud_promo_events','delivery_cloud_notifications','delivery_cloud_preferences','delivery_cloud_ai_history','delivery_cloud_order_live'].includes(name)
           ? 'Dữ liệu mua hàng cần được cập nhật trong trang quản trị.'
           : name === 'delivery_cloud_addresses_manage'
           ? 'Chưa cài sổ địa chỉ cloud. Chạy migration 20261029_cloud_addresses.sql trên Supabase.'
@@ -117,7 +117,7 @@ export function createCloudOrders({ env = process.env, authenticate, fetcher = f
     res.json(result);
   }));
   const logisticsActions = new Set([
-    'pickup_list','pickup_create','pickup_assign','recipient_trust','recipient_flag','instruction_set','stats','service_eta',
+    'pickup_list','pickup_create','pickup_assign','recipient_trust','recipient_flag','instruction_set','stats','service_eta','driver_reviews',
   ]);
   router.post('/logistics/:action', route(async (req, res) => {
     if (!logisticsActions.has(req.params.action) || !req.body || Array.isArray(req.body) ||
@@ -125,6 +125,36 @@ export function createCloudOrders({ env = process.env, authenticate, fetcher = f
       throw new IntegrationError(400, 'Yêu cầu vận hành không hợp lệ.');
     }
     res.json(await rpc(req, 'delivery_cloud_logistics', { p_action: req.params.action, p_payload: req.body }));
+  }));
+  const preferenceActions = new Set([
+    'get','save_ui','save_draft','clear_draft',
+  ]);
+  router.post('/preferences/:action', route(async (req, res) => {
+    if (!preferenceActions.has(req.params.action) || !req.body || Array.isArray(req.body) ||
+        typeof req.body !== 'object' || Buffer.byteLength(JSON.stringify(req.body)) > 16000) {
+      throw new IntegrationError(400, 'Yêu cầu tùy chọn không hợp lệ.');
+    }
+    res.json(await rpc(req, 'delivery_cloud_preferences', { p_action: req.params.action, p_payload: req.body }));
+  }));
+  const aiHistoryActions = new Set([
+    'list','append_exchange','clear',
+  ]);
+  router.post('/ai-history/:action', route(async (req, res) => {
+    if (!aiHistoryActions.has(req.params.action) || !req.body || Array.isArray(req.body) ||
+        typeof req.body !== 'object' || Buffer.byteLength(JSON.stringify(req.body)) > 12000) {
+      throw new IntegrationError(400, 'Yêu cầu lịch sử hội thoại không hợp lệ.');
+    }
+    res.json(await rpc(req, 'delivery_cloud_ai_history', { p_action: req.params.action, p_payload: req.body }));
+  }));
+  const orderLiveActions = new Set([
+    'snapshot','push_gps','send_chat','mark_checkpoint',
+  ]);
+  router.post('/order-live/:action', route(async (req, res) => {
+    if (!orderLiveActions.has(req.params.action) || !req.body || Array.isArray(req.body) ||
+        typeof req.body !== 'object' || Buffer.byteLength(JSON.stringify(req.body)) > 8000) {
+      throw new IntegrationError(400, 'Yêu cầu hành trình trực tiếp không hợp lệ.');
+    }
+    res.json(await rpc(req, 'delivery_cloud_order_live', { p_action: req.params.action, p_payload: req.body }));
   }));
   const adminAccountActions = new Set([
     'list','detail','update_profile','set_blocked','set_operator',

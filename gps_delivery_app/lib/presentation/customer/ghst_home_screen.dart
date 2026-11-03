@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/integrations/cloud_account_session.dart';
 import '../../core/integrations/cloud_session_lease.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/ghst_theme_tokens.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../domain/entities/geo_point.dart';
 import '../screens/cloud_order_details_screen.dart';
@@ -186,19 +186,32 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
   List<GeoPoint> _route(Map<String, dynamic>? order) {
     final details = order?['details'];
     if (details is! Map) return const [];
-    final points = <GeoPoint>[];
-    for (final prefix in ['pickup', 'dropoff']) {
-      final lat = details['${prefix}_lat'], lng = details['${prefix}_lng'];
+    GeoPoint? parse(Object? lat, Object? lng) {
       if (lat is! num ||
           lng is! num ||
           !lat.isFinite ||
           !lng.isFinite ||
           lat.abs() > 90 ||
           lng.abs() > 180) {
-        return const [];
+        return null;
       }
-      points.add(GeoPoint(latitude: lat.toDouble(), longitude: lng.toDouble()));
+      return GeoPoint(latitude: lat.toDouble(), longitude: lng.toDouble());
     }
+
+    final pickup = parse(details['pickup_lat'], details['pickup_lng']);
+    final dropoff = parse(details['dropoff_lat'], details['dropoff_lng']);
+    if (pickup == null || dropoff == null) return const [];
+    final points = <GeoPoint>[pickup];
+    final extra = details['extra_stops'];
+    if (extra is List) {
+      for (final item in extra.take(5)) {
+        if (item is Map) {
+          final stop = parse(item['lat'], item['lng']);
+          if (stop != null) points.add(stop);
+        }
+      }
+    }
+    points.add(dropoff);
     return points;
   }
 
@@ -216,42 +229,29 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
     if (_allowed) await _load();
   }
 
-  Widget _panel(Widget child, {bool interactive = false}) {
-    final box = Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0A0F172A),
-            blurRadius: 16,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Material(type: MaterialType.transparency, child: child),
-    );
-    if (!interactive) return box;
-    return Motion3dInteractiveSurface(
-      borderRadius: const BorderRadius.all(Radius.circular(16)),
-      maxTilt: 0.018,
-      hoverLift: -1.4,
-      enablePressScale: false,
-      glintOpacity: 0.08,
-      child: box,
-    );
-  }
+  Widget _panel(
+    Widget child, {
+    bool interactive = false,
+    Color? accentGlow,
+  }) => GhstLuminousCard(
+    accentGlow: accentGlow,
+    interactive3d: interactive,
+    maxTilt: 0.018,
+    child: Material(type: MaterialType.transparency, child: child),
+  );
 
-  Widget _heading(String title, {Widget? action}) => Row(
+  Widget _heading(
+    GhstThemeTokens tokens,
+    String title, {
+    Widget? action,
+  }) => Row(
     children: [
       Expanded(
         child: Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14.5,
-            color: AppColors.ink,
+            color: tokens.ink,
             fontWeight: FontWeight.w800,
             letterSpacing: -0.1,
           ),
@@ -261,41 +261,66 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
     ],
   );
 
-  Widget _readState(String section, String empty) {
+  Widget _readState(
+    GhstThemeTokens tokens,
+    String section,
+    String empty, {
+    bool onDark = false,
+  }) {
     if (_loading.contains(section)) return const LinearProgressIndicator();
     if (_errors.contains(section)) {
       return Row(
         children: [
-          const Expanded(child: Text('Chưa tải được dữ liệu.')),
+          Expanded(
+            child: Text(
+              'Chưa tải được dữ liệu.',
+              style: TextStyle(
+                color: onDark ? Colors.white : tokens.ink,
+                fontSize: 12.5,
+              ),
+            ),
+          ),
           TextButton.icon(
             onPressed: _load,
-            icon: const Icon(Icons.refresh),
-            label: const Text('Thử lại'),
+            icon: Icon(
+              Icons.refresh,
+              color: onDark ? Colors.white : tokens.primary,
+            ),
+            label: Text(
+              'Thử lại',
+              style: TextStyle(color: onDark ? Colors.white : tokens.primary),
+            ),
           ),
         ],
       );
     }
     return Text(
       empty,
-      style: const TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
+      style: TextStyle(
+        fontSize: 12.5,
+        color: onDark
+            ? Colors.white.withValues(alpha: 0.85)
+            : tokens.inkSecondary,
+      ),
     );
   }
 
-  Widget _services() => _panel(
+  Widget _services(GhstThemeTokens tokens) => _panel(
+    accentGlow: tokens.sapphire.glow,
     Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _heading('Dịch vụ Giao nhận & Ăn uống nhanh'),
+        _heading(tokens, 'Dịch vụ Giao nhận & Ăn uống nhanh'),
         const SizedBox(height: 12),
         LayoutBuilder(
           builder: (context, constraints) {
             final columns = constraints.maxWidth >= 520 ? 3 : 2;
             final width = (constraints.maxWidth - 10 * (columns - 1)) / columns;
-            final entries = <(String, IconData, Color, VoidCallback?)>[
+            final entries = <(String, IconData, TonePair, VoidCallback?)>[
               (
                 'Giao nhanh',
                 Icons.bolt_rounded,
-                AppColors.pink,
+                tokens.rose,
                 widget.session.canCreateShippingOrder
                     ? () => widget.onCreateOrder({'service_type': 'express'})
                     : null,
@@ -303,7 +328,7 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
               (
                 'Ghép đơn 2H',
                 Icons.hub_outlined,
-                const Color(0xFF0EA5E9),
+                tokens.cyan,
                 widget.session.canCreateShippingOrder
                     ? () => widget.onCreateOrder({
                         'service_type': 'same_day_2h',
@@ -313,7 +338,7 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
               (
                 'Tiêu chuẩn',
                 Icons.inventory_2_outlined,
-                AppColors.violet,
+                tokens.sapphire,
                 widget.session.canCreateShippingOrder
                     ? () => widget.onCreateOrder({'service_type': 'standard'})
                     : null,
@@ -321,7 +346,7 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
               (
                 'Tiết kiệm 4h',
                 Icons.savings_outlined,
-                AppColors.success,
+                tokens.emerald,
                 widget.session.canCreateShippingOrder
                     ? () => widget.onCreateOrder({'service_type': 'saving'})
                     : null,
@@ -329,7 +354,7 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
               (
                 'Xe tải nhẹ',
                 Icons.local_shipping_outlined,
-                const Color(0xFF334155),
+                tokens.violet,
                 widget.session.canCreateShippingOrder
                     ? () => widget.onCreateOrder({'service_type': 'truck'})
                     : null,
@@ -337,7 +362,7 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
               (
                 'Ăn uống & Mua sắm',
                 Icons.restaurant_menu_rounded,
-                const Color(0xFF059669),
+                tokens.amber,
                 widget.onCatalog,
               ),
             ];
@@ -366,52 +391,60 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
                           child: InkWell(
                             borderRadius: BorderRadius.circular(12),
                             onTap: entry.$4,
-                          child: Container(
-                            constraints: const BoxConstraints(minHeight: 68),
-                            padding: const EdgeInsets.all(11),
-                            decoration: BoxDecoration(
-                              color: entry.$4 == null
-                                  ? const Color(0xFFF8FAFC)
-                                  : Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
+                            child: Container(
+                              constraints: const BoxConstraints(minHeight: 68),
+                              padding: const EdgeInsets.all(11),
+                              decoration: BoxDecoration(
                                 color: entry.$4 == null
-                                    ? const Color(0xFFE2E8F0)
-                                    : entry.$3.withValues(alpha: 0.30),
-                                width: 1.1,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 34,
-                                  height: 34,
-                                  decoration: BoxDecoration(
-                                    color: entry.$3.withValues(alpha: .12),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: Icon(
-                                    entry.$2,
-                                    color: entry.$4 == null
-                                        ? AppColors.textSecondary
-                                        : entry.$3,
-                                    size: 19,
-                                  ),
+                                    ? tokens.cardMuted
+                                    : Color.alphaBlend(
+                                        entry.$3.fill.withValues(
+                                          alpha: tokens.isDark ? 0.55 : 0.42,
+                                        ),
+                                        tokens.cardSurface,
+                                      ),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: entry.$4 == null
+                                      ? tokens.border
+                                      : entry.$3.border,
+                                  width: 1.1,
                                 ),
-                                const SizedBox(width: 9),
-                                Expanded(
-                                  child: Text(
-                                    entry.$1,
-                                    style: const TextStyle(
-                                      fontSize: 12.5,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.ink,
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 34,
+                                    height: 34,
+                                    decoration: BoxDecoration(
+                                      color: entry.$3.fill,
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color: entry.$3.border,
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      entry.$2,
+                                      color: entry.$4 == null
+                                          ? tokens.inkMuted
+                                          : entry.$3.icon,
+                                      size: 19,
                                     ),
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 9),
+                                  Expanded(
+                                    child: Text(
+                                      entry.$1,
+                                      style: TextStyle(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: tokens.ink,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
                           ),
                         ),
                       ),
@@ -441,7 +474,8 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
     );
   }
 
-  Widget _promoHub() => _panel(
+  Widget _promoHub(GhstThemeTokens tokens) => _panel(
+    accentGlow: tokens.amber.glow,
     Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -451,11 +485,11 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
           alignment: WrapAlignment.spaceBetween,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            const Text(
+            Text(
               'Săn Voucher • Flash Sale • Vòng Xoay',
               style: TextStyle(
                 fontSize: 14,
-                color: AppColors.ink,
+                color: tokens.ink,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -468,16 +502,16 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFEF3C7),
+                    color: tokens.amber.fill,
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: const Color(0xFFFCD34D)),
+                    border: Border.all(color: tokens.amber.border),
                   ),
                   child: Text(
                     '${widget.session.coinBalance} Xu',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11.5,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFFB45309),
+                      color: tokens.amber.foreground,
                     ),
                   ),
                 ),
@@ -496,33 +530,33 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
           builder: (context, constraints) {
             final cols = constraints.maxWidth >= 520 ? 4 : 2;
             final width = (constraints.maxWidth - 10 * (cols - 1)) / cols;
-            final items = <(String, String, IconData, Color, int)>[
+            final items = <(String, String, IconData, TonePair, int)>[
               (
                 'Điểm danh & Sale',
                 'Nhận Xu mỗi ngày',
                 Icons.flash_on_rounded,
-                AppColors.pink,
+                tokens.rose,
                 0,
               ),
               (
                 'Vòng Xoay May Mắn',
                 'Săn Voucher 50K',
                 Icons.casino_outlined,
-                AppColors.violet,
+                tokens.violet,
                 1,
               ),
               (
                 'Hộp Mù Bí Ẩn',
                 'Khui quà R/SR/SSR',
                 Icons.card_giftcard,
-                const Color(0xFFD97706),
+                tokens.amber,
                 2,
               ),
               (
                 'Kho Voucher',
                 'Đổi Xu & Mã giảm',
                 Icons.confirmation_num_outlined,
-                const Color(0xFF059669),
+                tokens.emerald,
                 3,
               ),
             ];
@@ -542,54 +576,52 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
                         key: ValueKey('home-promo-tab-${item.$5}'),
                         borderRadius: BorderRadius.circular(12),
                         onTap: () => _openPromo(item.$5),
-                      child: Container(
-                        constraints: const BoxConstraints(minHeight: 76),
-                        padding: const EdgeInsets.all(11),
-                        decoration: BoxDecoration(
-                          color: item.$4.withValues(alpha: 0.05),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: item.$4.withValues(alpha: 0.22),
+                        child: Container(
+                          constraints: const BoxConstraints(minHeight: 76),
+                          padding: const EdgeInsets.all(11),
+                          decoration: BoxDecoration(
+                            color: item.$4.fill,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: item.$4.border),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                width: 30,
+                                height: 30,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: item.$4.icon,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  item.$3,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                item.$1,
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: tokens.ink,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                item.$2,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: tokens.inkSecondary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              width: 30,
-                              height: 30,
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                color: item.$4,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Icon(
-                                item.$3,
-                                size: 16,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              item.$1,
-                              style: const TextStyle(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.ink,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              item.$2,
-                              style: const TextStyle(
-                                fontSize: 11,
-                                color: AppColors.textSecondary,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
                       ),
                     ),
                   ),
@@ -601,16 +633,19 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
     ),
   );
 
-  Widget _location() => _panel(
-    interactive: true,
-    Column(
+  Widget _location(GhstThemeTokens tokens) => GhstAuroraBanner(
+    gradient: tokens.heroGradient,
+    accentOrbColor: const Color(0x526EE7B7),
+    interactive3d: true,
+    padding: const EdgeInsets.all(18),
+    child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(
           children: [
             const Animated3dIconBadge(
               style: Icon3dStyle.gpsPinRadar,
-              size: 44,
+              size: 46,
               showRadarPulse: true,
             ),
             const SizedBox(width: 12),
@@ -621,21 +656,21 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
                   const Text(
                     'Bạn muốn giao hàng hay đặt món đến đâu?',
                     style: TextStyle(
-                      fontSize: 14.5,
+                      fontSize: 15,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.ink,
+                      color: Colors.white,
                     ),
                   ),
                   const SizedBox(height: 4),
                   if (_loading.contains('addresses') ||
                       _errors.contains('addresses'))
-                    _readState('addresses', '')
+                    _readState(tokens, 'addresses', '', onDark: true)
                   else
                     Text(
                       'Vị trí hiện tại: ${_defaultAddress?['full_address'] ?? 'Chưa chọn điểm lấy hàng'}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.textSecondary,
+                        color: Colors.white.withValues(alpha: 0.88),
                       ),
                     ),
                 ],
@@ -643,31 +678,66 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         Wrap(
           spacing: 8,
           runSpacing: 8,
           children: [
             OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: Colors.white.withValues(alpha: 0.10),
+                side: BorderSide(color: Colors.white.withValues(alpha: 0.28)),
+              ),
               onPressed: widget.onAddresses,
-              icon: const Icon(Icons.bookmarks_outlined, size: 15),
+              icon: const Icon(
+                Icons.bookmarks_outlined,
+                size: 15,
+                color: Colors.white,
+              ),
               label: const Text('Sổ địa chỉ'),
             ),
             OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: Colors.white.withValues(alpha: 0.10),
+                side: BorderSide(color: Colors.white.withValues(alpha: 0.28)),
+              ),
               onPressed: widget.onOrders,
-              icon: const Icon(Icons.receipt_long_outlined, size: 15),
+              icon: const Icon(
+                Icons.receipt_long_outlined,
+                size: 15,
+                color: Colors.white,
+              ),
               label: const Text('Đơn hàng của tôi'),
             ),
             if (widget.onAiAssistant != null)
               OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  backgroundColor: Colors.white.withValues(alpha: 0.10),
+                  side: BorderSide(color: Colors.white.withValues(alpha: 0.28)),
+                ),
                 onPressed: widget.onAiAssistant,
-                icon: const Icon(Icons.auto_awesome_outlined, size: 15),
+                icon: const Icon(
+                  Icons.auto_awesome_outlined,
+                  size: 15,
+                  color: Colors.white,
+                ),
                 label: const Text('Hỏi Trợ lý AI'),
               ),
             if (widget.session.canCreateShippingOrder)
               FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF6EE7B7),
+                  foregroundColor: tokens.onAccentInk,
+                ),
                 onPressed: () => widget.onCreateOrder({}),
-                icon: const Icon(Icons.arrow_forward_rounded, size: 15),
+                icon: Icon(
+                  Icons.arrow_forward_rounded,
+                  size: 15,
+                  color: tokens.onAccentInk,
+                ),
                 label: const Text('Đặt đơn'),
               ),
           ],
@@ -676,29 +746,102 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
     ),
   );
 
-  Widget _map(double viewportHeight) {
+  Widget? _activeOrderBanner(GhstThemeTokens tokens) {
+    final active = (_data['orders'] ?? const []).where((row) {
+      final st = '${row['status'] ?? ''}';
+      return !['delivered', 'returned', 'cancelled'].contains(st);
+    }).firstOrNull;
+    if (active == null) return null;
+    final statusLabel =
+        cloudStatuses[active['status']] ?? '${active['status'] ?? ''}';
+    final driverProfile = active['driver_profile'];
+    final driverName = driverProfile is Map
+        ? '${driverProfile['full_name'] ?? ''}'.trim()
+        : '';
+    return GhstLuminousCard(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      accentGlow: tokens.emerald.glow,
+      borderColor: tokens.emerald.border,
+      onTap: () => _details(active),
+      child: Row(
+        children: [
+          GhstPulseBeacon(color: tokens.emerald.icon),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Đơn đang thực hiện • ${active['tracking_code'] ?? active['id']}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: tokens.ink,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  driverName.isNotEmpty
+                      ? '$statusLabel · Tài xế: $driverName'
+                      : statusLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                    color: tokens.emerald.foreground,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: tokens.emerald.fill,
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: tokens.emerald.border),
+            ),
+            child: Text(
+              'Hành trình',
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w800,
+                color: tokens.emerald.foreground,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _map(GhstThemeTokens tokens, double viewportHeight) {
     final mapHeight = widget.trackingOnly
         ? (viewportHeight - 220).clamp(480.0, 760.0).toDouble()
         : 440.0;
+    final routePts = _route(_trackedOrder);
     return _panel(
       Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _heading(
+            tokens,
             _trackedOrder == null
                 ? 'Bản đồ định vị trực tiếp'
                 : 'Hành trình • ${_trackedOrder!['tracking_code'] ?? _trackedOrder!['id']}',
           ),
           if ((_data['orders'] ?? const []).any(
-            (row) => _route(row).length == 2,
+            (row) => _route(row).length >= 2,
           )) ...[
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              key: ValueKey(
-                _route(_trackedOrder).length == 2 ? _trackedOrder!['id'] : '',
-              ),
+              key: ValueKey(routePts.length >= 2 ? _trackedOrder!['id'] : ''),
               isExpanded: true,
-              initialValue: _route(_trackedOrder).length == 2
+              initialValue: routePts.length >= 2
                   ? '${_trackedOrder!['id']}'
                   : '',
               decoration: const InputDecoration(
@@ -710,7 +853,7 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
                   child: Text('Địa chỉ đã lưu'),
                 ),
                 for (final order in _data['orders'] ?? <Map<String, dynamic>>[])
-                  if (_route(order).length == 2)
+                  if (_route(order).length >= 2)
                     DropdownMenuItem(
                       value: '${order['id']}',
                       child: Text('${order['tracking_code'] ?? order['id']}'),
@@ -727,18 +870,15 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
               height: mapHeight,
               showTopBanner: false,
               mode: MapViewMode.customerPreview,
-              singlePinPoint: _route(_trackedOrder).length == 2
-                  ? null
-                  : _savedPoint,
+              singlePinPoint: routePts.length >= 2 ? null : _savedPoint,
               singlePinLabel: 'Địa chỉ đã lưu',
               customFleetDrivers: const [],
               useGlobalFallbackRoute: false,
-              routePoints: _route(_trackedOrder),
+              routePoints: routePts,
               pickupLabel: 'Điểm lấy',
               dropoffLabel: 'Điểm giao',
               onTapGeoPoint:
-                  !widget.session.canCreateShippingOrder ||
-                      _route(_trackedOrder).isNotEmpty
+                  !widget.session.canCreateShippingOrder || routePts.isNotEmpty
                   ? null
                   : (point) {
                       if (_allowed) {
@@ -755,13 +895,14 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
     );
   }
 
-  Widget _recent() {
+  Widget _recent(GhstThemeTokens tokens) {
     final orders = _data['orders'] ?? const [];
     return _panel(
       Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _heading(
+            tokens,
             'Đơn gần đây',
             action: TextButton(
               onPressed: widget.onOrders,
@@ -771,7 +912,7 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
           if (_loading.contains('orders') ||
               _errors.contains('orders') ||
               orders.isEmpty)
-            _readState('orders', 'Chưa có đơn giao hàng.')
+            _readState(tokens, 'orders', 'Chưa có đơn giao hàng.')
           else
             for (final order in orders.take(widget.trackingOnly ? 10 : 3))
               ListTile(
@@ -780,23 +921,28 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: AppColors.violet.withValues(alpha: 0.10),
+                    color: tokens.sapphire.fill,
                     borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: tokens.sapphire.border),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.local_shipping_outlined,
-                    color: AppColors.violet,
+                    color: tokens.sapphire.icon,
                     size: 19,
                   ),
                 ),
                 title: Text(
                   '${order['tracking_code'] ?? order['id']}',
-                  style: const TextStyle(fontWeight: FontWeight.w700),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: tokens.ink,
+                  ),
                 ),
                 subtitle: Text(
                   '${cloudStatuses[order['status']] ?? order['status'] ?? ''}',
+                  style: TextStyle(color: tokens.inkSecondary),
                 ),
-                trailing: const Icon(Icons.chevron_right),
+                trailing: Icon(Icons.chevron_right, color: tokens.inkMuted),
                 onTap: () => _details(order),
               ),
         ],
@@ -804,14 +950,16 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
     );
   }
 
-  Widget _discovery() {
+  Widget _discovery(GhstThemeTokens tokens) {
     final products = _data['catalog'] ?? const [];
     return _panel(
       interactive: true,
+      accentGlow: tokens.emerald.glow,
       Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _heading(
+            tokens,
             'Khám phá cửa hàng',
             action: TextButton(
               onPressed: widget.onCatalog,
@@ -821,7 +969,7 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
           if (_loading.contains('catalog') ||
               _errors.contains('catalog') ||
               products.isEmpty)
-            _readState('catalog', 'Chưa có sản phẩm đang mở bán.')
+            _readState(tokens, 'catalog', 'Chưa có sản phẩm đang mở bán.')
           else
             for (final product in products.take(4))
               ListTile(
@@ -832,11 +980,11 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
                     width: 48,
                     height: 48,
                     child: (product['image_url'] as String? ?? '').isEmpty
-                        ? const ColoredBox(
-                            color: Color(0xFFEFF6FF),
+                        ? ColoredBox(
+                            color: tokens.sapphire.fill,
                             child: Icon(
                               Icons.storefront_outlined,
-                              color: AppColors.violet,
+                              color: tokens.sapphire.icon,
                             ),
                           )
                         : Image.network(
@@ -849,17 +997,23 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
                 ),
                 title: Text(
                   '${product['name']}',
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: tokens.ink,
+                  ),
                 ),
-                subtitle: Text('${product['shop_name']}'),
+                subtitle: Text(
+                  '${product['shop_name']}',
+                  style: TextStyle(color: tokens.inkSecondary),
+                ),
                 trailing: Text(
                   CurrencyFormatter.formatVnd(
                     (product['price'] as num? ?? 0).toDouble(),
                   ),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 12.5,
-                    color: AppColors.violet,
+                    color: tokens.sapphire.foreground,
                   ),
                 ),
                 onTap: widget.onCatalog,
@@ -872,6 +1026,8 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
   @override
   Widget build(BuildContext context) {
     if (!_lease.valid) return const SizedBox.shrink();
+    final tokens = GhstThemeTokens.of(context);
+    final activeBanner = _activeOrderBanner(tokens);
     return RefreshIndicator(
       onRefresh: _load,
       child: SingleChildScrollView(
@@ -889,8 +1045,12 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
               ),
             ),
             if (!widget.trackingOnly) ...[
-              _location(),
+              _location(tokens),
               const SizedBox(height: 12),
+              if (activeBanner != null) ...[
+                activeBanner,
+                const SizedBox(height: 12),
+              ],
             ],
             LayoutBuilder(
               builder: (context, constraints) {
@@ -898,19 +1058,19 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
                 final services = Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _services(),
+                    _services(tokens),
                     const SizedBox(height: 12),
-                    _promoHub(),
+                    _promoHub(tokens),
                     const SizedBox(height: 12),
-                    _discovery(),
+                    _discovery(tokens),
                   ],
                 );
                 final tracking = Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _map(viewportHeight),
+                    _map(tokens, viewportHeight),
                     const SizedBox(height: 12),
-                    _recent(),
+                    _recent(tokens),
                   ],
                 );
                 if (widget.trackingOnly) return tracking;

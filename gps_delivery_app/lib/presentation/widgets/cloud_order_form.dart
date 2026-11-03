@@ -10,6 +10,7 @@ import '../../core/integrations/cloud_orders_service.dart';
 import '../../core/integrations/cloud_session_lease.dart';
 import '../../core/integrations/photon_address_service.dart';
 import '../../core/network/public_json_api.dart';
+import '../../core/theme/ghst_theme_tokens.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../data/datasources/local/app_state_store.dart';
 import '../../domain/entities/geo_point.dart';
@@ -18,6 +19,7 @@ import 'cloud_commerce_dialog.dart';
 import 'cloud_logistics_panels.dart';
 import 'cloud_order_labels.dart';
 import 'cloud_session_boundary.dart';
+import 'motion_3d_effects.dart';
 import 'photon_address_lookup.dart';
 import 'system_state_screens.dart';
 import 'vietqr_bank_payment_panel.dart';
@@ -38,6 +40,7 @@ class CloudOrderForm extends StatefulWidget {
     this.initialDetails,
     this.embedded = false,
     this.onCreated,
+    this.onOrderCreated,
     this.addressService,
   });
   final CloudOrdersService service;
@@ -47,6 +50,7 @@ class CloudOrderForm extends StatefulWidget {
   final Map<String, dynamic>? initialDetails;
   final bool embedded;
   final VoidCallback? onCreated;
+  final ValueChanged<Map<String, dynamic>>? onOrderCreated;
   final PhotonAddressService? addressService;
 
   @override
@@ -96,9 +100,16 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
   Map<String, Map<String, dynamic>>? _serviceEta;
   bool _busy = false;
   String? _error, _routeNotice;
+  Timer? _draftSaveTimer;
+  bool _restoredFromCloudDraft = false;
+  bool _suppressDraftSync = false;
 
   CloudAccountSession? get _accountSession =>
       widget.session ?? widget.lease?.session;
+
+  bool get _draftSyncEnabled =>
+      _accountSession != null &&
+      (widget.initialDetails == null || widget.initialDetails!.isEmpty);
 
   int get _availableCoins => _accountSession?.coinBalance ?? 0;
 
@@ -132,13 +143,11 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
     return GeoPoint(latitude: lat, longitude: lng);
   }
 
-  @override
-  void initState() {
-    super.initState();
-    final initial = widget.initialDetails;
-    if (initial != null && _sameAccount) {
+  void _applyInitialSource(Map<String, dynamic> source, {bool isDraft = false}) {
+    _suppressDraftSync = true;
+    try {
       for (final entry in _fields.entries) {
-        final value = initial[entry.key];
+        final value = source[entry.key];
         if (value is String || value is num && value.isFinite) {
           if (['length_cm', 'width_cm', 'height_cm', 'declared_value'].contains(
                 entry.key,
@@ -147,35 +156,40 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
               value <= 0) {
             continue;
           }
+          if (entry.key == 'scheduled_at' && !isDraft) {
+            final parsedSchedule = DateTime.tryParse('$value');
+            if (parsedSchedule != null &&
+                parsedSchedule.isBefore(DateTime.now())) {
+              continue;
+            }
+          }
           entry.value.text = '$value';
         }
       }
-      _pickupPoint = _parsePoint(initial['pickup_lat'], initial['pickup_lng']);
-      _dropoffPoint = _parsePoint(
-        initial['dropoff_lat'],
-        initial['dropoff_lng'],
-      );
+      _pickupPoint = _parsePoint(source['pickup_lat'], source['pickup_lng']);
+      _dropoffPoint = _parsePoint(source['dropoff_lat'], source['dropoff_lng']);
       _focusedMapPoint = _dropoffPoint ?? _pickupPoint;
       if (_pickupPoint != null && _dropoffPoint == null) {
         _activeMapTarget = 'dropoff';
       }
-      if (cloudServiceTypes.containsKey(initial['service_type'])) {
-        _serviceType = initial['service_type'] as String;
+      if (cloudServiceTypes.containsKey(source['service_type'])) {
+        _serviceType = source['service_type'] as String;
       }
       if ([
         'sender_cash',
+        'sender_bank_qr',
         'recipient_cash',
-      ].contains(initial['payment_method'])) {
-        _payment = initial['payment_method'] as String;
+      ].contains(source['payment_method'])) {
+        _payment = source['payment_method'] as String;
       }
-      _isRoundTrip = initial['is_round_trip'] == true;
-      _preferEv = initial['prefer_ev'] == true;
-      _greenFund = initial['green_fund'] == true;
-      _requirePod = initial['require_pod'] == true;
-      _requireOtp = initial['require_otp'] == true;
-      _useCoins = initial['use_coins'] == true;
-      if (initial['extra_stops'] is List) {
-        for (final raw in (initial['extra_stops'] as List).take(5)) {
+      _isRoundTrip = source['is_round_trip'] == true;
+      _preferEv = source['prefer_ev'] == true;
+      _greenFund = source['green_fund'] == true;
+      _requirePod = source['require_pod'] == true;
+      _requireOtp = source['require_otp'] == true;
+      _useCoins = source['use_coins'] == true;
+      if (source['extra_stops'] is List) {
+        for (final raw in (source['extra_stops'] as List).take(5)) {
           if (raw is Map) {
             _addStop(
               address: '${raw['address'] ?? ''}',
@@ -184,7 +198,7 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
           }
         }
       }
-      final merchant = initial['merchant_id'];
+      final merchant = source['merchant_id'];
       if (merchant is String &&
           widget.merchants.any((row) => row['user_id'] == merchant)) {
         _merchant = merchant;
@@ -199,6 +213,140 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
           _canCallAddressApi) {
         unawaited(_reverseTarget('pickup', _pickupPoint!));
       }
+    } finally {
+      _suppressDraftSync = false;
+    }
+  }
+
+  Map<String, dynamic> _buildDraftSnapshot() {
+    final map = <String, dynamic>{
+      'service_type': _serviceType,
+      'payment_method': _payment,
+      if (_merchant.isNotEmpty) 'merchant_id': _merchant,
+      if (_isRoundTrip) 'is_round_trip': true,
+      if (_preferEv) 'prefer_ev': true,
+      if (_greenFund) 'green_fund': true,
+      if (_requirePod) 'require_pod': true,
+      if (_requireOtp) 'require_otp': true,
+      if (_useCoins) 'use_coins': true,
+    };
+    for (final entry in _fields.entries) {
+      final text = entry.value.text.trim();
+      if (text.isNotEmpty) map[entry.key] = text;
+    }
+    if (_pickupPoint != null) {
+      map['pickup_lat'] = _pickupPoint!.latitude;
+      map['pickup_lng'] = _pickupPoint!.longitude;
+    }
+    if (_dropoffPoint != null) {
+      map['dropoff_lat'] = _dropoffPoint!.latitude;
+      map['dropoff_lng'] = _dropoffPoint!.longitude;
+    }
+    if (_extraStops.isNotEmpty) {
+      map['extra_stops'] = [
+        for (final s in _extraStops)
+          {
+            'address': s.address.text.trim(),
+            if (s.point != null) 'lat': s.point!.latitude,
+            if (s.point != null) 'lng': s.point!.longitude,
+          },
+      ];
+    }
+    return map;
+  }
+
+  bool get _hasMeaningfulDraftContent {
+    for (final entry in _fields.entries) {
+      if (entry.value.text.trim().isNotEmpty) return true;
+    }
+    return _pickupPoint != null ||
+        _dropoffPoint != null ||
+        _extraStops.isNotEmpty;
+  }
+
+  void _scheduleDraftSync() {
+    if (!_draftSyncEnabled || _suppressDraftSync || !_sameAccount) return;
+    _draftSaveTimer?.cancel();
+    _draftSaveTimer = Timer(
+      const Duration(milliseconds: 550),
+      _flushDraftToCloud,
+    );
+  }
+
+  Future<void> _flushDraftToCloud() async {
+    if (!mounted || !_draftSyncEnabled || !_sameAccount) return;
+    if (!_hasMeaningfulDraftContent) {
+      _accountSession?.updateCachedShippingDraft(const {});
+      try {
+        await widget.service.accountPreferences('clear_draft');
+      } catch (_) {}
+      return;
+    }
+    final snap = _buildDraftSnapshot();
+    _accountSession?.updateCachedShippingDraft(snap);
+    try {
+      await widget.service.accountPreferences('save_draft', {'draft': snap});
+    } catch (_) {}
+  }
+
+  Future<void> _clearCloudDraft() async {
+    if (_busy || !_sameAccount) return;
+    _draftSaveTimer?.cancel();
+    _suppressDraftSync = true;
+    try {
+      for (final c in _fields.values) {
+        c.clear();
+      }
+      for (final s in _extraStops) {
+        s.address.removeListener(_resetQuote);
+        s.address.dispose();
+      }
+      _extraStops.clear();
+      _pickupPoint = null;
+      _dropoffPoint = null;
+      _focusedMapPoint = null;
+      _activeMapTarget = 'pickup';
+      _serviceType = 'standard';
+      _payment = 'sender_cash';
+      _merchant = '';
+      _isRoundTrip = false;
+      _preferEv = false;
+      _greenFund = false;
+      _requirePod = false;
+      _requireOtp = false;
+      _useCoins = false;
+      _quote = null;
+      _error = null;
+      _routeNotice = null;
+      _restoredFromCloudDraft = false;
+      _fieldValues
+        ..clear()
+        ..addAll({
+          for (final entry in _fields.entries) entry.key: entry.value.text,
+        });
+    } finally {
+      _suppressDraftSync = false;
+    }
+    if (mounted) setState(() {});
+    _accountSession?.updateCachedShippingDraft(const {});
+    try {
+      await widget.service.accountPreferences('clear_draft');
+    } catch (_) {}
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initialDetails;
+    final savedDraft = _accountSession?.shippingDraft;
+    if (initial != null && initial.isNotEmpty && _sameAccount) {
+      _applyInitialSource(initial, isDraft: false);
+    } else if (_draftSyncEnabled &&
+        _sameAccount &&
+        savedDraft != null &&
+        savedDraft.isNotEmpty) {
+      _applyInitialSource(savedDraft, isDraft: true);
+      _restoredFromCloudDraft = true;
     }
     for (final controller in _fields.values) {
       controller.addListener(_changed);
@@ -240,15 +388,18 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
       _activeMapTarget = _pickupPoint == null ? 'pickup' : 'dropoff';
     }
     setState(() => _quote = null);
+    _scheduleDraftSync();
   }
 
   void _resetQuote() {
     if (mounted && _quote != null) setState(() => _quote = null);
+    _scheduleDraftSync();
   }
 
   void _invalidate() {
     if (!mounted || _invalidated) return;
     _invalidated = true;
+    _draftSaveTimer?.cancel();
     _quote = null;
     _pickupPoint = null;
     _dropoffPoint = null;
@@ -272,11 +423,15 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
         _fieldValues[entry.key] = entry.value.text;
       }
     }
-    if (changed && mounted && _quote != null) setState(() => _quote = null);
+    if (changed) {
+      if (mounted && _quote != null) setState(() => _quote = null);
+      _scheduleDraftSync();
+    }
   }
 
   @override
   void dispose() {
+    _draftSaveTimer?.cancel();
     _auth?.cancel();
     widget.lease?.removeListener(_invalidate);
     for (final controller in _fields.values) {
@@ -292,13 +447,27 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
 
   List<GeoPoint> get _mapRoutePoints {
     if (_pickupPoint == null || _dropoffPoint == null) return const [];
-    return [
+    final pts = <GeoPoint>[
       _pickupPoint!,
       for (final stop in _extraStops)
         if (stop.point != null) stop.point!,
       _dropoffPoint!,
     ];
+    if (_isRoundTrip && pts.length < 7) {
+      pts.add(_pickupPoint!);
+    }
+    return pts;
   }
+
+  List<GeoPoint> get _mapExtraStopPoints => [
+    for (final stop in _extraStops)
+      if (stop.point != null) stop.point!,
+  ];
+
+  List<String> get _mapExtraStopLabels => [
+    for (var i = 0; i < _extraStops.length; i++)
+      if (_extraStops[i].point != null) 'Điểm #${i + 1}',
+  ];
 
   GeoPoint? get _singlePinnedPoint {
     if (_pickupPoint != null) return _pickupPoint;
@@ -384,6 +553,7 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
         _activeMapTarget = 'dropoff';
       }
     });
+    _scheduleDraftSync();
     unawaited(_reverseTarget(target, point));
   }
 
@@ -543,6 +713,9 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
           'draft_id': draft,
         });
         if (!mounted || !_sameAccount) return;
+        _draftSaveTimer?.cancel();
+        _accountSession?.updateCachedShippingDraft(const {});
+        _restoredFromCloudDraft = false;
         await widget.service.completeDraft(draft);
         unawaited(_accountSession?.refresh().catchError((Object _) {}));
         final createdOrder = createdResponse['order'] is Map
@@ -576,7 +749,11 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
         }
         if (mounted && _sameAccount) {
           if (widget.embedded) {
-            widget.onCreated?.call();
+            if (createdOrder != null && widget.onOrderCreated != null) {
+              widget.onOrderCreated!(createdOrder);
+            } else {
+              widget.onCreated?.call();
+            }
           } else {
             Navigator.pop(context, true);
           }
@@ -806,15 +983,289 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
       _quote = null;
       _error = null;
     });
+    _scheduleDraftSync();
   }
 
-  Widget _googleMapPicker() => Container(
+  Widget _buildDraftBanner(BuildContext context) {
+    if (!_draftSyncEnabled ||
+        (!_restoredFromCloudDraft && !_hasMeaningfulDraftContent)) {
+      return const SizedBox.shrink();
+    }
+    final tokens = GhstThemeTokens.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: GhstLuminousCard(
+        accentGlow: tokens.sapphire.glow,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        borderRadius: 14,
+        child: Row(
+          children: [
+            Icon(
+              Icons.cloud_done_outlined,
+              size: 18,
+              color: tokens.sapphire.foreground,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                _restoredFromCloudDraft
+                    ? 'Đã khôi phục bản nháp đơn giao chưa hoàn tất'
+                    : 'Bản nháp đơn giao đang được tự động lưu',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: tokens.ink,
+                ),
+              ),
+            ),
+            TextButton.icon(
+              key: const ValueKey('clear-shipping-draft'),
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+              ),
+              onPressed: _busy || !_sameAccount ? null : _clearCloudDraft,
+              icon: const Icon(Icons.delete_sweep_outlined, size: 16),
+              label: const Text('Xóa bản nháp'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildServiceTierSelector(BuildContext context) {
+    final tokens = GhstThemeTokens.of(context);
+    const tierMeta =
+        <
+          String,
+          ({
+            IconData icon,
+            String subtitle,
+            String badge,
+          })
+        >{
+          'standard': (
+            icon: Icons.two_wheeler_rounded,
+            subtitle: 'Xe máy nội thành · Cân bằng cước phí',
+            badge: 'Phổ biến',
+          ),
+          'express': (
+            icon: Icons.bolt_rounded,
+            subtitle: 'Ưu tiên điều phối · Giao thẳng siêu tốc',
+            badge: 'Ưu tiên',
+          ),
+          'saving': (
+            icon: Icons.eco_rounded,
+            subtitle: 'Linh hoạt lộ trình · Tiết kiệm tối đa',
+            badge: 'Tiết kiệm',
+          ),
+          'same_day_2h': (
+            icon: Icons.hub_rounded,
+            subtitle: 'Ghép đơn cùng hướng · Cam kết 2 giờ',
+            badge: '2 Giờ',
+          ),
+          'truck': (
+            icon: Icons.local_shipping_rounded,
+            subtitle: 'Hàng lớn cồng kềnh đến 500 kg',
+            badge: '500 kg',
+          ),
+        };
+    TonePair toneForTier(String key) => switch (key) {
+      'express' => tokens.amber,
+      'saving' => tokens.emerald,
+      'same_day_2h' => tokens.violet,
+      'truck' => tokens.amber,
+      _ => tokens.sapphire,
+    };
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Row(
+            children: [
+              Icon(
+                Icons.layers_outlined,
+                size: 17,
+                color: tokens.sapphire.foreground,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Chọn gói dịch vụ vận chuyển',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13.5,
+                    color: tokens.ink,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final twoColumns = constraints.maxWidth >= 460;
+            final cardWidth = twoColumns
+                ? (constraints.maxWidth - 10) / 2
+                : constraints.maxWidth;
+            return Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                for (final entry in cloudServiceTypes.entries)
+                  SizedBox(
+                    width: cardWidth,
+                    child: Builder(
+                      builder: (context) {
+                        final selected = _serviceType == entry.key;
+                        final meta = tierMeta[entry.key]!;
+                        final tone = toneForTier(entry.key);
+                        final eta = _serviceEta?[entry.key];
+                        return Motion3dInteractiveSurface(
+                          enabled: !_busy && _sameAccount,
+                          maxTilt: 0.032,
+                          enablePressScale: true,
+                          borderRadius: BorderRadius.circular(14),
+                          child: InkWell(
+                            key: ValueKey('service-tier-${entry.key}'),
+                            borderRadius: BorderRadius.circular(14),
+                            onTap: _busy || !_sameAccount
+                                ? null
+                                : () {
+                                    setState(() {
+                                      _serviceType = entry.key;
+                                      _quote = null;
+                                    });
+                                    _scheduleDraftSync();
+                                  },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 180),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: selected
+                                    ? tone.fill
+                                    : tokens.cardSurface,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: selected
+                                      ? tone.foreground
+                                      : tokens.border,
+                                  width: selected ? 1.7 : 1.0,
+                                ),
+                                boxShadow: selected
+                                    ? tokens.cardShadow
+                                    : const [],
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      color: selected
+                                          ? tone.foreground.withValues(
+                                              alpha: 0.16,
+                                            )
+                                          : tokens.cardSubtle,
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Icon(
+                                      meta.icon,
+                                      size: 20,
+                                      color: selected
+                                          ? tone.foreground
+                                          : tokens.inkSecondary,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                entry.value,
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.w800,
+                                                  fontSize: 13.5,
+                                                  color: selected
+                                                      ? tone.foreground
+                                                      : tokens.ink,
+                                                ),
+                                              ),
+                                            ),
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 6,
+                                                    vertical: 2,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: selected
+                                                    ? tone.foreground
+                                                          .withValues(
+                                                            alpha: 0.16,
+                                                          )
+                                                    : tokens.cardSubtle,
+                                                borderRadius:
+                                                    BorderRadius.circular(999),
+                                              ),
+                                              child: Text(
+                                                eta != null
+                                                    ? cloudMinutes(
+                                                        eta['avg_delivery_minutes'],
+                                                      )
+                                                    : meta.badge,
+                                                style: TextStyle(
+                                                  fontSize: 10.5,
+                                                  fontWeight: FontWeight.w800,
+                                                  color: selected
+                                                      ? tone.foreground
+                                                      : tokens.inkSecondary,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 3),
+                                        Text(
+                                          meta.subtitle,
+                                          style: TextStyle(
+                                            fontSize: 11.5,
+                                            height: 1.25,
+                                            color: tokens.inkSecondary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _googleMapPicker() => GhstLuminousCard(
     margin: const EdgeInsets.only(bottom: 16),
     padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
-      border: Border.all(color: Theme.of(context).dividerColor),
-      borderRadius: BorderRadius.circular(10),
-    ),
+    borderRadius: 16,
+    accentGlow: GhstThemeTokens.of(context).sapphire.glow,
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -890,28 +1341,92 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
           ),
         ),
         const SizedBox(height: 8),
-        Map3dPerspectiveWidget(
-          key: const ValueKey('cloud-order-google-map'),
-          height: 390,
-          showTopBanner: false,
-          mode: MapViewMode.customerPreview,
-          customFleetDrivers: const [],
-          useGlobalFallbackRoute: false,
-          routePoints: _mapRoutePoints,
-          singlePinPoint: _mapRoutePoints.length >= 2
-              ? null
-              : _singlePinnedPoint,
-          singlePinLabel: _singlePinnedLabel,
-          focusedCenterPoint: _focusedMapPoint,
-          pickupLabel: 'Điểm lấy [A]',
-          dropoffLabel: 'Điểm giao [B]',
-          onTapGeoPoint: _busy || !_sameAccount ? null : _handleMapTap,
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Map3dPerspectiveWidget(
+            key: const ValueKey('cloud-order-google-map'),
+            height: 390,
+            showTopBanner: false,
+            mode: MapViewMode.customerPreview,
+            customFleetDrivers: const [],
+            useGlobalFallbackRoute: false,
+            routePoints: _mapRoutePoints,
+            explicitDropoffPoint: _dropoffPoint,
+            extraStopPoints: _mapExtraStopPoints,
+            extraStopLabels: _mapExtraStopLabels,
+            singlePinPoint: _mapRoutePoints.length >= 2
+                ? null
+                : _singlePinnedPoint,
+            singlePinLabel: _singlePinnedLabel,
+            focusedCenterPoint: _focusedMapPoint,
+            pickupLabel: 'Điểm lấy [A]',
+            dropoffLabel: 'Điểm giao [B]',
+            onTapGeoPoint: _busy || !_sameAccount ? null : _handleMapTap,
+          ),
         ),
+        if (_pickupPoint != null && _dropoffPoint != null) ...[
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              _routeInfoChip(
+                context,
+                Icons.route_rounded,
+                _extraStops.isEmpty
+                    ? 'Hành trình 2 điểm A → B'
+                    : 'Đa điểm: ${_extraStops.length + 2} chặng dừng',
+              ),
+              if (_isRoundTrip)
+                _routeInfoChip(
+                  context,
+                  Icons.sync_alt_rounded,
+                  'Khứ hồi quay lại [A]',
+                ),
+              if (_preferEv)
+                _routeInfoChip(
+                  context,
+                  Icons.electric_moped_rounded,
+                  'Ưu tiên xe điện',
+                ),
+            ],
+          ),
+        ],
       ],
     ),
   );
 
+  Widget _routeInfoChip(BuildContext context, IconData icon, String label) {
+    final tokens = GhstThemeTokens.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: tokens.sapphire.fill,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: tokens.sapphire.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: tokens.sapphire.foreground),
+          const SizedBox(width: 5),
+          Flexible(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w700,
+                color: tokens.sapphire.foreground,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _address(String prefix, String title) {
+    final tokens = GhstThemeTokens.of(context);
     final pinned = prefix == 'pickup'
         ? _pickupPoint != null
         : _dropoffPoint != null;
@@ -927,7 +1442,7 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
                 pinned ? Icons.where_to_vote_rounded : Icons.touch_app_outlined,
                 size: 17,
                 color: pinned
-                    ? Colors.green.shade700
+                    ? tokens.emerald.foreground
                     : Theme.of(context).colorScheme.primary,
               ),
               const SizedBox(width: 6),
@@ -940,7 +1455,7 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
                     fontSize: 12,
                     fontWeight: pinned ? FontWeight.w600 : FontWeight.w500,
                     color: pinned
-                        ? Colors.green.shade700
+                        ? tokens.emerald.foreground
                         : Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
@@ -1003,6 +1518,7 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
                   _quote = null;
                   _error = null;
                 });
+                _scheduleDraftSync();
               },
             ),
         ],
@@ -1011,142 +1527,151 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    backgroundColor: widget.embedded ? Colors.transparent : null,
-    appBar: widget.embedded ? null : AppBar(title: const Text('Tạo đơn hàng')),
-    body: SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 680),
-            child: Form(
-              key: _form,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _googleMapPicker(),
-                  _address('pickup', 'Địa chỉ lấy hàng'),
-                  _address('dropoff', 'Địa chỉ giao hàng'),
-                  const Divider(height: 24),
-                  _text('recipient_name', 'Tên người nhận', max: 120),
-                  _text('recipient_phone', 'Số điện thoại người nhận', max: 10),
-                  CloudRecipientTrust(
-                    service: widget.service,
-                    phone: _fields['recipient_phone']!,
-                    lease: widget.lease,
-                    enabled: !_busy && _sameAccount,
-                  ),
-                  _text('package_description', 'Hàng hóa', max: 1000),
-                  _text('weight_kg', 'Khối lượng', numeric: true, suffixText: 'kg'),
-                  _text('cod_amount', 'Tiền thu hộ', numeric: true, suffixText: 'đ'),
-                  DropdownButtonFormField<String>(
-                    initialValue: _serviceType,
-                    isExpanded: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Dịch vụ',
-                      border: OutlineInputBorder(),
+  Widget build(BuildContext context) {
+    final tokens = GhstThemeTokens.of(context);
+    return Scaffold(
+      backgroundColor: widget.embedded ? Colors.transparent : null,
+      appBar: widget.embedded
+          ? null
+          : AppBar(title: const Text('Tạo đơn hàng')),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 680),
+              child: Form(
+                key: _form,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildDraftBanner(context),
+                    _googleMapPicker(),
+                    _address('pickup', 'Địa chỉ lấy hàng'),
+                    _address('dropoff', 'Địa chỉ giao hàng'),
+                    const Divider(height: 24),
+                    _text('recipient_name', 'Tên người nhận', max: 120),
+                    _text(
+                      'recipient_phone',
+                      'Số điện thoại người nhận',
+                      max: 10,
                     ),
-                    items: [
-                      for (final entry in cloudServiceTypes.entries)
-                        DropdownMenuItem(
-                          value: entry.key,
-                          child: Text(entry.value),
-                        ),
-                    ],
-                    onChanged: _busy || !_sameAccount
-                        ? null
-                        : (value) => setState(() {
-                            _serviceType = value!;
-                            _quote = null;
-                          }),
-                  ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    initialValue: _payment,
-                    isExpanded: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Trả phí vận chuyển',
-                      border: OutlineInputBorder(),
+                    CloudRecipientTrust(
+                      service: widget.service,
+                      phone: _fields['recipient_phone']!,
+                      lease: widget.lease,
+                      enabled: !_busy && _sameAccount,
                     ),
-                    items: const [
-                      DropdownMenuItem(
-                        value: 'sender_cash',
-                        child: Text('Người gửi trả tiền mặt'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'sender_bank_qr',
-                        child: Text('Chuyển khoản ngân hàng · Mã QR'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'recipient_cash',
-                        child: Text('Người nhận trả tiền mặt'),
-                      ),
-                    ],
-                    onChanged: _busy || !_sameAccount
-                        ? null
-                        : (value) => setState(() {
-                            _payment = value!;
-                            _quote = null;
-                          }),
-                  ),
-                  if (widget.merchants.isNotEmpty) ...[
+                    _text('package_description', 'Hàng hóa', max: 1000),
+                    _text(
+                      'weight_kg',
+                      'Khối lượng',
+                      numeric: true,
+                      suffixText: 'kg',
+                    ),
+                    _text(
+                      'cod_amount',
+                      'Tiền thu hộ',
+                      numeric: true,
+                      suffixText: 'đ',
+                    ),
+                    const SizedBox(height: 4),
+                    _buildServiceTierSelector(context),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
-                      initialValue: _merchant,
+                      initialValue: _payment,
                       isExpanded: true,
                       decoration: const InputDecoration(
-                        labelText: 'Cửa hàng xử lý',
+                        labelText: 'Trả phí vận chuyển',
                         border: OutlineInputBorder(),
                       ),
-                      items: [
-                        const DropdownMenuItem(
-                          value: '',
-                          child: Text('Gửi trực tiếp'),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'sender_cash',
+                          child: Text('Người gửi trả tiền mặt'),
                         ),
-                        ...widget.merchants.map(
-                          (m) => DropdownMenuItem(
-                            value: '${m['user_id']}',
-                            child: Text(
-                              '${m['full_name']}',
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
+                        DropdownMenuItem(
+                          value: 'sender_bank_qr',
+                          child: Text('Chuyển khoản ngân hàng · Mã QR'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'recipient_cash',
+                          child: Text('Người nhận trả tiền mặt'),
                         ),
                       ],
                       onChanged: _busy || !_sameAccount
                           ? null
-                          : (value) => setState(() {
-                              _merchant = value!;
-                              _quote = null;
-                            }),
+                          : (value) {
+                              setState(() {
+                                _payment = value!;
+                                _quote = null;
+                              });
+                              _scheduleDraftSync();
+                            },
                     ),
-                  ],
-                  const SizedBox(height: 12),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    secondary: const Icon(Icons.monetization_on_outlined),
-                    title: const Text('Dùng Xu giảm cước phí đơn hàng'),
-                    subtitle: Text(
-                      _availableCoins > 0
-                          ? '$_availableCoins Xu khả dụng · Giảm tối đa 20% cước phí'
-                          : 'Hiện có 0 Xu · Hoàn tất đơn hoặc tham gia sự kiện để tích Xu',
+                    if (widget.merchants.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<String>(
+                        initialValue: _merchant,
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Cửa hàng xử lý',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: [
+                          const DropdownMenuItem(
+                            value: '',
+                            child: Text('Gửi trực tiếp'),
+                          ),
+                          ...widget.merchants.map(
+                            (m) => DropdownMenuItem(
+                              value: '${m['user_id']}',
+                              child: Text(
+                                '${m['full_name']}',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                        ],
+                        onChanged: _busy || !_sameAccount
+                            ? null
+                            : (value) {
+                                setState(() {
+                                  _merchant = value!;
+                                  _quote = null;
+                                });
+                                _scheduleDraftSync();
+                              },
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      secondary: const Icon(Icons.monetization_on_outlined),
+                      title: const Text('Dùng Xu giảm cước phí đơn hàng'),
+                      subtitle: Text(
+                        _availableCoins > 0
+                            ? '$_availableCoins Xu khả dụng · Giảm tối đa 20% cước phí'
+                            : 'Hiện có 0 Xu · Hoàn tất đơn hoặc tham gia sự kiện để tích Xu',
+                      ),
+                      value:
+                          _useCoins &&
+                          (_availableCoins > 0 ||
+                              (_quote?['coin_discount'] as num? ?? 0) > 0),
+                      onChanged:
+                          _busy ||
+                              !_sameAccount ||
+                              (_availableCoins <= 0 && !_useCoins)
+                          ? null
+                          : (v) {
+                              setState(() {
+                                _useCoins = v;
+                                _quote = null;
+                              });
+                              _scheduleDraftSync();
+                            },
                     ),
-                    value:
-                        _useCoins &&
-                        (_availableCoins > 0 ||
-                            (_quote?['coin_discount'] as num? ?? 0) > 0),
-                    onChanged:
-                        _busy ||
-                            !_sameAccount ||
-                            (_availableCoins <= 0 && !_useCoins)
-                        ? null
-                        : (v) => setState(() {
-                            _useCoins = v;
-                            _quote = null;
-                          }),
-                  ),
                   ExpansionTile(
                     tilePadding: EdgeInsets.zero,
                     title: const Text(
@@ -1233,10 +1758,13 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
                         value: _isRoundTrip,
                         onChanged: _busy || !_sameAccount
                             ? null
-                            : (v) => setState(() {
-                                _isRoundTrip = v;
-                                _quote = null;
-                              }),
+                            : (v) {
+                                setState(() {
+                                  _isRoundTrip = v;
+                                  _quote = null;
+                                });
+                                _scheduleDraftSync();
+                              },
                       ),
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,
@@ -1244,10 +1772,13 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
                         value: _preferEv,
                         onChanged: _busy || !_sameAccount
                             ? null
-                            : (v) => setState(() {
-                                _preferEv = v;
-                                _quote = null;
-                              }),
+                            : (v) {
+                                setState(() {
+                                  _preferEv = v;
+                                  _quote = null;
+                                });
+                                _scheduleDraftSync();
+                              },
                       ),
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,
@@ -1255,10 +1786,13 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
                         value: _greenFund,
                         onChanged: _busy || !_sameAccount
                             ? null
-                            : (v) => setState(() {
-                                _greenFund = v;
-                                _quote = null;
-                              }),
+                            : (v) {
+                                setState(() {
+                                  _greenFund = v;
+                                  _quote = null;
+                                });
+                                _scheduleDraftSync();
+                              },
                       ),
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,
@@ -1268,10 +1802,13 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
                         value: _requirePod,
                         onChanged: _busy || !_sameAccount
                             ? null
-                            : (v) => setState(() {
-                                _requirePod = v;
-                                _quote = null;
-                              }),
+                            : (v) {
+                                setState(() {
+                                  _requirePod = v;
+                                  _quote = null;
+                                });
+                                _scheduleDraftSync();
+                              },
                       ),
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,
@@ -1279,10 +1816,13 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
                         value: _requireOtp,
                         onChanged: _busy || !_sameAccount
                             ? null
-                            : (v) => setState(() {
-                                _requireOtp = v;
-                                _quote = null;
-                              }),
+                            : (v) {
+                                setState(() {
+                                  _requireOtp = v;
+                                  _quote = null;
+                                });
+                                _scheduleDraftSync();
+                              },
                       ),
                       for (var i = 0; i < _extraStops.length; i++)
                         Padding(
@@ -1298,7 +1838,7 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
                                         : Icons.pin_drop_outlined,
                                     size: 16,
                                     color: _extraStops[i].point != null
-                                        ? Colors.green.shade700
+                                        ? tokens.emerald.foreground
                                         : null,
                                   ),
                                   const SizedBox(width: 6),
@@ -1375,186 +1915,214 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
                                   onSelected: (place) {
                                     if (!_sameAccount) return;
                                     _extraStops[i].address.text = place.address;
-                                    setState(() {
-                                      _extraStops[i].point = place.point;
-                                      _focusedMapPoint = place.point;
-                                      _quote = null;
-                                      _error = null;
-                                    });
-                                  },
-                                ),
-                            ],
-                          ),
-                        ),
-                      if (_extraStops.length >= 2) ...[
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: OutlinedButton.icon(
-                            onPressed: _busy || !_sameAccount
-                                ? null
-                                : _optimizeStops,
-                            icon: const Icon(Icons.alt_route_outlined),
-                            label: const Text(
-                              'Tối ưu thứ tự điểm dừng theo đường bộ',
+                                      setState(() {
+                                        _extraStops[i].point = place.point;
+                                        _focusedMapPoint = place.point;
+                                        _quote = null;
+                                        _error = null;
+                                      });
+                                      _scheduleDraftSync();
+                                    },
+                                  ),
+                              ],
                             ),
                           ),
-                        ),
-                        if (_routeNotice != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 6),
-                            child: Text(_routeNotice!),
+                        if (_extraStops.length >= 2) ...[
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: OutlinedButton.icon(
+                              onPressed: _busy || !_sameAccount
+                                  ? null
+                                  : _optimizeStops,
+                              icon: const Icon(Icons.alt_route_outlined),
+                              label: const Text(
+                                'Tối ưu thứ tự điểm dừng theo đường bộ',
+                              ),
+                            ),
                           ),
-                        const SizedBox(height: 8),
+                          if (_routeNotice != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 6),
+                              child: Text(_routeNotice!),
+                            ),
+                          const SizedBox(height: 8),
+                        ],
+                        if (_extraStops.length < 5)
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: OutlinedButton.icon(
+                              onPressed: _busy || !_sameAccount
+                                  ? null
+                                  : () {
+                                      setState(() {
+                                        _addStop();
+                                        _quote = null;
+                                      });
+                                      _scheduleDraftSync();
+                                    },
+                              icon: const Icon(Icons.add_location_alt_outlined),
+                              label: const Text(
+                                'Thêm điểm dừng trung gian · 5.000 đ',
+                              ),
+                            ),
+                          ),
                       ],
-                      if (_extraStops.length < 5)
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: OutlinedButton.icon(
-                            onPressed: _busy || !_sameAccount
-                                ? null
-                                : () => setState(() {
-                                    _addStop();
-                                    _quote = null;
-                                  }),
-                            icon: const Icon(Icons.add_location_alt_outlined),
-                            label: const Text(
-                              'Thêm điểm dừng trung gian · 5.000 đ',
+                    ),
+                    const SizedBox(height: 20),
+                    if (_quote != null) ...[
+                      GhstLuminousCard(
+                        accentGlow: tokens.emerald.glow,
+                        padding: const EdgeInsets.all(16),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        borderRadius: 16,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              'Phí vận chuyển: ${CurrencyFormatter.formatVnd((_quote!['shipping_fee'] as num).toDouble())}',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
+                            if ((_quote!['coin_discount'] as num? ?? 0) >
+                                0) ...[
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Text(
+                                  'Đổi Xu giảm cước: -${CurrencyFormatter.formatVnd((_quote!['coin_discount'] as num).toDouble())}',
+                                  style: TextStyle(
+                                    color: tokens.emerald.foreground,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  top: 2,
+                                  bottom: 4,
+                                ),
+                                child: Text(
+                                  'Cước cần thanh toán: ${CurrencyFormatter.formatVnd(((_quote!['payable_fee'] ?? _quote!['shipping_fee']) as num).toDouble())}',
+                                  style: const TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                            ] else if (!_useCoins &&
+                                (_quote!['max_coin_discount'] as num? ?? 0) > 0)
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  top: 4,
+                                  bottom: 4,
+                                ),
+                                child: Text(
+                                  'Có thể bật Dùng Xu để giảm ngay ${CurrencyFormatter.formatVnd((_quote!['max_coin_discount'] as num).toDouble())} cước phí',
+                                  style: TextStyle(
+                                    color: tokens.amber.foreground,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            Text(
+                              'Cự ly ước tính: ${((_quote!['distance_meters'] as num) / 1000).toStringAsFixed(1)} km',
+                            ),
+                            if ((_quote!['volumetric_weight_kg'] as num? ?? 0) >
+                                0)
+                              Text(
+                                'Khối lượng quy đổi thể tích: ${_quote!['volumetric_weight_kg']} kg',
+                              ),
+                            if ((_quote!['estimated_co2_saved_grams'] as num? ??
+                                    0) >
+                                0)
+                              Text(
+                                'Ước tính giảm phát thải EV: ${_quote!['estimated_co2_saved_grams']} g CO2',
+                              ),
+                            if (_serviceEta?[_serviceType] case final eta?)
+                              Text(
+                                'Thời gian giao thực tế trung bình 30 ngày · ${cloudServiceTypes[_serviceType]}: '
+                                '${cloudMinutes(eta['avg_delivery_minutes'])} · ${eta['samples']} đơn',
+                              ),
+                            if (_quote!['breakdown'] is Map) ...[
+                              for (final entry in const {
+                                'base_fee': 'Phí 2 km đầu',
+                                'distance_fee': 'Phí quãng đường bổ sung',
+                                'weight_fee': 'Phụ phí vượt khối lượng',
+                                'express_fee': 'Điều chỉnh gói dịch vụ',
+                              }.entries)
+                                if ((_quote!['breakdown'] as Map)[entry.key]
+                                    is num)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 6),
+                                    child: Text(
+                                      '${entry.value}: ${CurrencyFormatter.formatVnd(((_quote!['breakdown'] as Map)[entry.key] as num).toDouble())}',
+                                    ),
+                                  ),
+                              for (final entry in const {
+                                'stop_fee': 'Phụ phí đa điểm dừng',
+                                'round_trip_fee': 'Phụ phí khứ hồi',
+                                'insurance_fee': 'Phí bảo hiểm khai giá',
+                                'green_fee': 'Đóng góp Quỹ Xanh',
+                              }.entries)
+                                if (((_quote!['breakdown'] as Map)[entry.key]
+                                            as num? ??
+                                        0) >
+                                    0)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 6),
+                                    child: Text(
+                                      '${entry.value}: ${CurrencyFormatter.formatVnd(((_quote!['breakdown'] as Map)[entry.key] as num).toDouble())}',
+                                    ),
+                                  ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      if (_payment == 'sender_bank_qr') ...[
+                        VietQrBankPaymentPanel(
+                          amountVnd:
+                              ((_quote!['payable_fee'] ??
+                                          _quote!['shipping_fee'])
+                                      as num)
+                                  .toDouble(),
+                          orderReference: 'CUOC VAN CHUYEN',
+                          compact: true,
+                          reconciliationNote:
+                              'Sau khi bấm Xác nhận tạo đơn, hệ thống sẽ tạo mã vận đơn riêng để đối soát chuyển khoản.',
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    ],
+                    if (_error != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Text(
+                          _error!,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
                           ),
                         ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  if (_quote != null) ...[
-                    Text(
-                      'Phí vận chuyển: ${CurrencyFormatter.formatVnd((_quote!['shipping_fee'] as num).toDouble())}',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
+                      ),
+                    if (_busy) const LinearProgressIndicator(),
+                    FilledButton.icon(
+                      onPressed: _busy || !_sameAccount
+                          ? null
+                          : () => _submit(create: _quote != null),
+                      icon: Icon(
+                        _quote == null ? Icons.calculate_outlined : Icons.add,
+                      ),
+                      label: Text(
+                        _quote == null ? 'Lấy báo giá' : 'Xác nhận tạo đơn',
                       ),
                     ),
-                    if ((_quote!['coin_discount'] as num? ?? 0) > 0) ...[
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          'Đổi Xu giảm cước: -${CurrencyFormatter.formatVnd((_quote!['coin_discount'] as num).toDouble())}',
-                          style: TextStyle(
-                            color: Colors.green.shade800,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 2, bottom: 4),
-                        child: Text(
-                          'Cước cần thanh toán: ${CurrencyFormatter.formatVnd(((_quote!['payable_fee'] ?? _quote!['shipping_fee']) as num).toDouble())}',
-                          style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                    ] else if (!_useCoins &&
-                        (_quote!['max_coin_discount'] as num? ?? 0) > 0)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4, bottom: 4),
-                        child: Text(
-                          'Có thể bật Dùng Xu để giảm ngay ${CurrencyFormatter.formatVnd((_quote!['max_coin_discount'] as num).toDouble())} cước phí',
-                          style: TextStyle(
-                            color: Colors.amber.shade900,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    Text(
-                      'Cự ly ước tính: ${((_quote!['distance_meters'] as num) / 1000).toStringAsFixed(1)} km',
-                    ),
-                    if ((_quote!['volumetric_weight_kg'] as num? ?? 0) > 0)
-                      Text(
-                        'Khối lượng quy đổi thể tích: ${_quote!['volumetric_weight_kg']} kg',
-                      ),
-                    if ((_quote!['estimated_co2_saved_grams'] as num? ?? 0) > 0)
-                      Text(
-                        'Ước tính giảm phát thải EV: ${_quote!['estimated_co2_saved_grams']} g CO2',
-                      ),
-                    if (_serviceEta?[_serviceType] case final eta?)
-                      Text(
-                        'Thời gian giao thực tế trung bình 30 ngày · ${cloudServiceTypes[_serviceType]}: '
-                        '${cloudMinutes(eta['avg_delivery_minutes'])} · ${eta['samples']} đơn',
-                      ),
-                    if (_quote!['breakdown'] is Map) ...[
-                      for (final entry in const {
-                        'base_fee': 'Phí 2 km đầu',
-                        'distance_fee': 'Phí quãng đường bổ sung',
-                        'weight_fee': 'Phụ phí vượt khối lượng',
-                        'express_fee': 'Điều chỉnh gói dịch vụ',
-                      }.entries)
-                        if ((_quote!['breakdown'] as Map)[entry.key] is num)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 6),
-                            child: Text(
-                              '${entry.value}: ${CurrencyFormatter.formatVnd(((_quote!['breakdown'] as Map)[entry.key] as num).toDouble())}',
-                            ),
-                          ),
-                      for (final entry in const {
-                        'stop_fee': 'Phụ phí đa điểm dừng',
-                        'round_trip_fee': 'Phụ phí khứ hồi',
-                        'insurance_fee': 'Phí bảo hiểm khai giá',
-                        'green_fee': 'Đóng góp Quỹ Xanh',
-                      }.entries)
-                        if (((_quote!['breakdown'] as Map)[entry.key] as num? ??
-                                0) >
-                            0)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 6),
-                            child: Text(
-                              '${entry.value}: ${CurrencyFormatter.formatVnd(((_quote!['breakdown'] as Map)[entry.key] as num).toDouble())}',
-                            ),
-                          ),
-                    ],
-                    const SizedBox(height: 16),
-                    if (_payment == 'sender_bank_qr') ...[
-                      VietQrBankPaymentPanel(
-                        amountVnd:
-                            ((_quote!['payable_fee'] ?? _quote!['shipping_fee'])
-                                    as num)
-                                .toDouble(),
-                        orderReference: 'CUOC VAN CHUYEN',
-                        compact: true,
-                        reconciliationNote:
-                            'Sau khi bấm Xác nhận tạo đơn, hệ thống sẽ tạo mã vận đơn riêng để đối soát chuyển khoản.',
-                      ),
-                      const SizedBox(height: 16),
-                    ],
                   ],
-                  if (_error != null)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Text(
-                        _error!,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.error,
-                        ),
-                      ),
-                    ),
-                  if (_busy) const LinearProgressIndicator(),
-                  FilledButton.icon(
-                    onPressed: _busy || !_sameAccount
-                        ? null
-                        : () => _submit(create: _quote != null),
-                    icon: Icon(
-                      _quote == null ? Icons.calculate_outlined : Icons.add,
-                    ),
-                    label: Text(
-                      _quote == null ? 'Lấy báo giá' : 'Xác nhận tạo đơn',
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }

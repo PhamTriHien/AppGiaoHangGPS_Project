@@ -9,10 +9,12 @@ import '../../core/integrations/cloud_session_lease.dart';
 import '../../core/integrations/delivery_api_client.dart';
 import '../../core/network/public_json_api.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/ghst_theme_tokens.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../widgets/cloud_order_labels.dart';
 import '../widgets/cloud_session_boundary.dart';
 import '../widgets/market_commercial_sheets.dart';
+import '../widgets/theme_mode_toggle.dart';
 
 Future<void> openCloudPromoEvents(
   BuildContext context,
@@ -351,195 +353,190 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
     }
   }
 
-  Color _rarityColor(String rarity) => switch (rarity) {
-    'Legendary' || 'SSR' => const Color(0xFFFEF3C7),
-    'Epic' || 'SR' => const Color(0xFFFFF1F2),
-    'Rare' || 'R' => const Color(0xFFECFDF5),
-    _ => AppColors.surfaceSubtle,
-  };
-
-  Color _rarityInkColor(String rarity) => switch (rarity) {
-    'Legendary' || 'SSR' => const Color(0xFF92400E),
-    'Epic' || 'SR' => AppColors.accent,
-    'Rare' || 'R' => AppColors.success,
-    _ => AppColors.textSecondary,
-  };
+  TonePair _rarityTone(GhstThemeTokens tokens, String rarity) =>
+      switch (rarity) {
+        'Legendary' || 'SSR' => tokens.amber,
+        'Epic' || 'SR' => tokens.rose,
+        'Rare' || 'R' => tokens.emerald,
+        _ => tokens.neutral,
+      };
 
   Future<void> _showRewardDialog(Map<String, dynamic> reward) {
     final rarity = '${reward['rarity'] ?? 'Common'}';
     final voucherCode = reward['voucher_code'] as String?;
     return showDialog<void>(
       context: context,
-      builder: (dialogCtx) => Dialog(
-        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-        backgroundColor: AppColors.surface,
-        surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: AppColors.line),
-        ),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(22),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _rarityColor(rarity),
-                            borderRadius: BorderRadius.circular(999),
-                            border: Border.all(
-                              color: _rarityInkColor(
-                                rarity,
-                              ).withValues(alpha: 0.25),
+      builder: (dialogCtx) {
+        final tokens = GhstThemeTokens.of(dialogCtx);
+        final rTone = _rarityTone(tokens, rarity);
+        return Dialog(
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 24,
+          ),
+          backgroundColor: tokens.cardSurface,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: tokens.border),
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(22),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
                             ),
-                          ),
-                          child: Text(
-                            'PHẦN THƯỞNG • ${rarity.toUpperCase()}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: _rarityInkColor(rarity),
+                            decoration: BoxDecoration(
+                              color: rTone.fill,
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(color: rTone.border),
                             ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      visualDensity: VisualDensity.compact,
-                      onPressed: () => Navigator.pop(dialogCtx),
-                      icon: const Icon(Icons.close),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  '${reward['title'] ?? 'Nhận thưởng thành công'}',
-                  style: const TextStyle(
-                    fontSize: 19,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.ink,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  '${reward['summary'] ?? ''}',
-                  style: const TextStyle(
-                    fontSize: 13.5,
-                    height: 1.45,
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                if (voucherCode != null && voucherCode.isNotEmpty) ...[
-                  const SizedBox(height: 14),
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: AppColors.primarySoft,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.primaryBorder),
-                    ),
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      alignment: WrapAlignment.spaceBetween,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.confirmation_num_outlined,
-                              color: AppColors.primary,
-                            ),
-                            const SizedBox(width: 8),
-                            Flexible(
-                              child: SelectableText(
-                                voucherCode,
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w800,
-                                  color: Color(0xFF1E3A8A),
-                                ),
+                            child: Text(
+                              'PHẦN THƯỞNG • ${rarity.toUpperCase()}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                color: rTone.foreground,
                               ),
                             ),
-                          ],
+                          ),
                         ),
-                        OutlinedButton(
-                          onPressed: () => _copyVoucherAndShop(voucherCode),
-                          child: const Text('Sao chép'),
-                        ),
-                      ],
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () => Navigator.pop(dialogCtx),
+                        icon: Icon(Icons.close, color: tokens.ink),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    '${reward['title'] ?? 'Nhận thưởng thành công'}',
+                    style: TextStyle(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w800,
+                      color: tokens.ink,
                     ),
                   ),
-                ],
-                const SizedBox(height: 18),
-                Wrap(
-                  alignment: WrapAlignment.end,
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    if (voucherCode != null &&
-                        voucherCode.isNotEmpty &&
-                        widget.onOpenCatalog != null)
-                      OutlinedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(dialogCtx);
-                          _copyVoucherAndShop(voucherCode, goShop: true);
-                        },
-                        icon: const Icon(Icons.storefront_outlined, size: 16),
-                        label: const Text('Dùng đặt món ngay'),
+                  const SizedBox(height: 6),
+                  Text(
+                    '${reward['summary'] ?? ''}',
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      height: 1.45,
+                      color: tokens.inkSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  if (voucherCode != null && voucherCode.isNotEmpty) ...[
+                    const SizedBox(height: 14),
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: tokens.sapphire.fill,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: tokens.sapphire.border),
                       ),
-                    FilledButton(
-                      onPressed: () => Navigator.pop(dialogCtx),
-                      child: const Text('Tuyệt vời'),
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.confirmation_num_outlined,
+                                color: tokens.sapphire.icon,
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: SelectableText(
+                                  voucherCode,
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w800,
+                                    color: tokens.sapphire.foreground,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          OutlinedButton(
+                            onPressed: () => _copyVoucherAndShop(voucherCode),
+                            child: const Text('Sao chép'),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
-                ),
-              ],
+                  const SizedBox(height: 18),
+                  Wrap(
+                    alignment: WrapAlignment.end,
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      if (voucherCode != null &&
+                          voucherCode.isNotEmpty &&
+                          widget.onOpenCatalog != null)
+                        OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(dialogCtx);
+                            _copyVoucherAndShop(voucherCode, goShop: true);
+                          },
+                          icon: const Icon(Icons.storefront_outlined, size: 16),
+                          label: const Text('Dùng đặt món ngay'),
+                        ),
+                      FilledButton(
+                        onPressed: () => Navigator.pop(dialogCtx),
+                        child: const Text('Tuyệt vời'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
   Widget _neoCard({
     required Widget child,
-    Color color = AppColors.surface,
+    Color? accentGlow,
     EdgeInsetsGeometry padding = const EdgeInsets.all(16),
-  }) => Container(
-    padding: padding,
-    decoration: BoxDecoration(
-      color: color,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: AppColors.line),
-      boxShadow: AppColors.cardShadow,
-    ),
-    child: Material(type: MaterialType.transparency, child: child),
-  );
+  }) {
+    final tokens = GhstThemeTokens.of(context);
+    return GhstLuminousCard(
+      padding: padding,
+      accentGlow: accentGlow ?? tokens.sapphire.glow,
+      child: Material(type: MaterialType.transparency, child: child),
+    );
+  }
 
-  Widget _walletBanner() {
+  Widget _walletBanner(GhstThemeTokens tokens) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        border: Border(bottom: BorderSide(color: AppColors.line)),
+      decoration: BoxDecoration(
+        color: tokens.cardSurface,
+        border: Border(bottom: BorderSide(color: tokens.border)),
       ),
       child: Center(
         child: ConstrainedBox(
@@ -556,21 +553,18 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                     showCoinWalletDialog(context, session: widget.session),
                 child: _walletChip(
                   icon: Icons.monetization_on_rounded,
-                  bg: const Color(0xFFECFDF5),
-                  fg: AppColors.success,
+                  tone: tokens.emerald,
                   label: 'Ví Xu: $_coinBalance Xu',
                 ),
               ),
               _walletChip(
                 icon: Icons.casino_outlined,
-                bg: AppColors.primarySoft,
-                fg: const Color(0xFF1E3A8A),
+                tone: tokens.sapphire,
                 label: 'Vé Vòng Xoay: $_spinTickets',
               ),
               _walletChip(
                 icon: Icons.card_giftcard,
-                bg: const Color(0xFFFFF1F2),
-                fg: AppColors.accent,
+                tone: tokens.rose,
                 label: 'Vé Hộp Mù: $_boxTickets',
               ),
             ],
@@ -582,27 +576,26 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
 
   Widget _walletChip({
     required IconData icon,
-    required Color bg,
-    required Color fg,
+    required TonePair tone,
     required String label,
   }) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
     decoration: BoxDecoration(
-      color: bg,
+      color: tone.fill,
       borderRadius: BorderRadius.circular(999),
-      border: Border.all(color: fg.withValues(alpha: 0.22)),
+      border: Border.all(color: tone.border),
     ),
     child: Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 15, color: fg),
+        Icon(icon, size: 15, color: tone.icon),
         const SizedBox(width: 6),
         Text(
           label,
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w800,
-            color: fg,
+            color: tone.foreground,
           ),
         ),
       ],
@@ -610,6 +603,7 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
   );
 
   Widget _buildCheckinAndDealsTab() {
+    final tokens = GhstThemeTokens.of(context);
     final schedule = _rows(_data?['checkin_schedule']);
     final missions = _rows(_data?['missions']);
     final exchange = _rows(_data?['exchange_catalog']);
@@ -628,382 +622,200 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                  _neoCard(
-                    color: AppColors.surface,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 6,
-                          alignment: WrapAlignment.spaceBetween,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: [
-                            Text(
-                              'Điểm danh 7 ngày nhận Xu & Vé quay · $streak/7',
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.ink,
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: checkedToday
-                                    ? const Color(0xFFECFDF5)
-                                    : const Color(0xFFFEF3C7),
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                              child: Text(
-                                checkedToday
-                                    ? 'ĐÃ ĐIỂM DANH HÔM NAY'
-                                    : 'CHƯA ĐIỂM DANH',
-                                style: TextStyle(
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w800,
-                                  color: checkedToday
-                                      ? AppColors.success
-                                      : const Color(0xFF92400E),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            for (final d in schedule)
-                              Builder(
-                                builder: (_) {
-                                  final day = (d['day'] as num? ?? 1).toInt();
-                                  final coins = (d['coins'] as num? ?? 0)
-                                      .toInt();
-                                  final spins = (d['spin_tickets'] as num? ?? 0)
-                                      .toInt();
-                                  final boxes = (d['box_tickets'] as num? ?? 0)
-                                      .toInt();
-                                  final done = day <= streak;
-                                  return Container(
-                                    width: 112,
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
-                                      color: done
-                                          ? const Color(0xFFECFDF5)
-                                          : AppColors.surfaceSubtle,
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: done
-                                            ? AppColors.success.withValues(
-                                                alpha: 0.45,
-                                              )
-                                            : AppColors.line,
-                                        width: done ? 1.4 : 1.0,
-                                      ),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Ngày $day ${done ? '✓' : ''}',
-                                          style: TextStyle(
-                                            fontSize: 11.5,
-                                            fontWeight: FontWeight.w800,
-                                            color: done
-                                                ? AppColors.success
-                                                : AppColors.ink,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 3),
-                                        Text(
-                                          '+$coins Xu',
-                                          style: const TextStyle(
-                                            fontSize: 12.5,
-                                            fontWeight: FontWeight.w800,
-                                            color: AppColors.primary,
-                                          ),
-                                        ),
-                                        if (spins > 0 || boxes > 0)
-                                          Text(
-                                            [
-                                              if (spins > 0) '+$spins Vé quay',
-                                              if (boxes > 0) '+$boxes Hộp mù',
-                                            ].join(' · '),
-                                            style: const TextStyle(
-                                              fontSize: 10.5,
-                                              fontWeight: FontWeight.w600,
-                                              color: AppColors.textSecondary,
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  );
-                                },
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        FilledButton.icon(
-                          key: const ValueKey('btn-promo-checkin'),
-                          onPressed: _busy || !_enabled || checkedToday
-                              ? null
-                              : () => _mutate('checkin'),
-                          icon: Icon(
-                            checkedToday
-                                ? Icons.check_circle_outline
-                                : Icons.bolt_rounded,
-                          ),
-                          label: Text(
-                            checkedToday
-                                ? 'Đã nhận thưởng điểm danh hôm nay'
-                                : 'Điểm danh nhận Xu & Vé quay ngay',
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  _neoCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.flash_on_rounded,
-                              color: AppColors.pink,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 6),
-                            const Expanded(
-                              child: Text(
-                                'Khung giờ Flash Sale đang mở',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w900,
-                                  color: AppColors.ink,
-                                ),
-                              ),
-                            ),
-                            if (widget.onOpenCatalog != null)
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                  widget.onOpenCatalog!();
-                                },
-                                child: const Text('Vào quán ăn'),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        if (flashSales.isEmpty)
-                          const Text(
-                            'Hiện chưa có khung giờ Flash Sale nào đang diễn ra.',
+                _neoCard(
+                  accentGlow: tokens.emerald.glow,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          Text(
+                            'Điểm danh 7 ngày nhận Xu & Vé quay · $streak/7',
                             style: TextStyle(
-                              fontSize: 12.5,
-                              color: AppColors.textSecondary,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              color: tokens.ink,
                             ),
-                          )
-                        else
-                          for (final fs in flashSales) ...[
-                            Container(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: AppColors.surfaceSubtle,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: AppColors.line),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: checkedToday
+                                  ? tokens.emerald.fill
+                                  : tokens.amber.fill,
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(
+                                color: checkedToday
+                                    ? tokens.emerald.border
+                                    : tokens.amber.border,
                               ),
-                              child: Wrap(
-                                spacing: 10,
-                                runSpacing: 8,
-                                alignment: WrapAlignment.spaceBetween,
-                                crossAxisAlignment: WrapCrossAlignment.center,
-                                children: [
-                                  ConstrainedBox(
-                                    constraints: const BoxConstraints(
-                                      maxWidth: 520,
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          '${fs['product_name']} • ${fs['shop_name']}',
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w900,
-                                            fontSize: 13.5,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          'Giá Flash Sale: ${CurrencyFormatter.formatVnd(((fs['sale_price'] as num?) ?? 0).toDouble())} '
-                                          '· Giá gốc ${CurrencyFormatter.formatVnd(((fs['original_price'] as num?) ?? 0).toDouble())} · '
-                                          'Đã bán ${fs['sold_stock']}/${fs['allocated_stock']}',
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            color: AppColors.pink,
-                                            fontWeight: FontWeight.w800,
-                                          ),
-                                        ),
-                                      ],
+                            ),
+                            child: Text(
+                              checkedToday
+                                  ? 'ĐÃ ĐIỂM DANH HÔM NAY'
+                                  : 'CHƯA ĐIỂM DANH',
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w800,
+                                color: checkedToday
+                                    ? tokens.emerald.foreground
+                                    : tokens.amber.foreground,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final d in schedule)
+                            Builder(
+                              builder: (_) {
+                                final day = (d['day'] as num? ?? 1).toInt();
+                                final coins = (d['coins'] as num? ?? 0).toInt();
+                                final spins = (d['spin_tickets'] as num? ?? 0)
+                                    .toInt();
+                                final boxes = (d['box_tickets'] as num? ?? 0)
+                                    .toInt();
+                                final done = day <= streak;
+                                return Container(
+                                  width: 112,
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: done
+                                        ? tokens.emerald.fill
+                                        : tokens.cardSubtle,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: done
+                                          ? tokens.emerald.border
+                                          : tokens.border,
+                                      width: done ? 1.4 : 1.0,
                                     ),
                                   ),
-                                  if (widget.onOpenCatalog != null)
-                                    FilledButton.tonal(
-                                      onPressed: () {
-                                        Navigator.of(context).pop();
-                                        widget.onOpenCatalog!();
-                                      },
-                                      child: const Text('Săn ngay'),
-                                    ),
-                                ],
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Ngày $day ${done ? '✓' : ''}',
+                                        style: TextStyle(
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w800,
+                                          color: done
+                                              ? tokens.emerald.foreground
+                                              : tokens.ink,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        '+$coins Xu',
+                                        style: TextStyle(
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w800,
+                                          color: tokens.sapphire.foreground,
+                                        ),
+                                      ),
+                                      if (spins > 0 || boxes > 0)
+                                        Text(
+                                          [
+                                            if (spins > 0) '+$spins Vé quay',
+                                            if (boxes > 0) '+$boxes Hộp mù',
+                                          ].join(' · '),
+                                          style: TextStyle(
+                                            fontSize: 10.5,
+                                            fontWeight: FontWeight.w600,
+                                            color: tokens.inkSecondary,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      FilledButton.icon(
+                        key: const ValueKey('btn-promo-checkin'),
+                        onPressed: _busy || !_enabled || checkedToday
+                            ? null
+                            : () => _mutate('checkin'),
+                        icon: Icon(
+                          checkedToday
+                              ? Icons.check_circle_outline
+                              : Icons.bolt_rounded,
+                        ),
+                        label: Text(
+                          checkedToday
+                              ? 'Đã nhận thưởng điểm danh hôm nay'
+                              : 'Điểm danh nhận Xu & Vé quay ngay',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                _neoCard(
+                  accentGlow: tokens.rose.glow,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.flash_on_rounded,
+                            color: tokens.rose.icon,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'Khung giờ Flash Sale đang mở',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w900,
+                                color: tokens.ink,
                               ),
                             ),
-                          ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  _neoCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const Text(
-                          'Nhiệm vụ đơn hàng',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w900,
-                            color: AppColors.ink,
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        const Text(
-                          'Tiến độ tự động cập nhật từ các đơn giao hàng và đơn đặt món đã hoàn tất.',
+                          if (widget.onOpenCatalog != null)
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                                widget.onOpenCatalog!();
+                              },
+                              child: const Text('Vào quán ăn'),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      if (flashSales.isEmpty)
+                        Text(
+                          'Hiện chưa có khung giờ Flash Sale nào đang diễn ra.',
                           style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
+                            fontSize: 12.5,
+                            color: tokens.inkSecondary,
                           ),
-                        ),
-                        const SizedBox(height: 10),
-                        for (final m in missions)
+                        )
+                      else
+                        for (final fs in flashSales) ...[
                           Container(
-                            margin: const EdgeInsets.only(bottom: 10),
+                            margin: const EdgeInsets.only(bottom: 8),
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: m['claimed'] == true
-                                  ? AppColors.surfaceSubtle
-                                  : AppColors.surface,
+                              color: tokens.cardSubtle,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppColors.line),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 6,
-                                  alignment: WrapAlignment.spaceBetween,
-                                  crossAxisAlignment: WrapCrossAlignment.center,
-                                  children: [
-                                    ConstrainedBox(
-                                      constraints: const BoxConstraints(
-                                        maxWidth: 520,
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            '${m['title']} · ${m['progress']}/${m['target']}',
-                                            style: const TextStyle(
-                                              fontSize: 13.5,
-                                              fontWeight: FontWeight.w900,
-                                            ),
-                                          ),
-                                          Text(
-                                            '${m['subtitle']}',
-                                            style: const TextStyle(
-                                              fontSize: 11.5,
-                                              color: AppColors.textSecondary,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            [
-                                              '+${m['coins']} Xu',
-                                              if (((m['spin_tickets']
-                                                          as num?) ??
-                                                      0) >
-                                                  0)
-                                                '+${m['spin_tickets']} Vé quay',
-                                              if (((m['box_tickets'] as num?) ??
-                                                      0) >
-                                                  0)
-                                                '+${m['box_tickets']} Vé hộp mù',
-                                            ].join(' · '),
-                                            style: const TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w900,
-                                              color: AppColors.violet,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    FilledButton(
-                                      onPressed:
-                                          _busy ||
-                                              !_enabled ||
-                                              m['claimable'] != true
-                                          ? null
-                                          : () => _mutate('claim_mission', {
-                                              'mission_id': '${m['id']}',
-                                            }),
-                                      child: Text(
-                                        m['claimed'] == true
-                                            ? 'Đã nhận'
-                                            : m['claimable'] == true
-                                            ? 'Nhận thưởng'
-                                            : 'Chưa đạt',
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  _neoCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const Text(
-                          'Trạm Đổi Xu thưởng',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w900,
-                            color: AppColors.ink,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        for (final item in exchange)
-                          Container(
-                            margin: const EdgeInsets.only(bottom: 10),
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: AppColors.surfaceSubtle,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppColors.line),
+                              border: Border.all(color: tokens.border),
                             ),
                             child: Wrap(
                               spacing: 10,
@@ -1020,54 +832,243 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        '${item['title']}',
-                                        style: const TextStyle(
-                                          fontSize: 13.5,
+                                        '${fs['product_name']} • ${fs['shop_name']}',
+                                        style: TextStyle(
                                           fontWeight: FontWeight.w900,
+                                          fontSize: 13.5,
+                                          color: tokens.ink,
                                         ),
                                       ),
+                                      const SizedBox(height: 2),
                                       Text(
-                                        '${item['subtitle']}',
-                                        style: const TextStyle(
-                                          fontSize: 11.5,
-                                          color: AppColors.textSecondary,
+                                        'Giá Flash Sale: ${CurrencyFormatter.formatVnd(((fs['sale_price'] as num?) ?? 0).toDouble())} '
+                                        '· Giá gốc ${CurrencyFormatter.formatVnd(((fs['original_price'] as num?) ?? 0).toDouble())} · '
+                                        'Đã bán ${fs['sold_stock']}/${fs['allocated_stock']}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: tokens.rose.foreground,
+                                          fontWeight: FontWeight.w800,
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
-                                OutlinedButton.icon(
-                                  onPressed:
-                                      _busy ||
-                                          !_enabled ||
-                                          _coinBalance <
-                                              ((item['coin_cost'] as num?) ?? 0)
-                                                  .toInt()
-                                      ? null
-                                      : () => _mutate('exchange_coins', {
-                                          'item_id': '${item['id']}',
-                                        }),
-                                  icon: const Icon(
-                                    Icons.swap_horiz_rounded,
-                                    size: 16,
+                                if (widget.onOpenCatalog != null)
+                                  FilledButton.tonal(
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+                                      widget.onOpenCatalog!();
+                                    },
+                                    child: const Text('Săn ngay'),
                                   ),
-                                  label: Text('Đổi ${item['coin_cost']} Xu'),
-                                ),
                               ],
                             ),
                           ),
-                      ],
-                    ),
+                        ],
+                    ],
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 14),
+                _neoCard(
+                  accentGlow: tokens.violet.glow,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Nhiệm vụ đơn hàng',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                          color: tokens.ink,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Tiến độ tự động cập nhật từ các đơn giao hàng và đơn đặt món đã hoàn tất.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: tokens.inkSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      for (final m in missions)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: m['claimed'] == true
+                                ? tokens.cardMuted
+                                : tokens.cardSubtle,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: tokens.border),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 6,
+                                alignment: WrapAlignment.spaceBetween,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  ConstrainedBox(
+                                    constraints: const BoxConstraints(
+                                      maxWidth: 520,
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          '${m['title']} · ${m['progress']}/${m['target']}',
+                                          style: TextStyle(
+                                            fontSize: 13.5,
+                                            fontWeight: FontWeight.w900,
+                                            color: tokens.ink,
+                                          ),
+                                        ),
+                                        Text(
+                                          '${m['subtitle']}',
+                                          style: TextStyle(
+                                            fontSize: 11.5,
+                                            color: tokens.inkSecondary,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          [
+                                            '+${m['coins']} Xu',
+                                            if (((m['spin_tickets'] as num?) ??
+                                                    0) >
+                                                0)
+                                              '+${m['spin_tickets']} Vé quay',
+                                            if (((m['box_tickets'] as num?) ??
+                                                    0) >
+                                                0)
+                                              '+${m['box_tickets']} Vé hộp mù',
+                                          ].join(' · '),
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w900,
+                                            color: tokens.sapphire.foreground,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  FilledButton(
+                                    onPressed:
+                                        _busy ||
+                                            !_enabled ||
+                                            m['claimable'] != true
+                                        ? null
+                                        : () => _mutate('claim_mission', {
+                                            'mission_id': '${m['id']}',
+                                          }),
+                                    child: Text(
+                                      m['claimed'] == true
+                                          ? 'Đã nhận'
+                                          : m['claimable'] == true
+                                          ? 'Nhận thưởng'
+                                          : 'Chưa đạt',
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                _neoCard(
+                  accentGlow: tokens.amber.glow,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Trạm Đổi Xu thưởng',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                          color: tokens.ink,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      for (final item in exchange)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: tokens.cardSubtle,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: tokens.border),
+                          ),
+                          child: Wrap(
+                            spacing: 10,
+                            runSpacing: 8,
+                            alignment: WrapAlignment.spaceBetween,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  maxWidth: 520,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '${item['title']}',
+                                      style: TextStyle(
+                                        fontSize: 13.5,
+                                        fontWeight: FontWeight.w900,
+                                        color: tokens.ink,
+                                      ),
+                                    ),
+                                    Text(
+                                      '${item['subtitle']}',
+                                      style: TextStyle(
+                                        fontSize: 11.5,
+                                        color: tokens.inkSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              OutlinedButton.icon(
+                                onPressed:
+                                    _busy ||
+                                        !_enabled ||
+                                        _coinBalance <
+                                            ((item['coin_cost'] as num?) ?? 0)
+                                                .toInt()
+                                    ? null
+                                    : () => _mutate('exchange_coins', {
+                                        'item_id': '${item['id']}',
+                                      }),
+                                icon: const Icon(
+                                  Icons.swap_horiz_rounded,
+                                  size: 16,
+                                ),
+                                label: Text('Đổi ${item['coin_cost']} Xu'),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
+        ),
       ),
     );
   }
 
   Widget _buildSpinWheelTab() {
+    final tokens = GhstThemeTokens.of(context);
     final segments = _rows(_data?['wheel_segments']);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -1076,25 +1077,26 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
           constraints: const BoxConstraints(maxWidth: 680),
           child: _neoCard(
             padding: const EdgeInsets.all(18),
+            accentGlow: tokens.rose.glow,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const Text(
+                Text(
                   'VÒNG XOAY MAY MẮN',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
-                    color: AppColors.ink,
+                    color: tokens.ink,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Quà tặng và mã giảm giá cộng tự động vào tài khoản • Đã quay ${_wallet['total_spins'] ?? 0} lượt',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.textSecondary,
+                    color: tokens.inkSecondary,
                   ),
                 ),
                 const SizedBox(height: 18),
@@ -1130,11 +1132,15 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                               },
                             ),
                           ),
-                          const Positioned(
+                          Positioned(
                             top: 0,
                             child: CustomPaint(
-                              size: Size(28, 26),
-                              painter: _WheelPointerPainter(),
+                              size: const Size(28, 26),
+                              painter: _WheelPointerPainter(
+                                outlineColor: tokens.isDark
+                                    ? Colors.white
+                                    : AppColors.ink,
+                              ),
                             ),
                           ),
                           Positioned(
@@ -1146,21 +1152,21 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                                 height: 74,
                                 alignment: Alignment.center,
                                 decoration: BoxDecoration(
-                                  color: AppColors.surface,
+                                  color: tokens.cardSurface,
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: AppColors.primary,
+                                    color: tokens.primary,
                                     width: 3,
                                   ),
-                                  boxShadow: AppColors.elevatedShadow,
+                                  boxShadow: tokens.elevatedShadow,
                                 ),
                                 child: Text(
                                   _busy ? '...' : 'QUAY\n$_spinTickets VÉ',
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w900,
-                                    color: Color(0xFF1E3A8A),
+                                    color: tokens.sapphire.foreground,
                                     height: 1.15,
                                   ),
                                 ),
@@ -1204,6 +1210,7 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
   }
 
   Widget _buildBlindBoxTab() {
+    final tokens = GhstThemeTokens.of(context);
     final openedRaw = _wallet['opened_boxes'];
     final opened = openedRaw is Map
         ? Map<String, dynamic>.from(openedRaw)
@@ -1216,6 +1223,7 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
           constraints: const BoxConstraints(maxWidth: 820),
           child: _neoCard(
             padding: const EdgeInsets.all(16),
+            accentGlow: tokens.violet.glow,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -1228,19 +1236,19 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'HỘP MÙ BÍ ẨN',
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w900,
-                            color: AppColors.ink,
+                            color: tokens.ink,
                           ),
                         ),
                         Text(
                           'Còn $_boxTickets vé mở hộp • Đã khui ${_wallet['total_boxes_opened'] ?? 0} hộp',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: AppColors.textSecondary,
+                            color: tokens.inkSecondary,
                           ),
                         ),
                       ],
@@ -1275,6 +1283,7 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                                   ? Map<String, dynamic>.from(boxData)
                                   : const <String, dynamic>{};
                               final rarity = '${boxMap['rarity'] ?? 'R'}';
+                              final rTone = _rarityTone(tokens, rarity);
                               final shaking = _openingBoxIndex == i;
                               return AnimatedBuilder(
                                 animation: _boxShakeController,
@@ -1306,18 +1315,17 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                                       ),
                                       padding: const EdgeInsets.all(14),
                                       decoration: BoxDecoration(
-                                        color: isOpened
-                                            ? _rarityColor(rarity)
-                                            : AppColors.techPanel,
+                                        gradient: isOpened
+                                            ? null
+                                            : tokens.merchantGradient,
+                                        color: isOpened ? rTone.fill : null,
                                         borderRadius: BorderRadius.circular(14),
                                         border: Border.all(
                                           color: isOpened
-                                              ? _rarityInkColor(
-                                                  rarity,
-                                                ).withValues(alpha: 0.3)
-                                              : AppColors.techLine,
+                                              ? rTone.border
+                                              : tokens.shellBorder,
                                         ),
-                                        boxShadow: AppColors.cardShadow,
+                                        boxShadow: tokens.cardShadow,
                                       ),
                                       child: isOpened
                                           ? Column(
@@ -1331,7 +1339,7 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                                                         vertical: 3,
                                                       ),
                                                   decoration: BoxDecoration(
-                                                    color: AppColors.surface,
+                                                    color: tokens.cardSurface,
                                                     borderRadius:
                                                         BorderRadius.circular(
                                                           999,
@@ -1343,19 +1351,17 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                                                       fontSize: 10,
                                                       fontWeight:
                                                           FontWeight.w800,
-                                                      color: _rarityInkColor(
-                                                        rarity,
-                                                      ),
+                                                      color: rTone.foreground,
                                                     ),
                                                   ),
                                                 ),
                                                 const SizedBox(height: 8),
                                                 Text(
                                                   '${boxMap['title'] ?? ''}',
-                                                  style: const TextStyle(
+                                                  style: TextStyle(
                                                     fontSize: 12.5,
                                                     fontWeight: FontWeight.w800,
-                                                    color: AppColors.ink,
+                                                    color: tokens.ink,
                                                   ),
                                                 ),
                                                 if ((boxMap['voucher_code']
@@ -1370,12 +1376,13 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                                                         ),
                                                     child: Text(
                                                       'Mã: ${boxMap['voucher_code']} · Sao chép',
-                                                      style: const TextStyle(
+                                                      style: TextStyle(
                                                         fontSize: 11,
                                                         fontWeight:
                                                             FontWeight.w700,
-                                                        color:
-                                                            AppColors.primary,
+                                                        color: tokens
+                                                            .sapphire
+                                                            .foreground,
                                                       ),
                                                     ),
                                                   ),
@@ -1406,10 +1413,11 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                                                       ? 'CHẠM ĐỂ KHUI · 1 VÉ'
                                                       : 'CẦN 1 VÉ HỘP MÙ',
                                                   textAlign: TextAlign.center,
-                                                  style: const TextStyle(
+                                                  style: TextStyle(
                                                     fontSize: 10.5,
                                                     fontWeight: FontWeight.w700,
-                                                    color: AppColors.techMuted,
+                                                    color: Colors.white
+                                                        .withValues(alpha: 0.8),
                                                   ),
                                                 ),
                                               ],
@@ -1433,6 +1441,7 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
   }
 
   Widget _buildVouchersAndHistoryTab() {
+    final tokens = GhstThemeTokens.of(context);
     final vouchers = _rows(_data?['vouchers']);
     final history = _rows(_data?['history']);
 
@@ -1447,191 +1456,195 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                  _neoCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(
-                          'Kho Voucher khả dụng · ${vouchers.length}',
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w900,
-                            color: AppColors.ink,
-                          ),
+                _neoCard(
+                  accentGlow: tokens.sapphire.glow,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Kho Voucher khả dụng · ${vouchers.length}',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                          color: tokens.ink,
                         ),
-                        const SizedBox(height: 8),
-                        if (vouchers.isEmpty)
-                          const Text(
-                            'Chưa có mã giảm giá nào. Hãy quay Vòng xoay, khui Hộp mù hoặc đổi Xu để săn Voucher!',
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              color: AppColors.textSecondary,
-                            ),
-                          )
-                        else
-                          for (final v in vouchers)
-                            Container(
-                              margin: const EdgeInsets.only(bottom: 10),
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
+                      ),
+                      const SizedBox(height: 8),
+                      if (vouchers.isEmpty)
+                        Text(
+                          'Chưa có mã giảm giá nào. Hãy quay Vòng xoay, khui Hộp mù hoặc đổi Xu để săn Voucher!',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            color: tokens.inkSecondary,
+                          ),
+                        )
+                      else
+                        for (final v in vouchers)
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: v['personal'] == true
+                                  ? tokens.sapphire.fill
+                                  : tokens.cardSubtle,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
                                 color: v['personal'] == true
-                                    ? AppColors.primarySoft
-                                    : AppColors.surfaceSubtle,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: v['personal'] == true
-                                      ? AppColors.primaryBorder
-                                      : AppColors.line,
-                                ),
+                                    ? tokens.sapphire.border
+                                    : tokens.border,
                               ),
-                              child: Wrap(
-                                spacing: 10,
-                                runSpacing: 8,
-                                alignment: WrapAlignment.spaceBetween,
-                                crossAxisAlignment: WrapCrossAlignment.center,
-                                children: [
-                                  ConstrainedBox(
-                                    constraints: const BoxConstraints(
-                                      maxWidth: 560,
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Wrap(
-                                          spacing: 6,
-                                          runSpacing: 4,
-                                          crossAxisAlignment:
-                                              WrapCrossAlignment.center,
-                                          children: [
-                                            Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 8,
-                                                    vertical: 3,
-                                                  ),
-                                              decoration: BoxDecoration(
-                                                color: v['personal'] == true
-                                                    ? AppColors.primary
-                                                    : AppColors.techBg,
-                                                borderRadius:
-                                                    BorderRadius.circular(999),
-                                              ),
-                                              child: Text(
-                                                v['personal'] == true
-                                                    ? 'CÁ NHÂN'
-                                                    : (v['shop_name'] == null
-                                                          ? 'TOÀN SÀN'
-                                                          : '${v['shop_name']}'),
-                                                style: const TextStyle(
-                                                  fontSize: 10,
-                                                  fontWeight: FontWeight.w800,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                            ),
-                                            Text(
-                                              '${v['code']} · ${v['title']}',
-                                              style: const TextStyle(
-                                                fontSize: 13.5,
-                                                fontWeight: FontWeight.w900,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          '${v['discount_kind'] == 'percent' ? 'Giảm ${v['discount_value']}% tối đa ${CurrencyFormatter.formatVnd(((v['max_discount'] as num?) ?? 0).toDouble())}' : 'Giảm ${CurrencyFormatter.formatVnd(((v['discount_value'] as num?) ?? 0).toDouble())}'}'
-                                          ' · Đơn từ ${CurrencyFormatter.formatVnd(((v['min_subtotal'] as num?) ?? 0).toDouble())}'
-                                          ' · HSD ${cloudDate(v['ends_at'])}',
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            color: AppColors.textSecondary,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                            ),
+                            child: Wrap(
+                              spacing: 10,
+                              runSpacing: 8,
+                              alignment: WrapAlignment.spaceBetween,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    maxWidth: 560,
                                   ),
-                                  Wrap(
-                                    spacing: 6,
-                                    runSpacing: 6,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      OutlinedButton(
-                                        onPressed: () =>
-                                            _copyVoucherAndShop('${v['code']}'),
-                                        child: const Text('Sao chép'),
-                                      ),
-                                      if (widget.onOpenCatalog != null)
-                                        FilledButton(
-                                          onPressed: () => _copyVoucherAndShop(
-                                            '${v['code']}',
-                                            goShop: true,
+                                      Wrap(
+                                        spacing: 6,
+                                        runSpacing: 4,
+                                        crossAxisAlignment:
+                                            WrapCrossAlignment.center,
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 3,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: v['personal'] == true
+                                                  ? tokens.primary
+                                                  : tokens.shellBg,
+                                              borderRadius:
+                                                  BorderRadius.circular(999),
+                                            ),
+                                            child: Text(
+                                              v['personal'] == true
+                                                  ? 'CÁ NHÂN'
+                                                  : (v['shop_name'] == null
+                                                        ? 'TOÀN SÀN'
+                                                        : '${v['shop_name']}'),
+                                              style: const TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w800,
+                                                color: Colors.white,
+                                              ),
+                                            ),
                                           ),
-                                          child: const Text('Dùng ngay'),
+                                          Text(
+                                            '${v['code']} · ${v['title']}',
+                                            style: TextStyle(
+                                              fontSize: 13.5,
+                                              fontWeight: FontWeight.w900,
+                                              color: tokens.ink,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '${v['discount_kind'] == 'percent' ? 'Giảm ${v['discount_value']}% tối đa ${CurrencyFormatter.formatVnd(((v['max_discount'] as num?) ?? 0).toDouble())}' : 'Giảm ${CurrencyFormatter.formatVnd(((v['discount_value'] as num?) ?? 0).toDouble())}'}'
+                                        ' · Đơn từ ${CurrencyFormatter.formatVnd(((v['min_subtotal'] as num?) ?? 0).toDouble())}'
+                                        ' · HSD ${cloudDate(v['ends_at'])}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: tokens.inkSecondary,
                                         ),
+                                      ),
                                     ],
                                   ),
-                                ],
-                              ),
-                            ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  _neoCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const Text(
-                          'Lịch sử trúng thưởng & đổi quà',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w900,
-                            color: AppColors.ink,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        if (history.isEmpty)
-                          const Text(
-                            'Chưa có lịch sử nhận thưởng.',
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              color: AppColors.textSecondary,
-                            ),
-                          )
-                        else
-                          for (final h in history)
-                            ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: Text(
-                                '${h['title']}',
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w800,
                                 ),
-                              ),
-                              subtitle: Text(
-                                '${h['summary']} • ${cloudDate(h['created_at'])}',
-                                style: const TextStyle(fontSize: 11.5),
-                              ),
-                              trailing:
-                                  (h['voucher_code'] as String? ?? '')
-                                      .isNotEmpty
-                                  ? TextButton(
-                                      onPressed: () => _copyVoucherAndShop(
-                                        '${h['voucher_code']}',
+                                Wrap(
+                                  spacing: 6,
+                                  runSpacing: 6,
+                                  children: [
+                                    OutlinedButton(
+                                      onPressed: () =>
+                                          _copyVoucherAndShop('${v['code']}'),
+                                      child: const Text('Sao chép'),
+                                    ),
+                                    if (widget.onOpenCatalog != null)
+                                      FilledButton(
+                                        onPressed: () => _copyVoucherAndShop(
+                                          '${v['code']}',
+                                          goShop: true,
+                                        ),
+                                        child: const Text('Dùng ngay'),
                                       ),
-                                      child: const Text('Chép mã'),
-                                    )
-                                  : null,
+                                  ],
+                                ),
+                              ],
                             ),
-                      ],
-                    ),
+                          ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 14),
+                _neoCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Lịch sử trúng thưởng & đổi quà',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                          color: tokens.ink,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      if (history.isEmpty)
+                        Text(
+                          'Chưa có lịch sử nhận thưởng.',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            color: tokens.inkSecondary,
+                          ),
+                        )
+                      else
+                        for (final h in history)
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(
+                              '${h['title']}',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                color: tokens.ink,
+                              ),
+                            ),
+                            subtitle: Text(
+                              '${h['summary']} • ${cloudDate(h['created_at'])}',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                color: tokens.inkSecondary,
+                              ),
+                            ),
+                            trailing:
+                                (h['voucher_code'] as String? ?? '').isNotEmpty
+                                ? TextButton(
+                                    onPressed: () => _copyVoucherAndShop(
+                                      '${h['voucher_code']}',
+                                    ),
+                                    child: const Text('Chép mã'),
+                                  )
+                                : null,
+                          ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
+        ),
       ),
     );
   }
@@ -1643,12 +1656,13 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
         body: Center(child: Text('Phiên làm việc đã thay đổi.')),
       );
     }
+    final tokens = GhstThemeTokens.of(context);
     final isCompact = MediaQuery.sizeOf(context).width < 680;
     return Scaffold(
-      backgroundColor: AppColors.paper,
+      backgroundColor: tokens.canvas,
       appBar: AppBar(
-        backgroundColor: AppColors.surface,
-        foregroundColor: AppColors.ink,
+        backgroundColor: tokens.cardSurface,
+        foregroundColor: tokens.ink,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         title: const Text(
@@ -1656,6 +1670,10 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
           style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
         ),
         actions: [
+          const Padding(
+            padding: EdgeInsets.only(right: 4),
+            child: ThemeModeIconButton(compact: true),
+          ),
           IconButton(
             tooltip: 'Tải lại sự kiện',
             onPressed: _loading || _busy ? null : _load,
@@ -1666,10 +1684,10 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
           controller: _tabController,
           isScrollable: isCompact,
           tabAlignment: isCompact ? TabAlignment.start : TabAlignment.fill,
-          indicatorColor: AppColors.primary,
-          dividerColor: AppColors.line,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textSecondary,
+          indicatorColor: tokens.primary,
+          dividerColor: tokens.border,
+          labelColor: tokens.primary,
+          unselectedLabelColor: tokens.inkSecondary,
           labelStyle: const TextStyle(
             fontWeight: FontWeight.w800,
             fontSize: 12.5,
@@ -1689,21 +1707,21 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _walletBanner(),
+          _walletBanner(tokens),
           if (_loading || _busy) const LinearProgressIndicator(minHeight: 2.5),
           if (!_enabled)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: const BoxDecoration(
-                color: Color(0xFFFEF3C7),
-                border: Border(bottom: BorderSide(color: AppColors.line)),
+              decoration: BoxDecoration(
+                color: tokens.amber.fill,
+                border: Border(bottom: BorderSide(color: tokens.border)),
               ),
-              child: const Text(
+              child: Text(
                 'Chương trình sự kiện hiện đang tạm dừng. Kho Voucher đã nhận vẫn dùng bình thường.',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF92400E),
+                  color: tokens.amber.foreground,
                 ),
               ),
             ),
@@ -1849,7 +1867,9 @@ class _CloudSpinWheelPainter extends CustomPainter {
 }
 
 class _WheelPointerPainter extends CustomPainter {
-  const _WheelPointerPainter();
+  const _WheelPointerPainter({required this.outlineColor});
+
+  final Color outlineColor;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -1867,12 +1887,13 @@ class _WheelPointerPainter extends CustomPainter {
     canvas.drawPath(
       path,
       Paint()
-        ..color = AppColors.ink
+        ..color = outlineColor
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2.2,
     );
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _WheelPointerPainter oldDelegate) =>
+      oldDelegate.outlineColor != outlineColor;
 }

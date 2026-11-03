@@ -10,6 +10,7 @@ import 'core/integrations/delivery_api_client.dart';
 import 'core/integrations/cloud_account_session.dart';
 import 'core/integrations/cloud_orders_service.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_controller.dart';
 import 'data/datasources/local/app_state_store.dart';
 import 'data/datasources/local/sqlite_offline_queue_datasource.dart';
 import 'data/datasources/remote/supabase_postgis_datasource.dart';
@@ -105,13 +106,19 @@ Future<void> main([List<String> args = const []]) async {
       debugPrint('Backend authentication settings are unavailable.');
     }
   }
-  runApp(const GpsDeliveryApp());
+  runApp(GpsDeliveryApp(sessionSlot: sessionSlot));
 }
 
 class GpsDeliveryApp extends StatefulWidget {
   final String? initialRoute;
   final CloudOrdersService? cloudService;
-  const GpsDeliveryApp({super.key, this.initialRoute, this.cloudService});
+  final String? sessionSlot;
+  const GpsDeliveryApp({
+    super.key,
+    this.initialRoute,
+    this.cloudService,
+    this.sessionSlot,
+  });
 
   @override
   State<GpsDeliveryApp> createState() => _GpsDeliveryAppState();
@@ -120,6 +127,10 @@ class GpsDeliveryApp extends StatefulWidget {
 class _GpsDeliveryAppState extends State<GpsDeliveryApp> {
   late final _cloudSession = CloudAccountSession(
     service: widget.cloudService ?? CloudOrdersService(),
+  );
+  late final _themeController = ThemeController(
+    session: _cloudSession,
+    sessionSlot: widget.sessionSlot,
   );
 
   String? _resolveBrowserInitialRoute() {
@@ -152,19 +163,26 @@ class _GpsDeliveryAppState extends State<GpsDeliveryApp> {
 
   @override
   void dispose() {
+    _themeController.dispose();
     _cloudSession.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => SystemArchitectureCubit(),
-      child: MaterialApp(
-        title: 'GHST - Giao Hàng Siêu Tốc Đa Nền Tảng',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        initialRoute: widget.initialRoute ?? _resolveBrowserInitialRoute(),
+    return ThemeControllerScope(
+      controller: _themeController,
+      child: ListenableBuilder(
+        listenable: _themeController,
+        builder: (context, _) => BlocProvider(
+          create: (_) => SystemArchitectureCubit(),
+          child: MaterialApp(
+            title: 'GHST - Giao Hàng Siêu Tốc Đa Nền Tảng',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: _themeController.themeMode,
+            initialRoute: widget.initialRoute ?? _resolveBrowserInitialRoute(),
         onGenerateInitialRoutes: (name) => [
           MaterialPageRoute<void>(
             settings: RouteSettings(name: name),
@@ -241,6 +259,8 @@ class _GpsDeliveryAppState extends State<GpsDeliveryApp> {
           }
           return null;
         },
+          ),
+        ),
       ),
     );
   }

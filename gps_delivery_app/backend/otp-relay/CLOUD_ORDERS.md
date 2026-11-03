@@ -10,7 +10,7 @@ The public/publishable key cannot execute migrations. Use either:
 
 1. In Supabase SQL Editor, run `database/migrations/20261028_cloud_orders.sql`
    (after `20261027_delivery_integrations.sql`) and subsequent additive migrations
-   through `20261112_shipping_cash_settlement.sql`. Do not install the legacy
+   through `20261113_cloud_sync_and_journey.sql`. Do not install the legacy
    `database/schema.sql` as a prerequisite.
 2. Put the real PostgreSQL connection string from Supabase **Connect** in backend
    `.env` as `DATABASE_URL`, then run `npm run migrate:cloud`. Use the direct or
@@ -28,15 +28,16 @@ or orders are inserted. Its default tariff is 25,000 VND for the first 2 km,
 5,000 per additional started km, 10,000 express surcharge, and 3,000 per started
 kg over 5 kg. Admin can change these values in **Bang gia cloud**.
 
-### Workflow version 18 & profile schema 3
+### Workflow version 19 & profile schema 3
 
 `npm run migrate:cloud` applies all additive migrations through
-`database/migrations/20261112_shipping_cash_settlement.sql` (`workflowVersion: 18`),
+`database/migrations/20261113_cloud_sync_and_journey.sql` (`workflowVersion: 19`),
 preserving accounts, tariffs, existing orders, history and login sessions.
 `GET /delivery/cloud/profile` reports `schema_version: 3` with independently
 approved `merchant` and `driver` memberships (`delivery_cloud_memberships`),
 optional personal identity fields (`birth_date` and 12-digit `citizen_id` with
-server uniqueness enforcement), `coin_balance`, and `unread_notifications`.
+server uniqueness enforcement), `coin_balance`, `unread_notifications`,
+`ui_preferences` (`theme_mode`, `preferred_role`), and owner-only `shipping_draft`.
 The backend refuses role, tariff and state mutations on older schemas (`< 2`)
 instead of allowing a return to be incorrectly recorded as a successful delivery.
 The public key and an operator login cannot execute SQL migrations; the SQL
@@ -163,6 +164,9 @@ authorization checks even when called through Supabase Data API directly.
 | Method/path | Action |
 | --- | --- |
 | GET/POST `/profile` | Read/save own profile (`full_name`, `phone`, optional `birth_date`, optional 12-digit `citizen_id`), view/request independent memberships (`schema_version: 3`) |
+| POST `/preferences/:action` | Sync `ui_preferences` (`get`, `save_ui`) and owner-scoped `shipping_draft` (`save_draft`, `clear_draft`) across devices |
+| POST `/ai-history/:action` | Sync multi-turn AI Assistant conversation history (`list`, `clear`) in `delivery_ai_chat_messages` |
+| POST `/order-live/:action` | Authorized shipping trip telemetry, Customer ↔ Driver chat, multi-stop/round-trip checkpoints & reviews (`snapshot`, `push_gps`, `send_chat`, `mark_checkpoint`, `driver_reviews`) |
 | POST `/notifications/:action` | Unified notification inbox & preferences (`list`, `unread_count`, `mark_read`, `mark_all_read`, `save_preferences`) |
 | POST `/memberships/:role`, POST `/accounts/:id/memberships/:role` | Request or operator-decide (`approve`, `reject`, `revoke`, `grant`) `merchant` / `driver` membership |
 | GET `/merchants` | Approved merchant IDs/names only |
@@ -209,5 +213,5 @@ review remains an operator process.
 
 The localhost backend must be deployed over HTTPS before separate physical
 devices or external provider webhooks can reach it. Confirm `schema_version: 3`
-and `workflowVersion: 15` using Admin readiness before accepting rollout on a new
+and `workflowVersion: 19` using Admin readiness before accepting rollout on a new
 environment.

@@ -5,7 +5,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/integrations/cloud_account_session.dart';
 import '../../core/integrations/cloud_session_lease.dart';
 import '../../core/network/public_json_api.dart';
+import '../../core/theme/ghst_theme_tokens.dart';
 import 'cloud_membership_panel.dart';
+import 'theme_mode_toggle.dart';
 
 const cloudAccountRoles = {
   'customer': 'Khách hàng',
@@ -336,8 +338,10 @@ class _CloudProfileFormState extends State<CloudProfileForm> {
     if (!_allowed) {
       return const Text('Phiên làm việc đã thay đổi. Vui lòng mở lại hồ sơ.');
     }
+    final tokens = GhstThemeTokens.of(context);
     final account = widget.session.account;
     final verifiedKyc = widget.session.identityVerified;
+    final kycTone = verifiedKyc ? tokens.emerald : tokens.amber;
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 460),
       child: Form(
@@ -359,15 +363,9 @@ class _CloudProfileFormState extends State<CloudProfileForm> {
                   vertical: 10,
                 ),
                 decoration: BoxDecoration(
-                  color: verifiedKyc
-                      ? const Color(0xFFECFDF5)
-                      : const Color(0xFFFFFBEB),
+                  color: kycTone.fill,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: verifiedKyc
-                        ? const Color(0xFF10B981)
-                        : const Color(0xFFF59E0B),
-                  ),
+                  border: Border.all(color: kycTone.border),
                 ),
                 child: Row(
                   children: [
@@ -376,9 +374,7 @@ class _CloudProfileFormState extends State<CloudProfileForm> {
                           ? Icons.verified_user_outlined
                           : Icons.badge_outlined,
                       size: 18,
-                      color: verifiedKyc
-                          ? const Color(0xFF047857)
-                          : const Color(0xFFB45309),
+                      color: kycTone.icon,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -389,15 +385,15 @@ class _CloudProfileFormState extends State<CloudProfileForm> {
                         style: TextStyle(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w600,
-                          color: verifiedKyc
-                              ? const Color(0xFF065F46)
-                              : const Color(0xFF92400E),
+                          color: kycTone.foreground,
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
+              const SizedBox(height: 12),
+              const ThemeModeSelectorCard(),
             ],
             if (account != null && widget.session.schemaVersion < 3)
               Padding(

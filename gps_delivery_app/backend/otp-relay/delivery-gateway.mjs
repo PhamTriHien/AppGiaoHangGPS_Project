@@ -78,7 +78,7 @@ export function createDeliveryGateway({ env = process.env, fetcher = fetch,
     if (!useTrackAsia && !useGoogle) requireProvider('osrm');
     const coords = points(req.query.coordinates);
     const pairs = coords.split(';');
-    if (pairs.length !== 2) throw new IntegrationError(400, 'Tuyen duong can hai diem.');
+    if (pairs.length < 2 || pairs.length > 7) throw new IntegrationError(400, 'Tuyen duong can 2-7 diem.');
     if (useTrackAsia) {
       const tUrl = new URL(`https://maps.track-asia.com/route/v1/car/${coords}.json`);
       tUrl.search = new URLSearchParams({ overview: 'full', geometries: 'geojson', key: env.TRACKASIA_API_KEY }).toString();
@@ -87,7 +87,10 @@ export function createDeliveryGateway({ env = process.env, fetcher = fetch,
       return res.json({ code: 'Ok', routes: tResult.routes, attribution: 'TrackAsia' });
     }
     if (useGoogle) {
-      const [[lon1, lat1], [lon2, lat2]] = pairs.map(pair => pair.split(',').map(Number));
+      const parsed = pairs.map(pair => pair.split(',').map(Number));
+      const [lon1, lat1] = parsed[0];
+      const [lon2, lat2] = parsed[parsed.length - 1];
+      const mids = parsed.slice(1, -1);
       const payload = await cached('https://routes.googleapis.com/directions/v2:computeRoutes', {
         method: 'POST',
         headers: {
@@ -99,6 +102,9 @@ export function createDeliveryGateway({ env = process.env, fetcher = fetch,
         body: JSON.stringify({
           origin: { location: { latLng: { latitude: lat1, longitude: lon1 } } },
           destination: { location: { latLng: { latitude: lat2, longitude: lon2 } } },
+          ...(mids.length ? {
+            intermediates: mids.map(([lon, lat]) => ({ location: { latLng: { latitude: lat, longitude: lon } } })),
+          } : {}),
           travelMode: 'DRIVE',
           routingPreference: 'TRAFFIC_AWARE',
           languageCode: 'vi',

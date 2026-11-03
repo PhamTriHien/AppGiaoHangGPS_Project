@@ -71,51 +71,54 @@ class _BackendReadinessDialogState extends State<BackendReadinessDialog> {
     final revision = _report!['databaseRevision'];
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => Theme(
-        data: AdminStudioTheme.themeData(),
-        child: AlertDialog(
-          title: const Text(
-            'Cập nhật cấu trúc dữ liệu?',
-            style: TextStyle(
-              fontWeight: FontWeight.w900,
-              color: AdminStudioColors.ink,
+      builder: (context) {
+        final p = AdminStudioPalette.of(context);
+        return Theme(
+          data: AdminStudioTheme.of(context),
+          child: AlertDialog(
+            title: Text(
+              'Cập nhật cấu trúc dữ liệu?',
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                color: p.ink,
+              ),
             ),
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Áp dụng migration vào database backend đã lưu:'),
-                const SizedBox(height: 12),
-                for (final file in (_report!['migrations'] as List? ?? []))
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Text(
-                      '$file',
-                      style: const TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w700,
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Áp dụng migration vào database backend đã lưu:'),
+                  const SizedBox(height: 12),
+                  for (final file in (_report!['migrations'] as List? ?? []))
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text(
+                        '$file',
+                        style: const TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Quay lại'),
+              ),
+              FilledButton.icon(
+                onPressed: () => Navigator.pop(context, true),
+                icon: const Icon(Icons.system_update_alt),
+                label: const Text('Áp dụng'),
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Quay lại'),
-            ),
-            FilledButton.icon(
-              onPressed: () => Navigator.pop(context, true),
-              icon: const Icon(Icons.system_update_alt),
-              label: const Text('Áp dụng'),
-            ),
-          ],
-        ),
-      ),
+        );
+      },
     );
     if (confirmed != true || !mounted) return;
     setState(() {
@@ -158,7 +161,7 @@ class _BackendReadinessDialogState extends State<BackendReadinessDialog> {
     }
   }
 
-  Widget _check(Map row) {
+  Widget _check(AdminStudioPalette p, Map row) {
     final status = row['status'];
     final label =
         const {
@@ -170,10 +173,10 @@ class _BackendReadinessDialogState extends State<BackendReadinessDialog> {
         }[status] ??
         'Chưa xác định';
     final (Color fg, Color bg) = switch (status) {
-      'ok' => (AdminStudioColors.acidInk, AdminStudioColors.acidSoft),
-      'error' => (AdminStudioColors.danger, AdminStudioColors.dangerSoft),
-      'missing' => (AdminStudioColors.goldInk, AdminStudioColors.goldSoft),
-      _ => (AdminStudioColors.muted, AdminStudioColors.surface),
+      'ok' => (p.acidInk, p.acidSoft),
+      'error' => (p.dangerInk, p.dangerSoft),
+      'missing' => (p.goldInk, p.goldSoft),
+      _ => (p.muted, p.surfaceSubtle),
     };
     return Container(
       margin: const EdgeInsets.only(top: 8),
@@ -181,7 +184,7 @@ class _BackendReadinessDialogState extends State<BackendReadinessDialog> {
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AdminStudioColors.line),
+        border: Border.all(color: p.line),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,15 +203,15 @@ class _BackendReadinessDialogState extends State<BackendReadinessDialog> {
                   '${row['label']} · $label',
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
-                    color: status == 'error' ? fg : AdminStudioColors.ink,
+                    color: status == 'error' ? fg : p.ink,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   '${row['detail']}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12.5,
-                    color: AdminStudioColors.muted,
+                    color: p.muted,
                   ),
                 ),
               ],
@@ -219,22 +222,22 @@ class _BackendReadinessDialogState extends State<BackendReadinessDialog> {
     );
   }
 
-  Widget _callback(Map row) => Container(
+  Widget _callback(AdminStudioPalette p, Map row) => Container(
     margin: const EdgeInsets.only(top: 8),
     padding: const EdgeInsets.all(12),
     decoration: BoxDecoration(
-      color: AdminStudioColors.surfaceSubtle,
+      color: p.surfaceSubtle,
       borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: AdminStudioColors.line),
+      border: Border.all(color: p.line),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
           'Callback ${row['label']}',
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.w800,
-            color: AdminStudioColors.ink,
+            color: p.ink,
           ),
         ),
         Row(
@@ -242,7 +245,11 @@ class _BackendReadinessDialogState extends State<BackendReadinessDialog> {
             Expanded(
               child: SelectableText(
                 '${row['url'] ?? 'Chưa có URL HTTPS công khai'}',
-                style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                style: TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: 12,
+                  color: p.ink,
+                ),
               ),
             ),
             IconButton(
@@ -257,149 +264,154 @@ class _BackendReadinessDialogState extends State<BackendReadinessDialog> {
         ),
         Text(
           '${row['authentication']}',
-          style: const TextStyle(fontSize: 12.5, color: AdminStudioColors.muted),
+          style: TextStyle(fontSize: 12.5, color: p.muted),
         ),
-        const Text(
+        Text(
           'Chưa xác minh đăng ký callback tại nhà cung cấp.',
-          style: TextStyle(fontSize: 12, color: AdminStudioColors.muted),
+          style: TextStyle(fontSize: 12, color: p.muted),
         ),
       ],
     ),
   );
 
   @override
-  Widget build(BuildContext context) => Theme(
-    data: AdminStudioTheme.themeData(),
-    child: PopScope(
-      canPop: !_migrating,
-      child: AlertDialog(
-        title: const Text(
-          'Sẵn sàng triển khai',
-          style: TextStyle(
-            fontWeight: FontWeight.w900,
-            color: AdminStudioColors.ink,
-          ),
-        ),
-        content: SizedBox(
-          width: 600,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (_busy)
-                  const LinearProgressIndicator(
-                    color: AdminStudioColors.violet,
-                    backgroundColor: AdminStudioColors.paperWarm,
-                  ),
-                if (_migrating)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 8),
-                    child: Text(
-                      'Đang cập nhật cấu trúc dữ liệu...',
-                      style: TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                if (_error != null)
-                  Container(
-                    margin: const EdgeInsets.only(top: 8),
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AdminStudioColors.dangerSoft,
-                      border: Border.all(
-                        color: AdminStudioColors.danger,
-                        width: 1.4,
-                      ),
-                    ),
-                    child: Text(
-                      _error!,
-                      style: const TextStyle(
-                        color: AdminStudioColors.danger,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                if (_message != null)
-                  Container(
-                    margin: const EdgeInsets.only(top: 8),
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AdminStudioColors.acidSoft,
-                      border: Border.all(
-                        color: AdminStudioColors.ink,
-                        width: 1.4,
-                      ),
-                    ),
-                    child: Text(
-                      _message!,
-                      style: const TextStyle(
-                        color: AdminStudioColors.ink,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                if (_report != null) ...[
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Text(
-                      'Kiểm tra lúc: ${_report!['checkedAt']}',
-                      style: const TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 12,
-                        color: AdminStudioColors.muted,
-                      ),
-                    ),
-                  ),
-                  for (final row
-                      in (_report!['checks'] as List? ?? []).whereType<Map>())
-                    _check(row),
-                  const SizedBox(height: 12),
-                  const Divider(),
-                  for (final row
-                      in (_report!['callbacks'] as List? ?? [])
-                          .whereType<Map>())
-                    _callback(row),
-                  const SizedBox(height: 12),
-                  const Divider(),
-                  const SizedBox(height: 10),
-                  const Text(
-                    'Giao dịch payOS/GHN thực tế: chưa nghiệm thu.',
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w700,
-                      color: AdminStudioColors.muted,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  if (_canMigrate)
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: FilledButton.icon(
-                        onPressed:
-                            _busy || _report!['databaseConfigured'] != true
-                            ? null
-                            : _migrate,
-                        icon: const Icon(Icons.system_update_alt),
-                        label: const Text('Cập nhật cấu trúc dữ liệu'),
-                      ),
-                    ),
-                ],
-              ],
+  Widget build(BuildContext context) {
+    final p = AdminStudioPalette.of(context);
+    return Theme(
+      data: AdminStudioTheme.of(context),
+      child: PopScope(
+        canPop: !_migrating,
+        child: AlertDialog(
+          title: Text(
+            'Sẵn sàng triển khai',
+            style: TextStyle(
+              fontWeight: FontWeight.w900,
+              color: p.ink,
             ),
           ),
+          content: SizedBox(
+            width: 600,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (_busy)
+                    LinearProgressIndicator(
+                      color: p.violet,
+                      backgroundColor: p.paperWarm,
+                    ),
+                  if (_migrating)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 8),
+                      child: Text(
+                        'Đang cập nhật cấu trúc dữ liệu...',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  if (_error != null)
+                    Container(
+                      margin: const EdgeInsets.only(top: 8),
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: p.dangerSoft,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: p.danger,
+                          width: 1.4,
+                        ),
+                      ),
+                      child: Text(
+                        _error!,
+                        style: TextStyle(
+                          color: p.dangerInk,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  if (_message != null)
+                    Container(
+                      margin: const EdgeInsets.only(top: 8),
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: p.acidSoft,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: p.acidInk,
+                          width: 1.4,
+                        ),
+                      ),
+                      child: Text(
+                        _message!,
+                        style: TextStyle(
+                          color: p.acidInk,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  if (_report != null) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text(
+                        'Kiểm tra lúc: ${_report!['checkedAt']}',
+                        style: TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: 12,
+                          color: p.muted,
+                        ),
+                      ),
+                    ),
+                    for (final row
+                        in (_report!['checks'] as List? ?? []).whereType<Map>())
+                      _check(p, row),
+                    const SizedBox(height: 12),
+                    const Divider(),
+                    for (final row
+                        in (_report!['callbacks'] as List? ?? [])
+                            .whereType<Map>())
+                      _callback(p, row),
+                    const SizedBox(height: 12),
+                    const Divider(),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Giao dịch payOS/GHN thực tế: chưa nghiệm thu.',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: p.muted,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (_canMigrate)
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: FilledButton.icon(
+                          onPressed:
+                              _busy || _report!['databaseConfigured'] != true
+                              ? null
+                              : _migrate,
+                          icon: const Icon(Icons.system_update_alt),
+                          label: const Text('Cập nhật cấu trúc dữ liệu'),
+                        ),
+                      ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            IconButton(
+              tooltip: 'Kiểm tra lại triển khai',
+              onPressed: _busy ? null : _load,
+              icon: const Icon(Icons.refresh),
+            ),
+            TextButton(
+              onPressed: _migrating ? null : () => Navigator.pop(context),
+              child: const Text('Đóng'),
+            ),
+          ],
         ),
-        actions: [
-          IconButton(
-            tooltip: 'Kiểm tra lại triển khai',
-            onPressed: _busy ? null : _load,
-            icon: const Icon(Icons.refresh),
-          ),
-          TextButton(
-            onPressed: _migrating ? null : () => Navigator.pop(context),
-            child: const Text('Đóng'),
-          ),
-        ],
       ),
-    ),
-  );
+    );
+  }
 }

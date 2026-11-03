@@ -9,6 +9,8 @@ import '../../core/integrations/cloud_account_session.dart';
 import '../../core/integrations/delivery_api_client.dart';
 import '../../core/integrations/push_notification_service.dart';
 import '../../core/network/public_json_api.dart';
+import '../../core/theme/admin_studio_theme.dart';
+import '../../core/theme/ghst_theme_tokens.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../data/repositories/cloud_orders_repository.dart';
 import '../widgets/cloud_order_form.dart';
@@ -799,22 +801,92 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
           ['searching', 'accepted', 'arrivingPickup'].contains(status))
         'cancel': 'Hủy đơn',
     };
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16),
+    final tokens = GhstThemeTokens.of(context);
+    final statusTone = switch (status) {
+      'delivered' => tokens.emerald,
+      'cancelled' || 'failed' => tokens.rose,
+      'searching' => tokens.amber,
+      'returning' || 'returned' => tokens.violet,
+      _ => tokens.sapphire,
+    };
+    final isLiveStatus = const {
+      'searching',
+      'accepted',
+      'arrivingPickup',
+      'inTransit',
+      'returning',
+    }.contains(status);
+    final statusLabel = carrier && status == 'searching'
+        ? 'Chờ GHN lấy hàng'
+        : order['merchant_ready'] == false && status == 'searching'
+        ? 'Chờ cửa hàng xác nhận'
+        : cloudStatuses[status] ?? '$status';
+    final stopsCount = (details['stops_count'] as num? ?? 0).toInt();
+    final queueBadges = <String>[
+      if (stopsCount > 0) '$stopsCount điểm dừng',
+      if (details['is_round_trip'] == true) 'Khứ hồi',
+      if (details['prefer_ev'] == true) 'Ưu tiên xe điện',
+      if (details['require_pod'] == true) 'Cần ảnh POD',
+      if (details['require_otp'] == true) 'Cần OTP 6 số',
+      if (details['scheduled_at'] != null &&
+          '${details['scheduled_at']}'.isNotEmpty)
+        'Hẹn lấy: ${_date(details['scheduled_at'])}',
+    ];
+    final driverProfile = order['driver_profile'] is Map
+        ? Map<String, dynamic>.from(order['driver_profile'] as Map)
+        : null;
+
+    return GhstLuminousCard(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.all(14),
+      accentGlow: statusTone.glow,
+      borderColor: isLiveStatus ? statusTone.border : tokens.border,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SelectableText(
-            '${order['tracking_code']}',
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            carrier && status == 'searching'
-                ? 'Chờ GHN lấy hàng'
-                : order['merchant_ready'] == false && status == 'searching'
-                ? 'Chờ cửa hàng xác nhận'
-                : cloudStatuses[status] ?? '$status',
+          Wrap(
+            spacing: 10,
+            runSpacing: 6,
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              SelectableText(
+                '${order['tracking_code']}',
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14.5,
+                  color: tokens.ink,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: statusTone.fill,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: statusTone.border),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (isLiveStatus) ...[
+                      GhstPulseBeacon(color: statusTone.icon, size: 7),
+                      const SizedBox(width: 6),
+                    ],
+                    Text(
+                      statusLabel,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: statusTone.foreground,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           if (details['pickup_address'] != null) ...[
@@ -826,24 +898,88 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
             Text(
               '${details['package_description']} · ${details['weight_kg']} kg',
             ),
-          ] else
+          ] else ...[
             Text(
               '${details['weight_kg']} kg · ${cloudServiceTypes[details['service_type']] ?? 'Tiêu chuẩn'}',
+              style: TextStyle(fontWeight: FontWeight.w700, color: tokens.ink),
             ),
+            if (details['pickup_area'] != null ||
+                details['dropoff_area'] != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Khu vực lộ trình: ${details['pickup_area'] ?? 'Điểm lấy'} -> ${details['dropoff_area'] ?? 'Điểm giao'}',
+                style: TextStyle(
+                  color: tokens.inkSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+            if (details['payment_method'] != null)
+              Text(
+                details['payment_method'] == 'sender_cash'
+                    ? 'Thanh toán: Người gửi trả cước'
+                    : 'Thanh toán: Người nhận trả cước',
+                style: TextStyle(fontSize: 12.5, color: tokens.inkSecondary),
+              ),
+            if (queueBadges.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (final badge in queueBadges)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: tokens.cardSubtle,
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: tokens.border),
+                      ),
+                      child: Text(
+                        badge,
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                          color: tokens.inkSecondary,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ],
+          const SizedBox(height: 4),
           Text(
             'Phí: ${CurrencyFormatter.formatVnd((order['shipping_fee'] as num).toDouble())} · COD: ${CurrencyFormatter.formatVnd((order['cod_amount'] as num).toDouble())}',
+            style: TextStyle(fontWeight: FontWeight.w700, color: tokens.ink),
           ),
           if (!_queue && ((order['coin_discount'] as num? ?? 0) > 0))
             Text(
               'Đổi Xu giảm cước: -${CurrencyFormatter.formatVnd((order['coin_discount'] as num).toDouble())} · Cần thanh toán: ${CurrencyFormatter.formatVnd(((order['payable_fee'] ?? order['shipping_fee']) as num).toDouble())}',
               style: TextStyle(
-                color: Colors.green.shade800,
+                color: tokens.emerald.foreground,
                 fontWeight: FontWeight.w700,
               ),
             ),
           if (!_queue)
             Text(
               '${details['payment_method'] == 'sender_cash' ? 'Người gửi trả phí' : 'Người nhận trả phí'} · ${cloudOrderPaymentLabel(order)}${codAmount > 0 && codCollected >= codAmount ? ' · Đã thu hộ COD' : ''}',
+            ),
+          if (!_queue && driverProfile != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                'Tài xế phụ trách: ${driverProfile['full_name'] ?? 'Đối tác GHST'}'
+                '${'${driverProfile['phone'] ?? ''}'.isNotEmpty ? ' · ${driverProfile['phone']}' : ''}',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: tokens.sapphire.foreground,
+                ),
+              ),
             ),
           if (carrier)
             Text(
@@ -880,12 +1016,20 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
                   label: const Text('Vận chuyển GHN'),
                 ),
               for (final action in actions.entries)
-                OutlinedButton(
-                  onPressed: _busy || _schemaVersion < 2
-                      ? null
-                      : () => _transition(order, action.key),
-                  child: Text(action.value),
-                ),
+                action.key == 'claim'
+                    ? FilledButton.icon(
+                        onPressed: _busy || _schemaVersion < 2
+                            ? null
+                            : () => _transition(order, action.key),
+                        icon: const Icon(Icons.bolt_rounded, size: 18),
+                        label: Text(action.value),
+                      )
+                    : OutlinedButton(
+                        onPressed: _busy || _schemaVersion < 2
+                            ? null
+                            : () => _transition(order, action.key),
+                        child: Text(action.value),
+                      ),
               if (!_queue)
                 OutlinedButton.icon(
                   onPressed: _busy ? null : () => _history(order),
@@ -1557,10 +1701,7 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
                       padding: EdgeInsets.symmetric(vertical: 24),
                       child: Text('Chưa có đơn hàng.'),
                     ),
-                  for (final order in visibleOrders) ...[
-                    _order(order),
-                    const Divider(height: 1),
-                  ],
+                  for (final order in visibleOrders) _order(order),
                   if (_hasMore)
                     TextButton(
                       onPressed: _busy ? null : () => _load(more: true),
@@ -1582,15 +1723,7 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
     );
     if (!widget.admin) return screen;
     return Theme(
-      data: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF087F5B)),
-        scaffoldBackgroundColor: const Color(0xFFF4F6F5),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.white,
-          foregroundColor: Color(0xFF12342A),
-        ),
-      ),
+      data: AdminStudioTheme.of(context),
       child: screen,
     );
   }

@@ -28,11 +28,12 @@ test('Route and matrix gateway validate coordinates, generate fixed OSRM options
     assert.equal(url.searchParams.has('fallback_speed'), false);
     return json({ code: 'Ok', distances: [[10], [20]], durations: [[1], [2]] });
   } }));
-  for (const invalid of ['0,91;10,10', 'https://internal;0,0', ',;0,0', '1,2']) assert.equal((await app.get(`/route?coordinates=${encodeURIComponent(invalid)}`)).status, 400);
+  for (const invalid of ['0,91;10,10', 'https://internal;0,0', ',;0,0', '1,2', '106,10;106.1,10.1;106.2,10.2;106.3,10.3;106.4,10.4;106.5,10.5;106.6,10.6;106.7,10.7']) assert.equal((await app.get(`/route?coordinates=${encodeURIComponent(invalid)}`)).status, 400);
   assert.equal(calls, 0);
   const route = '/route?coordinates=106,10;106.1,10.1';
   assert.equal((await app.get(route)).status, 200); assert.equal((await app.get(route)).status, 200); assert.equal(calls, 1);
-  env.OSRM_ENABLED = 'false'; assert.equal((await app.get(route)).status, 503); assert.equal(calls, 1);
+  assert.equal((await app.get('/route?coordinates=106,10;106.05,10.05;106.1,10.1')).status, 200); assert.equal(calls, 2);
+  env.OSRM_ENABLED = 'false'; assert.equal((await app.get(route)).status, 503); assert.equal(calls, 2);
   env.OSRM_ENABLED = 'true'; assert.equal((await app.get('/matrix?coordinates=106,10;106.1,10.1;106.2,10.2')).status, 200);
   const fullTable = await (await app.get('/matrix?full=1&coordinates=106,10;106.3,10.3')).json();
   assert.deepEqual(fullTable.distances, [[0, 5], [5, 0]]);

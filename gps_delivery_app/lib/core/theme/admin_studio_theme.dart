@@ -3,96 +3,242 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../presentation/widgets/motion_3d_effects.dart';
+import 'ghst_theme_tokens.dart';
 
 class AdminStudioColors {
   const AdminStudioColors._();
 
-  static const Color paper = Color(0xFFF4F7FA);
-  static const Color paperWarm = Color(0xFFEFF3F8);
+  static const Color paper = Color(0xFFEEF3FA);
+  static const Color paperWarm = Color(0xFFE7EFFA);
   static const Color surface = Color(0xFFFFFFFF);
-  static const Color surfaceSubtle = Color(0xFFF8FAFC);
-  static const Color ink = Color(0xFF0F172A);
-  static const Color shellDark = Color(0xFF0F172A);
-  static const Color shellDeep = Color(0xFF090E1A);
-  static const Color shellElevated = Color(0xFF1E293B);
+  static const Color surfaceSubtle = Color(0xFFF6F9FE);
+  static const Color ink = Color(0xFF0B1324);
+  static const Color onAccentInk = Color(0xFF090E1A);
+  static const Color shellDark = Color(0xFF0B1324);
+  static const Color shellDeep = Color(0xFF060B16);
+  static const Color shellElevated = Color(0xFF16233B);
   static const Color shellActive = Color(0xFF1E3A8A);
-  static const Color shellLine = Color(0x26CBD5E1);
+  static const Color shellLine = Color(0x29CBD5E1);
   static const Color violet = Color(0xFF2563EB);
-  static const Color violetSoft = Color(0xFFEFF6FF);
-  static const Color violetInk = Color(0xFF1E3A8A);
+  static const Color violetSoft = Color(0xFFEAF2FF);
+  static const Color violetInk = Color(0xFF1E40AF);
   static const Color acid = Color(0xFF6EE7B7);
-  static const Color acidSoft = Color(0xFFECFDF5);
+  static const Color acidSoft = Color(0xFFE8FBF3);
   static const Color acidInk = Color(0xFF065F46);
   static const Color pink = Color(0xFFF43F5E);
-  static const Color pinkSoft = Color(0xFFFFF1F2);
+  static const Color pinkSoft = Color(0xFFFFF0F3);
   static const Color gold = Color(0xFFF59E0B);
-  static const Color goldSoft = Color(0xFFFEF3C7);
+  static const Color goldSoft = Color(0xFFFFF7E6);
   static const Color goldInk = Color(0xFF92400E);
-  static const Color muted = Color(0xFF475569);
+  static const Color muted = Color(0xFF3E4E68);
   static const Color mutedOnDark = Color(0xFF94A3B8);
-  static const Color line = Color(0xFFE2E8F0);
+  static const Color line = Color(0xFFD8E2F0);
   static const Color danger = Color(0xFFDC2626);
   static const Color dangerSoft = Color(0xFFFEF2F2);
+}
+
+@immutable
+class AdminStudioPalette {
+  const AdminStudioPalette({
+    required this.isDark,
+    required this.paper,
+    required this.paperWarm,
+    required this.surface,
+    required this.surfaceSubtle,
+    required this.ink,
+    required this.onAccentInk,
+    required this.muted,
+    required this.line,
+    required this.controlBorder,
+    required this.violet,
+    required this.violetSoft,
+    required this.violetInk,
+    required this.acid,
+    required this.acidSoft,
+    required this.acidInk,
+    required this.pink,
+    required this.pinkSoft,
+    required this.pinkInk,
+    required this.gold,
+    required this.goldSoft,
+    required this.goldInk,
+    required this.danger,
+    required this.dangerSoft,
+    required this.dangerInk,
+  });
+
+  final bool isDark;
+  final Color paper;
+  final Color paperWarm;
+  final Color surface;
+  final Color surfaceSubtle;
+  final Color ink;
+  final Color onAccentInk;
+  final Color muted;
+  final Color line;
+  final Color controlBorder;
+  final Color violet;
+  final Color violetSoft;
+  final Color violetInk;
+  final Color acid;
+  final Color acidSoft;
+  final Color acidInk;
+  final Color pink;
+  final Color pinkSoft;
+  final Color pinkInk;
+  final Color gold;
+  final Color goldSoft;
+  final Color goldInk;
+  final Color danger;
+  final Color dangerSoft;
+  final Color dangerInk;
+
+  static const AdminStudioPalette light = AdminStudioPalette(
+    isDark: false,
+    paper: AdminStudioColors.paper,
+    paperWarm: AdminStudioColors.paperWarm,
+    surface: AdminStudioColors.surface,
+    surfaceSubtle: AdminStudioColors.surfaceSubtle,
+    ink: AdminStudioColors.ink,
+    onAccentInk: AdminStudioColors.onAccentInk,
+    muted: AdminStudioColors.muted,
+    line: AdminStudioColors.line,
+    controlBorder: Color(0xFFC4D2E6),
+    violet: AdminStudioColors.violet,
+    violetSoft: AdminStudioColors.violetSoft,
+    violetInk: AdminStudioColors.violetInk,
+    acid: AdminStudioColors.acid,
+    acidSoft: AdminStudioColors.acidSoft,
+    acidInk: AdminStudioColors.acidInk,
+    pink: AdminStudioColors.pink,
+    pinkSoft: AdminStudioColors.pinkSoft,
+    pinkInk: Color(0xFF9F1239),
+    gold: AdminStudioColors.gold,
+    goldSoft: AdminStudioColors.goldSoft,
+    goldInk: AdminStudioColors.goldInk,
+    danger: AdminStudioColors.danger,
+    dangerSoft: AdminStudioColors.dangerSoft,
+    dangerInk: Color(0xFF991B1B),
+  );
+
+  static const AdminStudioPalette dark = AdminStudioPalette(
+    isDark: true,
+    paper: Color(0xFF070D19),
+    paperWarm: Color(0xFF0D1526),
+    surface: Color(0xFF111C30),
+    surfaceSubtle: Color(0xFF16233B),
+    ink: Color(0xFFF1F5FB),
+    onAccentInk: Color(0xFF090E1A),
+    muted: Color(0xFFB4C3D9),
+    line: Color(0xFF22324F),
+    controlBorder: Color(0xFF31476E),
+    violet: Color(0xFF3B82F6),
+    violetSoft: Color(0x293B82F6),
+    violetInk: Color(0xFF93C5FD),
+    acid: Color(0xFF6EE7B7),
+    acidSoft: Color(0x2610B981),
+    acidInk: Color(0xFF6EE7B7),
+    pink: Color(0xFFFB7185),
+    pinkSoft: Color(0x26F43F5E),
+    pinkInk: Color(0xFFFDA4AF),
+    gold: Color(0xFFFBBF24),
+    goldSoft: Color(0x26F59E0B),
+    goldInk: Color(0xFFFCD34D),
+    danger: Color(0xFFF87171),
+    dangerSoft: Color(0x26EF4444),
+    dangerInk: Color(0xFFFCA5A5),
+  );
+
+  static AdminStudioPalette of(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark ? dark : light;
 }
 
 class AdminStudioTheme {
   const AdminStudioTheme._();
 
-  static ThemeData themeData() {
+  static ThemeData of(BuildContext context) =>
+      themeData(brightness: Theme.of(context).brightness);
+
+  static ThemeData themeData({Brightness brightness = Brightness.light}) {
+    final isDark = brightness == Brightness.dark;
+    final p = isDark ? AdminStudioPalette.dark : AdminStudioPalette.light;
+    final tokens = isDark ? GhstThemeTokens.dark : GhstThemeTokens.light;
     final scheme = ColorScheme.fromSeed(
-      seedColor: AdminStudioColors.violet,
-      primary: AdminStudioColors.violet,
+      seedColor: p.violet,
+      brightness: brightness,
+      primary: p.violet,
       onPrimary: Colors.white,
-      secondary: AdminStudioColors.ink,
-      onSecondary: Colors.white,
-      surface: AdminStudioColors.surface,
-      onSurface: AdminStudioColors.ink,
-      error: AdminStudioColors.danger,
+      secondary: isDark ? p.acid : p.ink,
+      onSecondary: isDark ? p.onAccentInk : Colors.white,
+      surface: p.surface,
+      onSurface: p.ink,
+      error: p.danger,
+    ).copyWith(
+      onSurfaceVariant: p.muted,
+      surfaceContainerLowest: p.paper,
+      surfaceContainerLow: p.surfaceSubtle,
+      surfaceContainer: p.surface,
+      surfaceContainerHigh: tokens.cardMuted,
+      surfaceContainerHighest: isDark
+          ? const Color(0xFF243757)
+          : const Color(0xFFE3ECF8),
+      primaryContainer: p.violetSoft,
+      onPrimaryContainer: p.violetInk,
+      secondaryContainer: p.acidSoft,
+      onSecondaryContainer: p.acidInk,
+      tertiaryContainer: p.goldSoft,
+      onTertiaryContainer: p.goldInk,
+      errorContainer: p.dangerSoft,
+      onErrorContainer: p.dangerInk,
+      outline: p.controlBorder,
+      outlineVariant: p.line,
     );
     return ThemeData(
       useMaterial3: true,
+      brightness: brightness,
       colorScheme: scheme,
-      scaffoldBackgroundColor: AdminStudioColors.paper,
+      scaffoldBackgroundColor: p.paper,
+      extensions: [tokens],
       cardTheme: CardThemeData(
         elevation: 0,
-        color: AdminStudioColors.surface,
+        color: p.surface,
         surfaceTintColor: Colors.transparent,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
-          side: const BorderSide(color: AdminStudioColors.line, width: 1),
+          side: BorderSide(color: p.line, width: 1),
         ),
       ),
       dialogTheme: DialogThemeData(
-        elevation: 6,
-        shadowColor: const Color(0x1F0F172A),
-        backgroundColor: AdminStudioColors.surface,
+        elevation: 8,
+        shadowColor: isDark ? const Color(0x88000000) : const Color(0x1F0F172A),
+        backgroundColor: p.surface,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: AdminStudioColors.line, width: 1),
+          side: BorderSide(color: p.line, width: 1),
         ),
       ),
-      dividerTheme: const DividerThemeData(
-        color: AdminStudioColors.line,
+      dividerTheme: DividerThemeData(
+        color: p.line,
         thickness: 1,
         space: 1,
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: AdminStudioColors.surface,
-        selectedColor: AdminStudioColors.violetSoft,
-        secondarySelectedColor: AdminStudioColors.violet,
-        checkmarkColor: AdminStudioColors.violet,
-        disabledColor: AdminStudioColors.paperWarm,
+        backgroundColor: p.surfaceSubtle,
+        selectedColor: p.violetSoft,
+        secondarySelectedColor: p.violet,
+        checkmarkColor: p.violetInk,
+        disabledColor: p.paperWarm,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(999),
-          side: const BorderSide(color: Color(0xFFCBD5E1), width: 1),
+          side: BorderSide(color: p.controlBorder, width: 1),
         ),
-        labelStyle: const TextStyle(
+        labelStyle: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w600,
-          color: AdminStudioColors.ink,
+          color: p.ink,
         ),
         secondaryLabelStyle: const TextStyle(
           fontSize: 12,
@@ -102,52 +248,53 @@ class AdminStudioTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xFFF8FAFC),
+        fillColor: p.surfaceSubtle,
+        hintStyle: TextStyle(color: tokens.inkMuted, fontSize: 13),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 14,
           vertical: 13,
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.1),
+          borderSide: BorderSide(color: p.controlBorder, width: 1.1),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.1),
+          borderSide: BorderSide(color: p.controlBorder, width: 1.1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: AdminStudioColors.violet,
+          borderSide: BorderSide(
+            color: p.violet,
             width: 1.8,
           ),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: AdminStudioColors.danger,
+          borderSide: BorderSide(
+            color: p.danger,
             width: 1.4,
           ),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: AdminStudioColors.danger,
+          borderSide: BorderSide(
+            color: p.danger,
             width: 1.8,
           ),
         ),
-        labelStyle: const TextStyle(
-          color: AdminStudioColors.muted,
+        labelStyle: TextStyle(
+          color: p.muted,
           fontWeight: FontWeight.w600,
           fontSize: 13,
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: AdminStudioColors.violet,
+          backgroundColor: p.violet,
           foregroundColor: Colors.white,
-          disabledBackgroundColor: const Color(0xFFCBD5E1),
-          disabledForegroundColor: AdminStudioColors.muted,
+          disabledBackgroundColor: p.controlBorder,
+          disabledForegroundColor: p.muted,
           elevation: 0,
           minimumSize: const Size(44, 46),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
@@ -163,7 +310,7 @@ class AdminStudioTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AdminStudioColors.violet,
+          backgroundColor: p.violet,
           foregroundColor: Colors.white,
           elevation: 0,
           minimumSize: const Size(44, 46),
@@ -179,11 +326,11 @@ class AdminStudioTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AdminStudioColors.ink,
-          backgroundColor: AdminStudioColors.surface,
+          foregroundColor: p.ink,
+          backgroundColor: p.surface,
           minimumSize: const Size(44, 46),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          side: const BorderSide(color: Color(0xFFCBD5E1), width: 1),
+          side: BorderSide(color: p.controlBorder, width: 1),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -195,7 +342,7 @@ class AdminStudioTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: AdminStudioColors.violet,
+          foregroundColor: p.violet,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
@@ -206,7 +353,7 @@ class AdminStudioTheme {
         ),
       ),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: AdminStudioColors.ink,
+        backgroundColor: isDark ? const Color(0xFF1E293B) : p.ink,
         contentTextStyle: const TextStyle(
           color: Colors.white,
           fontWeight: FontWeight.w600,
@@ -229,10 +376,10 @@ class AdminStudioMark extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bg = inverted ? AdminStudioColors.acid : AdminStudioColors.violet;
-    final fg = inverted ? AdminStudioColors.ink : Colors.white;
+    final fg = inverted ? AdminStudioColors.onAccentInk : Colors.white;
     final stripe = inverted ? AdminStudioColors.pink : AdminStudioColors.acid;
     final tagColor = inverted
-        ? AdminStudioColors.ink.withValues(alpha: 0.72)
+        ? AdminStudioColors.onAccentInk.withValues(alpha: 0.72)
         : AdminStudioColors.acid;
     final radius = (size * 0.28).clamp(8.0, 14.0);
     return ClipRRect(
@@ -450,14 +597,14 @@ class _StudioGridPainter extends CustomPainter {
     final glowPaint = Paint()
       ..shader = RadialGradient(
         colors: [
-          AdminStudioColors.violet.withValues(alpha: 0.30),
+          AdminStudioColors.violet.withValues(alpha: 0.34),
           AdminStudioColors.violet.withValues(alpha: 0.0),
         ],
       ).createShader(Rect.fromCircle(center: glowCenter, radius: glowRadius));
     canvas.drawCircle(glowCenter, glowRadius, glowPaint);
 
     final gridPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.035)
+      ..color = Colors.white.withValues(alpha: 0.04)
       ..strokeWidth = 1;
     for (double x = 0; x <= size.width; x += gridSpacing) {
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
@@ -475,7 +622,7 @@ class _StudioGridPainter extends CustomPainter {
     final mintGlowPaint = Paint()
       ..shader = RadialGradient(
         colors: [
-          AdminStudioColors.acid.withValues(alpha: 0.14),
+          AdminStudioColors.acid.withValues(alpha: 0.16),
           AdminStudioColors.acid.withValues(alpha: 0.0),
         ],
       ).createShader(
@@ -487,7 +634,7 @@ class _StudioGridPainter extends CustomPainter {
     final vanishX = size.width * (0.50 + parallax.dx * 0.06);
     final perspectiveLinePaint = Paint()
       ..isAntiAlias = true
-      ..color = AdminStudioColors.acid.withValues(alpha: 0.09)
+      ..color = AdminStudioColors.acid.withValues(alpha: 0.10)
       ..strokeWidth = 1.0;
 
     for (int i = -6; i <= 6; i++) {
@@ -507,7 +654,7 @@ class _StudioGridPainter extends CustomPainter {
       final rowPaint = Paint()
         ..isAntiAlias = true
         ..color = AdminStudioColors.violet.withValues(
-          alpha: (0.04 + 0.14 * depthT).clamp(0.0, 0.22),
+          alpha: (0.04 + 0.15 * depthT).clamp(0.0, 0.24),
         )
         ..strokeWidth = 1.0;
       canvas.drawLine(Offset(0, y), Offset(size.width, y), rowPaint);
@@ -530,7 +677,7 @@ class _StudioGridPainter extends CustomPainter {
         ..isAntiAlias = true
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.1
-        ..color = AdminStudioColors.acid.withValues(alpha: 0.20),
+        ..color = AdminStudioColors.acid.withValues(alpha: 0.22),
     );
     final sweepAngle = phase * math.pi * 2.0;
     final satPos = Offset(
@@ -542,14 +689,14 @@ class _StudioGridPainter extends CustomPainter {
       4.0,
       Paint()
         ..isAntiAlias = true
-        ..color = AdminStudioColors.acid.withValues(alpha: 0.85),
+        ..color = AdminStudioColors.acid.withValues(alpha: 0.88),
     );
     canvas.drawCircle(
       satPos,
       10.0,
       Paint()
         ..isAntiAlias = true
-        ..color = AdminStudioColors.acid.withValues(alpha: 0.20),
+        ..color = AdminStudioColors.acid.withValues(alpha: 0.22),
     );
   }
 
@@ -594,9 +741,32 @@ class AdminNeoBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveBorder = borderColor == AdminStudioColors.ink
-        ? AdminStudioColors.line
-        : borderColor;
+    final palette = AdminStudioPalette.of(context);
+    final tokens = GhstThemeTokens.of(context);
+    final effectiveBg = switch (backgroundColor) {
+      AdminStudioColors.surface || const Color(0xFFFFFFFF) => palette.surface,
+      AdminStudioColors.surfaceSubtle ||
+      const Color(0xFFF8FAFC) => palette.surfaceSubtle,
+      AdminStudioColors.paper || const Color(0xFFF4F7FA) => palette.paper,
+      AdminStudioColors.paperWarm ||
+      const Color(0xFFEFF3F8) => palette.paperWarm,
+      AdminStudioColors.violetSoft ||
+      const Color(0xFFEFF6FF) => palette.violetSoft,
+      AdminStudioColors.acidSoft || const Color(0xFFECFDF5) => palette.acidSoft,
+      AdminStudioColors.goldSoft || const Color(0xFFFEF3C7) => palette.goldSoft,
+      AdminStudioColors.pinkSoft || const Color(0xFFFFF1F2) => palette.pinkSoft,
+      AdminStudioColors.dangerSoft ||
+      const Color(0xFFFEF2F2) => palette.dangerSoft,
+      _ => backgroundColor,
+    };
+    final effectiveBorder = switch (borderColor) {
+      AdminStudioColors.ink ||
+      const Color(0xFF0F172A) ||
+      AdminStudioColors.line ||
+      const Color(0xFFE2E8F0) => palette.line,
+      const Color(0xFFCBD5E1) => palette.controlBorder,
+      _ => borderColor,
+    };
     final radius = BorderRadius.circular(borderRadius);
     final Widget innerContent = Material(
       type: MaterialType.transparency,
@@ -607,23 +777,22 @@ class AdminNeoBox extends StatelessWidget {
     Widget box = Container(
       margin: margin,
       decoration: BoxDecoration(
-        color: backgroundColor,
+        color: effectiveBg,
         borderRadius: radius,
         border: Border.all(color: effectiveBorder, width: borderWidth),
-        boxShadow: shadowOffset == Offset.zero
-            ? null
-            : const [
-                BoxShadow(
-                  color: Color(0x0A0F172A),
-                  offset: Offset(0, 4),
-                  blurRadius: 14,
-                ),
-                BoxShadow(
-                  color: Color(0x050F172A),
-                  offset: Offset(0, 1),
-                  blurRadius: 3,
-                ),
-              ],
+        boxShadow: shadowOffset == Offset.zero ? null : tokens.cardShadow,
+      ),
+      foregroundDecoration: BoxDecoration(
+        borderRadius: radius,
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            tokens.specularRim,
+            tokens.specularRim.withValues(alpha: 0),
+          ],
+          stops: const [0.0, 0.14],
+        ),
       ),
       child: interactive3d
           ? innerContent

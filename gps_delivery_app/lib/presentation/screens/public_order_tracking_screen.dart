@@ -3,12 +3,10 @@ import 'package:flutter/services.dart';
 
 import '../../core/integrations/cloud_orders_service.dart';
 import '../../core/network/public_json_api.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/ghst_theme_tokens.dart';
 import '../widgets/cloud_order_labels.dart';
+import '../widgets/theme_mode_toggle.dart';
 
-/// Màn hình Tra cứu & Theo dõi Hành trình Cloud công khai (/track).
-/// Tra cứu trực tiếp từ Cloud bằng liên kết chia sẻ 64 ký tự hex hoặc
-/// Mã vận đơn Cloud (CL-...) kèm 4 số cuối SĐT người nhận, bảo mật tuyệt đối dữ liệu cá nhân.
 class PublicOrderTrackingScreen extends StatefulWidget {
   final String? initialQuery;
   final CloudOrdersService? cloudService;
@@ -164,46 +162,52 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = GhstThemeTokens.of(context);
     final typingToken = _isShareToken(_searchCtrl.text.trim());
     return Scaffold(
-      backgroundColor: AppColors.paper,
+      backgroundColor: tokens.canvas,
       appBar: AppBar(
-        backgroundColor: AppColors.surface,
-        foregroundColor: AppColors.ink,
+        backgroundColor: tokens.cardSurface,
+        foregroundColor: tokens.ink,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(1),
-          child: Divider(height: 1, color: AppColors.line),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Divider(height: 1, color: tokens.border),
         ),
         title: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: AppColors.primarySoft,
+                color: tokens.sapphire.fill,
                 borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: tokens.sapphire.border),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.radar_rounded,
                 size: 18,
-                color: AppColors.primary,
+                color: tokens.sapphire.icon,
               ),
             ),
             const SizedBox(width: 10),
-            const Expanded(
+            Expanded(
               child: Text(
                 'Tra cứu & Theo dõi Hành trình Trực tiếp',
                 style: TextStyle(
                   fontSize: 15.5,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.ink,
+                  color: tokens.ink,
                 ),
               ),
             ),
           ],
         ),
         actions: [
+          const Padding(
+            padding: EdgeInsets.only(right: 6),
+            child: ThemeModeIconButton(compact: true),
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: TextButton.icon(
@@ -214,15 +218,15 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
                   Navigator.of(context).pushReplacementNamed('/');
                 }
               },
-              icon: const Icon(
+              icon: Icon(
                 Icons.home_outlined,
                 size: 17,
-                color: AppColors.primary,
+                color: tokens.primary,
               ),
-              label: const Text(
+              label: Text(
                 'Trang chủ',
                 style: TextStyle(
-                  color: AppColors.primary,
+                  color: tokens.primary,
                   fontWeight: FontWeight.w700,
                   fontSize: 12.5,
                 ),
@@ -239,36 +243,52 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
+                GhstAuroraBanner(
+                  gradient: tokens.heroGradient,
+                  accentOrbColor: tokens.sapphire.glow,
                   padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.line),
-                    boxShadow: AppColors.cardShadow,
+                  child: Row(
+                    children: [
+                      const GhstPulseBeacon(
+                        color: Color(0xFF6EE7B7),
+                        size: 12,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'TRA CỨU HÀNH TRÌNH VẬN ĐƠN BẢO MẬT',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w900,
+                                fontSize: 13,
+                                letterSpacing: 0.4,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Nhập mã vận đơn kèm 4 số cuối SĐT người nhận, hoặc dán mã chia sẻ 64 ký tự. Địa chỉ, SĐT đầy đủ và mã OTP nhận hàng luôn được bảo mật.',
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                height: 1.45,
+                                color: Colors.white.withValues(alpha: 0.86),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
+                ),
+                const SizedBox(height: 14),
+                GhstLuminousCard(
+                  padding: const EdgeInsets.all(18),
+                  accentGlow: tokens.sapphire.glow,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'TRA CỨU HÀNH TRÌNH VẬN ĐƠN BẢO MẬT',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12.5,
-                          letterSpacing: 0.3,
-                          color: Color(0xFF1E3A8A),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'Nhập mã vận đơn kèm 4 số cuối SĐT người nhận, hoặc dán mã chia sẻ 64 ký tự. Địa chỉ, SĐT đầy đủ và mã OTP nhận hàng luôn được bảo mật.',
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          height: 1.45,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 14),
                       LayoutBuilder(
                         builder: (context, constraints) {
                           final wide = constraints.maxWidth >= 620;
@@ -295,7 +315,7 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
                           );
                           final button = FilledButton.icon(
                             style: FilledButton.styleFrom(
-                              backgroundColor: AppColors.primary,
+                              backgroundColor: tokens.primary,
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 18,
@@ -345,20 +365,24 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
                 const SizedBox(height: 16),
                 if (_error != null)
                   _buildStatusBox(
+                    tokens: tokens,
                     title: 'Không tra cứu được vận đơn',
                     subtitle: _error!,
                     icon: Icons.find_in_page_outlined,
+                    tone: tokens.rose,
                   )
                 else if (_lookupData != null)
-                  _buildCloudLookupDetail(_lookupData!)
+                  _buildCloudLookupDetail(tokens, _lookupData!)
                 else if (_shareData != null)
-                  _buildShareDetail(_shareData!)
+                  _buildShareDetail(tokens, _shareData!)
                 else
                   _buildStatusBox(
+                    tokens: tokens,
                     title: 'Sẵn sàng tra cứu hành trình trực tiếp',
                     subtitle:
                         'Nhập mã vận đơn và 4 số cuối SĐT người nhận, hoặc mở liên kết chia sẻ từ người gửi để xem tiến độ giao hàng thời gian thực.',
                     icon: Icons.share_location_rounded,
+                    tone: tokens.sapphire,
                   ),
               ],
             ),
@@ -369,28 +393,24 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
   }
 
   Widget _buildStatusBox({
+    required GhstThemeTokens tokens,
     required String title,
     required String subtitle,
     required IconData icon,
-  }) => Container(
-    width: double.infinity,
+    required TonePair tone,
+  }) => GhstLuminousCard(
     padding: const EdgeInsets.all(22),
-    decoration: BoxDecoration(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: AppColors.line),
-      boxShadow: AppColors.cardShadow,
-    ),
+    accentGlow: tone.glow,
     child: Row(
       children: [
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppColors.primarySoft,
+            color: tone.fill,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.primaryBorder),
+            border: Border.all(color: tone.border),
           ),
-          child: Icon(icon, size: 28, color: AppColors.primary),
+          child: Icon(icon, size: 28, color: tone.icon),
         ),
         const SizedBox(width: 16),
         Expanded(
@@ -399,19 +419,19 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w800,
                   fontSize: 14.5,
-                  color: AppColors.ink,
+                  color: tokens.ink,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 subtitle,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12.5,
                   height: 1.45,
-                  color: AppColors.textSecondary,
+                  color: tokens.inkSecondary,
                 ),
               ),
             ],
@@ -421,7 +441,10 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
     ),
   );
 
-  Widget _buildCloudLookupDetail(Map<String, dynamic> data) {
+  Widget _buildCloudLookupDetail(
+    GhstThemeTokens tokens,
+    Map<String, dynamic> data,
+  ) {
     final status = '${data['status'] ?? 'searching'}';
     final service = '${data['service_type'] ?? 'standard'}';
     final meters = (data['distance_meters'] as num? ?? 0).toDouble();
@@ -430,20 +453,17 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
         .map((e) => Map<String, dynamic>.from(e))
         .toList();
     final isSearching = status == 'searching';
-    final isAccepted = status == 'accepted' || status == 'arrivingPickup';
+    final isAccepted = status == 'accepted';
+    final isArrivingPickup = status == 'arrivingPickup';
     final isInTransit = status == 'inTransit';
     final isDelivered = status == 'delivered';
-    final isCancelled = status == 'cancelled';
+    final isCancelled =
+        status == 'cancelled' || status == 'failed' || status == 'returned';
     final code = '${data['tracking_code']}';
 
-    return Container(
+    return GhstLuminousCard(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.line),
-        boxShadow: AppColors.cardShadow,
-      ),
+      accentGlow: isDelivered ? tokens.emerald.glow : tokens.sapphire.glow,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -458,19 +478,19 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
                 children: [
                   SelectableText(
                     'Vận đơn $code • ${cloudServiceTypes[service] ?? service}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.primary,
+                      color: tokens.sapphire.foreground,
                     ),
                   ),
                   Text(
                     '${cloudStatuses[status] ?? status}'
                     '${meters > 0 ? ' • Lộ trình ${(meters / 1000).toStringAsFixed(1)} km' : ''}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.textSecondary,
+                      color: tokens.inkSecondary,
                     ),
                   ),
                 ],
@@ -491,32 +511,42 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
           Container(
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
             decoration: BoxDecoration(
-              color: AppColors.surfaceSubtle,
+              color: tokens.cardSubtle,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.line),
+              border: Border.all(color: tokens.border),
             ),
             child: Wrap(
-              spacing: 16,
+              spacing: 14,
               runSpacing: 8,
               alignment: WrapAlignment.spaceAround,
               children: [
                 _buildStepPill(
+                  tokens,
                   '1. Đã tạo đơn',
                   done: !isSearching && !isCancelled,
                   active: isSearching,
                 ),
                 _buildStepPill(
-                  '2. Tài xế nhận',
-                  done: isInTransit || isDelivered,
+                  tokens,
+                  '2. Đã nhận chuyến',
+                  done: isArrivingPickup || isInTransit || isDelivered,
                   active: isAccepted,
                 ),
                 _buildStepPill(
-                  '3. Đang giao',
+                  tokens,
+                  '3. Đến điểm lấy',
+                  done: isInTransit || isDelivered,
+                  active: isArrivingPickup,
+                ),
+                _buildStepPill(
+                  tokens,
+                  '4. Đang giao',
                   done: isDelivered,
                   active: isInTransit,
                 ),
                 _buildStepPill(
-                  '4. Hoàn thành',
+                  tokens,
+                  '5. Hoàn thành',
                   done: isDelivered,
                   active: false,
                 ),
@@ -526,48 +556,52 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
           const SizedBox(height: 12),
           Text(
             'Tạo lúc: ${cloudDate(data['created_at'])} · Cập nhật: ${cloudDate(data['updated_at'])}',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: AppColors.textSecondary,
+              color: tokens.inkSecondary,
             ),
           ),
-          const Divider(height: 24),
-          const Text(
+          Divider(height: 24, color: tokens.border),
+          Text(
             'NHẬT KÝ HÀNH TRÌNH XÁC THỰC',
             style: TextStyle(
               fontWeight: FontWeight.w900,
               fontSize: 12,
-              color: AppColors.ink,
+              color: tokens.ink,
             ),
           ),
           const SizedBox(height: 8),
           if (timeline.isEmpty)
-            const Text('Chưa có mốc cập nhật hành trình.'),
+            Text(
+              'Chưa có mốc cập nhật hành trình.',
+              style: TextStyle(color: tokens.inkSecondary),
+            ),
           for (final item in timeline)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.check_circle_outline,
                     size: 16,
-                    color: AppColors.violet,
+                    color: tokens.sapphire.icon,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       '${cloudActions[item['action']] ?? item['action']} — ${cloudStatuses[item['status']] ?? item['status']}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w600,
+                        color: tokens.ink,
                       ),
                     ),
                   ),
                   Text(
                     cloudDate(item['created_at']),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11.5,
-                      color: AppColors.textSecondary,
+                      color: tokens.inkSecondary,
                     ),
                   ),
                 ],
@@ -578,48 +612,98 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
     );
   }
 
-  Widget _buildShareDetail(Map<String, dynamic> data) {
+  Widget _buildShareDetail(
+    GhstThemeTokens tokens,
+    Map<String, dynamic> data,
+  ) {
     const marketStates = {
       'pending': 'Chờ cửa hàng xác nhận',
       'accepted': 'Đang chuẩn bị',
       'ready': 'Đang vận chuyển',
       'cancelled': 'Đã hủy',
     };
+    final rawStatus = '${data['delivery_status'] ?? data['state'] ?? ''}';
     final statusLabel =
         cloudStatuses[data['delivery_status']] ??
         cloudStatuses[data['state']] ??
         marketStates[data['state']] ??
         'Đang cập nhật';
-    return Container(
+    final stage = _shareStageIndex(rawStatus);
+    return GhstLuminousCard(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.line),
-        boxShadow: AppColors.cardShadow,
-      ),
+      accentGlow: stage >= 4 ? tokens.emerald.glow : tokens.sapphire.glow,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             '${data['shop_name'] ?? 'GHST Express'}',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w800,
-              color: AppColors.primary,
+              color: tokens.sapphire.foreground,
             ),
           ),
           const SizedBox(height: 6),
           Text(
             'Trạng thái: $statusLabel',
-            style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700),
+            style: TextStyle(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w700,
+              color: tokens.ink,
+            ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+            decoration: BoxDecoration(
+              color: tokens.cardSubtle,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: tokens.border),
+            ),
+            child: Wrap(
+              spacing: 12,
+              runSpacing: 8,
+              alignment: WrapAlignment.spaceAround,
+              children: [
+                _buildStepPill(
+                  tokens,
+                  '1. Đặt đơn',
+                  done: stage > 0,
+                  active: stage == 0,
+                ),
+                _buildStepPill(
+                  tokens,
+                  '2. Xác nhận',
+                  done: stage > 1,
+                  active: stage == 1,
+                ),
+                _buildStepPill(
+                  tokens,
+                  '3. Lấy hàng',
+                  done: stage > 2,
+                  active: stage == 2,
+                ),
+                _buildStepPill(
+                  tokens,
+                  '4. Đang giao',
+                  done: stage > 3,
+                  active: stage == 3,
+                ),
+                _buildStepPill(
+                  tokens,
+                  '5. Hoàn tất',
+                  done: stage >= 4,
+                  active: false,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
           Text(
             'Cập nhật: ${cloudDate(data['updated_at'])} · Hết hạn liên kết: ${cloudDate(data['expires_at'])}',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: AppColors.textSecondary,
+              color: tokens.inkSecondary,
             ),
           ),
         ],
@@ -627,16 +711,25 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
     );
   }
 
+  int _shareStageIndex(String raw) => switch (raw) {
+    'delivered' => 4,
+    'inTransit' || 'delivering' || 'ready' => 3,
+    'arrivingPickup' || 'picking_up' => 2,
+    'accepted' => 1,
+    _ => 0,
+  };
+
   Widget _buildStepPill(
+    GhstThemeTokens tokens,
     String label, {
     required bool done,
     required bool active,
   }) {
     final color = done
-        ? AppColors.success
+        ? tokens.emerald.foreground
         : active
-        ? AppColors.violet
-        : AppColors.textSecondary;
+        ? tokens.sapphire.foreground
+        : tokens.inkMuted;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [

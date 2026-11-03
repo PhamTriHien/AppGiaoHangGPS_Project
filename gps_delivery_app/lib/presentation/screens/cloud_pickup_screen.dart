@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/integrations/cloud_account_session.dart';
 import '../../core/integrations/cloud_session_lease.dart';
+import '../../core/theme/ghst_theme_tokens.dart';
 import '../widgets/cloud_logistics_panels.dart';
 import '../widgets/cloud_order_labels.dart';
 import '../widgets/cloud_session_boundary.dart';
@@ -375,9 +376,9 @@ class _CloudPickupScreenState extends State<CloudPickupScreen> {
                 : cloudPickupStatuses[p['status']] ?? '${p['status']}',
             style: TextStyle(
               color: p['status'] == 'assigned'
-                  ? Colors.green.shade700
-                  : Colors.orange.shade800,
-              fontWeight: FontWeight.w600,
+                  ? GhstThemeTokens.of(context).emerald.foreground
+                  : GhstThemeTokens.of(context).amber.foreground,
+              fontWeight: FontWeight.w700,
             ),
           ),
           Text(

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../../core/config/env_config.dart';
 import '../../core/integrations/bank_directory_service.dart';
+import '../../core/theme/ghst_theme_tokens.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/utils/security_and_barcode_utils.dart';
 
@@ -169,6 +170,7 @@ class _VietQrBankPaymentPanelState extends State<VietQrBankPaymentPanel> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tokens = GhstThemeTokens.of(context);
     final safeAmount = widget.amountVnd.isFinite && widget.amountVnd > 0
         ? widget.amountVnd
         : 0.0;
@@ -202,7 +204,7 @@ class _VietQrBankPaymentPanelState extends State<VietQrBankPaymentPanel> {
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x0A0F172A),
+            color: Color(0x140F172A),
             blurRadius: 12,
             offset: Offset(0, 3),
           ),
@@ -268,19 +270,24 @@ class _VietQrBankPaymentPanelState extends State<VietQrBankPaymentPanel> {
         const SizedBox(height: 8),
         Text(
           'Quét mã bằng ứng dụng ${selectedBank.shortName} hoặc chuyển khoản nhanh 24/7:',
-          style: theme.textTheme.bodySmall,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: tokens.inkSecondary,
+          ),
         ),
         const SizedBox(height: 8),
         _infoRow(
+          tokens: tokens,
           label: 'Ngân hàng thụ hưởng',
           value:
               '${widget.beneficiaryBankShortName} · BIN ${widget.beneficiaryBankBin}',
         ),
         _infoRow(
+          tokens: tokens,
           label: 'Chủ tài khoản',
           value: widget.beneficiaryAccountName,
         ),
         _infoRow(
+          tokens: tokens,
           label: 'Số tài khoản',
           value: widget.beneficiaryAccountNumber,
           copyTooltip: 'Sao chép số tài khoản',
@@ -288,6 +295,7 @@ class _VietQrBankPaymentPanelState extends State<VietQrBankPaymentPanel> {
               _copyValue(widget.beneficiaryAccountNumber, 'số tài khoản'),
         ),
         _infoRow(
+          tokens: tokens,
           label: 'Số tiền chuyển',
           value: formattedAmount,
           bold: true,
@@ -295,6 +303,7 @@ class _VietQrBankPaymentPanelState extends State<VietQrBankPaymentPanel> {
           onCopy: () => _copyValue('$amountRounded', 'số tiền'),
         ),
         _infoRow(
+          tokens: tokens,
           label: 'Nội dung chuyển khoản',
           value: memo,
           bold: true,
@@ -307,7 +316,7 @@ class _VietQrBankPaymentPanelState extends State<VietQrBankPaymentPanel> {
             child: Text(
               _copiedNotice!,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: const Color(0xFF047857),
+                color: tokens.emerald.foreground,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -318,8 +327,8 @@ class _VietQrBankPaymentPanelState extends State<VietQrBankPaymentPanel> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        border: Border.all(color: const Color(0xFFCBD5E1)),
+        color: tokens.cardSubtle,
+        border: Border.all(color: tokens.borderStrong),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -331,7 +340,7 @@ class _VietQrBankPaymentPanelState extends State<VietQrBankPaymentPanel> {
               Icon(
                 Icons.qr_code_2_rounded,
                 size: 20,
-                color: theme.colorScheme.primary,
+                color: tokens.primary,
               ),
               const SizedBox(width: 6),
               Expanded(
@@ -339,6 +348,7 @@ class _VietQrBankPaymentPanelState extends State<VietQrBankPaymentPanel> {
                   'Chuyển khoản ngân hàng & Quét mã VietQR',
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w700,
+                    color: tokens.ink,
                   ),
                 ),
               ),
@@ -373,7 +383,7 @@ class _VietQrBankPaymentPanelState extends State<VietQrBankPaymentPanel> {
             Text(
               widget.reconciliationNote!,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: const Color(0xFF475569),
+                color: tokens.inkSecondary,
               ),
             ),
           ],
@@ -383,6 +393,7 @@ class _VietQrBankPaymentPanelState extends State<VietQrBankPaymentPanel> {
   }
 
   Widget _infoRow({
+    required GhstThemeTokens tokens,
     required String label,
     required String value,
     bool bold = false,
@@ -400,16 +411,16 @@ class _VietQrBankPaymentPanelState extends State<VietQrBankPaymentPanel> {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11.5,
-                    color: Color(0xFF64748B),
+                    color: tokens.inkMuted,
                   ),
                 ),
                 SelectableText(
                   value,
                   style: TextStyle(
                     fontSize: 13.5,
-                    color: const Color(0xFF0F172A),
+                    color: tokens.ink,
                     fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
                   ),
                 ),
@@ -423,10 +434,10 @@ class _VietQrBankPaymentPanelState extends State<VietQrBankPaymentPanel> {
               padding: EdgeInsets.zero,
               tooltip: copyTooltip,
               onPressed: onCopy,
-              icon: const Icon(
+              icon: Icon(
                 Icons.copy_outlined,
                 size: 16,
-                color: Color(0xFF2563EB),
+                color: tokens.primary,
               ),
             ),
         ],

@@ -201,6 +201,26 @@ class CloudOrdersService {
     Map<String, dynamic> payload = const {},
   ]) => request('notifications/$action', body: payload);
 
+  Future<Map<String, dynamic>> accountPreferences(
+    String action, [
+    Map<String, dynamic> payload = const {},
+  ]) => request('preferences/$action', body: payload);
+
+  Future<Map<String, dynamic>> aiHistory(
+    String action, [
+    Map<String, dynamic> payload = const {},
+  ]) => request('ai-history/$action', body: payload);
+
+  Future<Map<String, dynamic>> orderLive(
+    String action, [
+    Map<String, dynamic> payload = const {},
+  ]) => request('order-live/$action', body: payload);
+
+  Future<Map<String, dynamic>> fetchDriverReviews({String? driverId}) =>
+      logistics('driver_reviews', {
+        if (driverId != null && driverId.isNotEmpty) 'driver_id': driverId,
+      });
+
   Future<Map<String, dynamic>> aiChat(List<Map<String, String>> messages) =>
       request('ai-chat', body: {'messages': messages});
 

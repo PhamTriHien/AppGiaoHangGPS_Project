@@ -36,7 +36,7 @@ try{
     grant usage on schema storage to authenticated;grant select,insert on storage.objects to authenticated;create publication supabase_realtime;`);
   await check('P0 latest additive migrations and catalog privacy',async()=>{
     for(const file of ['20261027_delivery_integrations','20261028_cloud_orders','20261029_payments_ghn','20261029_cloud_addresses',
-      '20261030_marketplace','20261031_market_operations','20261101_partner_memberships','20261102_local_address_import','20261103_catalog_stock_versions','20261104_market_media','20261105_market_browse','20261106_catalog_configuration','20261107_cloud_commercial_suite','20261108_cloud_logistics','20261109_admin_account_management','20261110_cloud_promo_events','20261111_profile_push_shipping_coins','20261112_shipping_cash_settlement']) {
+      '20261030_marketplace','20261031_market_operations','20261101_partner_memberships','20261102_local_address_import','20261103_catalog_stock_versions','20261104_market_media','20261105_market_browse','20261106_catalog_configuration','20261107_cloud_commercial_suite','20261108_cloud_logistics','20261109_admin_account_management','20261110_cloud_promo_events','20261111_profile_push_shipping_coins','20261112_shipping_cash_settlement','20261113_cloud_sync_and_journey']) {
       await db.query(await readFile(new URL(`../../../database/migrations/${file}.sql`,import.meta.url),'utf8'));
     }
     const schema=(await db.query(DEPLOYMENT_SCHEMA_SQL)).rows[0];
@@ -178,6 +178,97 @@ try{
   await testConfiguredCatalog({db,as,rpc,operator,merchant,buyer:buyers[7],shop,check});
   await testCommercialSuite({db,as,rpc,operator,merchant,driver,secondDriver,buyers,shop,check,authenticatedQuery});
   await testCloudLogistics({db,as,operator,merchant,driver,buyers,check});
+  await check('P7 cloud preferences, AI history, enriched queue privacy, live GPS/chat/checkpoints and driver reviews',async()=>{
+    for(const file of ['20261109_admin_account_management','20261110_cloud_promo_events','20261111_profile_push_shipping_coins','20261112_shipping_cash_settlement','20261113_cloud_sync_and_journey']) {
+      await db.query(await readFile(new URL(`../../../database/migrations/${file}.sql`,import.meta.url),'utf8'));
+    }
+    const schemaAfterReapply=(await db.query(DEPLOYMENT_SCHEMA_SQL)).rows[0];
+    for(const [key,value] of Object.entries(schemaAfterReapply))assert.equal(value,true,`reapplied schema ${key}`);
+    const customer=buyers[0],journeyDriver=randomUUID();
+    await db.query('insert into auth.users values($1)',[journeyDriver]);
+    await as(journeyDriver,'delivery_cloud_profile',[{full_name:'Tai Xe Hanh Trinh',phone:'0908887776',requested_role:'customer'}]);
+    await as(journeyDriver,'delivery_cloud_membership',['driver','request']);
+    await as(operator,'delivery_cloud_membership',['driver','approve',journeyDriver,1,'']);
+    const savedUi=await as(customer,'delivery_cloud_preferences',['save_ui',{theme_mode:'dark',preferred_role:'customer'}]);
+    assert.deepEqual(savedUi.ui_preferences,{theme_mode:'dark',preferred_role:'customer'});
+    await as(customer,'delivery_cloud_preferences',['save_draft',{draft:{pickup_address:'12 Nguyen Hue, Ben Nghe, Quan 1, TP HCM',dropoff_address:'20 Le Loi, Ben Thanh, Quan 1, TP HCM',service_type:'express'}}]);
+    const prof=await as(customer,'delivery_cloud_profile');
+    assert.equal(prof.account.ui_preferences.theme_mode,'dark');
+    assert.equal(prof.account.shipping_draft.service_type,'express');
+    const adminAcc=(await as(operator,'delivery_cloud_accounts_manage')).accounts.find(a=>a.user_id===customer);
+    assert.equal(adminAcc.shipping_draft,undefined);
+
+    await as(customer,'delivery_cloud_ai_history',['append_exchange',{user_text:'Tra cuu don hang',assistant_text:'Ban co the xem muc Don hang.'}]);
+    const aiHist=await as(customer,'delivery_cloud_ai_history',['list',{}]);
+    assert.equal(aiHist.messages.length,2);
+    assert.equal(aiHist.messages[0].role,'user');
+    assert.equal(aiHist.messages[1].role,'assistant');
+    await as(customer,'delivery_cloud_ai_history',['clear',{}]);
+    assert.equal((await as(customer,'delivery_cloud_ai_history',['list',{}])).messages.length,0);
+
+    const tripDetails={
+      pickup_address:'12 Nguyen Hue, Phuong Ben Nghe, Quan 1, TP HCM',
+      dropoff_address:'20 Le Loi, Phuong Ben Thanh, Quan 1, TP HCM',
+      recipient_name:'Khach Hang A',
+      recipient_phone:'0912345678',
+      package_description:'Tai lieu khan',
+      pickup_lat:10.77312,pickup_lng:106.70425,
+      dropoff_lat:10.77195,dropoff_lng:106.69831,
+      extra_stops:[{address:'45 Ham Nghi, Quan 1, TP HCM',lat:10.7708,lng:106.7019,contact_name:'Diem dung 1',contact_phone:'0909111222'}],
+      is_round_trip:true,
+      prefer_ev:true,
+      require_pod:false,
+      require_otp:false,
+      weight_kg:2,cod_amount:50000,service_type:'express',payment_method:'recipient_cash',
+    };
+    const tripQuote=await as(customer,'delivery_cloud_quote',[tripDetails]);
+    const created=await as(customer,'delivery_cloud_create',[tripDetails,randomUUID(),tripQuote.pricing_version,tripQuote.shipping_fee]);
+    assert.equal((await as(customer,'delivery_cloud_preferences',['get',{}])).shipping_draft,null);
+
+    const queue=(await as(journeyDriver,'delivery_cloud_list',[true,null,null])).orders;
+    const queued=queue.find(o=>o.id===created.id);
+    assert.ok(queued);
+    assert.equal(JSON.stringify(queued).includes('0912345678'),false);
+    assert.equal(JSON.stringify(queued).includes('Nguyen Hue'),false);
+    assert.equal(queued.details.pickup_area,'Quan 1, TP HCM');
+    assert.equal(queued.details.stops_count,1);
+    assert.equal(queued.details.is_round_trip,true);
+    assert.equal(queued.details.prefer_ev,true);
+
+    let claimed=await as(journeyDriver,'delivery_cloud_transition',[created.id,'claim',created.version,randomUUID(),'']);
+    claimed=await as(journeyDriver,'delivery_cloud_transition',[created.id,'arrive',claimed.version,randomUUID(),'']);
+    claimed=await as(journeyDriver,'delivery_cloud_transition',[created.id,'pickup',claimed.version,randomUUID(),'']);
+
+    const t0=Date.now();
+    const gpsOk=await as(journeyDriver,'delivery_cloud_order_live',['push_gps',{order_id:created.id,latitude:10.77312,longitude:106.70425,heading:180,speed_kmh:32,timestamp_ms:t0}]);
+    assert.equal(gpsOk.ok,true);
+    await assert.rejects(
+      as(journeyDriver,'delivery_cloud_order_live',['push_gps',{order_id:created.id,latitude:10.95,longitude:106.95,timestamp_ms:t0+1000}]),
+      e=>e.code==='PT409'
+    );
+    await as(customer,'delivery_cloud_order_live',['send_chat',{order_id:created.id,text:'Goi cho minh khi toi cong nhe'}]);
+    await as(journeyDriver,'delivery_cloud_order_live',['send_chat',{order_id:created.id,text:'Da nhan thong tin, minh dang di'}]);
+    const cp=await as(journeyDriver,'delivery_cloud_order_live',['mark_checkpoint',{order_id:created.id,checkpoint_key:'stop:0',note:'Da giao diem dung 1'}]);
+    assert.equal(cp.order.completed_checkpoints.length,1);
+
+    const snap=await as(customer,'delivery_cloud_order_live',['snapshot',{order_id:created.id}]);
+    assert.equal(snap.messages.length,2);
+    assert.equal(snap.gps_trail.length,1);
+    assert.equal(snap.order.driver_profile.user_id,journeyDriver);
+    assert.equal(snap.order.sender_profile.phone,'0901234567');
+
+    let done=await as(journeyDriver,'delivery_cloud_transition',[created.id,'collect_cash',cp.order.version,randomUUID(),'']);
+    done=await as(journeyDriver,'delivery_cloud_transition',[created.id,'deliver',done.version,randomUUID(),'Da giao tan tay']);
+    const revRes=await as(customer,'delivery_market_operations',['partner_review_save',{target_kind:'driver',cloud_order_id:done.id,rating:5,body:'Tai xe giao cuc nhanh va lich su'}]);
+    assert.equal(revRes.partner_review.rating,5);
+    const driverRevs=await as(journeyDriver,'delivery_cloud_logistics',['driver_reviews',{}]);
+    assert.ok(driverRevs.rating_count>=1);
+    assert.ok(driverRevs.reviews.some(r=>r.id===revRes.partner_review.id));
+    await as(journeyDriver,'delivery_market_operations',['review_reply',{review_kind:'partner',id:revRes.partner_review.id,reply:'Cam on anh chi rat nhieu!'}]);
+    const finalOrder=(await as(customer,'delivery_cloud_list',[false,null,null])).orders.find(o=>o.id===done.id);
+    assert.equal(finalOrder.driver_review.rating,5);
+    assert.equal(finalOrder.driver_review.reply,'Cam on anh chi rat nhieu!');
+  });
   const output=path.resolve(import.meta.dirname,'../../../build/verification/postgres-acceptance.json');
   await mkdir(path.dirname(output),{recursive:true});
   await writeFile(output,JSON.stringify({environment:'disposable-loopback-postgresql',checkedAt:new Date().toISOString(),durationMs:Date.now()-startedAt,results},null,2));

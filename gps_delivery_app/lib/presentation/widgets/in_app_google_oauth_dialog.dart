@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_windows/webview_windows.dart';
 import '../../core/auth/real_auth_delivery_service.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/ghst_theme_tokens.dart';
 
 class InAppGoogleOAuthDialog extends StatefulWidget {
   final String initialAuthUrl;
@@ -180,7 +180,9 @@ class _InAppGoogleOAuthDialogState extends State<InAppGoogleOAuthDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final displayHost = Uri.tryParse(_currentUrl)?.host ?? 'accounts.google.com';
+    final tokens = GhstThemeTokens.of(context);
+    final displayHost =
+        Uri.tryParse(_currentUrl)?.host ?? 'accounts.google.com';
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -193,24 +195,23 @@ class _InAppGoogleOAuthDialogState extends State<InAppGoogleOAuthDialog> {
         child: Container(
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: tokens.cardSurface,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.line),
-            boxShadow: AppColors.elevatedShadow,
+            border: Border.all(color: tokens.border),
+            boxShadow: tokens.elevatedShadow,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Thanh tiêu đề nhúng Google OAuth 2.0
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 14,
                   vertical: 10,
                 ),
-                decoration: const BoxDecoration(
-                  color: AppColors.surfaceSubtle,
+                decoration: BoxDecoration(
+                  color: tokens.cardSubtle,
                   border: Border(
-                    bottom: BorderSide(color: AppColors.line),
+                    bottom: BorderSide(color: tokens.border),
                   ),
                 ),
                 child: Row(
@@ -222,7 +223,7 @@ class _InAppGoogleOAuthDialogState extends State<InAppGoogleOAuthDialog> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.line),
+                        border: Border.all(color: tokens.border),
                       ),
                       child: const Text(
                         'G',
@@ -238,20 +239,20 @@ class _InAppGoogleOAuthDialogState extends State<InAppGoogleOAuthDialog> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Đăng nhập bằng Google',
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w900,
-                              color: AppColors.ink,
+                              color: tokens.ink,
                             ),
                           ),
                           Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.lock_rounded,
                                 size: 11,
-                                color: Color(0xFF16A34A),
+                                color: tokens.emerald.icon,
                               ),
                               const SizedBox(width: 4),
                               Expanded(
@@ -259,11 +260,11 @@ class _InAppGoogleOAuthDialogState extends State<InAppGoogleOAuthDialog> {
                                   'https://$displayHost',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 11,
                                     fontFamily: 'Consolas',
                                     fontWeight: FontWeight.w700,
-                                    color: AppColors.textSecondary,
+                                    color: tokens.inkSecondary,
                                   ),
                                 ),
                               ),
@@ -275,10 +276,10 @@ class _InAppGoogleOAuthDialogState extends State<InAppGoogleOAuthDialog> {
                     IconButton(
                       tooltip: 'Tải lại trang',
                       onPressed: _reloadPage,
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.refresh_rounded,
                         size: 19,
-                        color: AppColors.ink,
+                        color: tokens.ink,
                       ),
                     ),
                     IconButton(
@@ -287,23 +288,23 @@ class _InAppGoogleOAuthDialogState extends State<InAppGoogleOAuthDialog> {
                         RealAuthDeliveryService.instance.stopGoogleOAuthServer();
                         widget.onCancel();
                       },
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.close_rounded,
                         size: 20,
-                        color: AppColors.ink,
+                        color: tokens.ink,
                       ),
                     ),
                   ],
                 ),
               ),
               if (_isLoadingPage)
-                const LinearProgressIndicator(
+                LinearProgressIndicator(
                   minHeight: 3,
-                  backgroundColor: AppColors.paper,
-                  color: AppColors.violet,
+                  backgroundColor: tokens.canvas,
+                  color: tokens.primary,
                 ),
               Expanded(
-                child: _buildWebViewBody(),
+                child: _buildWebViewBody(tokens),
               ),
             ],
           ),
@@ -312,7 +313,7 @@ class _InAppGoogleOAuthDialogState extends State<InAppGoogleOAuthDialog> {
     );
   }
 
-  Widget _buildWebViewBody() {
+  Widget _buildWebViewBody(GhstThemeTokens tokens) {
     if (_initError != null) {
       return Center(
         child: Padding(
@@ -320,19 +321,19 @@ class _InAppGoogleOAuthDialogState extends State<InAppGoogleOAuthDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
+              Icon(
                 Icons.open_in_browser_rounded,
-                color: AppColors.violet,
+                color: tokens.primary,
                 size: 42,
               ),
               const SizedBox(height: 12),
               Text(
                 _initError!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.ink,
+                  color: tokens.ink,
                 ),
               ),
               const SizedBox(height: 16),
@@ -352,18 +353,18 @@ class _InAppGoogleOAuthDialogState extends State<InAppGoogleOAuthDialog> {
     }
 
     if (!_isInitialized) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircularProgressIndicator(color: AppColors.violet),
-            SizedBox(height: 14),
+            CircularProgressIndicator(color: tokens.primary),
+            const SizedBox(height: 14),
             Text(
               'Đang kết nối tới accounts.google.com...',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
-                color: AppColors.ink,
+                color: tokens.ink,
               ),
             ),
           ],
@@ -381,19 +382,19 @@ class _InAppGoogleOAuthDialogState extends State<InAppGoogleOAuthDialog> {
         if (_isCompletingCallback)
           Positioned.fill(
             child: Container(
-              color: Colors.white.withValues(alpha: 0.92),
+              color: tokens.cardSurface.withValues(alpha: 0.92),
               alignment: Alignment.center,
-              child: const Column(
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  CircularProgressIndicator(color: AppColors.violet),
-                  SizedBox(height: 14),
+                  CircularProgressIndicator(color: tokens.primary),
+                  const SizedBox(height: 14),
                   Text(
                     'Đang xác thực tài khoản Google với hệ thống...',
                     style: TextStyle(
                       fontSize: 13.5,
                       fontWeight: FontWeight.w900,
-                      color: AppColors.ink,
+                      color: tokens.ink,
                     ),
                   ),
                 ],

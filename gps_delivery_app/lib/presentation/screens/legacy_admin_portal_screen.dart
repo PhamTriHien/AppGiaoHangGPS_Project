@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/auth/real_auth_delivery_service.dart';
 import '../../core/config/env_config.dart';
 import '../../core/theme/admin_studio_theme.dart';
+import '../widgets/theme_mode_toggle.dart';
 import '../../data/datasources/local/app_state_store.dart';
 import '../../domain/enums/user_role.dart';
 import '../admin/admin_subsystem_views.dart';
@@ -219,8 +220,9 @@ class _LegacyAdminPortalScreenState extends State<LegacyAdminPortalScreen> {
         body: SafeArea(child: AdminSubsystemEntry(onLogout: _logout)),
       );
     }
+    final p = AdminStudioPalette.of(context);
     return Theme(
-      data: AdminStudioTheme.themeData(),
+      data: AdminStudioTheme.of(context),
       child: Scaffold(
         body: SafeArea(
           child: Column(
@@ -266,6 +268,7 @@ class _LegacyAdminPortalScreenState extends State<LegacyAdminPortalScreen> {
                           ],
                         ),
                       ),
+                      ThemeModeIconButton(onDarkHeader: true, compact: true),
                     ],
                   ),
                 ),
@@ -290,10 +293,10 @@ class _LegacyAdminPortalScreenState extends State<LegacyAdminPortalScreen> {
                                     _setup
                                         ? 'Thiết lập quản trị viên'
                                         : 'Đăng nhập quản trị',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 22,
                                       fontWeight: FontWeight.w800,
-                                      color: AdminStudioColors.ink,
+                                      color: p.ink,
                                       letterSpacing: -0.3,
                                     ),
                                   ),
@@ -397,17 +400,16 @@ class _LegacyAdminPortalScreenState extends State<LegacyAdminPortalScreen> {
                                 Container(
                                   padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
-                                    color: AdminStudioColors.dangerSoft,
+                                    color: p.dangerSoft,
                                     borderRadius: BorderRadius.circular(10),
                                     border: Border.all(
-                                      color: AdminStudioColors.danger
-                                          .withValues(alpha: 0.35),
+                                      color: p.danger.withValues(alpha: 0.35),
                                     ),
                                   ),
                                   child: Text(
                                     _error!,
-                                    style: const TextStyle(
-                                      color: AdminStudioColors.danger,
+                                    style: TextStyle(
+                                      color: p.dangerInk,
                                       fontSize: 13,
                                       fontWeight: FontWeight.w600,
                                     ),
