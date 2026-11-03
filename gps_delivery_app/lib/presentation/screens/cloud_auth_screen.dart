@@ -244,6 +244,14 @@ class _CloudAuthScreenState extends State<CloudAuthScreen>
       _AuthMode.reset => 'Khôi phục mật khẩu',
       _AuthMode.recover || _AuthMode.password => 'Đặt mật khẩu mới',
     };
+    final subtitle = switch (_mode) {
+      _AuthMode.login => 'Nhập Email và mật khẩu đã đăng ký',
+      _AuthMode.register => 'Tạo tài khoản để đặt đơn, mua sắm và tích xu',
+      _AuthMode.reset => 'Nhập Email đã đăng ký để nhận mã xác nhận',
+      _AuthMode.recover => 'Nhập mã xác nhận từ email và đặt mật khẩu mới',
+      _AuthMode.password => 'Thiết lập mật khẩu mới cho tài khoản của bạn',
+    };
+
     return StudioUserAuthFrame(
       child: Form(
         key: _form,
@@ -251,66 +259,39 @@ class _CloudAuthScreenState extends State<CloudAuthScreen>
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const StudioUserAuthBrand(),
-            const SizedBox(height: 14),
+            const SizedBox(height: 18),
             if ([_AuthMode.login, _AuthMode.register].contains(_mode)) ...[
-              SegmentedButton<_AuthMode>(
-                segments: const [
-                  ButtonSegment(
-                    value: _AuthMode.login,
-                    label: Text('Đăng nhập'),
-                  ),
-                  ButtonSegment(
-                    value: _AuthMode.register,
-                    label: Text('Đăng ký tài khoản'),
-                  ),
-                ],
-                selected: {_mode},
-                showSelectedIcon: false,
-                onSelectionChanged: _busy
+              StudioAuthTabBar(
+                isRegisterSelected: _mode == _AuthMode.register,
+                onSelectLogin: _busy ? null : () => _switch(_AuthMode.login),
+                onSelectRegister: _busy
                     ? null
-                    : (value) => _switch(value.first),
-                style: SegmentedButton.styleFrom(
-                  backgroundColor: const Color(0xFFF8FAFC),
-                  foregroundColor: AppColors.textSecondary,
-                  selectedBackgroundColor: AppColors.violet,
-                  selectedForegroundColor: Colors.white,
-                  textStyle: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0,
-                  ),
-                  side: const BorderSide(color: Color(0xFFCBD5E1), width: 1),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  minimumSize: const Size(0, 42),
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                ),
+                    : () => _switch(_AuthMode.register),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
             ],
             Text(
               _mode == _AuthMode.login ? 'Đăng nhập hệ thống' : title,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                fontSize: 21,
+                fontSize: 22,
                 fontWeight: FontWeight.w800,
                 color: AppColors.ink,
-                letterSpacing: -0.2,
+                letterSpacing: -0.4,
               ),
             ),
-            const SizedBox(height: 4),
-            if (_mode == _AuthMode.login)
-              const Text(
-                'Nhập Email và mật khẩu đã đăng ký',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 12.5,
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w500,
-                ),
+            const SizedBox(height: 6),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+                height: 1.4,
               ),
-            const SizedBox(height: 16),
+            ),
+            const SizedBox(height: 20),
             if (_mode != _AuthMode.password) ...[
               TextFormField(
                 controller: _email,
@@ -319,12 +300,14 @@ class _CloudAuthScreenState extends State<CloudAuthScreen>
                 autofillHints: const [AutofillHints.email],
                 decoration: const InputDecoration(
                   labelText: 'Email',
-                  prefixIcon: Icon(Icons.alternate_email),
+                  prefixIcon: Icon(
+                    Icons.alternate_email_rounded,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
                 validator: (v) =>
-                    RegExp(
-                      r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
-                    ).hasMatch(v?.trim() ?? '')
+                    RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
+                        .hasMatch(v?.trim() ?? '')
                     ? null
                     : 'Nhập email hợp lệ.',
               ),
@@ -338,7 +321,10 @@ class _CloudAuthScreenState extends State<CloudAuthScreen>
                 autofillHints: const [AutofillHints.oneTimeCode],
                 decoration: const InputDecoration(
                   labelText: 'Mã xác nhận email',
-                  prefixIcon: Icon(Icons.pin_outlined),
+                  prefixIcon: Icon(
+                    Icons.pin_outlined,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
                 validator: (v) =>
                     (v?.trim().length ?? 0) >= 6 ? null : 'Nhập mã xác nhận.',
@@ -360,7 +346,10 @@ class _CloudAuthScreenState extends State<CloudAuthScreen>
                   labelText: _mode == _AuthMode.login
                       ? 'Mật khẩu'
                       : 'Mật khẩu mới',
-                  prefixIcon: const Icon(Icons.lock_outline),
+                  prefixIcon: const Icon(
+                    Icons.lock_outline_rounded,
+                    color: AppColors.textSecondary,
+                  ),
                   suffixIcon: IconButton(
                     tooltip: _obscure ? 'Hiện mật khẩu' : 'Ẩn mật khẩu',
                     onPressed: () => setState(() => _obscure = !_obscure),
@@ -368,6 +357,7 @@ class _CloudAuthScreenState extends State<CloudAuthScreen>
                       _obscure
                           ? Icons.visibility_outlined
                           : Icons.visibility_off_outlined,
+                      color: AppColors.textSecondary,
                     ),
                   ),
                 ),
@@ -376,79 +366,193 @@ class _CloudAuthScreenState extends State<CloudAuthScreen>
                     ? null
                     : 'Mật khẩu cần ít nhất ${_mode == _AuthMode.login ? 6 : 8} ký tự.',
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
             ],
+            if (_mode == _AuthMode.login)
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    minimumSize: const Size(44, 34),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  onPressed: _busy ? null : () => _switch(_AuthMode.reset),
+                  child: const Text('Quên mật khẩu?'),
+                ),
+              ),
+            const SizedBox(height: 12),
             if (_error != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Text(
-                  _error!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+              Container(
+                margin: const EdgeInsets.only(bottom: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.dangerSoft,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.danger.withValues(alpha: 0.32),
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(top: 1),
+                      child: Icon(
+                        Icons.error_outline_rounded,
+                        size: 18,
+                        color: AppColors.danger,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _error!,
+                        style: const TextStyle(
+                          color: AppColors.danger,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             if (_notice != null)
+              Container(
+                margin: const EdgeInsets.only(bottom: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.tealSoft,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.teal.withValues(alpha: 0.28),
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(top: 1),
+                      child: Icon(
+                        Icons.check_circle_outline_rounded,
+                        size: 18,
+                        color: AppColors.teal,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _notice!,
+                        style: const TextStyle(
+                          color: AppColors.ink,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            if (_busy)
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: Text(_notice!),
-              ),
-            if (_busy) const LinearProgressIndicator(),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.violet.withValues(alpha: 0.25),
-                    blurRadius: 14,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.violet,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  textStyle: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.1,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(99),
+                  child: const LinearProgressIndicator(minHeight: 4),
                 ),
-                onPressed: _busy ? null : _submit,
-                child: Text(
-                  _mode == _AuthMode.reset ? 'Gửi email khôi phục' : title,
+              ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(50),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                textStyle: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.1,
                 ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: _busy ? null : _submit,
+              child: Text(
+                _mode == _AuthMode.reset ? 'Gửi email khôi phục' : title,
               ),
             ),
             if (_mode == _AuthMode.login) ...[
-              TextButton(
-                onPressed: _busy ? null : () => _switch(_AuthMode.reset),
-                child: const Text('Quên mật khẩu?'),
-              ),
-              if (_googleAvailable)
+              if (_googleAvailable) ...[
+                const SizedBox(height: 16),
+                const Row(
+                  children: [
+                    Expanded(child: Divider(color: AppColors.line)),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 12),
+                      child: Text(
+                        'hoặc',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                    Expanded(child: Divider(color: AppColors.line)),
+                  ],
+                ),
+                const SizedBox(height: 14),
                 OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
+                    backgroundColor: AppColors.surface,
+                    side: const BorderSide(color: AppColors.controlBorder),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                   onPressed: _busy ? null : () => _submit(google: true),
-                  icon: const Icon(Icons.account_circle_outlined),
+                  icon: const Icon(Icons.account_circle_outlined, size: 20),
                   label: const Text('Tiếp tục với Google'),
                 ),
-            ] else if (_mode == _AuthMode.password)
+              ],
+            ] else if (_mode == _AuthMode.password) ...[
+              const SizedBox(height: 8),
               TextButton(
                 onPressed: _busy ? null : _cancelRecovery,
                 child: const Text('Trở về đăng nhập'),
-              )
-            else ...[
+              ),
+            ] else ...[
               if (_mode == _AuthMode.register && _googleAvailable)
                 Padding(
-                  padding: const EdgeInsets.only(top: 10),
+                  padding: const EdgeInsets.only(top: 12),
                   child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(48),
+                      backgroundColor: AppColors.surface,
+                      side: const BorderSide(color: AppColors.controlBorder),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
                     onPressed: _busy ? null : () => _submit(google: true),
-                    icon: const Icon(Icons.account_circle_outlined),
+                    icon: const Icon(Icons.account_circle_outlined, size: 20),
                     label: const Text('Tiếp tục với Google'),
                   ),
                 ),
+              const SizedBox(height: 6),
               if (_mode == _AuthMode.recover)
                 TextButton(
                   onPressed: _busy ? null : _resendCode,

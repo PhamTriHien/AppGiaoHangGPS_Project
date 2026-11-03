@@ -25,17 +25,24 @@ enum GhstRoleMode {
   };
 
   Color get accentColor => switch (this) {
-    GhstRoleMode.operator => const Color(0xFF087F5B),
-    GhstRoleMode.driver => const Color(0xFF059669),
-    GhstRoleMode.merchant => const Color(0xFFD97706),
-    GhstRoleMode.customer => AppColors.violet,
+    GhstRoleMode.operator => const Color(0xFF1B5E7A),
+    GhstRoleMode.driver => AppColors.teal,
+    GhstRoleMode.merchant => AppColors.accent,
+    GhstRoleMode.customer => AppColors.primary,
+  };
+
+  Color get softSurface => switch (this) {
+    GhstRoleMode.operator => const Color(0xFFE3F2F8),
+    GhstRoleMode.driver => AppColors.tealSoft,
+    GhstRoleMode.merchant => AppColors.accentSoft,
+    GhstRoleMode.customer => AppColors.primarySoft,
   };
 
   Color get highlightColor => switch (this) {
-    GhstRoleMode.operator => const Color(0xFF63E6BE),
-    GhstRoleMode.driver => const Color(0xFF6EE7B7),
-    GhstRoleMode.merchant => const Color(0xFFFCD34D),
-    GhstRoleMode.customer => AppColors.acid,
+    GhstRoleMode.operator => const Color(0xFF7DD3FC),
+    GhstRoleMode.driver => const Color(0xFF7AD9C1),
+    GhstRoleMode.merchant => const Color(0xFFFBBF77),
+    GhstRoleMode.customer => const Color(0xFF93C5FD),
   };
 }
 
@@ -99,6 +106,8 @@ class GhstUserShell extends StatelessWidget {
       availableModes.length > 1 && onRoleModeChanged != null;
 
   Color get _accent => roleMode.accentColor;
+  Color get _softSurface => roleMode.softSurface;
+  Color get _highlight => roleMode.highlightColor;
 
   String get _brandTitle => switch (roleMode) {
     GhstRoleMode.driver => 'GHST DRIVER',
@@ -111,7 +120,7 @@ class GhstUserShell extends StatelessWidget {
     GhstRoleMode.merchant =>
       merchantOwner ? 'ĐỐI TÁC CỬA HÀNG & B2B' : 'NHÂN SỰ GIAN HÀNG',
     GhstRoleMode.customer || GhstRoleMode.operator =>
-      'SUPER-APP GIAO NHẬN & ẨM THỰC',
+      'GIAO NHẬN & MUA SẮM TRỰC TUYẾN',
   };
 
   IconData get _brandIcon => switch (roleMode) {
@@ -277,13 +286,10 @@ class GhstUserShell extends StatelessWidget {
             children: [
               IgnorePointer(
                 child: RepaintBoundary(
-                  child: Opacity(
-                    opacity: 0.20,
-                    child: CustomPaint(
-                      painter: Studio3dMainWorkspaceMapPainter(
-                        accentColor: _accent,
-                        lightweightBackdrop: true,
-                      ),
+                  child: CustomPaint(
+                    painter: Studio3dMainWorkspaceMapPainter(
+                      accentColor: _accent,
+                      lightweightBackdrop: true,
                     ),
                   ),
                 ),
@@ -292,7 +298,7 @@ class GhstUserShell extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   if (wide)
-                    _sidebar((constraints.maxWidth * .185).clamp(216, 290)),
+                    _sidebar((constraints.maxWidth * .19).clamp(220, 290)),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -314,9 +320,23 @@ class GhstUserShell extends StatelessWidget {
     },
   );
 
-  Widget _roleChip(GhstRoleMode mode) {
+  Widget _roleChip(GhstRoleMode mode, {required bool onDark}) {
     final active = roleMode == mode;
+    final chipHighlight = mode.highlightColor;
     final chipAccent = mode.accentColor;
+    final bg = onDark
+        ? (active ? chipAccent.withValues(alpha: 0.34) : AppColors.techPanel)
+        : (active ? mode.softSurface : AppColors.surface);
+    final borderColor = onDark
+        ? (active ? chipHighlight.withValues(alpha: 0.75) : AppColors.techLine)
+        : (active ? chipAccent.withValues(alpha: 0.45) : AppColors.line);
+    final iconColor = onDark
+        ? (active ? chipHighlight : AppColors.techMuted)
+        : (active ? chipAccent : AppColors.textSecondary);
+    final textColor = onDark
+        ? (active ? Colors.white : AppColors.techMuted)
+        : (active ? AppColors.ink : AppColors.textSecondary);
+
     return Semantics(
       button: true,
       selected: active,
@@ -324,36 +344,27 @@ class GhstUserShell extends StatelessWidget {
       excludeSemantics: true,
       child: InkWell(
         key: ValueKey('ghst-role-${mode.name}'),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(999),
         onTap: () => onRoleModeChanged?.call(mode),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
           decoration: BoxDecoration(
-            color: active
-                ? chipAccent.withValues(alpha: 0.12)
-                : const Color(0xFFF8FAFC),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: active ? chipAccent : const Color(0xFFCBD5E1),
-              width: active ? 1.3 : 1,
-            ),
+            color: bg,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: borderColor, width: active ? 1.2 : 1),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                mode.icon,
-                size: 14,
-                color: active ? chipAccent : AppColors.textSecondary,
-              ),
+              Icon(mode.icon, size: 14, color: iconColor),
               const SizedBox(width: 5),
               Text(
                 mode.label,
                 maxLines: 1,
                 style: TextStyle(
-                  color: active ? chipAccent : AppColors.textSecondary,
+                  color: textColor,
                   fontSize: 11.5,
-                  fontWeight: active ? FontWeight.w800 : FontWeight.w600,
+                  fontWeight: active ? FontWeight.w700 : FontWeight.w600,
                 ),
               ),
             ],
@@ -365,12 +376,10 @@ class GhstUserShell extends StatelessWidget {
 
   Widget _mobileRoleSwitcher() => Container(
     width: double.infinity,
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
     decoration: const BoxDecoration(
-      color: Colors.white,
-      border: Border(
-        bottom: BorderSide(color: Color(0xFFE2E8F0), width: 1),
-      ),
+      color: AppColors.surfaceSubtle,
+      border: Border(bottom: BorderSide(color: AppColors.line)),
     ),
     child: Wrap(
       spacing: 6,
@@ -378,39 +387,40 @@ class GhstUserShell extends StatelessWidget {
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         const Text(
-          'VAI TRÒ:',
+          'Vai trò:',
           style: TextStyle(
             color: AppColors.textSecondary,
-            fontSize: 10.5,
-            fontWeight: FontWeight.w800,
+            fontSize: 11.5,
+            fontWeight: FontWeight.w600,
           ),
         ),
-        for (final mode in availableModes) _roleChip(mode),
+        for (final mode in availableModes) _roleChip(mode, onDark: false),
       ],
     ),
   );
 
   Widget _desktopRoleSwitcher() => Padding(
-    padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+    padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const Padding(
-          padding: EdgeInsets.only(left: 4, bottom: 6),
+          padding: EdgeInsets.only(left: 2, bottom: 8),
           child: Text(
-            'CHẾ ĐỘ VAI TRÒ',
+            'Chế độ vai trò',
             style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 10,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.3,
+              color: AppColors.techMuted,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
         Wrap(
           spacing: 6,
           runSpacing: 6,
-          children: [for (final mode in availableModes) _roleChip(mode)],
+          children: [
+            for (final mode in availableModes) _roleChip(mode, onDark: true),
+          ],
         ),
       ],
     ),
@@ -431,14 +441,14 @@ class GhstUserShell extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(18, 13, 14, 5),
+          padding: const EdgeInsets.fromLTRB(18, 14, 14, 6),
           child: Text(
             label,
             style: const TextStyle(
-              color: Color(0xFF64748B),
-              fontSize: 10,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.4,
+              color: AppColors.techMuted,
+              fontSize: 10.5,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.3,
             ),
           ),
         ),
@@ -626,8 +636,8 @@ class GhstUserShell extends StatelessWidget {
     return Container(
       width: width,
       decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(right: BorderSide(color: Color(0xFFE2E8F0), width: 1)),
+        color: AppColors.techBg,
+        border: Border(right: BorderSide(color: AppColors.line)),
       ),
       child: Material(
         type: MaterialType.transparency,
@@ -642,14 +652,13 @@ class GhstUserShell extends StatelessWidget {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: _accent.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      _brandIcon,
                       color: _accent,
-                      size: 22,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.16),
+                      ),
                     ),
+                    child: Icon(_brandIcon, color: Colors.white, size: 22),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -661,21 +670,20 @@ class GhstUserShell extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            color: AppColors.ink,
-                            fontSize: 15.5,
+                            color: Colors.white,
+                            fontSize: 15,
                             fontWeight: FontWeight.w800,
                             letterSpacing: -0.2,
                           ),
                         ),
-                        const SizedBox(height: 1),
+                        const SizedBox(height: 2),
                         Text(
                           _brandSubtitle,
                           maxLines: 2,
                           style: TextStyle(
-                            color: _accent,
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.2,
+                            color: _highlight,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
@@ -684,13 +692,19 @@ class GhstUserShell extends StatelessWidget {
                 ],
               ),
             ),
-            const Divider(color: Color(0xFFE2E8F0), height: 1),
+            const Divider(color: AppColors.techLine, height: 1),
             if (_canSwitchRole) ...[
               _desktopRoleSwitcher(),
-              const Divider(color: Color(0xFFE2E8F0), height: 1),
+              const Divider(color: AppColors.techLine, height: 1),
             ],
-            Expanded(child: ListView(children: navGroups)),
-            const Divider(color: Color(0xFFE2E8F0), height: 1),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.only(bottom: 8),
+                children: navGroups,
+              ),
+            ),
+            const Divider(color: AppColors.techLine, height: 1),
+            const SizedBox(height: 4),
             _menuItem(Icons.logout_rounded, 'Đăng xuất', false, onLogout),
             const SizedBox(height: 10),
           ],
@@ -717,23 +731,26 @@ class GhstUserShell extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
           decoration: BoxDecoration(
             color: selected
-                ? _accent.withValues(alpha: .10)
+                ? Colors.white.withValues(alpha: 0.10)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
+            border: selected
+                ? Border.all(color: _highlight.withValues(alpha: 0.32))
+                : null,
           ),
           child: Row(
             children: [
               Icon(
                 icon,
-                size: 19,
-                color: selected ? _accent : AppColors.textSecondary,
+                size: 18,
+                color: selected ? _highlight : AppColors.techMuted,
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   label,
                   style: TextStyle(
-                    color: selected ? _accent : AppColors.ink,
+                    color: selected ? Colors.white : AppColors.techMuted,
                     fontSize: 13,
                     fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                   ),
@@ -746,7 +763,7 @@ class GhstUserShell extends StatelessWidget {
                     vertical: 1.5,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEF4444),
+                    color: AppColors.danger,
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
@@ -754,7 +771,7 @@ class GhstUserShell extends StatelessWidget {
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 10.5,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -779,9 +796,9 @@ class GhstUserShell extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: _accent.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: _accent.withValues(alpha: 0.3)),
+        color: _softSurface,
+        borderRadius: BorderRadius.circular(11),
+        border: Border.all(color: _accent.withValues(alpha: 0.28)),
       ),
       child: Icon(_brandIcon, color: _accent, size: size * 0.54),
     );
@@ -792,8 +809,8 @@ class GhstUserShell extends StatelessWidget {
       height: 64,
       padding: const EdgeInsets.symmetric(horizontal: 24),
       decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0), width: 1)),
+        color: AppColors.surface,
+        border: Border(bottom: BorderSide(color: AppColors.line)),
       ),
       child: Row(
         children: [
@@ -805,9 +822,9 @@ class GhstUserShell extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontSize: 18.5,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
                 color: AppColors.ink,
-                letterSpacing: -0.2,
+                letterSpacing: -0.25,
               ),
             ),
           ),
@@ -818,7 +835,8 @@ class GhstUserShell extends StatelessWidget {
               onPressed: () => onNavigate(GhstUserSection.food),
               icon: const Icon(
                 Icons.restaurant_menu_rounded,
-                color: Color(0xFF059669),
+                color: AppColors.teal,
+                size: 18,
               ),
               label: const Text('Ăn uống'),
             ),
@@ -829,7 +847,7 @@ class GhstUserShell extends StatelessWidget {
             IconButton(
               tooltip: 'Tạo đơn hàng mới',
               onPressed: onCreateOrder,
-              icon: const Icon(Icons.add_box_outlined),
+              icon: const Icon(Icons.add_box_outlined, color: AppColors.ink),
             ),
           IconButton(
             key: const ValueKey('ghst-header-ai'),
@@ -846,7 +864,10 @@ class GhstUserShell extends StatelessWidget {
             IconButton(
               tooltip: 'Giỏ hàng',
               onPressed: onCart,
-              icon: const Icon(Icons.shopping_cart_outlined),
+              icon: const Icon(
+                Icons.shopping_cart_outlined,
+                color: AppColors.ink,
+              ),
             ),
           IconButton(
             tooltip: 'Trung tâm thông báo',
@@ -854,34 +875,40 @@ class GhstUserShell extends StatelessWidget {
             icon: Badge.count(
               count: unreadNotifications,
               isLabelVisible: unreadNotifications > 0,
-              child: const Icon(Icons.notifications_none_rounded),
+              child: const Icon(
+                Icons.notifications_none_rounded,
+                color: AppColors.ink,
+              ),
             ),
           ),
           const SizedBox(width: 8),
           Tooltip(
             message: 'Hồ sơ cá nhân',
             child: InkWell(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(999),
               onTap: () => onNavigate(GhstUserSection.profile),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              child: Container(
+                padding: EdgeInsets.fromLTRB(
+                  4,
+                  4,
+                  constraints.maxWidth >= 920 ? 12 : 4,
+                  4,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceSubtle,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: AppColors.line),
+                ),
                 child: Row(
                   children: [
                     Container(
-                      width: 34,
-                      height: 34,
+                      width: 30,
+                      height: 30,
                       decoration: BoxDecoration(
-                        color: _accent.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: _accent.withValues(alpha: 0.25),
-                        ),
+                        color: _softSurface,
+                        shape: BoxShape.circle,
                       ),
-                      child: Icon(
-                        Icons.person,
-                        size: 19,
-                        color: _accent,
-                      ),
+                      child: Icon(Icons.person, size: 17, color: _accent),
                     ),
                     if (constraints.maxWidth >= 920) ...[
                       const SizedBox(width: 8),
@@ -894,7 +921,7 @@ class GhstUserShell extends StatelessWidget {
                           style: const TextStyle(
                             color: AppColors.ink,
                             fontSize: 13,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
@@ -925,13 +952,11 @@ class GhstUserShell extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          bottom: BorderSide(color: Color(0xFFE2E8F0), width: 1),
-        ),
+        color: AppColors.surface,
+        border: Border(bottom: BorderSide(color: AppColors.line)),
         boxShadow: [
           BoxShadow(
-            color: Color(0x0A0F172A),
+            color: Color(0x080F172A),
             blurRadius: 10,
             offset: Offset(0, 2),
           ),
@@ -943,15 +968,11 @@ class GhstUserShell extends StatelessWidget {
             IconButton(
               tooltip: 'Quay lại',
               onPressed: () => onNavigate(backTarget),
-              icon: const Icon(
-                Icons.arrow_back_rounded,
-                color: AppColors.ink,
-                size: 21,
-              ),
+              icon: Icon(Icons.arrow_back_rounded, color: _accent, size: 21),
             )
           else
             _roleHeaderBadge(size: 36),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -964,7 +985,7 @@ class GhstUserShell extends StatelessWidget {
                     color: _accent,
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
-                    letterSpacing: 0.1,
+                    letterSpacing: 0.15,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -974,9 +995,9 @@ class GhstUserShell extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: AppColors.ink,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.1,
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.2,
                   ),
                 ),
               ],
@@ -1042,15 +1063,13 @@ class GhstUserShell extends StatelessWidget {
     final items = _bottomItems;
     final activeIdx = _bottomIndex;
     return Container(
-      height: 62,
+      height: 64,
       decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          top: BorderSide(color: Color(0xFFE2E8F0), width: 1),
-        ),
+        color: AppColors.surface,
+        border: Border(top: BorderSide(color: AppColors.line)),
         boxShadow: [
           BoxShadow(
-            color: Color(0x0C0F172A),
+            color: Color(0x0A0F172A),
             blurRadius: 12,
             offset: Offset(0, -2),
           ),
@@ -1066,47 +1085,52 @@ class GhstUserShell extends StatelessWidget {
                 child: InkWell(
                   key: ValueKey('ghst-nav-${items[i].$3.name}'),
                   onTap: () => onNavigate(items[i].$3),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: activeIdx == i
-                          ? Border(
-                              top: BorderSide(color: _accent, width: 2.5),
-                            )
-                          : null,
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Badge.count(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 140),
+                        curve: Curves.easeOut,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: activeIdx == i
+                              ? _softSurface
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Badge.count(
                           count: unreadNotifications,
                           isLabelVisible:
                               items[i].$3 == GhstUserSection.notifications &&
                               unreadNotifications > 0,
                           child: Icon(
                             items[i].$1,
-                            size: 21,
+                            size: 20,
                             color: activeIdx == i
                                 ? _accent
                                 : AppColors.textSecondary,
                           ),
                         ),
-                        const SizedBox(height: 3),
-                        Text(
-                          items[i].$2,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: activeIdx == i
-                                ? _accent
-                                : AppColors.textSecondary,
-                            fontSize: 11,
-                            fontWeight: activeIdx == i
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                          ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        items[i].$2,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: activeIdx == i
+                              ? _accent
+                              : AppColors.textSecondary,
+                          fontSize: 11,
+                          fontWeight: activeIdx == i
+                              ? FontWeight.w700
+                              : FontWeight.w500,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),

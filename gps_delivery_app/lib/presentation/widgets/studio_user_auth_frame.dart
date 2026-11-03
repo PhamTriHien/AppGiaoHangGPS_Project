@@ -7,7 +7,7 @@ import 'animated_3d_ui_icons.dart';
 import 'studio_design_widgets.dart';
 import 'system_state_screens.dart';
 
-/// Shared presentation for the original user login and cloud authentication.
+/// Shared presentation for user login and cloud authentication.
 class StudioUserAuthFrame extends StatefulWidget {
   const StudioUserAuthFrame({super.key, required this.child});
 
@@ -21,7 +21,7 @@ class _StudioUserAuthFrameState extends State<StudioUserAuthFrame>
     with SingleTickerProviderStateMixin {
   late final _animation = AnimationController(
     vsync: this,
-    duration: const Duration(seconds: 9),
+    duration: const Duration(seconds: 11),
     value: 0.35,
   );
   final _parallax = ValueNotifier<Offset>(Offset.zero);
@@ -73,7 +73,7 @@ class _StudioUserAuthFrameState extends State<StudioUserAuthFrame>
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: AppColors.techBg,
+    backgroundColor: const Color(0xFFE7EFF7),
     body: LayoutBuilder(
       builder: (context, constraints) {
         final compact = constraints.maxWidth < 400;
@@ -102,45 +102,25 @@ class _StudioUserAuthFrameState extends State<StudioUserAuthFrame>
               SafeArea(
                 child: Center(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 36),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: compact ? 16 : 24,
+                      vertical: 28,
+                    ),
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 460),
-                      child: ValueListenableBuilder<Offset>(
-                        valueListenable: _parallax,
-                        builder: (_, value, child) => Container(
-                          width: double.infinity,
-                          padding: EdgeInsets.fromLTRB(
-                            compact ? 18 : 28,
-                            24,
-                            compact ? 18 : 28,
-                            26,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.85),
-                              width: 1,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(
-                                  0xFF020617,
-                                ).withValues(alpha: 0.30),
-                                blurRadius: 32,
-                                offset: Offset(
-                                  -value.dx * 4,
-                                  14 - value.dy * 4,
-                                ),
-                              ),
-                              BoxShadow(
-                                color: AppColors.violet.withValues(alpha: 0.16),
-                                blurRadius: 20,
-                                offset: const Offset(0, 6),
-                              ),
-                            ],
-                          ),
-                          child: child,
+                      child: Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.fromLTRB(
+                          compact ? 20 : 30,
+                          28,
+                          compact ? 20 : 30,
+                          28,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: AppColors.line),
+                          boxShadow: AppColors.elevatedShadow,
                         ),
                         child: widget.child,
                       ),
@@ -165,28 +145,125 @@ class StudioUserAuthBrand extends StatelessWidget {
     children: [
       const Animated3dIconBadge(
         style: Icon3dStyle.scooterExpress,
-        size: 76,
+        size: 74,
         showRadarPulse: true,
       ),
-      const SizedBox(height: 10),
+      const SizedBox(height: 12),
       Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
         decoration: BoxDecoration(
-          color: AppColors.violet.withValues(alpha: 0.10),
+          color: AppColors.primarySoft,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: AppColors.violet.withValues(alpha: 0.25)),
+          border: Border.all(color: AppColors.primaryBorder),
         ),
         child: const Text(
           'GHST • GIAO HÀNG SIÊU TỐC',
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontSize: 10.5,
-            fontWeight: FontWeight.w800,
-            color: AppColors.violet,
-            letterSpacing: 0.3,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: AppColors.primaryInk,
+            letterSpacing: 0.25,
           ),
         ),
       ),
     ],
+  );
+}
+
+class StudioAuthTabBar extends StatelessWidget {
+  const StudioAuthTabBar({
+    super.key,
+    required this.isRegisterSelected,
+    required this.onSelectLogin,
+    required this.onSelectRegister,
+  });
+
+  final bool isRegisterSelected;
+  final VoidCallback? onSelectLogin;
+  final VoidCallback? onSelectRegister;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(4),
+    decoration: BoxDecoration(
+      color: AppColors.warmStone,
+      borderRadius: BorderRadius.circular(14),
+      border: Border.all(color: AppColors.line),
+    ),
+    child: Row(
+      children: [
+        Expanded(
+          child: _TabPill(
+            label: 'Đăng nhập',
+            selected: !isRegisterSelected,
+            onTap: onSelectLogin,
+          ),
+        ),
+        const SizedBox(width: 4),
+        Expanded(
+          child: _TabPill(
+            label: 'Đăng ký tài khoản',
+            selected: isRegisterSelected,
+            onTap: onSelectRegister,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _TabPill extends StatelessWidget {
+  const _TabPill({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: selected ? AppColors.surface : Colors.transparent,
+    borderRadius: BorderRadius.circular(10),
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 140),
+        curve: Curves.easeOut,
+        constraints: const BoxConstraints(minHeight: 40),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          border: selected
+              ? Border.all(color: AppColors.primaryBorder)
+              : Border.all(color: Colors.transparent),
+          boxShadow: selected
+              ? const [
+                  BoxShadow(
+                    color: Color(0x0D0F172A),
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+            color: selected ? AppColors.primaryInk : AppColors.textSecondary,
+          ),
+        ),
+      ),
+    ),
   );
 }

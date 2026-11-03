@@ -174,7 +174,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
       builder: (dialogContext) => AlertDialog(
         title: Row(
           children: [
-            const Icon(Icons.receipt_long_outlined, color: Color(0xFF5B33E6)),
+            const Icon(Icons.receipt_long_outlined, color: Color(0xFF1E56C5)),
             const SizedBox(width: 8),
             Expanded(child: Text('Chi tiết ${order.trackingCode}')),
           ],
@@ -286,7 +286,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
               const Icon(
                 Icons.chat_bubble_outline_rounded,
                 size: 44,
-                color: Color(0xFF5B33E6),
+                color: Color(0xFF1E56C5),
               ),
               const SizedBox(height: 12),
               const Text(
@@ -303,7 +303,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
               const SizedBox(height: 14),
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF5B33E6),
+                  backgroundColor: const Color(0xFF1E56C5),
                 ),
                 onPressed: () =>
                     _rebuildCustomerUi(() => _selectedScreenIndex = 2),
@@ -346,7 +346,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            color: const Color(0xFF5B33E6),
+            color: const Color(0xFF1E56C5),
             child: Row(
               children: [
                 InkWell(
@@ -363,7 +363,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                   backgroundColor: Colors.white,
                   child: Icon(
                     Icons.delivery_dining_rounded,
-                    color: Color(0xFF5B33E6),
+                    color: Color(0xFF1E56C5),
                     size: 20,
                   ),
                 ),
@@ -491,7 +491,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                           ),
                         ),
                         selected: isCur,
-                        selectedColor: const Color(0xFF5B33E6),
+                        selectedColor: const Color(0xFF1E56C5),
                         onSelected: (_) => _rebuildCustomerUi(() {
                           _store.selectCustomerOrder(ordItem.trackingCode);
                         }),
@@ -530,8 +530,8 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                             ),
                             decoration: BoxDecoration(
                               color: msg.isCustomer
-                                  ? const Color(0xFF5B33E6)
-                                  : const Color(0xFFF5F1E8),
+                                  ? const Color(0xFF1E56C5)
+                                  : const Color(0xFFEEF3F8),
                               borderRadius: BorderRadius.all(Radius.zero),
                             ),
                             child: Column(
@@ -542,7 +542,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                                   style: TextStyle(
                                     color: msg.isCustomer
                                         ? Colors.white
-                                        : const Color(0xFF15131E),
+                                        : const Color(0xFF122033),
                                     fontSize: 13,
                                   ),
                                 ),
@@ -569,10 +569,10 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                             margin: const EdgeInsets.only(top: 4),
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF5F1E8),
+                              color: const Color(0xFFEEF3F8),
                               borderRadius: BorderRadius.all(Radius.zero),
                               border: Border.all(
-                                color: const Color(0xFF15131E),
+                                color: const Color(0xFF122033),
                               ),
                             ),
                             child: Row(
@@ -580,7 +580,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                               children: [
                                 const Icon(
                                   Icons.image_rounded,
-                                  color: Color(0xFF5B33E6),
+                                  color: Color(0xFF1E56C5),
                                   size: 22,
                                 ),
                                 const SizedBox(width: 8),
@@ -645,7 +645,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                     const SizedBox(width: 8),
                     IconButton.filled(
                       style: IconButton.styleFrom(
-                        backgroundColor: const Color(0xFF5B33E6),
+                        backgroundColor: const Color(0xFF1E56C5),
                       ),
                       icon: const Icon(Icons.send_rounded, size: 18),
                       onPressed: canChatWithDriver
@@ -687,7 +687,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
               const Icon(
                 Icons.cancel_presentation_rounded,
                 size: 44,
-                color: Color(0xFF5B33E6),
+                color: Color(0xFF1E56C5),
               ),
               const SizedBox(height: 12),
               const Text(
@@ -733,22 +733,22 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w900,
-                color: Color(0xFF15131E),
+                color: Color(0xFF122033),
               ),
             ),
             const SizedBox(height: 10),
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFFF5F1E8),
-                border: Border.all(color: const Color(0xFF15131E)),
+                color: const Color(0xFFEEF3F8),
+                border: Border.all(color: const Color(0xFF122033)),
               ),
               child: Text(
                 'Đơn đang chọn: ${targetOrder.trackingCode} (${targetOrder.status.displayName})\nLộ trình: ${targetOrder.pickupAddress} → ${targetOrder.dropoffAddress}',
                 style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF15131E),
+                  color: Color(0xFF122033),
                 ),
               ),
             ),
@@ -771,7 +771,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                       ),
                     ),
                     selected: isCur,
-                    selectedColor: const Color(0xFF5B33E6),
+                    selectedColor: const Color(0xFF1E56C5),
                     onSelected: (_) => _rebuildCustomerUi(() {
                       _store.selectCustomerOrder(ordItem.trackingCode);
                     }),
@@ -823,7 +823,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFF5F1E8),
+                color: const Color(0xFFEEF3F8),
                 borderRadius: BorderRadius.all(Radius.zero),
                 border: Border.all(color: const Color(0xFFFDBA74)),
               ),
@@ -831,7 +831,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                 children: [
                   const Icon(
                     Icons.warning_amber_rounded,
-                    color: Color(0xFFFF5E83),
+                    color: Color(0xFFC85A17),
                     size: 22,
                   ),
                   const SizedBox(width: 10),
@@ -990,7 +990,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            color: const Color(0xFF5B33E6),
+            color: const Color(0xFF1E56C5),
             child: const Text(
               'Lịch sử đơn hàng',
               style: TextStyle(
@@ -1124,7 +1124,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                         ? const Color(0xFF14B866)
                         : isCancelled
                         ? const Color(0xFFDC2626)
-                        : const Color(0xFFFF5E83);
+                        : const Color(0xFFC85A17);
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 10),
@@ -1132,7 +1132,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.all(Radius.zero),
-                        border: Border.all(color: const Color(0xFF15131E)),
+                        border: Border.all(color: const Color(0xFF122033)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1148,7 +1148,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w900,
                                   fontSize: 14,
-                                  color: Color(0xFF15131E),
+                                  color: Color(0xFF122033),
                                 ),
                               ),
                               Wrap(
@@ -1245,7 +1245,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w900,
                                   fontSize: 14,
-                                  color: Color(0xFF5B33E6),
+                                  color: Color(0xFF1E56C5),
                                 ),
                               ),
                             ],
@@ -1395,7 +1395,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
               const Icon(
                 Icons.star_border_rounded,
                 size: 46,
-                color: Color(0xFF5B33E6),
+                color: Color(0xFF1E56C5),
               ),
               const SizedBox(height: 12),
               const Text(
@@ -1457,7 +1457,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            color: const Color(0xFF5B33E6),
+            color: const Color(0xFF1E56C5),
             child: Row(
               children: [
                 InkWell(
@@ -1504,7 +1504,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                           ),
                         ),
                         selected: isCur,
-                        selectedColor: const Color(0xFF5B33E6),
+                        selectedColor: const Color(0xFF1E56C5),
                         onSelected: (_) => _rebuildCustomerUi(() {
                           _store.selectCustomerOrder(ordItem.trackingCode);
                         }),
@@ -1519,7 +1519,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                   child: Icon(
                     Icons.person_rounded,
                     size: 38,
-                    color: Color(0xFF5B33E6),
+                    color: Color(0xFF1E56C5),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -1605,7 +1605,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                       : 'Cần cải thiện',
                   style: const TextStyle(
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFFFF5E83),
+                    color: Color(0xFFC85A17),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -1665,15 +1665,15 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                     return OutlinedButton(
                       style: OutlinedButton.styleFrom(
                         backgroundColor: selected
-                            ? const Color(0xFFFF5E83)
+                            ? const Color(0xFFC85A17)
                             : Colors.white,
                         foregroundColor: selected
                             ? Colors.white
-                            : const Color(0xFF15131E),
+                            : const Color(0xFF122033),
                         side: BorderSide(
                           color: selected
-                              ? const Color(0xFFFF5E83)
-                              : const Color(0xFF15131E),
+                              ? const Color(0xFFC85A17)
+                              : const Color(0xFF122033),
                         ),
                       ),
                       onPressed: alreadyRated
@@ -1696,7 +1696,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                   height: 48,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFF5E83),
+                      backgroundColor: const Color(0xFFC85A17),
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.all(Radius.zero),
@@ -1771,7 +1771,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
               const Icon(
                 Icons.support_agent_rounded,
                 size: 46,
-                color: Color(0xFF5B33E6),
+                color: Color(0xFF1E56C5),
               ),
               const SizedBox(height: 12),
               const Text(
@@ -1852,11 +1852,11 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                         fontWeight: FontWeight.w700,
                         color: selected
                             ? Colors.white
-                            : const Color(0xFF15131E),
+                            : const Color(0xFF122033),
                       ),
                     ),
                     selected: selected,
-                    selectedColor: const Color(0xFF5B33E6),
+                    selectedColor: const Color(0xFF1E56C5),
                     onSelected: (_) => _rebuildCustomerUi(
                       () => _store.selectCustomerOrder(o.trackingCode),
                     ),
@@ -1869,15 +1869,15 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
               width: double.infinity,
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFFF5F1E8),
-                border: Border.all(color: const Color(0xFF15131E)),
+                color: const Color(0xFFEEF3F8),
+                border: Border.all(color: const Color(0xFF122033)),
               ),
               child: Text(
                 'Đơn hàng đang chọn: ${targetOrder.trackingCode} (${targetOrder.status.displayName}) • ${targetOrder.pickupAddress} → ${targetOrder.dropoffAddress}',
                 style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF15131E),
+                  color: Color(0xFF122033),
                 ),
               ),
             ),
@@ -2042,8 +2042,8 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF5F1E8),
-                    border: Border.all(color: const Color(0xFF15131E)),
+                    color: const Color(0xFFEEF3F8),
+                    border: Border.all(color: const Color(0xFF122033)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -2102,7 +2102,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
         children: [
           Container(
             padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-            color: const Color(0xFF5B33E6),
+            color: const Color(0xFF1E56C5),
             child: Column(
               children: [
                 const Text(
@@ -2121,7 +2121,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                         const avatarThemes = [
                           (
                             Color(0xFFE9E9E4),
-                            Color(0xFF5B33E6),
+                            Color(0xFF1E56C5),
                             Icons.person_rounded,
                           ),
                           (
@@ -2192,7 +2192,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                         child: Container(
                           padding: const EdgeInsets.all(5),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF5B33E6),
+                            color: const Color(0xFF1E56C5),
                             shape: BoxShape.circle,
                             border: Border.all(color: Colors.white, width: 1.5),
                           ),
@@ -2427,7 +2427,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                     height: 46,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF5B33E6),
+                        backgroundColor: const Color(0xFF1E56C5),
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.all(Radius.zero),
@@ -2516,7 +2516,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
           ? const Color(0xFFFEF3C7)
           : isRejected
           ? const Color(0xFFFEE2E2)
-          : const Color(0xFFF5F1E8);
+          : const Color(0xFFEEF3F8);
       final fg = isApproved
           ? const Color(0xFF14B866)
           : isPending
@@ -2543,8 +2543,8 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F1E8),
-        border: Border.all(color: const Color(0xFF15131E)),
+        color: const Color(0xFFEEF3F8),
+        border: Border.all(color: const Color(0xFF122033)),
       ),
       child: Material(
         color: Colors.transparent,
@@ -2559,7 +2559,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
             childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
             leading: const Icon(
               Icons.verified_user_rounded,
-              color: Color(0xFF5B33E6),
+              color: Color(0xFF1E56C5),
               size: 20,
             ),
             title: const Text(
@@ -2567,7 +2567,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
               style: TextStyle(
                 fontWeight: FontWeight.w900,
                 fontSize: 13.5,
-                color: Color(0xFF15131E),
+                color: Color(0xFF122033),
               ),
             ),
             subtitle: const Text(
@@ -2579,7 +2579,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  border: Border.all(color: const Color(0xFF15131E)),
+                  border: Border.all(color: const Color(0xFF122033)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -2589,7 +2589,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                         const Icon(
                           Icons.two_wheeler_rounded,
                           size: 18,
-                          color: Color(0xFF5B33E6),
+                          color: Color(0xFF1E56C5),
                         ),
                         const SizedBox(width: 8),
                         const Expanded(
@@ -2645,7 +2645,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  border: Border.all(color: const Color(0xFF15131E)),
+                  border: Border.all(color: const Color(0xFF122033)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -2655,7 +2655,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                         const Icon(
                           Icons.storefront_rounded,
                           size: 18,
-                          color: Color(0xFFFF5E83),
+                          color: Color(0xFFC85A17),
                         ),
                         const SizedBox(width: 8),
                         const Expanded(
@@ -3143,7 +3143,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            color: const Color(0xFF5B33E6),
+            color: const Color(0xFF1E56C5),
             child: Row(
               children: [
                 const Expanded(
@@ -3207,8 +3207,8 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                       horizontal: 16,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF5F1E8),
-                      border: Border.all(color: const Color(0xFF15131E)),
+                      color: const Color(0xFFEEF3F8),
+                      border: Border.all(color: const Color(0xFF122033)),
                     ),
                     child: const Center(
                       child: Text(
@@ -3227,8 +3227,8 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                   final iconColor = isOrder
                       ? const Color(0xFF14B866)
                       : isPromo
-                      ? const Color(0xFFFF5E83)
-                      : const Color(0xFF5B33E6);
+                      ? const Color(0xFFC85A17)
+                      : const Color(0xFF1E56C5);
                   final iconData = isOrder
                       ? Icons.local_shipping_rounded
                       : isPromo
@@ -3258,10 +3258,10 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: !n.isRead
-                            ? const Color(0xFFF5F1E8)
+                            ? const Color(0xFFEEF3F8)
                             : Colors.white,
                         borderRadius: BorderRadius.all(Radius.zero),
-                        border: Border.all(color: const Color(0xFF15131E)),
+                        border: Border.all(color: const Color(0xFF122033)),
                       ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3304,7 +3304,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                               width: 9,
                               height: 9,
                               decoration: const BoxDecoration(
-                                color: Color(0xFF5B33E6),
+                                color: Color(0xFF1E56C5),
                                 shape: BoxShape.circle,
                               ),
                             ),

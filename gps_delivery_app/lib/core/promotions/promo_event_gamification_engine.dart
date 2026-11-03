@@ -546,7 +546,7 @@ class PromoEventGamificationEngine {
       minOrderValue: 0,
       bonusCoins: 10,
       sliceHexColor: 0xFFC8FF32,
-      textHexColor: 0xFF15131E,
+      textHexColor: 0xFF122033,
     ),
     SpinWheelSegment(
       index: 1,
@@ -557,7 +557,7 @@ class PromoEventGamificationEngine {
       rarity: PromoRarityTier.common,
       bonusCoins: 150,
       sliceHexColor: 0xFFFDE68A,
-      textHexColor: 0xFF15131E,
+      textHexColor: 0xFF122033,
     ),
     SpinWheelSegment(
       index: 2,
@@ -584,7 +584,7 @@ class PromoEventGamificationEngine {
       rarity: PromoRarityTier.rare,
       bonusTickets: 1,
       bonusCoins: 50,
-      sliceHexColor: 0xFF5B33E6,
+      sliceHexColor: 0xFF1E56C5,
       textHexColor: 0xFFFFFFFF,
     ),
     SpinWheelSegment(
@@ -601,7 +601,7 @@ class PromoEventGamificationEngine {
       minOrderValue: 30000,
       bonusCoins: 15,
       sliceHexColor: 0xFF38BDF8,
-      textHexColor: 0xFF15131E,
+      textHexColor: 0xFF122033,
     ),
     SpinWheelSegment(
       index: 5,
@@ -611,8 +611,8 @@ class PromoEventGamificationEngine {
       rewardType: PromoRewardType.coins,
       rarity: PromoRarityTier.common,
       bonusCoins: 80,
-      sliceHexColor: 0xFFF5F1E8,
-      textHexColor: 0xFF15131E,
+      sliceHexColor: 0xFFEEF3F8,
+      textHexColor: 0xFF122033,
     ),
     SpinWheelSegment(
       index: 6,
@@ -627,7 +627,7 @@ class PromoEventGamificationEngine {
       maxDiscount: 45000,
       minOrderValue: 45000,
       bonusCoins: 100,
-      sliceHexColor: 0xFFFF5E83,
+      sliceHexColor: 0xFFC85A17,
       textHexColor: 0xFFFFFFFF,
     ),
     SpinWheelSegment(
@@ -639,7 +639,7 @@ class PromoEventGamificationEngine {
       rarity: PromoRarityTier.rare,
       bonusCoins: 300,
       sliceHexColor: 0xFFF59E0B,
-      textHexColor: 0xFF15131E,
+      textHexColor: 0xFF122033,
     ),
   ];
 
@@ -650,7 +650,7 @@ class PromoEventGamificationEngine {
       boxCode: 'BOX #01',
       themeTitle: 'Hộp Tia Chớp Đỏ',
       themeTag: 'Chủ đề Hỏa tốc 30p',
-      accentHexColor: 0xFFFF5E83,
+      accentHexColor: 0xFFC85A17,
     ),
     BlindBoxSlotInfo(
       boxIndex: 1,
@@ -678,14 +678,14 @@ class PromoEventGamificationEngine {
       boxCode: 'BOX #05',
       themeTitle: 'Hộp Kiện Hàng Tím',
       themeTag: 'Chủ đề Đa điểm 2-Opt',
-      accentHexColor: 0xFF5B33E6,
+      accentHexColor: 0xFF1E56C5,
     ),
     BlindBoxSlotInfo(
       boxIndex: 5,
       boxCode: 'BOX #06',
       themeTitle: 'Hộp Bí Ẩn Nửa Đêm',
       themeTag: 'Chủ đề Jackpot SSR',
-      accentHexColor: 0xFF15131E,
+      accentHexColor: 0xFF122033,
     ),
   ];
 

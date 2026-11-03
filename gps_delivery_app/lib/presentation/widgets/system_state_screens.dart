@@ -483,15 +483,10 @@ class OnboardingStateScreen extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(28),
                 decoration: BoxDecoration(
-                  color: AppColors.paper,
-                  border: Border.all(color: AppColors.ink, width: 2.0),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: AppColors.violet,
-                      offset: Offset(10, 10),
-                      blurRadius: 0,
-                    ),
-                  ],
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: AppColors.line),
+                  boxShadow: AppColors.elevatedShadow,
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -501,36 +496,37 @@ class OnboardingStateScreen extends StatelessWidget {
                         width: double.infinity,
                         decoration: BoxDecoration(
                           color: AppColors.techBg,
-                          border: Border.all(color: AppColors.ink, width: 1.5),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: AppColors.techLine),
                         ),
-                        child: const Column(
+                        child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Animated3dIconBadge(
+                            const Animated3dIconBadge(
                               style: Icon3dStyle.scooterExpress,
                               size: 124,
                               showRadarPulse: true,
                               isSelected: true,
                             ),
-                            SizedBox(height: AppSpacing.md),
-                            DecoratedBox(
-                              decoration: BoxDecoration(
-                                color: AppColors.acid,
+                            const SizedBox(height: AppSpacing.md),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 6,
                               ),
-                              child: Padding(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 6,
-                                ),
-                                child: Text(
-                                  'FLASH DELIVERY 3D GPS',
-                                  style: TextStyle(
-                                    color: AppColors.techBg,
-                                    fontWeight: FontWeight.w900,
-                                    fontFamily: 'Consolas',
-                                    fontSize: 12,
-                                    letterSpacing: 1.0,
-                                  ),
+                              decoration: BoxDecoration(
+                                color: AppColors.techPanel,
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(color: AppColors.techLine),
+                              ),
+                              child: const Text(
+                                'FLASH DELIVERY 3D GPS',
+                                style: TextStyle(
+                                  color: AppColors.acid,
+                                  fontWeight: FontWeight.w800,
+                                  fontFamily: 'Consolas',
+                                  fontSize: 12,
+                                  letterSpacing: 1.0,
                                 ),
                               ),
                             ),
@@ -559,41 +555,40 @@ class OnboardingStateScreen extends StatelessWidget {
                         Container(
                           width: 26,
                           height: 8,
-                          color: AppColors.violet,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
                         ),
                         const SizedBox(width: 6),
                         Container(
                           width: 8,
                           height: 8,
-                          color: AppColors.ink,
+                          decoration: BoxDecoration(
+                            color: AppColors.line,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
                         ),
                         const SizedBox(width: 6),
                         Container(
                           width: 8,
                           height: 8,
-                          color: AppColors.ink,
+                          decoration: BoxDecoration(
+                            color: AppColors.line,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
                         ),
                       ],
                     ),
                     const SizedBox(height: AppSpacing.lg),
-                    Container(
+                    SizedBox(
                       width: double.infinity,
-                      decoration: const BoxDecoration(
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.ink,
-                            offset: Offset(5, 5),
-                            blurRadius: 0,
-                          ),
-                        ],
-                      ),
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.violet,
+                          backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.zero,
-                            side: BorderSide(color: AppColors.ink, width: 1.5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
                         onPressed: onGetStarted,
@@ -674,15 +669,12 @@ class OfflineQueueBanner extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: AppColors.gold,
-        border: Border.all(color: AppColors.ink, width: 1.6),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.pink,
-            offset: Offset(7, 7),
-            blurRadius: 0,
-          ),
-        ],
+        color: AppColors.warningSoft,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.warningInk.withValues(alpha: 0.28),
+        ),
+        boxShadow: AppColors.cardShadow,
       ),
       child: Column(
         children: [
@@ -690,8 +682,8 @@ class OfflineQueueBanner extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: AppColors.ink,
-              border: Border.all(color: AppColors.ink),
+              color: AppColors.techBg,
+              borderRadius: BorderRadius.circular(10),
             ),
             child: Text(
               'CHẾ ĐỘ NGOẠI TUYẾN • Thao tác và vị trí đang lưu tạm trên thiết bị · ${store.offlineQueueCount} mục chờ đồng bộ',
@@ -708,8 +700,9 @@ class OfflineQueueBanner extends StatelessWidget {
             constraints: const BoxConstraints(maxWidth: 420),
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: AppColors.ink, width: 1.5),
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.line),
             ),
             child: Column(
               children: [
@@ -725,7 +718,7 @@ class OfflineQueueBanner extends StatelessWidget {
                     Icon(
                       Icons.add_location_alt_outlined,
                       size: 28,
-                      color: AppColors.violet,
+                      color: AppColors.primary,
                     ),
                   ],
                 ),
@@ -735,9 +728,9 @@ class OfflineQueueBanner extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 20,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w800,
                     color: AppColors.ink,
-                    letterSpacing: -0.6,
+                    letterSpacing: -0.5,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -756,16 +749,16 @@ class OfflineQueueBanner extends StatelessWidget {
                   height: 44,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.ink,
-                      foregroundColor: AppColors.acid,
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.zero,
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                     onPressed: () => store.toggleOfflineSimulation(false),
                     child: const Text(
                       'Thử kết nối lại ↗',
-                      style: TextStyle(fontWeight: FontWeight.w900),
+                      style: TextStyle(fontWeight: FontWeight.w800),
                     ),
                   ),
                 ),
@@ -1314,9 +1307,10 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
             return Dialog(
               insetPadding: const EdgeInsets.all(14),
               backgroundColor: AppColors.darkSidebar,
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.zero,
-                side: BorderSide(color: AppColors.ink, width: 2),
+              clipBehavior: Clip.antiAlias,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+                side: const BorderSide(color: AppColors.techLine),
               ),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(

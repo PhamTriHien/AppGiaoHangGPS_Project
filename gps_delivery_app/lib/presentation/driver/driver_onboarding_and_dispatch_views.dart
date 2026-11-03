@@ -32,7 +32,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-            color: const Color(0xFF15131E),
+            color: const Color(0xFF122033),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -89,7 +89,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
                                 'Từ chối'
                           ? const Color(0xFFFEE2E2)
                           : const Color(0xFFFEF3C7),
-                      border: Border.all(color: const Color(0xFF15131E)),
+                      border: Border.all(color: const Color(0xFF122033)),
                     ),
                     child: Row(
                       children: [
@@ -112,7 +112,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
                             style: const TextStyle(
                               fontWeight: FontWeight.w800,
                               fontSize: 12,
-                              color: Color(0xFF15131E),
+                              color: Color(0xFF122033),
                             ),
                           ),
                         ),
@@ -285,7 +285,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
                   height: 48,
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF15131E),
+                      backgroundColor: const Color(0xFF122033),
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.all(Radius.zero),
@@ -403,7 +403,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
         decoration: BoxDecoration(
-          color: isAttached ? const Color(0xFFDCFCE7) : const Color(0xFFF5F1E8),
+          color: isAttached ? const Color(0xFFDCFCE7) : const Color(0xFFEEF3F8),
           borderRadius: const BorderRadius.all(Radius.zero),
           border: Border.all(
             color: const Color(0xFF14B866),
@@ -416,7 +416,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
               isAttached
                   ? Icons.check_circle_rounded
                   : Icons.upload_file_rounded,
-              color: const Color(0xFF15131E),
+              color: const Color(0xFF122033),
               size: 24,
             ),
             const SizedBox(height: 4),
@@ -505,7 +505,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
                             style: const TextStyle(
                               fontWeight: FontWeight.w800,
                               fontSize: 15,
-                              color: Color(0xFF15131E),
+                              color: Color(0xFF122033),
                             ),
                           ),
                           const SizedBox(height: 2),
@@ -549,7 +549,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
                       decoration: BoxDecoration(
                         color: _store.isDriverOnline
                             ? const Color(0xFFDCFCE7)
-                            : const Color(0xFFF5F1E8),
+                            : const Color(0xFFEEF3F8),
                         borderRadius: const BorderRadius.all(Radius.zero),
                       ),
                       child: Row(
@@ -588,7 +588,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
                           horizontal: 6,
                         ),
                         decoration: const BoxDecoration(
-                          color: Color(0xFFF5F1E8),
+                          color: Color(0xFFEEF3F8),
                           borderRadius: BorderRadius.all(Radius.zero),
                         ),
                         child: Text(
@@ -597,7 +597,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
                           style: const TextStyle(
                             fontSize: 11.5,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF15131E),
+                            color: Color(0xFF122033),
                           ),
                         ),
                       ),
@@ -610,7 +610,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
                           horizontal: 6,
                         ),
                         decoration: const BoxDecoration(
-                          color: Color(0xFFF5F1E8),
+                          color: Color(0xFFEEF3F8),
                           borderRadius: BorderRadius.all(Radius.zero),
                         ),
                         child: Text(
@@ -634,7 +634,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
                           horizontal: 6,
                         ),
                         decoration: const BoxDecoration(
-                          color: Color(0xFFF5F1E8),
+                          color: Color(0xFFEEF3F8),
                           borderRadius: BorderRadius.all(Radius.zero),
                         ),
                         child: Text(
@@ -1121,7 +1121,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w900,
-                          color: Color(0xFF15131E),
+                          color: Color(0xFF122033),
                         ),
                       ),
                     ],
@@ -1136,7 +1136,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
                       CircularProgressIndicator(
                         value: _countdownSeconds / 28.0,
                         strokeWidth: 5,
-                        backgroundColor: const Color(0xFF15131E),
+                        backgroundColor: const Color(0xFF122033),
                         color: isTimerRunning
                             ? AppColors.danger
                             : const Color(0xFF14B866),
@@ -1159,7 +1159,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF5F1E8),
+                  color: const Color(0xFFEEF3F8),
                   borderRadius: BorderRadius.all(Radius.zero),
                   border: Border.all(color: const Color(0xFFBBF7D0)),
                 ),
@@ -1188,7 +1188,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: const Color(0xFFF5F1E8),
+                color: const Color(0xFFEEF3F8),
                 borderRadius: BorderRadius.all(Radius.zero),
                 border: Border.all(color: const Color(0xFF14B866), width: 1.5),
               ),
@@ -1212,7 +1212,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
                         'Khoảng cách: ${(targetOrder.distanceMeters / 1000).toStringAsFixed(1)} km',
                         style: const TextStyle(
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFF15131E),
+                          color: Color(0xFF122033),
                         ),
                       ),
                     ],
@@ -1300,7 +1300,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
                               style: const TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w800,
-                                color: Color(0xFF5B33E6),
+                                color: Color(0xFF1E56C5),
                               ),
                             ),
                           ),
@@ -1577,7 +1577,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF5F3FF),
-                  border: Border.all(color: const Color(0xFF5B33E6)),
+                  border: Border.all(color: const Color(0xFF1E56C5)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1614,7 +1614,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFF15131E),
+                          color: Color(0xFF122033),
                         ),
                       ),
                     ],
@@ -1626,7 +1626,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
           // Dark Navy Turn-by-Turn Instruction Banner (#0F172A)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            color: const Color(0xFF15131E),
+            color: const Color(0xFF122033),
             child: Row(
               children: [
                 Container(
@@ -1835,7 +1835,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
                       icon: const Icon(
                         Icons.chat_bubble_outline_rounded,
                         size: 16,
-                        color: Color(0xFF5B33E6),
+                        color: Color(0xFF1E56C5),
                       ),
                       label: Text(
                         'Chat với Khách (${_store.chatMessages.where((m) => m.orderId == activeOrder.trackingCode).length})',
@@ -1848,8 +1848,8 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF5F1E8),
-                      border: Border.all(color: const Color(0xFF15131E)),
+                      color: const Color(0xFFEEF3F8),
+                      border: Border.all(color: const Color(0xFF122033)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1859,7 +1859,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
                             const Icon(
                               Icons.forum_rounded,
                               size: 16,
-                              color: Color(0xFF5B33E6),
+                              color: Color(0xFF1E56C5),
                             ),
                             const SizedBox(width: 6),
                             Expanded(
@@ -1895,8 +1895,8 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
                                               ? FontWeight.w700
                                               : FontWeight.w600,
                                           color: m.isCustomer
-                                              ? const Color(0xFF5B33E6)
-                                              : const Color(0xFF15131E),
+                                              ? const Color(0xFF1E56C5)
+                                              : const Color(0xFF122033),
                                         ),
                                       ),
                                     ),
@@ -2105,7 +2105,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
                         fontWeight: FontWeight.w700,
                         color: selected
                             ? Colors.white
-                            : const Color(0xFF15131E),
+                            : const Color(0xFF122033),
                       ),
                     ),
                     selected: selected,
@@ -2368,7 +2368,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
                         fontWeight: FontWeight.w700,
                         color: selected
                             ? Colors.white
-                            : const Color(0xFF15131E),
+                            : const Color(0xFF122033),
                       ),
                     ),
                     selected: selected,
@@ -2394,7 +2394,7 @@ extension _DriverOnboardingAndDispatchViews on _DriverSubsystemEntryState {
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF5F1E8),
+                      color: const Color(0xFFEEF3F8),
                       border: Border.all(color: AppColors.ink),
                     ),
                     child: Column(

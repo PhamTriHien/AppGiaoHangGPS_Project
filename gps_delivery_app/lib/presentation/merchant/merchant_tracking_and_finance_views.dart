@@ -30,7 +30,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
             const SizedBox(height: 14),
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF5E83),
+                backgroundColor: const Color(0xFFC85A17),
                 foregroundColor: Colors.white,
               ),
               onPressed: () =>
@@ -171,7 +171,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
             return ChoiceChip(
               label: Text(t),
               selected: selected,
-              selectedColor: const Color(0xFFFF5E83),
+              selectedColor: const Color(0xFFC85A17),
               labelStyle: TextStyle(
                 color: selected ? Colors.white : AppColors.textPrimary,
                 fontWeight: FontWeight.w700,
@@ -207,7 +207,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                       scrollDirection: Axis.horizontal,
                       child: DataTable(
                         headingRowColor: WidgetStateProperty.all(
-                          const Color(0xFFF5F1E8),
+                          const Color(0xFFEEF3F8),
                         ),
                         columns: const [
                           DataColumn(label: Text('Mã đơn')),
@@ -225,7 +225,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                                   o.trackingCode,
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w800,
-                                    color: Color(0xFF5B33E6),
+                                    color: Color(0xFF1E56C5),
                                   ),
                                 ),
                                 onTap: () {
@@ -510,7 +510,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF5F1E8),
+                      color: const Color(0xFFEEF3F8),
                       borderRadius: const BorderRadius.all(Radius.zero),
                       border: Border.all(color: AppColors.divider),
                     ),
@@ -522,7 +522,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                               : Icons.local_shipping_outlined,
                           color: focusedOrd.podImageNote != null
                               ? AppColors.success
-                              : const Color(0xFF5B33E6),
+                              : const Color(0xFF1E56C5),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
@@ -697,7 +697,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
               ),
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF5B33E6),
+                  backgroundColor: const Color(0xFF1E56C5),
                   foregroundColor: Colors.white,
                 ),
                 onPressed: () {
@@ -777,7 +777,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                         fontWeight: FontWeight.w800,
                         color: req.assignedDriverName != null
                             ? const Color(0xFF14B866)
-                            : const Color(0xFF5B33E6),
+                            : const Color(0xFF1E56C5),
                       ),
                     ),
                   ],
@@ -822,7 +822,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                 const SizedBox(height: 14),
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF5E83),
+                    backgroundColor: const Color(0xFFC85A17),
                     foregroundColor: Colors.white,
                   ),
                   onPressed: () =>
@@ -885,7 +885,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                       ),
                     ),
                     selected: selected,
-                    selectedColor: const Color(0xFF5B33E6),
+                    selectedColor: const Color(0xFF1E56C5),
                     onSelected: (_) => _rebuildMerchantUi(() {
                       _selectedWaybillOrderIndex = idx;
                       _editOrderNameCtrl.text = item.recipientName;
@@ -906,7 +906,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF5B33E6),
+                  color: const Color(0xFF1E56C5),
                   borderRadius: BorderRadius.all(Radius.zero),
                 ),
                 child: Text(
@@ -1177,7 +1177,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                     children: [
                       ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFF5E83),
+                          backgroundColor: const Color(0xFFC85A17),
                         ),
                         onPressed: ord.status != OrderStatus.failed
                             ? null
@@ -1395,7 +1395,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
               style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF5B33E6),
+                color: Color(0xFF1E56C5),
               ),
             ),
           ],
@@ -1418,7 +1418,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                   _codCard(
                     'Tổng COD đã thu',
                     CurrencyFormatter.formatVnd(totalCod),
-                    const Color(0xFF5B33E6),
+                    const Color(0xFF1E56C5),
                     width: cardW,
                   ),
                   _codCard(
@@ -1447,7 +1447,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: DataTable(
-              headingRowColor: WidgetStateProperty.all(const Color(0xFFF5F1E8)),
+              headingRowColor: WidgetStateProperty.all(const Color(0xFFEEF3F8)),
               columns: const [
                 DataColumn(label: Text('Mã đơn')),
                 DataColumn(label: Text('Ngày giao')),
@@ -1536,7 +1536,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                             ? AppColors.danger.withValues(alpha: 0.14)
                             : done
                             ? AppColors.success.withValues(alpha: 0.14)
-                            : const Color(0xFFF5F1E8),
+                            : const Color(0xFFEEF3F8),
                         label: Text(
                           isReturnedToWarehouse
                               ? 'Đã hoàn kho'
@@ -1552,7 +1552,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                                 ? AppColors.danger
                                 : done
                                 ? AppColors.success
-                                : const Color(0xFFFF5E83),
+                                : const Color(0xFFC85A17),
                           ),
                         ),
                       ),
@@ -1572,7 +1572,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
       width: width,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F1E8),
+        color: const Color(0xFFEEF3F8),
         borderRadius: BorderRadius.all(Radius.zero),
         border: Border.all(color: AppColors.divider),
       ),
@@ -1632,7 +1632,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w900,
-                  color: Color(0xFFFF5E83),
+                  color: Color(0xFFC85A17),
                 ),
               ),
               const Divider(height: 22),
@@ -1662,7 +1662,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF5E83),
+                    backgroundColor: const Color(0xFFC85A17),
                   ),
                   onPressed: () {
                     if (activeMer == null ||
@@ -1901,7 +1901,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
               ),
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFF5E83),
+                  backgroundColor: const Color(0xFFC85A17),
                 ),
                 onPressed: () {
                   final reportContent =
@@ -1948,7 +1948,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                   _codCard(
                     'Tổng đơn gửi',
                     '$totalOrders đơn',
-                    const Color(0xFF5B33E6),
+                    const Color(0xFF1E56C5),
                     width: cardW,
                   ),
                   _codCard(
@@ -1966,13 +1966,13 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                   _codCard(
                     'Hoàn hàng',
                     '$returnedCount đơn (${returnedRate.toStringAsFixed(1)}%)',
-                    const Color(0xFFFF5E83),
+                    const Color(0xFFC85A17),
                     width: cardW,
                   ),
                   _codCard(
                     'Tổng phí ship',
                     CurrencyFormatter.formatVnd(totalShip),
-                    const Color(0xFF5B33E6),
+                    const Color(0xFF1E56C5),
                     width: cardW,
                   ),
                   _codCard(
@@ -2003,7 +2003,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
               final chartBox = Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF5F1E8),
+                  color: const Color(0xFFEEF3F8),
                   borderRadius: BorderRadius.all(Radius.zero),
                   border: Border.all(color: AppColors.divider),
                 ),
@@ -2047,7 +2047,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                                       child: Container(
                                         height: 76 * item.$2,
                                         decoration: const BoxDecoration(
-                                          color: Color(0xFF5B33E6),
+                                          color: Color(0xFF1E56C5),
                                           borderRadius: BorderRadius.all(
                                             Radius.zero,
                                           ),
@@ -2074,7 +2074,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
               final statusBox = Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF5F1E8),
+                  color: const Color(0xFFEEF3F8),
                   borderRadius: BorderRadius.all(Radius.zero),
                   border: Border.all(color: AppColors.divider),
                 ),
@@ -2107,7 +2107,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                         contentPadding: EdgeInsets.zero,
                         leading: const Icon(
                           Icons.circle,
-                          color: Color(0xFF5B33E6),
+                          color: Color(0xFF1E56C5),
                         ),
                         title: Text(
                           'Đang giao / Chờ xử lý: ${inProgressRate.toStringAsFixed(1)}% ($inProgressCount đơn)',
@@ -2129,7 +2129,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                         contentPadding: EdgeInsets.zero,
                         leading: const Icon(
                           Icons.circle,
-                          color: Color(0xFFFF5E83),
+                          color: Color(0xFFC85A17),
                         ),
                         title: Text(
                           'Hoàn hàng / Đã hủy: ${returnedRate.toStringAsFixed(1)}% ($returnedCount đơn)',
@@ -2197,7 +2197,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                   return ActionChip(
                     backgroundColor: selected
                         ? const Color(0xFFEDE9FE)
-                        : const Color(0xFFF5F1E8),
+                        : const Color(0xFFEEF3F8),
                     label: Text(
                       '${ord.trackingCode} (${ord.status.displayName})',
                       style: TextStyle(
@@ -2295,7 +2295,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF5F1E8),
+                    color: const Color(0xFFEEF3F8),
                     borderRadius: BorderRadius.all(Radius.zero),
                     border: Border.all(color: AppColors.divider),
                   ),
@@ -2303,7 +2303,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                     children: [
                       const Icon(
                         Icons.add_photo_alternate_outlined,
-                        color: Color(0xFF5B33E6),
+                        color: Color(0xFF1E56C5),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -2339,7 +2339,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF5E83),
+                    backgroundColor: const Color(0xFFC85A17),
                   ),
                   onPressed: () {
                     final orderCode = _shopComplaintOrderCtrl.text.trim();
@@ -2445,7 +2445,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                   margin: const EdgeInsets.only(bottom: 10),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF5F1E8),
+                    color: const Color(0xFFEEF3F8),
                     borderRadius: BorderRadius.all(Radius.zero),
                     border: Border.all(color: AppColors.divider),
                   ),
@@ -2500,7 +2500,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                         style: const TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 12,
-                          color: Color(0xFF5B33E6),
+                          color: Color(0xFF1E56C5),
                         ),
                       ),
                       const SizedBox(height: 4),

@@ -460,10 +460,11 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
     required Color bg,
     IconData? icon,
   }) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
     decoration: BoxDecoration(
       color: bg,
-      border: Border.all(color: AdminStudioColors.ink, width: 1.1),
+      borderRadius: BorderRadius.circular(999),
+      border: Border.all(color: fg.withValues(alpha: 0.22)),
     ),
     child: Row(
       mainAxisSize: MainAxisSize.min,
@@ -479,7 +480,7 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 11,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
               color: fg,
             ),
           ),
@@ -489,10 +490,11 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
   );
 
   Widget _metricPill(IconData icon, String text, {Color? accent}) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
     decoration: BoxDecoration(
-      color: AdminStudioColors.paper,
-      border: Border.all(color: AdminStudioColors.ink, width: 1.1),
+      color: AdminStudioColors.surfaceSubtle,
+      borderRadius: BorderRadius.circular(999),
+      border: Border.all(color: AdminStudioColors.line),
     ),
     child: Row(
       mainAxisSize: MainAxisSize.min,
@@ -556,10 +558,12 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
       decoration: BoxDecoration(
         color: state == 'pending'
             ? AdminStudioColors.goldSoft
-            : AdminStudioColors.paper,
+            : AdminStudioColors.surfaceSubtle,
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: AdminStudioColors.ink,
-          width: state == 'pending' ? 1.5 : 1.1,
+          color: state == 'pending'
+              ? AdminStudioColors.goldInk.withValues(alpha: 0.35)
+              : AdminStudioColors.line,
         ),
       ),
       child: Column(
@@ -584,19 +588,18 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                       ? null
                       : () => _decideMembership(account, role, 'approve'),
                   style: FilledButton.styleFrom(
-                    backgroundColor: AdminStudioColors.acid,
-                    foregroundColor: AdminStudioColors.ink,
-                    side: const BorderSide(
-                      color: AdminStudioColors.ink,
-                      width: 1.3,
+                    backgroundColor: AdminStudioColors.acidSoft,
+                    foregroundColor: AdminStudioColors.acidInk,
+                    side: BorderSide(
+                      color: AdminStudioColors.acidInk.withValues(alpha: 0.35),
                     ),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
                       vertical: 8,
                     ),
                     visualDensity: VisualDensity.compact,
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.zero,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
                     ),
                   ),
                   icon: const Icon(Icons.check_rounded, size: 16),
@@ -727,12 +730,13 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: avatarBg,
-                  border: Border.all(color: AdminStudioColors.ink, width: 1.4),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AdminStudioColors.line),
                 ),
                 child: Text(
                   _initials(a),
                   style: TextStyle(
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w800,
                     fontSize: 15,
                     color: avatarFg,
                   ),
@@ -1164,87 +1168,89 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    AdminStudioGridBackdrop(
-                      child: Container(
-                        padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: AdminStudioColors.ink,
-                            width: 2,
-                          ),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: AdminStudioColors.violet,
-                              offset: Offset(4, 4),
-                              blurRadius: 0,
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: AdminStudioGridBackdrop(
+                        child: Container(
+                          padding: const EdgeInsets.all(18),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: AdminStudioColors.shellLine,
                             ),
-                          ],
-                        ),
-                        child: LayoutBuilder(
-                          builder: (context, box) {
-                            final compact = box.maxWidth < 520;
-                            return Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        'Trung tâm Quản trị Danh tính & Phân quyền',
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w900,
-                                          color: Colors.white,
-                                          letterSpacing: -0.3,
+                          ),
+                          child: LayoutBuilder(
+                            builder: (context, box) {
+                              final compact = box.maxWidth < 520;
+                              return Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Trung tâm Quản trị Danh tính & Phân quyền',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w800,
+                                            color: Colors.white,
+                                            letterSpacing: -0.3,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        const Text(
+                                          'Đồng bộ trực tiếp từ hồ sơ tài khoản, phân quyền đối tác và nhật ký kiểm toán.',
+                                          style: TextStyle(
+                                            fontSize: 12.5,
+                                            color: AdminStudioColors.acid,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  if (compact)
+                                    IconButton(
+                                      tooltip: 'Làm mới danh sách tài khoản',
+                                      style: IconButton.styleFrom(
+                                        backgroundColor:
+                                            AdminStudioColors.shellElevated,
+                                        foregroundColor: Colors.white,
+                                        side: const BorderSide(
+                                          color: AdminStudioColors.shellLine,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
                                         ),
                                       ),
-                                      const SizedBox(height: 4),
-                                      const Text(
-                                        'Đồng bộ trực tiếp từ hồ sơ tài khoản, phân quyền đối tác và nhật ký kiểm toán.',
-                                        style: TextStyle(
-                                          fontSize: 12.5,
-                                          color: AdminStudioColors.acid,
-                                          fontWeight: FontWeight.w600,
-                                        ),
+                                      onPressed: _busy
+                                          ? null
+                                          : () => _load(force: true),
+                                      icon: const Icon(Icons.refresh_rounded),
+                                    )
+                                  else
+                                    FilledButton.icon(
+                                      onPressed: _busy
+                                          ? null
+                                          : () => _load(force: true),
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor: AdminStudioColors.acid,
+                                        foregroundColor: AdminStudioColors.ink,
                                       ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                if (compact)
-                                  IconButton(
-                                    tooltip: 'Làm mới danh sách tài khoản',
-                                    style: IconButton.styleFrom(
-                                      backgroundColor: AdminStudioColors.acid,
-                                      foregroundColor: AdminStudioColors.ink,
-                                      shape: const RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.zero,
+                                      icon: const Icon(
+                                        Icons.refresh_rounded,
+                                        size: 18,
                                       ),
+                                      label: const Text('Làm mới'),
                                     ),
-                                    onPressed: _busy
-                                        ? null
-                                        : () => _load(force: true),
-                                    icon: const Icon(Icons.refresh_rounded),
-                                  )
-                                else
-                                  FilledButton.icon(
-                                    onPressed: _busy
-                                        ? null
-                                        : () => _load(force: true),
-                                    style: FilledButton.styleFrom(
-                                      backgroundColor: AdminStudioColors.acid,
-                                      foregroundColor: AdminStudioColors.ink,
-                                    ),
-                                    icon: const Icon(
-                                      Icons.refresh_rounded,
-                                      size: 18,
-                                    ),
-                                    label: const Text('Làm mới'),
-                                  ),
-                              ],
-                            );
-                          },
+                                ],
+                              );
+                            },
+                          ),
                         ),
                       ),
                     ),

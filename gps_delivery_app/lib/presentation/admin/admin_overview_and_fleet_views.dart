@@ -115,7 +115,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.w800,
-            color: Color(0xFF15131E),
+            color: Color(0xFF122033),
           ),
         ),
         const SizedBox(height: 2),
@@ -145,10 +145,10 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                   value: '$totalOrders',
                   delta: '(${_store.users.length} tài khoản)',
                   deltaPositive: true,
-                  badgeColor: const Color(0xFF5B33E6),
+                  badgeColor: const Color(0xFF1E56C5),
                   icon: Icons.shopping_cart_rounded,
                   showSparkline: true,
-                  sparklineColor: const Color(0xFF5B33E6),
+                  sparklineColor: const Color(0xFF1E56C5),
                   sparklineFactors: orangeNorm,
                 ),
                 _buildGoMauKpiCard(
@@ -161,10 +161,10 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                       ? '(${_store.orders.where((o) => o.paymentStatus == "PAID").length} đã TT)'
                       : '(Ẩn theo RBAC)',
                   deltaPositive: canViewFinance,
-                  badgeColor: const Color(0xFFFF5E83),
+                  badgeColor: const Color(0xFFC85A17),
                   icon: Icons.monetization_on_rounded,
                   showSparkline: canViewFinance,
-                  sparklineColor: const Color(0xFFFF5E83),
+                  sparklineColor: const Color(0xFFC85A17),
                   sparklineFactors: blueNorm,
                 ),
                 _buildGoMauKpiCard(
@@ -214,7 +214,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color: const Color(0xFFECFDF5),
-                border: Border.all(color: const Color(0xFF15131E)),
+                border: Border.all(color: const Color(0xFF122033)),
               ),
               child: Wrap(
                 spacing: 18,
@@ -244,7 +244,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF15131E),
+                      color: Color(0xFF122033),
                     ),
                   ),
                   Text(
@@ -260,7 +260,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF5B33E6),
+                      color: Color(0xFF1E56C5),
                     ),
                   ),
                   Text(
@@ -302,7 +302,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.all(Radius.zero),
-                border: Border.all(color: const Color(0xFF15131E)),
+                border: Border.all(color: const Color(0xFF122033)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -312,7 +312,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                     style: TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 15,
-                      color: Color(0xFF15131E),
+                      color: Color(0xFF122033),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -359,7 +359,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.all(Radius.zero),
-                border: Border.all(color: const Color(0xFF15131E)),
+                border: Border.all(color: const Color(0xFF122033)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -369,7 +369,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                     style: TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 15,
-                      color: Color(0xFF15131E),
+                      color: Color(0xFF122033),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -389,12 +389,12 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                   ),
                   const SizedBox(height: 16),
                   _buildDonutLegendRow(
-                    const Color(0xFF5B33E6),
+                    const Color(0xFF1E56C5),
                     'Giao thành công: $deliveredPct% ($deliveredCount đơn)',
                   ),
                   const SizedBox(height: 5),
                   _buildDonutLegendRow(
-                    const Color(0xFFFF5E83),
+                    const Color(0xFFC85A17),
                     'Đang giao: $inTransitPct% ($inTransitCount đơn)',
                   ),
                   const SizedBox(height: 5),
@@ -416,7 +416,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.all(Radius.zero),
-                border: Border.all(color: const Color(0xFF15131E)),
+                border: Border.all(color: const Color(0xFF122033)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -426,7 +426,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                     style: const TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 15,
-                      color: Color(0xFF15131E),
+                      color: Color(0xFF122033),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -541,7 +541,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                               ? const Color(0xFF14B866)
                               : isCancelled
                               ? const Color(0xFFB91C1C)
-                              : const Color(0xFF5B33E6),
+                              : const Color(0xFF1E56C5),
                         ),
                       );
                     }),
@@ -594,7 +594,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.all(Radius.zero),
-        border: Border.all(color: const Color(0xFF15131E)),
+        border: Border.all(color: const Color(0xFF122033)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -633,7 +633,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w900,
-                            color: Color(0xFF15131E),
+                            color: Color(0xFF122033),
                           ),
                         ),
                         Text(
@@ -778,7 +778,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.all(Radius.zero),
-        border: Border.all(color: const Color(0xFF15131E)),
+        border: Border.all(color: const Color(0xFF122033)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -794,12 +794,12 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                 style: const TextStyle(
                   fontWeight: FontWeight.w800,
                   fontSize: 16,
-                  color: Color(0xFF15131E),
+                  color: Color(0xFF122033),
                 ),
               ),
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF5B33E6),
+                  backgroundColor: const Color(0xFF1E56C5),
                 ),
                 onPressed: canManageUsers
                     ? () => _showCreateUserAccountDialog(context)
@@ -848,7 +848,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
               scrollDirection: Axis.horizontal,
               child: DataTable(
                 headingRowColor: WidgetStateProperty.all(
-                  const Color(0xFFF5F1E8),
+                  const Color(0xFFEEF3F8),
                 ),
                 columns: const [
                   DataColumn(label: Text('ID')),
@@ -1053,7 +1053,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF5B33E6),
+                    backgroundColor: const Color(0xFF1E56C5),
                   ),
                   onPressed: () {
                     if (pwdCtrl.text.trim().length < 6) {
@@ -1160,7 +1160,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.all(Radius.zero),
-            border: Border.all(color: const Color(0xFF15131E)),
+            border: Border.all(color: const Color(0xFF122033)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1211,12 +1211,12 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                       decoration: BoxDecoration(
                         color: isSelected
                             ? const Color(0xFFEDE9FE)
-                            : const Color(0xFFF5F1E8),
+                            : const Color(0xFFEEF3F8),
                         borderRadius: BorderRadius.all(Radius.zero),
                         border: Border.all(
                           color: isSelected
                               ? AppColors.violet
-                              : const Color(0xFF15131E),
+                              : const Color(0xFF122033),
                           width: isSelected ? 1.8 : 1.0,
                         ),
                       ),
@@ -1393,12 +1393,12 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                       decoration: BoxDecoration(
                         color: isMerSelected
                             ? const Color(0xFFEDE9FE)
-                            : const Color(0xFFF5F1E8),
+                            : const Color(0xFFEEF3F8),
                         borderRadius: BorderRadius.all(Radius.zero),
                         border: Border.all(
                           color: isMerSelected
                               ? AppColors.violet
-                              : const Color(0xFF15131E),
+                              : const Color(0xFF122033),
                           width: isMerSelected ? 1.8 : 1.0,
                         ),
                       ),
@@ -1496,7 +1496,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.all(Radius.zero),
-            border: Border.all(color: const Color(0xFF15131E)),
+            border: Border.all(color: const Color(0xFF122033)),
           ),
           child: (_selectedKycIsMerchant && featuredMerchant != null)
               ? Column(

@@ -614,7 +614,7 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.all(Radius.zero),
-        border: Border.all(color: const Color(0xFF15131E)),
+        border: Border.all(color: const Color(0xFF122033)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -633,7 +633,7 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF15131E),
+                      color: Color(0xFF122033),
                     ),
                   ),
                   Text(
@@ -733,10 +733,10 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                     delta:
                         '(Cước gốc ${CurrencyFormatter.formatVnd(grossFareRevenue)})',
                     deltaPositive: true,
-                    badgeColor: const Color(0xFF5B33E6),
+                    badgeColor: const Color(0xFF1E56C5),
                     icon: Icons.payments_outlined,
                     showSparkline: false,
-                    sparklineColor: const Color(0xFF5B33E6),
+                    sparklineColor: const Color(0xFF1E56C5),
                   ),
                   _buildGoMauKpiCard(
                     width: cardWidth,
@@ -756,10 +756,10 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                     value: '$deliveredCount/$totalOrders đơn',
                     delta: 'SLA: $slaLabel',
                     deltaPositive: true,
-                    badgeColor: const Color(0xFFFF5E83),
+                    badgeColor: const Color(0xFFC85A17),
                     icon: Icons.task_alt_rounded,
                     showSparkline: false,
-                    sparklineColor: const Color(0xFFFF5E83),
+                    sparklineColor: const Color(0xFFC85A17),
                   ),
                 ],
               );
@@ -848,9 +848,9 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                   final chartCard = Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF5F1E8),
+                      color: const Color(0xFFEEF3F8),
                       borderRadius: BorderRadius.all(Radius.zero),
-                      border: Border.all(color: const Color(0xFF15131E)),
+                      border: Border.all(color: const Color(0xFF122033)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -878,7 +878,7 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                                         width: 34,
                                         height: 105 * wk.$2,
                                         decoration: const BoxDecoration(
-                                          color: Color(0xFF5B33E6),
+                                          color: Color(0xFF1E56C5),
                                           borderRadius: BorderRadius.all(
                                             Radius.zero,
                                           ),
@@ -906,9 +906,9 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                   final tableCard = Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF5F1E8),
+                      color: const Color(0xFFEEF3F8),
                       borderRadius: BorderRadius.all(Radius.zero),
-                      border: Border.all(color: const Color(0xFF15131E)),
+                      border: Border.all(color: const Color(0xFF122033)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1516,7 +1516,7 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                         style: const TextStyle(
                           fontWeight: FontWeight.w800,
                           fontSize: 12.5,
-                          color: Color(0xFF5B33E6),
+                          color: Color(0xFF1E56C5),
                         ),
                       ),
                       if (pendingPickups.isNotEmpty) ...[
@@ -2691,9 +2691,9 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: n.isRead ? Colors.white : const Color(0xFFF5F1E8),
+                      color: n.isRead ? Colors.white : const Color(0xFFEEF3F8),
                       border: Border.all(
-                        color: const Color(0xFF15131E),
+                        color: const Color(0xFF122033),
                         width: n.isRead ? 1.0 : 1.4,
                       ),
                     ),
