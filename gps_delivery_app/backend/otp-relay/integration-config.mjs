@@ -111,6 +111,20 @@ export class ConfigError extends Error {
 export function configValue(key, env = process.env) {
   return String(env[key] ?? fieldsByKey.get(key)?.defaultValue ?? '').trim();
 }
+export function normalizeAiApiKey(raw) {
+  return String(raw ?? '')
+    .replace(/\\\s*[\r\n]+/g, '')
+    .replace(/[\r\n]+/g, '')
+    .trim()
+    .replace(/^["']+|["']+$/g, '')
+    .trim()
+    .replace(
+      /^(?:authorization\s*:\s*|ủy\s+quyền\s*:\s*|uy\s+quyen\s*:\s*)?(?:bearer|người\s+mang|nguoi\s+mang)\s+/i,
+      '',
+    )
+    .replace(/^["']+|["']+$/g, '')
+    .trim();
+}
 function providerReady(provider, env) {
   const definition = INTEGRATION_DEFINITIONS[provider];
   if (provider === 'sms') {
@@ -353,7 +367,8 @@ export async function updateIntegrationConfig(values, { clear = [], actor = 'unk
   const allowLiveDb = Boolean(db || connectPool) || env === process.env;
   const patch = Object.fromEntries(Object.entries(values).map(([key, value]) => {
     if (!['string', 'number', 'boolean'].includes(typeof value) && value !== null) throw new ConfigError(`Giá trị không hợp lệ: ${key}`);
-    return [key, String(value ?? '').trim()];
+    const text = String(value ?? '').trim();
+    return [key, key === 'GEMINI_API_KEY' ? normalizeAiApiKey(text) : text];
   }));
   for (const key of clear) patch[key] = '';
   for (const [key, value] of Object.entries(patch)) {
@@ -567,7 +582,7 @@ export async function testIntegration(provider, { env = process.env, fetcher = f
     } else if (provider === 'gemini') {
       const rawBase = configValue('GEMINI_BASE_URL', env).replace(/\/+$/, '');
       const model = configValue('GEMINI_MODEL', env).replace(/^models\//, '');
-      const apiKey = configValue('GEMINI_API_KEY', env);
+      const apiKey = normalizeAiApiKey(configValue('GEMINI_API_KEY', env));
       const { parsed } = assertSafeAiUrl(rawBase, { allowLoopback: env.RENDER !== 'true' && !env.RAILWAY_ENVIRONMENT });
       const cleanPath = parsed.pathname.replace(/\/+$/, '');
       const isNativeGemini =
@@ -582,18 +597,26 @@ export async function testIntegration(provider, { env = process.env, fetcher = f
         const modelsUrl = rawBase.endsWith('/chat/completions')
           ? `${rawBase.slice(0, -'/chat/completions'.length)}/models`
           : `${rawBase}/models`;
-        const headers = { Authorization: `Bearer ${apiKey}` };
-        const probe = await fetcher(modelsUrl, { headers, redirect: 'error', signal: AbortSignal.timeout(10000) });
+        const headers = {
+          Accept: 'application/json',
+          'User-Agent': 'GHSTExpress/1.0',
+          Authorization: `Bearer ${apiKey}`,
+        };
+        const probe = await fetcher(modelsUrl, { headers, redirect: 'error', signal: AbortSignal.timeout(20000) });
         if (probe.ok) {
           const data = await probe.json();
           if (!Array.isArray(data?.data) && data?.object !== 'list') throw new Error('invalid');
         } else if (probe.status === 404 || probe.status === 405) {
           const chatUrl = rawBase.endsWith('/chat/completions') ? rawBase : `${rawBase}/chat/completions`;
-          const chatData = await getJson(chatUrl, {
+          const chatProbe = await fetcher(chatUrl, {
             method: 'POST',
             headers: { ...headers, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model, messages: [{ role: 'user', content: 'ping' }], max_tokens: 4, temperature: 0 }),
+            body: JSON.stringify({ model, messages: [{ role: 'user', content: 'ping' }], max_tokens: 32, temperature: 0 }),
+            redirect: 'error',
+            signal: AbortSignal.timeout(25000),
           });
+          if (!chatProbe.ok) throw new Error('upstream');
+          const chatData = await chatProbe.json();
           if (!Array.isArray(chatData?.choices)) throw new Error('invalid');
         } else {
           throw new Error('upstream');

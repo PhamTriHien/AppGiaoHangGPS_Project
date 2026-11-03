@@ -1,4 +1,4 @@
-import { assertSafeAiUrl, configValue, providerConfigured } from './integration-config.mjs';
+import { assertSafeAiUrl, configValue, normalizeAiApiKey, providerConfigured } from './integration-config.mjs';
 import { observeFetch } from './integration-monitor.mjs';
 import { IntegrationError } from './provider-http.mjs';
 
@@ -6,7 +6,7 @@ export { assertSafeAiUrl };
 
 export function resolveAiEndpoint(env = process.env, { allowLoopback = true } = {}) {
   const rawBase = configValue('GEMINI_BASE_URL', env);
-  const apiKey = configValue('GEMINI_API_KEY', env);
+  const apiKey = normalizeAiApiKey(configValue('GEMINI_API_KEY', env));
   const model = configValue('GEMINI_MODEL', env);
   const { parsed } = assertSafeAiUrl(rawBase, { allowLoopback });
   const cleanBase = rawBase.replace(/\/+$/, '');
@@ -24,7 +24,7 @@ export function resolveAiEndpoint(env = process.env, { allowLoopback = true } = 
   };
 }
 
-async function callAiJson(url, options, fetcher = fetch, timeoutMs = 25000) {
+async function callAiJson(url, options, fetcher = fetch, timeoutMs = 75000) {
   let response;
   try {
     response = await observeFetch('gemini', () =>
@@ -34,7 +34,10 @@ async function callAiJson(url, options, fetcher = fetch, timeoutMs = 25000) {
         signal: AbortSignal.timeout(timeoutMs),
       }),
     );
-  } catch {
+  } catch (error) {
+    if (error?.name === 'TimeoutError' || error?.name === 'AbortError') {
+      throw new IntegrationError(504, 'Dịch vụ AI phản hồi quá thời gian chờ. Vui lòng thử lại.');
+    }
     throw new IntegrationError(502, 'Không kết nối được dịch vụ AI.');
   }
   if (!response.ok) {
@@ -63,15 +66,34 @@ async function callAiJson(url, options, fetcher = fetch, timeoutMs = 25000) {
 }
 
 function extractOpenAiContent(result) {
-  const content = result?.choices?.[0]?.message?.content;
-  if (typeof content === 'string') return content.trim();
-  if (Array.isArray(content)) {
-    return content
-      .map(part => (typeof part?.text === 'string' ? part.text : ''))
-      .join('')
-      .trim();
+  const choice = result?.choices?.[0];
+  const message = choice?.message;
+  const completionTokens = Number(result?.usage?.completion_tokens || 0);
+  const reasoningTokens = Number(result?.usage?.completion_tokens_details?.reasoning_tokens || 0);
+  if (
+    choice?.finish_reason === 'length' &&
+    reasoningTokens > 0 &&
+    completionTokens > 0 &&
+    reasoningTokens >= completionTokens - 2 &&
+    !message?.reasoning_content
+  ) {
+    return { text: '', truncatedInReasoning: true };
   }
-  return '';
+  const content = message?.content;
+  let raw = '';
+  if (typeof content === 'string') {
+    raw = content;
+  } else if (Array.isArray(content)) {
+    raw = content.map(part => (typeof part?.text === 'string' ? part.text : '')).join('');
+  }
+  const cleaned = raw
+    .replace(/<think>[\s\S]*?<\/think>/gi, '')
+    .replace(/<think>[\s\S]*$/i, '')
+    .trim();
+  return {
+    text: cleaned,
+    truncatedInReasoning: !cleaned && choice?.finish_reason === 'length' && Boolean(message?.reasoning_content || reasoningTokens > 0),
+  };
 }
 
 export async function generateAiReply({
@@ -79,7 +101,7 @@ export async function generateAiReply({
   fetcher = fetch,
   systemPrompt,
   messages,
-  maxOutputTokens = 700,
+  maxOutputTokens = 2048,
   temperature = 0.25,
 }) {
   const allowLoopback = env.RENDER !== 'true' && !env.RAILWAY_ENVIRONMENT;
@@ -129,7 +151,9 @@ export async function generateAiReply({
     {
       method: 'POST',
       headers: {
+        Accept: 'application/json',
         'Content-Type': 'application/json',
+        'User-Agent': 'GHSTExpress/1.0',
         Authorization: `Bearer ${endpoint.apiKey}`,
       },
       body: JSON.stringify({
@@ -147,8 +171,16 @@ export async function generateAiReply({
     },
     fetcher,
   );
-  const text = extractOpenAiContent(result);
-  if (!text) throw new IntegrationError(502, 'AI chưa trả về nội dung phản hồi.');
+  const { text, truncatedInReasoning } = extractOpenAiContent(result);
+  if (!text) {
+    if (truncatedInReasoning) {
+      throw new IntegrationError(
+        502,
+        'Câu trả lời quá dài khiến AI chưa kịp hoàn tất phản hồi. Vui lòng hỏi ngắn gọn hơn hoặc thử lại.',
+      );
+    }
+    throw new IntegrationError(502, 'AI chưa trả về nội dung phản hồi.');
+  }
   return text.slice(0, 6000);
 }
 
@@ -295,7 +327,7 @@ export function createCustomerAiChatHandler({
       fetcher,
       systemPrompt: buildCustomerSystemPrompt(snapshot),
       messages,
-      maxOutputTokens: 700,
+      maxOutputTokens: 2048,
       temperature: 0.3,
     });
     res.json({ reply, model: configValue('GEMINI_MODEL', env) });

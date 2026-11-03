@@ -382,9 +382,80 @@ test('Customer AI chatbot uses backend API URL and API key for OpenAI-compatible
   assert.equal(JSON.stringify(chatBody).includes('sk-backend-secret-key'), false);
   assert.equal(capturedAiRequest.headers.Authorization, 'Bearer sk-backend-secret-key');
   assert.equal(capturedAiRequest.body.model, 'gpt-4o-mini');
+  assert.equal(capturedAiRequest.body.max_tokens, 2048);
   assert.match(capturedAiRequest.body.messages[0].content, /CL-AI-001/);
   assert.equal(capturedAiRequest.body.messages[0].content.includes('999999'), false);
 
+  await updateIntegrationConfig({
+    GEMINI_BASE_URL: 'https://gate.joingonka.ai/v1/chat/completions',
+    GEMINI_API_KEY: '"Ủy quyền: Người mang jg-normalized-test-key"',
+    GEMINI_MODEL: 'zai-org/GLM-5.3-Flash',
+    GEMINI_ENABLED: 'true',
+  }, { env, actor: 'operator-1' });
+  assert.equal(env.GEMINI_API_KEY, 'jg-normalized-test-key');
+
+  let gonkaMode = 'clean';
+  const gonkaFetcher = async (url, options = {}) => {
+    const u = new URL(String(url));
+    if (u.hostname === 'own.supabase.co') return fetcher(url, options);
+    if (u.hostname === 'gate.joingonka.ai' && u.pathname === '/v1/models') {
+      assert.equal(options.headers.Authorization, 'Bearer jg-normalized-test-key');
+      return json({ object: 'list', data: [{ id: 'zai-org/GLM-5.3-Flash' }] });
+    }
+    if (u.hostname === 'gate.joingonka.ai' && u.pathname === '/v1/chat/completions') {
+      assert.equal(options.headers.Authorization, 'Bearer jg-normalized-test-key');
+      assert.equal(JSON.parse(options.body).max_tokens, 2048);
+      if (gonkaMode === 'timeout') {
+        const err = new Error('The operation was aborted due to timeout');
+        err.name = 'TimeoutError';
+        throw err;
+      }
+      if (gonkaMode === 'exhausted') {
+        return json({
+          choices: [{ finish_reason: 'length', message: { role: 'assistant', content: 'The user is asking in Vietnamese...' } }],
+          usage: { completion_tokens: 2048, completion_tokens_details: { reasoning_tokens: 2048 } },
+        });
+      }
+      return json({
+        choices: [{
+          finish_reason: 'stop',
+          message: {
+            role: 'assistant',
+            reasoning_content: 'Internal reasoning',
+            content: '<think>Internal thought</think>\nXin chào! Tôi có thể hỗ trợ tra cứu đơn hàng GHST.',
+          },
+        }],
+        usage: { completion_tokens: 420, completion_tokens_details: { reasoning_tokens: 300 } },
+      });
+    }
+    throw new Error(`Unexpected URL: ${url}`);
+  };
+  assert.equal((await testIntegration('gemini', { env, fetcher: gonkaFetcher })).ok, true);
+  const gonkaRouter = express.Router();
+  gonkaRouter.use('/cloud', createCloudOrders({ env, authenticate: (req, _res, next) => { req.deliveryIdentity = currentIdentity; next(); }, fetcher: gonkaFetcher }));
+  const gonkaApp = await appFor(t, gonkaRouter);
+  const gonkaChat = await gonkaApp.post('/cloud/ai-chat', {
+    messages: [{ role: 'user', content: 'Bạn làm được gì?' }],
+  });
+  assert.equal(gonkaChat.status, 200);
+  const gonkaBody = await gonkaChat.json();
+  assert.equal(gonkaBody.reply, 'Xin chào! Tôi có thể hỗ trợ tra cứu đơn hàng GHST.');
+  assert.equal(gonkaBody.reply.includes('Internal'), false);
+
+  gonkaMode = 'exhausted';
+  const exhaustedRes = await gonkaApp.post('/cloud/ai-chat', {
+    messages: [{ role: 'user', content: 'Câu hỏi rất dài' }],
+  });
+  assert.equal(exhaustedRes.status, 502);
+  assert.equal((await exhaustedRes.json()).error.includes('The user is asking'), false);
+
+  gonkaMode = 'timeout';
+  const timeoutRes = await gonkaApp.post('/cloud/ai-chat', {
+    messages: [{ role: 'user', content: 'Kiểm tra timeout' }],
+  });
+  assert.equal(timeoutRes.status, 504);
+
+  env.GEMINI_API_KEY = 'sk-backend-secret-key';
   env.GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta';
   env.GEMINI_MODEL = 'gemini-2.5-flash';
   const geminiRes = await app.post('/ai/chat', {
