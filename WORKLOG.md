@@ -1,5 +1,20 @@
 # Current Handoff
 
+## Git Mainline Deploy (`ebe6596`), Multi-Instance Desktop Session Slots (`--session-slot`) & Live Dual-Window Customer ↔ Driver UI E2E Acceptance - 2026-11-03
+
+- Completed mainline Git deployment, isolated desktop multi-instance support, and live UI-driven two-role (Customer ↔ Driver) end-to-end verification on Windows Desktop against hosted Cloud PostgreSQL & Render Gateway:
+  1. **Multi-Instance Desktop Session Isolation & Window Placement**:
+     - Added `gps_delivery_app/lib/core/config/session_slot_storage.dart`, `session_slot_storage_stub.dart`, and `session_slot_storage_io.dart` (`LocalStorage` + `GotrueAsyncStorage` persisted per slot under `%LOCALAPPDATA%\GHST\sessions\<slot>.json`), wired through `gps_delivery_app/lib/main.dart` (`--session-slot=<slot>`, skipping shared SQLite lock acquisition on secondary slots while keeping primary instance behavior intact).
+     - Extended `gps_delivery_app/windows/runner/main.cpp` to accept optional `--window-title=<title>` and `--window-bounds=<x>,<y>,<w>,<h>` for side-by-side desktop verification, and updated `.gitignore` (`*.url`).
+  2. **Git Deployment (`origin/main` + `origin/backend-admin`)**:
+     - Audited tracked/untracked diff for secrets (`0` credential leaks), committed and pushed `ebe6596` (`103` files) to `origin/main`, alongside live Render deployment `2fbc0a6` on `origin/backend-admin` (`https://ghst-backend-admin.onrender.com/health` `200`).
+  3. **Live Dual-Window Customer ↔ Driver UI E2E Test (`windows-mcp`, `SessionId: 1`)**:
+     - Launched two side-by-side native Windows Release instances on the active desktop (`1920x1080`, `localListeningPorts: 0`): `GHST - Khach Hang` (`0,0,960,1032`, verified Customer session) and `GHST - Tai Xe` (`960,0,960,1032`, `--session-slot=driver`, verified Driver Google OAuth PKCE session on `GHST DRIVER`).
+     - Controlled `GHST - Khach Hang` UI (`Tạo đơn hàng mới`): pinned pickup & dropoff on Google Map, verified live `RecipientTrustPanel` (`88/100`), enabled `Dùng Xu giảm cước phí đơn hàng` (`shipping_fee: 25,000 VND`, `coin_discount: -50 VND`, `payable_fee: 24,950 VND`), quoted, and created real Cloud order `CL-4BB4BF93B7A741BF83C15D50F947597B`.
+     - Controlled `GHST - Tai Xe` UI (`Sàn chuyến chờ nhận` -> `Chuyến giao của tôi`): refreshed queue (verifying pre-claim PII masking + intact `25,000 VND` driver tariff), clicked `Nhận chuyến`, verified instant Realtime update + unread badge + foreground alert on `GHST - Khach Hang`, stepped through `Đã đến lấy hàng` -> `Đã lấy hàng` -> `Giao thành công` -> `Đã giao`, and verified live `Đã giao` status across both windows plus native Windows 11 `Shell_NotifyIconW` toast notification and `5` unread Cloud notifications.
+- Checks run: `flutter analyze --no-pub` (`0` issues), `flutter test --no-pub test/clean_start_test.dart test/profile_push_shipping_coins_test.dart` (`8/8` passed), `flutter build windows --release --no-pub` (exit `0`), secret-pattern scan on staged diff (`0` leaks), and live dual-window `windows-mcp` UI E2E (`CL-4BB4BF93B7A741BF83C15D50F947597B` -> `Đã giao`).
+- Remaining limits & next step: Both `GHST - Khach Hang` and `GHST - Tai Xe` remain open side-by-side on the desktop for live inspection/demo; configure optional `PAYOS_*` / `GHN_*` / `FCM` credentials in `/#/admin` -> `Tích hợp` when ready and verify signed webhook settlement per `EXECUTION_CHECKLIST.md`.
+
 ## Cross-Platform Push & Unified Notification Center, Personal KYC Profile (`birth_date` & `citizen_id`), Shipping Fee Coin (`Xu`) Redemption/Accrual & Live Merchant Provisioning (`20261111_profile_push_shipping_coins`, workflow 17) - 2026-11-03
 
 - Completed four production business & infrastructure upgrades across Cloud PostgreSQL, Node Gateway, Web Admin (`origin/backend-admin`), Windows Desktop, and physical Android (`scrcpy`):
