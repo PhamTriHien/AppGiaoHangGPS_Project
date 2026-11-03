@@ -2,11 +2,11 @@ import crypto from 'node:crypto';
 import { configValue, INTEGRATION_DEFINITIONS, providerConfigured } from './integration-config.mjs';
 import { createCommerceDatabase } from './commerce-db.mjs';
 
-export const COMMERCE_MIGRATION = '20261110_cloud_promo_events';
+export const COMMERCE_MIGRATION = '20261111_profile_push_shipping_coins';
 const revisionKey = crypto.randomBytes(32);
 export const databaseRevision = env => crypto.createHmac('sha256', revisionKey)
   .update(JSON.stringify([configValue('DATABASE_URL', env), configValue('DATABASE_CA_CERT', env)])).digest('hex');
-const migrations = ['20261027_delivery_integrations.sql', '20261028_cloud_orders.sql', '20261029_payments_ghn.sql', '20261029_cloud_addresses.sql', '20261030_marketplace.sql', '20261031_market_operations.sql', '20261101_partner_memberships.sql', '20261102_local_address_import.sql', '20261103_catalog_stock_versions.sql', '20261104_market_media.sql', '20261105_market_browse.sql', '20261106_catalog_configuration.sql', '20261107_cloud_commercial_suite.sql', '20261108_cloud_logistics.sql', '20261109_admin_account_management.sql', '20261110_cloud_promo_events.sql'];
+const migrations = ['20261027_delivery_integrations.sql', '20261028_cloud_orders.sql', '20261029_payments_ghn.sql', '20261029_cloud_addresses.sql', '20261030_marketplace.sql', '20261031_market_operations.sql', '20261101_partner_memberships.sql', '20261102_local_address_import.sql', '20261103_catalog_stock_versions.sql', '20261104_market_media.sql', '20261105_market_browse.sql', '20261106_catalog_configuration.sql', '20261107_cloud_commercial_suite.sql', '20261108_cloud_logistics.sql', '20261109_admin_account_management.sql', '20261110_cloud_promo_events.sql', '20261111_profile_push_shipping_coins.sql'];
 
 // Catalog-only queries: never create users, orders, provider requests or payments.
 export const DEPLOYMENT_SCHEMA_SQL = `with commerce_tables as (
@@ -88,6 +88,24 @@ select
         or has_function_privilege(r.oid,to_regprocedure('public.delivery_market_operations_core(text,jsonb)'),'EXECUTE'))
     and not has_function_privilege((select oid from pg_roles where rolname='anon'),
       to_regprocedure('public.delivery_cloud_promo_events(text,jsonb)'),'EXECUTE') as promo_events_schema,
+  to_regprocedure('public.delivery_cloud_notifications(text,jsonb)') is not null
+    and to_regprocedure('public.delivery_emit_notification(uuid,text,text,text,text,text,uuid,jsonb)') is not null
+    and (select count(*)=2 from information_schema.columns where table_schema='public'
+      and table_name='delivery_cloud_accounts' and column_name in ('birth_date','citizen_id'))
+    and (select count(*)=2 from information_schema.columns where table_schema='public'
+      and table_name='delivery_cloud_orders' and column_name in ('coin_discount','payable_fee'))
+    and (select count(*)=2 and bool_and(c.relrowsecurity) from pg_class c where c.oid in (
+      to_regclass('public.delivery_user_notifications'),
+      to_regclass('public.delivery_notification_preferences')))
+    and not exists(select 1 from unnest(array[
+        'delivery_user_notifications','delivery_notification_preferences']) n
+      cross join (select oid from pg_roles where rolname in ('anon','authenticated')) r
+      cross join unnest(array['SELECT','INSERT','UPDATE','DELETE']) p(privilege)
+      where coalesce(has_table_privilege(r.oid,to_regclass('public.'||n),p.privilege),false))
+    and not exists(select 1 from (select oid from pg_roles where rolname in ('anon','authenticated')) r
+      where has_function_privilege(r.oid,to_regprocedure('public.delivery_emit_notification(uuid,text,text,text,text,text,uuid,jsonb)'),'EXECUTE'))
+    and not has_function_privilege((select oid from pg_roles where rolname='anon'),
+      to_regprocedure('public.delivery_cloud_notifications(text,jsonb)'),'EXECUTE') as profile_push_coins_schema,
   to_regprocedure('public.delivery_market_selection(uuid,jsonb)') is not null
     and to_regprocedure('public.delivery_market_configured_cart()') is not null
     and (select count(*)=4 from information_schema.columns where table_schema='public'
@@ -209,6 +227,8 @@ export function createDeploymentReadiness({ env = process.env, database = create
       schema?.admin_accounts_schema ? 'Đã có quản trị danh tính Auth, cấp quyền đối tác trực tiếp, bảo vệ tự khóa Operator và nhật ký kiểm toán.' : 'Cần migration 20261109_admin_account_management.sql.');
     add('promo_events_schema','Sự kiện Vòng xoay, Hộp mù & Voucher cá nhân',schema ? schema.promo_events_schema ? 'ok' : 'missing' : 'unchecked',
       schema?.promo_events_schema ? 'Đã có vòng xoay, hộp mù, điểm danh, nhiệm vụ đơn thật và voucher cá nhân đồng bộ tại server.' : 'Cần migration 20261110_cloud_promo_events.sql.');
+    add('profile_push_coins_schema','Định danh CCCD, Trung tâm Thông báo & Xu cước vận chuyển',schema ? schema.profile_push_coins_schema ? 'ok' : 'missing' : 'unchecked',
+      schema?.profile_push_coins_schema ? 'Đã đồng bộ ngày sinh, CCCD định danh 12 số, hộp thư thông báo đẩy và giảm cước phí bằng Xu.' : 'Cần migration 20261111_profile_push_shipping_coins.sql.');
     const commerceSchema = schema?.commerce_schema && schema?.commerce_guard;
     add('address_schema','Sổ địa chỉ tài khoản',schema ? schema.address_schema ? 'ok' : 'missing' : 'unchecked',
       schema?.address_schema ? 'Đã có RPC và RLS sổ địa chỉ.' : 'Cần migration 20261029_cloud_addresses.sql.');

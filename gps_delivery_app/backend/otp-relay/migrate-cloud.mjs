@@ -32,6 +32,7 @@ export async function migrateCloud({ env = process.env } = {}) {
     await client.query(await readFile(new URL('../../database/migrations/20261108_cloud_logistics.sql', import.meta.url), 'utf8'));
     await client.query(await readFile(new URL('../../database/migrations/20261109_admin_account_management.sql', import.meta.url), 'utf8'));
     await client.query(await readFile(new URL('../../database/migrations/20261110_cloud_promo_events.sql', import.meta.url), 'utf8'));
+    await client.query(await readFile(new URL('../../database/migrations/20261111_profile_push_shipping_coins.sql', import.meta.url), 'utf8'));
     const result = await client.query("select to_regprocedure('public.delivery_cloud_create(jsonb,uuid,integer,integer)') is not null and to_regprocedure('public.delivery_cloud_addresses_manage(uuid,jsonb,boolean,integer)') is not null and to_regprocedure('public.delivery_marketplace(text,jsonb)') is not null as ready");
     const operations = await client.query("select to_regprocedure('public.delivery_market_operations(text,jsonb)') is not null and to_regprocedure('public.delivery_market_run_jobs(integer)') is not null as ready");
     const memberships = await client.query("select to_regprocedure('public.delivery_cloud_membership(text,text,uuid,integer,text)') is not null as ready");
@@ -39,8 +40,9 @@ export async function migrateCloud({ env = process.env } = {}) {
     const logistics = await client.query("select to_regprocedure('public.delivery_cloud_logistics(text,jsonb)') is not null as ready");
     const adminAccounts = await client.query("select to_regprocedure('public.delivery_cloud_admin_accounts(text,jsonb)') is not null as ready");
     const promoEvents = await client.query("select to_regprocedure('public.delivery_cloud_promo_events(text,jsonb)') is not null as ready");
-    return { ready: result.rows[0].ready && operations.rows[0].ready && memberships.rows[0].ready && commercial.rows[0].ready && logistics.rows[0].ready && adminAccounts.rows[0].ready && promoEvents.rows[0].ready,
-      migration: '20261110_cloud_promo_events', workflowVersion: 16 };
+    const profilePushCoins = await client.query("select to_regprocedure('public.delivery_cloud_notifications(text,jsonb)') is not null and exists(select 1 from information_schema.columns where table_schema='public' and table_name='delivery_cloud_accounts' and column_name='citizen_id') and exists(select 1 from information_schema.columns where table_schema='public' and table_name='delivery_cloud_orders' and column_name='payable_fee') as ready");
+    return { ready: result.rows[0].ready && operations.rows[0].ready && memberships.rows[0].ready && commercial.rows[0].ready && logistics.rows[0].ready && adminAccounts.rows[0].ready && promoEvents.rows[0].ready && profilePushCoins.rows[0].ready,
+      migration: '20261111_profile_push_shipping_coins', workflowVersion: 17 };
   } finally { await client.end(); }
 }
 

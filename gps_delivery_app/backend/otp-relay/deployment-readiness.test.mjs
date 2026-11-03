@@ -4,7 +4,7 @@ import express from 'express';
 import { createDeploymentReadiness, publicBackendUrl, COMMERCE_MIGRATION, databaseRevision } from './deployment-readiness.mjs';
 import { createDeliveryIntegrations } from './delivery-integrations.mjs';
 
-const validSchema={cloud_schema:true,commerce_schema:true,commerce_guard:true,commerce_permissions:true,commerce_privacy:true,address_schema:true,marketplace_schema:true,operations_schema:true,membership_schema:true,import_schema:true,stock_terms_schema:true,market_media_schema:true,browse_schema:true,configuration_schema:true,commercial_suite_schema:true,logistics_schema:true,admin_accounts_schema:true,promo_events_schema:true};
+const validSchema={cloud_schema:true,commerce_schema:true,commerce_guard:true,commerce_permissions:true,commerce_privacy:true,address_schema:true,marketplace_schema:true,operations_schema:true,membership_schema:true,import_schema:true,stock_terms_schema:true,market_media_schema:true,browse_schema:true,configuration_schema:true,commercial_suite_schema:true,logistics_schema:true,admin_accounts_schema:true,promo_events_schema:true,profile_push_coins_schema:true};
 const configuration=()=>({DATABASE_URL:'postgresql://postgres:private-db-password@db.example/postgres',
   SUPABASE_URL:'https://project.supabase.co',SUPABASE_ANON_KEY:'public-key',PUBLIC_BASE_URL:'https://api.example/prefix/',MARKET_JOBS_ENABLED:'true',
   PAYOS_ENABLED:'true',PAYOS_CLIENT_ID:'client',PAYOS_API_KEY:'private-payos',PAYOS_CHECKSUM_KEY:'private-checksum',
