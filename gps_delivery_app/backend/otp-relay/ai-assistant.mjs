@@ -330,6 +330,6 @@ export function createCustomerAiChatHandler({
       maxOutputTokens: 2048,
       temperature: 0.3,
     });
-    res.json({ reply, model: configValue('GEMINI_MODEL', env) });
+    res.json({ reply });
   };
 }

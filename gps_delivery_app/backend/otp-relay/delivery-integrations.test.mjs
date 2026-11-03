@@ -378,7 +378,7 @@ test('Customer AI chatbot uses backend API URL and API key for OpenAI-compatible
   assert.equal(chatRes.status, 200);
   const chatBody = await chatRes.json();
   assert.match(chatBody.reply, /CL-AI-001/);
-  assert.equal(chatBody.model, 'gpt-4o-mini');
+  assert.equal(chatBody.model, undefined);
   assert.equal(JSON.stringify(chatBody).includes('sk-backend-secret-key'), false);
   assert.equal(capturedAiRequest.headers.Authorization, 'Bearer sk-backend-secret-key');
   assert.equal(capturedAiRequest.body.model, 'gpt-4o-mini');
