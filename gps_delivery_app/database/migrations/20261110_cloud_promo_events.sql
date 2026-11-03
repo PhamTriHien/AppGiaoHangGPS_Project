@@ -9,7 +9,8 @@ alter table public.delivery_market_coin_ledger
   add constraint delivery_market_coin_ledger_kind_check
   check(kind in (
     'earn_settlement','redeem_checkout','release_cancel','reverse_refund',
-    'promo_checkin','promo_spin','promo_blind_box','promo_mission','promo_exchange'
+    'promo_checkin','promo_spin','promo_blind_box','promo_mission','promo_exchange',
+    'redeem_shipping','release_shipping_cancel','earn_shipping'
   ));
 
 alter table public.delivery_market_vouchers

@@ -79,3 +79,54 @@ test('Cloud admin PostgreSQL settings are validated, masked and survive restart'
   await updateIntegrationConfig({}, {clear:['DATABASE_URL'],env,actor:'cloud-operator'});
   assert.equal(env.DATABASE_URL,'');
 });
+
+test('payOS connectivity check verifies credentials, auto-registers public HTTPS webhook and normalizes whitespace/quotes', async t => {
+  const env = await temporary(t);
+  await updateIntegrationConfig({
+    PUBLIC_BASE_URL: 'https://ghst-backend-admin.onrender.com',
+    PAYOS_ENABLED: 'true',
+    PAYOS_CLIENT_ID: ' "client-id-123" ',
+    PAYOS_API_KEY: ' "api-key-secret-456" ',
+    PAYOS_CHECKSUM_KEY: ' "checksum-secret-789" ',
+  }, { env, actor: 'cloud-operator' });
+  assert.equal(env.PAYOS_CLIENT_ID, 'client-id-123');
+  assert.equal(env.PAYOS_API_KEY, 'api-key-secret-456');
+  assert.equal(env.PAYOS_CHECKSUM_KEY, 'checksum-secret-789');
+
+  const calls = [];
+  const okResult = await testIntegration('payos', {
+    env,
+    fetcher: async (url, options) => {
+      calls.push({ url: String(url), options });
+      return new Response(JSON.stringify({ code: '00', desc: 'success', data: {} }), { status: 200 });
+    },
+  });
+  assert.equal(okResult.ok, true);
+  assert.equal(okResult.verified, true);
+  assert.equal(calls.at(-1).url, 'https://api-merchant.payos.vn/confirm-webhook');
+  assert.deepEqual(JSON.parse(calls.at(-1).options.body), {
+    webhookUrl: 'https://ghst-backend-admin.onrender.com/delivery/payments/webhook',
+  });
+  assert.equal(calls.at(-1).options.headers['x-client-id'], 'client-id-123');
+  assert.equal(calls.at(-1).options.headers['x-api-key'], 'api-key-secret-456');
+
+  const invalidKeyResult = await testIntegration('payos', {
+    env,
+    fetcher: async () => new Response(JSON.stringify({ code: '214', desc: 'Cổng thanh toán không tồn tại', data: null }), { status: 200 }),
+  });
+  assert.equal(invalidKeyResult.ok, false);
+  assert.equal(invalidKeyResult.verified, false);
+  assert.equal(JSON.stringify(invalidKeyResult).includes('api-key-secret-456'), false);
+
+  await updateIntegrationConfig({ PUBLIC_BASE_URL: 'http://127.0.0.1:8787' }, { env, actor: 'cloud-operator' });
+  const localResult = await testIntegration('payos', {
+    env,
+    fetcher: async url => {
+      calls.push({ url: String(url) });
+      return new Response(JSON.stringify({ code: '101', desc: 'Not found', data: null }), { status: 200 });
+    },
+  });
+  assert.equal(localResult.ok, true);
+  assert.equal(localResult.verified, false);
+  assert.equal(calls.at(-1).url, 'https://api-merchant.payos.vn/v2/payment-requests/0');
+});

@@ -227,4 +227,29 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     },
   );
+
+  testWidgets(
+    'Pending payOS dialog renders provider order code and auto-refreshes on app resume',
+    (tester) async {
+      final api = CommerceFixture()
+        ..record = {
+          'status': 'PENDING',
+          'amount': 24950,
+          'provider_order_code': 90012345,
+          'checkout_url': 'https://pay.payos.vn/web/live-test',
+        };
+      addTearDown(api.changes.close);
+      await open(tester, api);
+      expect(find.text('Mã giao dịch payOS: 90012345'), findsOneWidget);
+      expect(find.text('Kiểm tra thanh toán'), findsOneWidget);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+
+      expect(api.calls.last['path'], 'orders/order-one/payment/refresh');
+      expect(find.text('Đã thanh toán'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
 }

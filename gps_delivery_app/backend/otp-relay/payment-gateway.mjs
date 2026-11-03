@@ -1,7 +1,7 @@
 import express from 'express';
 import { PayOS } from '@payos/node';
 import { IntegrationError } from './provider-http.mjs';
-import { configValue, providerConfigured } from './integration-config.mjs';
+import { configValue, normalizeCredentialToken, providerConfigured, publicBackendUrl } from './integration-config.mjs';
 import { createCommerceDatabase, cloudActor, ownedOrder, ownedPurchase } from './commerce-db.mjs';
 import { observeFetch } from './integration-monitor.mjs';
 
@@ -12,13 +12,33 @@ export const paymentDto = p => p ? {
   ...(p.purchase_id ? { purchase_id: p.purchase_id } : {}),
 } : null;
 
+export function resolvePayosRedirectUrl(key, env = process.env) {
+  const configured = configValue(key, env);
+  try {
+    const parsed = new URL(configured);
+    const host = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, '');
+    if (!['localhost', '127.0.0.1', '::1'].includes(host)) {
+      return parsed.href;
+    }
+  } catch {}
+  const publicOrigin =
+    publicBackendUrl(configValue('PUBLIC_APP_URL', env)) ??
+    publicBackendUrl(configValue('PUBLIC_BASE_URL', env));
+  if (publicOrigin) {
+    return `${publicOrigin.href}#/cloud`;
+  }
+  return configured;
+}
+
 const orderPayableFee = order => Number(
   order.payable_fee ?? Math.max(0, Number(order.shipping_fee) - Number(order.coin_discount || 0)),
 );
 
 export function createPaymentGateway({ env = process.env, authenticate,
   database = createCommerceDatabase(env), clientFactory = () => new PayOS({
-    clientId: env.PAYOS_CLIENT_ID, apiKey: env.PAYOS_API_KEY, checksumKey: env.PAYOS_CHECKSUM_KEY,
+    clientId: normalizeCredentialToken(env.PAYOS_CLIENT_ID),
+    apiKey: normalizeCredentialToken(env.PAYOS_API_KEY),
+    checksumKey: normalizeCredentialToken(env.PAYOS_CHECKSUM_KEY),
     baseURL: 'https://api-merchant.payos.vn', timeout: 10000, maxRetries: 0, logger: null,
     fetch: (url,options) => observeFetch('payos', () => fetch(url,{...options,redirect:'error'})),
   }),
@@ -26,7 +46,7 @@ export function createPaymentGateway({ env = process.env, authenticate,
   const router = express.Router();
   const route = fn => (req, res, next) => Promise.resolve(fn(req, res)).catch(next);
   const ready = (settlement = false) => {
-    const keysReady = ['PAYOS_CLIENT_ID','PAYOS_API_KEY','PAYOS_CHECKSUM_KEY'].every(key => env[key]?.trim());
+    const keysReady = ['PAYOS_CLIENT_ID','PAYOS_API_KEY','PAYOS_CHECKSUM_KEY'].every(key => normalizeCredentialToken(env[key]));
     if (!keysReady || (!settlement && !providerConfigured('payos', env))) throw new IntegrationError(503, 'payOS đang tắt hoặc chưa đủ cấu hình.');
     if (!env.DATABASE_URL) throw new IntegrationError(503, 'Cần DATABASE_URL backend và migration thanh toán.');
   };
@@ -45,8 +65,8 @@ export function createPaymentGateway({ env = process.env, authenticate,
     try {
       link = await payos.paymentRequests.create({
         orderCode: Number(reserved.provider_order_code), amount: reserved.amount,
-        description: `GHST ${reserved.provider_order_code}`, cancelUrl: configValue('PAYOS_CANCEL_URL', env),
-        returnUrl: configValue('PAYOS_RETURN_URL', env), expiredAt: Math.floor(new Date(reserved.expires_at).getTime() / 1000),
+        description: `GHST ${reserved.provider_order_code}`, cancelUrl: resolvePayosRedirectUrl('PAYOS_CANCEL_URL', env),
+        returnUrl: resolvePayosRedirectUrl('PAYOS_RETURN_URL', env), expiredAt: Math.floor(new Date(reserved.expires_at).getTime() / 1000),
       });
     } catch {
       try {

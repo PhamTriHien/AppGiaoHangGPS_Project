@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/config/env_config.dart';
 import '../../core/integrations/delivery_api_client.dart';
@@ -45,6 +46,23 @@ class _BackendIntegrationSettingsState
       port: backend.hasPort ? backend.port : null,
       path: backend.path,
     ).toString();
+  }
+
+  String get _payosWebhookUrl {
+    final configuredPublic =
+        _controllers['PUBLIC_BASE_URL']?.text.trim() ?? '';
+    final publicUri = Uri.tryParse(configuredPublic);
+    if (publicUri != null &&
+        (publicUri.scheme == 'https' || publicUri.scheme == 'http') &&
+        publicUri.host.isNotEmpty) {
+      final base = configuredPublic.replaceAll(RegExp(r'/+$'), '');
+      return base.endsWith('/delivery')
+          ? '$base/payments/webhook'
+          : '$base/delivery/payments/webhook';
+    }
+    final backend = _backendAddress;
+    if (backend.isEmpty) return '';
+    return '${backend.endsWith('/') ? backend : '$backend/'}payments/webhook';
   }
 
   bool get _localAuth =>
@@ -416,6 +434,81 @@ class _BackendIntegrationSettingsState
             subtitle: _providerStatusBadge(available, provider),
             children: [
               const Divider(height: 16, color: AdminStudioColors.line),
+              if (id == 'payos' && _payosWebhookUrl.isNotEmpty)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AdminStudioColors.paperWarm,
+                    border: Border.all(
+                      color: AdminStudioColors.ink,
+                      width: 1.2,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.webhook_outlined,
+                            size: 17,
+                            color: AdminStudioColors.ink,
+                          ),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Text(
+                              'WEBHOOK THANH TOÁN PAYOS',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 12.5,
+                                color: AdminStudioColors.ink,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: 'Sao chép Webhook payOS',
+                            visualDensity: VisualDensity.compact,
+                            onPressed: () {
+                              final webhook = _payosWebhookUrl;
+                              Clipboard.setData(ClipboardData(text: webhook));
+                              if (mounted) {
+                                setState(() {
+                                  _failed = false;
+                                  _message =
+                                      'Đã sao chép địa chỉ Webhook payOS.';
+                                });
+                              }
+                            },
+                            icon: const Icon(
+                              Icons.copy_rounded,
+                              size: 17,
+                              color: AdminStudioColors.ink,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SelectableText(
+                        _payosWebhookUrl,
+                        key: const ValueKey('payos-webhook-url'),
+                        style: const TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: AdminStudioColors.ink,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Nhập Client ID, API Key, Checksum Key rồi bấm Lưu và Kiểm tra kết nối để tự động xác thực và đăng ký Webhook này với payOS.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AdminStudioColors.muted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ...((provider['fields'] as List).cast<Map>()).map(
                 (field) => _field(field, available),
               ),

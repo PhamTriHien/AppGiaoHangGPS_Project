@@ -44,6 +44,7 @@ test('Cloud Promo Events enforces server-side check-in, spin wheel, blind box, m
     '20261110_cloud_promo_events.sql',
     '20261110_cloud_promo_events.sql',
     '20261111_profile_push_shipping_coins.sql',
+    '20261112_shipping_cash_settlement.sql',
   ];
   for (const file of files) {
     await db.exec(await readFile(new URL(`../../database/migrations/${file}`, import.meta.url), 'utf8'));

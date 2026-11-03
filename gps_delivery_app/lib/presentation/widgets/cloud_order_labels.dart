@@ -23,6 +23,7 @@ const cloudActions = {
   'complete_return': 'Đã trả hàng cho người gửi',
   'cancel': 'Hủy đơn',
   'instruction': 'Cập nhật chỉ dẫn giao hàng',
+  'collect_cash': 'Xác nhận thu tiền mặt',
 };
 
 const cloudPickupVehicles = {
@@ -67,3 +68,55 @@ String cloudDate(dynamic value) {
   if (date == null) return '';
   return '${date.day}/${date.month}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
 }
+
+int cloudOrderPayableFee(Map order) =>
+    ((order['payable_fee'] ?? order['shipping_fee']) as num? ?? 0).toInt();
+
+int cloudOrderPendingCashFee(Map order) {
+  if (order['fulfillment_provider'] != null) return 0;
+  if ((order['payment_status'] ?? 'UNPAID') != 'UNPAID') return 0;
+  if ((order['cash_collected_fee'] as num? ?? 0) > 0) return 0;
+  final payable = cloudOrderPayableFee(order);
+  if (payable <= 0) return 0;
+  final method =
+      '${(order['details'] as Map?)?['payment_method'] ?? 'sender_cash'}';
+  final status = '${order['status'] ?? ''}';
+  if (method == 'sender_cash' &&
+      const ['arrivingPickup', 'inTransit', 'delivered'].contains(status)) {
+    return payable;
+  }
+  if (method == 'recipient_cash' &&
+      const ['inTransit', 'delivered'].contains(status)) {
+    return payable;
+  }
+  return 0;
+}
+
+int cloudOrderPendingCashCod(Map order) {
+  if (order['fulfillment_provider'] != null) return 0;
+  if (order['payment_status'] == 'REVIEW') return 0;
+  final cod = (order['cod_amount'] as num? ?? 0).toInt();
+  final collected = (order['cash_collected_cod'] as num? ?? 0).toInt();
+  if (cod <= collected) return 0;
+  final status = '${order['status'] ?? ''}';
+  if (const ['inTransit', 'delivered'].contains(status)) {
+    return cod - collected;
+  }
+  return 0;
+}
+
+bool cloudOrderCanCollectCash(Map order) =>
+    order['fulfillment_provider'] == null &&
+    order['payment_status'] != 'REVIEW' &&
+    (cloudOrderPendingCashFee(order) > 0 ||
+        cloudOrderPendingCashCod(order) > 0);
+
+String cloudOrderPaymentLabel(Map order, {bool detailedReview = false}) =>
+    switch (order['payment_status']) {
+      'PAID' =>
+        (order['cash_collected_fee'] as num? ?? 0) > 0
+            ? 'Đã thu tiền mặt cước'
+            : 'Đã thanh toán cước',
+      'REVIEW' => detailedReview ? 'Cần đối soát cước' : 'Cần đối soát',
+      _ => 'Chưa ghi nhận thanh toán cước',
+    };

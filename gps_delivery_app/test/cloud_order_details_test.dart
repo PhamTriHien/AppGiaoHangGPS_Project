@@ -272,6 +272,7 @@ void main() {
         case 'block':
           api.blocked = true;
         case 'login':
+          api.identity = 'bob';
           api.changes.add(AuthState(AuthChangeEvent.signedIn, null));
       }
       await session.refresh();

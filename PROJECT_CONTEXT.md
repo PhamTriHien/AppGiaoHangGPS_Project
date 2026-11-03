@@ -192,7 +192,7 @@ All paths below are relative to this repository root.
   and schedule slots. Product uploads decode/re-encode to WebP, remove metadata
   and use scoped Supabase Storage inserts; private chat/return/finance attachments
   use the RLS-locked `'delivery-private-evidence'` bucket (`delivery_market_attachments`).
-  Target migration is `20261111_profile_push_shipping_coins`, workflow 17. Isolated tests
+  Target migration is `20261112_shipping_cash_settlement`, workflow 18 (`cash_collected_fee`, `cash_collected_cod`, `cash_collected_at`, `cash_collected_by` + `delivery_cloud_transition('collect_cash')` + `testIntegration('payos')` `/confirm-webhook` verification). Isolated tests
   do not certify deployed transactions.
   Quotes optionally bind the client's displayed cart/address versions and reject
   stale data; current Flutter sends both available versions. Confirmation renders

@@ -5,7 +5,7 @@ import { createHmac, randomUUID } from 'node:crypto';
 import { PGlite } from '@electric-sql/pglite';
 import { PayOS } from '@payos/node';
 import express from 'express';
-import { createPaymentGateway } from './payment-gateway.mjs';
+import { createPaymentGateway, resolvePayosRedirectUrl } from './payment-gateway.mjs';
 import { createGhnGateway } from './ghn-gateway.mjs';
 import { integrationUsage } from './integration-monitor.mjs';
 import { DEPLOYMENT_SCHEMA_SQL } from './deployment-readiness.mjs';
@@ -22,7 +22,7 @@ test('commerce uses durable PostgreSQL state, verified receipts and authoritativ
     create function storage.foldername(text) returns text[] language sql immutable as $$select (string_to_array($1,'/'))[1:array_length(string_to_array($1,'/'),1)-1]$$;
     grant usage on schema storage to authenticated; grant select,insert on storage.objects to authenticated;
     create publication supabase_realtime;`);
-  for (const file of ['20261027_delivery_integrations.sql','20261028_cloud_orders.sql','20261029_payments_ghn.sql','20261029_payments_ghn.sql','20261029_cloud_addresses.sql','20261030_marketplace.sql','20261031_market_operations.sql','20261101_partner_memberships.sql','20261102_local_address_import.sql','20261103_catalog_stock_versions.sql','20261104_market_media.sql','20261105_market_browse.sql','20261106_catalog_configuration.sql','20261107_cloud_commercial_suite.sql','20261108_cloud_logistics.sql','20261109_admin_account_management.sql','20261110_cloud_promo_events.sql','20261111_profile_push_shipping_coins.sql']) {
+  for (const file of ['20261027_delivery_integrations.sql','20261028_cloud_orders.sql','20261029_payments_ghn.sql','20261029_payments_ghn.sql','20261029_cloud_addresses.sql','20261030_marketplace.sql','20261031_market_operations.sql','20261101_partner_memberships.sql','20261102_local_address_import.sql','20261103_catalog_stock_versions.sql','20261104_market_media.sql','20261105_market_browse.sql','20261106_catalog_configuration.sql','20261107_cloud_commercial_suite.sql','20261108_cloud_logistics.sql','20261109_admin_account_management.sql','20261110_cloud_promo_events.sql','20261111_profile_push_shipping_coins.sql','20261112_shipping_cash_settlement.sql','20261112_shipping_cash_settlement.sql']) {
     await db.exec(await readFile(new URL(`../../database/migrations/${file}`,import.meta.url),'utf8'));
   }
   const ids = Object.fromEntries(['owner','outsider','operator','driver','blocked'].map(key=>[key,randomUUID()]));
@@ -219,7 +219,91 @@ test('commerce uses durable PostgreSQL state, verified receipts and authoritativ
     }
     const sql=await readFile(new URL('../../database/migrations/20261029_payments_ghn.sql',import.meta.url),'utf8');
     await db.exec(sql);
+    await db.exec(await readFile(new URL('../../database/migrations/20261112_shipping_cash_settlement.sql',import.meta.url),'utf8'));
     assert.ok((await db.query('select count(*)::int as n from delivery_payment_receipts')).rows[0].n>0);
+  });
+  await t.test('driver collect_cash settles shipping fee and COD atomically, blocks double collection & emits notifications',async()=>{
+    assert.equal(resolvePayosRedirectUrl('PAYOS_RETURN_URL', { PUBLIC_BASE_URL: 'https://ghst-backend-admin.onrender.com' }),
+      'https://ghst-backend-admin.onrender.com/#/cloud');
+    assert.equal(resolvePayosRedirectUrl('PAYOS_RETURN_URL', {
+      PUBLIC_BASE_URL: 'https://ghst-backend-admin.onrender.com',
+      PAYOS_RETURN_URL: 'https://app.example.com/#/done',
+    }), 'https://app.example.com/#/done');
+
+    await db.query("insert into delivery_cloud_memberships(user_id,role,state) values($1,'driver','active') on conflict(user_id,role) do update set state='active'",
+      [ids.driver]);
+
+    const asRole = async (userId, sql, args = []) => {
+      await db.exec('reset role');
+      await db.query("select set_config('request.jwt.claim.sub',$1,false)", [userId]);
+      await db.exec('set role authenticated');
+      try { return await db.query(sql, args); }
+      finally { await db.exec('reset role'); }
+    };
+    const transition = async (actorId, orderId, action, version, reason = '') =>
+      (await asRole(actorId, 'select public.delivery_cloud_transition($1,$2,$3,$4,$5) as data',
+        [orderId, action, version, randomUUID(), reason])).rows[0].data;
+
+    const createRealOrder = async (extraDetails = {}) => {
+      const payload = {
+        ...details,
+        pickup_lat: 10.77,
+        pickup_lng: 106.7,
+        dropoff_lat: 10.78,
+        dropoff_lng: 106.71,
+        service_type: 'standard',
+        cod_amount: 120000,
+        ...extraDetails,
+      };
+      const quote = (await asRole(ids.owner, 'select public.delivery_cloud_quote($1) as data', [payload])).rows[0].data;
+      return (await asRole(ids.owner, 'select public.delivery_cloud_create($1,$2,$3,$4) as data',
+        [payload, randomUUID(), quote.pricing_version, quote.payable_fee ?? quote.shipping_fee])).rows[0].data;
+    };
+
+    // 1. Online payOS order with COD: online payment emits payment_paid; driver collect_cash collects COD only, never double-collecting fee
+    const onlineCod = await createRealOrder({ cod_amount: 120000, payment_method: 'sender_cash' });
+    const p = (await request(payment(onlineCod), {})).body.payment;
+    await assert.rejects(transition(ids.driver, onlineCod.id, 'collect_cash', onlineCod.version), e => e.code === 'PT404' || e.code === 'PT403');
+    assert.equal((await request('/payments/webhook', receipt(p))).body.status, 'PAID');
+    const paidNotif = await db.query("select count(*)::int as n from delivery_user_notifications where user_id=$1 and kind='payment_paid' and reference_id=$2",
+      [ids.owner, onlineCod.id]);
+    assert.equal(paidNotif.rows[0].n, 1);
+
+    let claimed = await transition(ids.driver, onlineCod.id, 'claim', onlineCod.version);
+    claimed = await transition(ids.driver, onlineCod.id, 'arrive', claimed.version);
+    claimed = await transition(ids.driver, onlineCod.id, 'pickup', claimed.version);
+    await assert.rejects(db.query('update delivery_cloud_orders set cash_collected_fee=1000,cash_collected_at=now(),cash_collected_by=$1 where id=$2',
+      [ids.driver, onlineCod.id]), e => e.code === 'PT409');
+    claimed = await transition(ids.driver, onlineCod.id, 'collect_cash', claimed.version, 'Thu hộ tiền mặt COD');
+    assert.equal(claimed.cash_collected_fee, 0);
+    assert.equal(claimed.cash_collected_cod, 120000);
+    assert.equal(claimed.payment_status, 'PAID');
+    claimed = await transition(ids.driver, onlineCod.id, 'deliver', claimed.version);
+    assert.equal(claimed.status, 'delivered');
+
+    // 2. Pure cash order with coin discount (cod_amount = 50000): collect_cash settles payable_fee at arrivingPickup and COD at delivered
+    await db.query('insert into delivery_market_coin_wallets(user_id,balance) values($1,500) on conflict(user_id) do update set balance=500', [ids.owner]);
+    const cashOrder = await createRealOrder({ cod_amount: 50000, payment_method: 'sender_cash', use_coins: true });
+    assert.ok(cashOrder.coin_discount > 0);
+    assert.equal(cashOrder.payable_fee, cashOrder.shipping_fee - cashOrder.coin_discount);
+    let step = await transition(ids.driver, cashOrder.id, 'claim', cashOrder.version);
+    await assert.rejects(transition(ids.owner, cashOrder.id, 'collect_cash', step.version), e => e.code === 'PT403');
+    await assert.rejects(transition(ids.driver, cashOrder.id, 'collect_cash', step.version), e => e.code === 'PT409');
+    step = await transition(ids.driver, cashOrder.id, 'arrive', step.version);
+    step = await transition(ids.driver, cashOrder.id, 'collect_cash', step.version);
+    assert.equal(step.cash_collected_fee, cashOrder.payable_fee);
+    assert.equal(step.cash_collected_cod, 0);
+    assert.equal(step.payment_status, 'PAID');
+    step = await transition(ids.driver, cashOrder.id, 'pickup', step.version);
+    step = await transition(ids.driver, cashOrder.id, 'deliver', step.version);
+    step = await transition(ids.driver, cashOrder.id, 'collect_cash', step.version);
+    assert.equal(step.cash_collected_fee, cashOrder.payable_fee);
+    assert.equal(step.cash_collected_cod, 50000);
+    await assert.rejects(transition(ids.driver, cashOrder.id, 'collect_cash', step.version), e => e.code === 'PT409');
+
+    const cashNotifs = await db.query("select count(*)::int as n from delivery_user_notifications where user_id=$1 and kind='cash_collected' and reference_id=$2",
+      [ids.owner, cashOrder.id]);
+    assert.equal(cashNotifs.rows[0].n, 2);
   });
   await t.test('Readiness catalog detects disabled guards, public data access and insufficient backend privileges',async()=>{
     await db.exec('alter table delivery_cloud_orders disable trigger delivery_commerce_guard');

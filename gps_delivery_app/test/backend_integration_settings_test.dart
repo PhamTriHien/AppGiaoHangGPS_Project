@@ -322,4 +322,91 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'payOS provider renders webhook URL derived from PUBLIC_BASE_URL without parentheses',
+    (tester) async {
+      EnvConfig.configureDeliveryApiRuntime(
+        baseUrl: 'https://ghst-backend-admin.onrender.com/delivery/',
+      );
+      final config = {
+        'local': false,
+        'storage': 'cloud_postgres',
+        'providers': {
+          'server': {
+            'label': 'Máy chủ backend',
+            'available': true,
+            'configured': true,
+            'enabled': true,
+            'fields': [
+              {
+                'key': 'PUBLIC_BASE_URL',
+                'label': 'Địa chỉ công khai backend',
+                'type': 'text',
+                'secret': false,
+                'configured': true,
+                'value': 'https://ghst-backend-admin.onrender.com',
+                'localOnly': false,
+              },
+            ],
+          },
+          'payos': {
+            'label': 'payOS thanh toán',
+            'available': false,
+            'configured': false,
+            'enabled': false,
+            'fields': [
+              {
+                'key': 'PAYOS_CLIENT_ID',
+                'label': 'Client ID',
+                'type': 'text',
+                'secret': true,
+                'configured': false,
+                'localOnly': false,
+              },
+              {
+                'key': 'PAYOS_API_KEY',
+                'label': 'API Key',
+                'type': 'text',
+                'secret': true,
+                'configured': false,
+                'localOnly': false,
+              },
+              {
+                'key': 'PAYOS_CHECKSUM_KEY',
+                'label': 'Checksum Key',
+                'type': 'text',
+                'secret': true,
+                'configured': false,
+                'localOnly': false,
+              },
+            ],
+          },
+        },
+      };
+      final api = BackendAdminFixture((_, _) => config);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: BackendIntegrationSettings(api: api),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Quản lý API backend'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('payOS thanh toán'));
+      await tester.pumpAndSettle();
+
+      final webhookFinder = find.byKey(const ValueKey('payos-webhook-url'));
+      expect(webhookFinder, findsOneWidget);
+      expect(
+        tester.widget<SelectableText>(webhookFinder).data,
+        'https://ghst-backend-admin.onrender.com/delivery/payments/webhook',
+      );
+      expect(find.byTooltip('Sao chép Webhook payOS'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

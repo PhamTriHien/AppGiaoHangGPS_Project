@@ -523,6 +523,48 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
       Future<void>.delayed(const Duration(seconds: 1), otpCtrl.dispose);
       if (otpResult == null || !mounted) return;
       reason = otpResult;
+    } else if (action == 'collect_cash') {
+      final feeDue = cloudOrderPendingCashFee(order);
+      final codDue = cloudOrderPendingCashCod(order);
+      final confirmed = await _privateDialog<bool>(
+        builder: (dialog) => AlertDialog(
+          title: const Text('Xác nhận thu tiền mặt'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Mã vận đơn: ${order['tracking_code']}'),
+              const SizedBox(height: 8),
+              if (feeDue > 0)
+                Text(
+                  'Cước vận chuyển thu tiền mặt: ${CurrencyFormatter.formatVnd(feeDue.toDouble())}',
+                ),
+              if (codDue > 0)
+                Text(
+                  'Tiền thu hộ COD: ${CurrencyFormatter.formatVnd(codDue.toDouble())}',
+                ),
+              if (feeDue > 0 && codDue > 0) ...[
+                const SizedBox(height: 6),
+                Text(
+                  'Tổng tiền mặt cần thu: ${CurrencyFormatter.formatVnd((feeDue + codDue).toDouble())}',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialog, false),
+              child: const Text('Quay lại'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialog, true),
+              child: const Text('Xác nhận đã thu'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
     } else if (action == 'deliver' || action == 'complete_return') {
       final confirmed = await _privateDialog<bool>(
         builder: (dialog) => AlertDialog(
@@ -717,6 +759,20 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
     final creator =
         order['owner_id'] == _api.userId || order['merchant_id'] == _api.userId;
     final carrier = order['fulfillment_provider'] == 'ghn';
+    final canOpenOnlinePayment =
+        !_queue &&
+        (creator || _operator) &&
+        (_operator ||
+            (!carrier &&
+                status == 'searching' &&
+                order['driver_id'] == null &&
+                (details['payment_method'] ?? 'sender_cash') == 'sender_cash' &&
+                (order['payment_status'] ?? 'UNPAID') == 'UNPAID') ||
+            (order['payment_status'] == 'PAID' &&
+                (order['cash_collected_fee'] as num? ?? 0) <= 0) ||
+            order['payment_status'] == 'REVIEW');
+    final codAmount = (order['cod_amount'] as num? ?? 0).toInt();
+    final codCollected = (order['cash_collected_cod'] as num? ?? 0).toInt();
     final actions = <String, String>{
       if (_queue && isDriver && !carrier) 'claim': 'Nhận chuyến',
       if (!_queue &&
@@ -729,6 +785,8 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
         if (status == 'accepted') 'arrive': 'Đã đến lấy hàng',
         if (status == 'arrivingPickup') 'pickup': 'Đã lấy hàng',
         if (status == 'inTransit') 'deliver': 'Giao thành công',
+        if ((_operator || isDriver) && cloudOrderCanCollectCash(order))
+          'collect_cash': 'Xác nhận thu tiền mặt',
         if (status == 'returning' && _schemaVersion >= 2)
           'complete_return': 'Đã trả hàng cho người gửi',
         if (status == 'inTransit') 'fail': 'Giao thất bại',
@@ -785,11 +843,7 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
             ),
           if (!_queue)
             Text(
-              '${details['payment_method'] == 'sender_cash' ? 'Người gửi trả phí' : 'Người nhận trả phí'} · ${order['payment_status'] == 'PAID'
-                  ? 'Đã thanh toán cước'
-                  : order['payment_status'] == 'REVIEW'
-                  ? 'Cần đối soát'
-                  : 'Chưa ghi nhận thanh toán cước'}',
+              '${details['payment_method'] == 'sender_cash' ? 'Người gửi trả phí' : 'Người nhận trả phí'} · ${cloudOrderPaymentLabel(order)}${codAmount > 0 && codCollected >= codAmount ? ' · Đã thu hộ COD' : ''}',
             ),
           if (carrier)
             Text(
@@ -811,7 +865,7 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
             spacing: 8,
             runSpacing: 8,
             children: [
-              if (!_queue && (creator || _operator))
+              if (canOpenOnlinePayment)
                 OutlinedButton.icon(
                   onPressed: _busy ? null : () => _commerce(order),
                   icon: const Icon(Icons.payment),

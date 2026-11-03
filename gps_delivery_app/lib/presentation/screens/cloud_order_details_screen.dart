@@ -133,11 +133,7 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
       : 'Chưa có thông tin';
   String get _status => cloudStatuses[_effectiveStatus] ?? 'Đang cập nhật';
 
-  String get _payment => switch (_order['payment_status']) {
-    'PAID' => 'Đã thanh toán cước',
-    'REVIEW' => 'Cần đối soát cước',
-    _ => 'Chưa ghi nhận thanh toán cước',
-  };
+  String get _payment => cloudOrderPaymentLabel(_order, detailedReview: true);
   String get _payer => switch (_details['payment_method']) {
     'sender_cash' => 'Người gửi trả phí',
     'recipient_cash' => 'Người nhận trả phí',
@@ -163,6 +159,12 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
     'Tiền thu hộ COD': _money(_order['cod_amount']),
     'Trả phí': _payer,
     'Thanh toán': _payment,
+    if ((_order['cash_collected_fee'] as num? ?? 0) > 0)
+      'Tiền mặt cước đã thu': _money(_order['cash_collected_fee']),
+    if ((_order['cash_collected_cod'] as num? ?? 0) > 0)
+      'Tiền mặt COD đã thu': _money(_order['cash_collected_cod']),
+    if (_order['cash_collected_at'] != null)
+      'Thời điểm thu tiền mặt': cloudDate(_order['cash_collected_at']),
   };
 
   Future<void> _copy({bool receipt = false}) async {
@@ -645,9 +647,21 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
                     const Divider(height: 32),
                     _section('Cước và thu hộ', {
                       'Cước vận chuyển': summary['Cước vận chuyển']!,
+                      if (summary.containsKey('Đổi Xu giảm cước'))
+                        'Đổi Xu giảm cước': summary['Đổi Xu giảm cước']!,
+                      if (summary.containsKey('Cước cần thanh toán'))
+                        'Cước cần thanh toán': summary['Cước cần thanh toán']!,
                       'Tiền thu hộ COD': summary['Tiền thu hộ COD']!,
                       'Trả phí': _payer,
                       'Thanh toán cước': _payment,
+                      if (summary.containsKey('Tiền mặt cước đã thu'))
+                        'Tiền mặt cước đã thu':
+                            summary['Tiền mặt cước đã thu']!,
+                      if (summary.containsKey('Tiền mặt COD đã thu'))
+                        'Tiền mặt COD đã thu': summary['Tiền mặt COD đã thu']!,
+                      if (summary.containsKey('Thời điểm thu tiền mặt'))
+                        'Thời điểm thu tiền mặt':
+                            summary['Thời điểm thu tiền mặt']!,
                     }),
                     if (_order['fulfillment_provider'] == 'ghn')
                       _section('Vận chuyển GHN', {

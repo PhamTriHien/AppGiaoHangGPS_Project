@@ -29,7 +29,8 @@ class CloudCommerceDialog extends StatefulWidget {
   State<CloudCommerceDialog> createState() => _CloudCommerceDialogState();
 }
 
-class _CloudCommerceDialogState extends State<CloudCommerceDialog> {
+class _CloudCommerceDialogState extends State<CloudCommerceDialog>
+    with WidgetsBindingObserver {
   final _fields = <String, TextEditingController>{};
   late final String _identity = widget.service.userId;
   late final String _scope = widget.service.identityScope;
@@ -53,6 +54,7 @@ class _CloudCommerceDialogState extends State<CloudCommerceDialog> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     final openingSession = widget.service.authSession;
     _auth = widget.service.authChanges.listen((event) {
       if (!_sameAccount ||
@@ -65,6 +67,18 @@ class _CloudCommerceDialogState extends State<CloudCommerceDialog> {
     });
     widget.lease?.addListener(_invalidate);
     _load();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed &&
+        mounted &&
+        _sameAccount &&
+        !_busy &&
+        !widget.shipment &&
+        _record?['status'] == 'PENDING') {
+      unawaited(_refresh());
+    }
   }
 
   void _invalidate() {
@@ -83,6 +97,7 @@ class _CloudCommerceDialogState extends State<CloudCommerceDialog> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _auth?.cancel();
     widget.lease?.removeListener(_invalidate);
     for (final controller in _fields.values) {
@@ -181,6 +196,9 @@ class _CloudCommerceDialogState extends State<CloudCommerceDialog> {
 
   Widget _payment() {
     final status = _record?['status'];
+    final cashCollectedFee =
+        !widget.purchase &&
+        ((widget.order['cash_collected_fee'] as num? ?? 0) > 0);
     final label =
         const {
           'CREATING': 'Đang xác minh liên kết',
@@ -190,7 +208,9 @@ class _CloudCommerceDialogState extends State<CloudCommerceDialog> {
           'CANCELLED': 'Đã hủy liên kết',
           'EXPIRED': 'Đã hết hạn',
         }[status] ??
-        'Chưa có liên kết thanh toán';
+        (cashCollectedFee
+            ? 'Đã thu tiền mặt cước'
+            : 'Chưa có liên kết thanh toán');
     final canCreate = widget.purchase
         ? _sameAccount &&
               _configured &&
@@ -207,6 +227,7 @@ class _CloudCommerceDialogState extends State<CloudCommerceDialog> {
               (widget.order['details'] as Map?)?['payment_method'] ==
                   'sender_cash' &&
               (widget.order['payment_status'] ?? 'UNPAID') == 'UNPAID' &&
+              !cashCollectedFee &&
               !['PENDING', 'PAID', 'REVIEW'].contains(status);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -229,6 +250,8 @@ class _CloudCommerceDialogState extends State<CloudCommerceDialog> {
         ],
         const SizedBox(height: 12),
         Text(label),
+        if (_record?['provider_order_code'] != null)
+          Text('Mã giao dịch payOS: ${_record!['provider_order_code']}'),
         if (_record?['expires_at'] != null)
           Text(
             'Hết hạn: ${DateTime.tryParse('${_record!['expires_at']}')?.toLocal() ?? _record!['expires_at']}',
@@ -279,6 +302,11 @@ class _CloudCommerceDialogState extends State<CloudCommerceDialog> {
                       },
                 icon: const Icon(Icons.open_in_new),
                 label: const Text('Mở thanh toán'),
+              ),
+              OutlinedButton.icon(
+                onPressed: _busy || !_sameAccount ? null : _refresh,
+                icon: const Icon(Icons.verified_outlined),
+                label: const Text('Kiểm tra thanh toán'),
               ),
               IconButton(
                 tooltip: 'Sao chép liên kết',

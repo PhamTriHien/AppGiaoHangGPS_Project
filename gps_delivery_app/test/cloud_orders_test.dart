@@ -112,6 +112,21 @@ class CloudFixture extends CloudOrdersService {
     }
     if (path == 'orders' && body != null) return {'order': order()};
     if (path.endsWith('/transition')) {
+      if (body?['action'] == 'collect_cash' && orders.isNotEmpty) {
+        final current = orders.first;
+        orders = [
+          {
+            ...current,
+            'version': (current['version'] as int? ?? 1) + 1,
+            'payment_status': 'PAID',
+            'cash_collected_fee':
+                current['payable_fee'] ?? current['shipping_fee'],
+            'cash_collected_cod': current['cod_amount'] ?? 0,
+            'cash_collected_at': '2026-11-03T14:25:00Z',
+          },
+        ];
+        return {'order': orders.first};
+      }
       final status =
           {
             'claim': 'accepted',
@@ -950,6 +965,90 @@ void main() {
       expect(quoteBody['dropoff_lat'], 10.795);
       expect(quoteBody['dropoff_lng'], 106.7218);
       await finish(tester, api);
+    },
+  );
+
+  testWidgets(
+    'Driver confirms cash shipping fee and COD collection while customer hides stale online pay button on delivered cash order',
+    (tester) async {
+      final driverId = '00000000-0000-0000-0000-000000000002';
+      final deliveredOrder = {
+        ...order(tracking: 'CL-CASH-SETTLE'),
+        'status': 'delivered',
+        'version': 5,
+        'driver_id': driverId,
+        'shipping_fee': 25000,
+        'coin_discount': 50,
+        'payable_fee': 24950,
+        'cod_amount': 100000,
+        'payment_status': 'UNPAID',
+        'cash_collected_fee': 0,
+        'cash_collected_cod': 0,
+      };
+      final driverApi = CloudFixture()
+        ..identity = driverId
+        ..role = 'driver'
+        ..orders = [deliveredOrder];
+
+      await tester.pumpWidget(
+        MaterialApp(home: CloudOrdersScreen(service: driverApi)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Xác nhận thu tiền mặt'), findsOneWidget);
+      expect(
+        find.text('Người gửi trả phí · Chưa ghi nhận thanh toán cước'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Xác nhận thu tiền mặt'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('Cước vận chuyển thu tiền mặt:'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('24.950'), findsWidgets);
+      expect(find.textContaining('Tiền thu hộ COD:'), findsOneWidget);
+      expect(find.textContaining('Tổng tiền mặt cần thu:'), findsOneWidget);
+
+      await tester.tap(find.text('Xác nhận đã thu'));
+      await tester.pumpAndSettle();
+
+      final transitionCall = driverApi.calls.firstWhere(
+        (c) => (c['path'] as String).endsWith('/transition'),
+      );
+      expect(transitionCall['body']['action'], 'collect_cash');
+      expect(transitionCall['body']['version'], 5);
+      expect(find.text('Xác nhận thu tiền mặt'), findsNothing);
+      expect(
+        find.text(
+          'Người gửi trả phí · Đã thu tiền mặt cước · Đã thu hộ COD',
+        ),
+        findsOneWidget,
+      );
+      await finish(tester, driverApi);
+
+      final customerApi = CloudFixture()
+        ..orders = [
+          {
+            ...deliveredOrder,
+            'payment_status': 'PAID',
+            'cash_collected_fee': 24950,
+            'cash_collected_cod': 100000,
+          },
+        ];
+      await tester.pumpWidget(
+        MaterialApp(home: CloudOrdersScreen(service: customerApi)),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Thanh toán cước'), findsNothing);
+      expect(
+        find.text(
+          'Người gửi trả phí · Đã thu tiền mặt cước · Đã thu hộ COD',
+        ),
+        findsOneWidget,
+      );
+      await finish(tester, customerApi);
     },
   );
 }
