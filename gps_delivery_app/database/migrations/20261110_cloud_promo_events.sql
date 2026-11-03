@@ -439,7 +439,7 @@ begin
     ),
     jsonb_build_object(
       'id', 'green_ev',
-      'title', 'Giao hàng xanh Xe điện (EV)',
+      'title', 'Giao hàng xanh Xe điện',
       'subtitle', 'Hoàn thành 1 chuyến có bật ưu tiên xe điện xanh',
       'progress', least(1, ev_done),
       'target', 1,
@@ -528,13 +528,13 @@ begin
     ),
     'wheel_segments', jsonb_build_array(
       jsonb_build_object('index', 0, 'label', '+50 Xu', 'subtitle', 'Cộng thẳng Ví Xu', 'rarity', 'Common'),
-      jsonb_build_object('index', 1, 'label', 'Voucher 15K', 'subtitle', 'Đơn từ 60.000đ (7 ngày)', 'rarity', 'Common'),
+      jsonb_build_object('index', 1, 'label', 'Voucher 15K', 'subtitle', 'Đơn từ 60.000đ · 7 ngày', 'rarity', 'Common'),
       jsonb_build_object('index', 2, 'label', '+1 Vé Hộp Mù', 'subtitle', 'Mở 1 Hộp Mù Bí Ẩn', 'rarity', 'Rare'),
       jsonb_build_object('index', 3, 'label', '+150 Xu', 'subtitle', 'Cộng thẳng Ví Xu', 'rarity', 'Rare'),
-      jsonb_build_object('index', 4, 'label', 'Voucher 25K', 'subtitle', 'Đơn từ 99.000đ (7 ngày)', 'rarity', 'Rare'),
+      jsonb_build_object('index', 4, 'label', 'Voucher 25K', 'subtitle', 'Đơn từ 99.000đ · 7 ngày', 'rarity', 'Rare'),
       jsonb_build_object('index', 5, 'label', '+30 Xu Lộc', 'subtitle', 'Xu may mắn mỗi lượt', 'rarity', 'Common'),
-      jsonb_build_object('index', 6, 'label', 'Giảm 50% (35K)', 'subtitle', 'Đơn từ 70.000đ (7 ngày)', 'rarity', 'Epic'),
-      jsonb_build_object('index', 7, 'label', 'Siêu Cấp 50K', 'subtitle', 'Đơn từ 150.000đ (7 ngày)', 'rarity', 'Legendary')
+      jsonb_build_object('index', 6, 'label', 'Giảm 50% · 35K', 'subtitle', 'Đơn từ 70.000đ · 7 ngày', 'rarity', 'Epic'),
+      jsonb_build_object('index', 7, 'label', 'Siêu Cấp 50K', 'subtitle', 'Đơn từ 150.000đ · 7 ngày', 'rarity', 'Legendary')
     ),
     'vouchers', coalesce((
       select jsonb_agg(jsonb_build_object(
@@ -917,10 +917,10 @@ begin
 
     if v_item = 'voucher_20k' then
       v_minted := public.delivery_promo_mint_voucher(uid, 'XU20K', 'Voucher Đổi Xu Giảm 20.000đ', 'fixed', 20000, 20000, 80000, 7);
-      v_summary := '-' || v_cost || ' Xu • Mã ' || v_minted.code || ' (đơn từ 80.000đ)';
+      v_summary := '-' || v_cost || ' Xu • Mã ' || v_minted.code || ' • Đơn từ 80.000đ';
     elsif v_item = 'voucher_40k' then
       v_minted := public.delivery_promo_mint_voucher(uid, 'XU40K', 'Voucher Đổi Xu Giảm 40.000đ', 'fixed', 40000, 40000, 150000, 7);
-      v_summary := '-' || v_cost || ' Xu • Mã ' || v_minted.code || ' (đơn từ 150.000đ)';
+      v_summary := '-' || v_cost || ' Xu • Mã ' || v_minted.code || ' • Đơn từ 150.000đ';
     else
       update public.delivery_promo_wallets set
         spin_tickets = spin_tickets + v_spins,
@@ -968,7 +968,7 @@ begin
       v_segment := 1; v_rarity := 'Common';
       v_minted := public.delivery_promo_mint_voucher(uid, 'SPIN15', 'Vòng Xoay Giảm 15.000đ', 'fixed', 15000, 15000, 60000, 7);
       v_title := 'Trúng Voucher 15.000đ';
-      v_summary := 'Mã cá nhân ' || v_minted.code || ' • Đơn từ 60.000đ (7 ngày).';
+      v_summary := 'Mã cá nhân ' || v_minted.code || ' • Đơn từ 60.000đ · 7 ngày.';
     elsif v_roll < 60 then
       v_segment := 2; v_boxes := 1; v_rarity := 'Rare';
       v_title := 'Trúng +1 Vé Hộp Mù Bí Ẩn';
@@ -981,14 +981,14 @@ begin
       v_segment := 4; v_rarity := 'Rare';
       v_minted := public.delivery_promo_mint_voucher(uid, 'SPIN25', 'Vòng Xoay Giảm 25.000đ', 'fixed', 25000, 25000, 99000, 7);
       v_title := 'Trúng Voucher 25.000đ';
-      v_summary := 'Mã cá nhân ' || v_minted.code || ' • Đơn từ 99.000đ (7 ngày).';
+      v_summary := 'Mã cá nhân ' || v_minted.code || ' • Đơn từ 99.000đ · 7 ngày.';
     elsif v_roll < 93 then
       v_segment := 5; v_coins := 30; v_rarity := 'Common';
       v_title := 'Lộc May Mắn +30 Xu';
       v_summary := 'Đã cộng +30 Xu lộc may mắn vào Ví Xu.';
     elsif v_roll < 98 then
       v_segment := 6; v_rarity := 'Epic';
-      v_minted := public.delivery_promo_mint_voucher(uid, 'SPIN50P', 'Vòng Xoay Giảm 50% (Tối đa 35K)', 'percent', 50, 35000, 70000, 7);
+      v_minted := public.delivery_promo_mint_voucher(uid, 'SPIN50P', 'Vòng Xoay Giảm 50% tối đa 35K', 'percent', 50, 35000, 70000, 7);
       v_title := 'Trúng Deal Epic Giảm 50%';
       v_summary := 'Mã cá nhân ' || v_minted.code || ' • Giảm 50% tối đa 35.000đ, đơn từ 70.000đ.';
     else
@@ -1066,7 +1066,7 @@ begin
       v_rarity := 'R';
       v_minted := public.delivery_promo_mint_voucher(uid, 'BOX20K', 'Hộp Mù Giảm 20.000đ', 'fixed', 20000, 20000, 80000, 7);
       v_title := 'Hộp Mù [R]: Voucher 20.000đ';
-      v_summary := 'Mã cá nhân ' || v_minted.code || ' • Đơn từ 80.000đ (7 ngày).';
+      v_summary := 'Mã cá nhân ' || v_minted.code || ' • Đơn từ 80.000đ · 7 ngày.';
     elsif v_roll < 78 then
       v_rarity := 'SR'; v_coins := 60; v_spins := 1;
       v_title := 'Hộp Mù [SR]: +1 Vé Quay & +60 Xu';
@@ -1075,7 +1075,7 @@ begin
       v_rarity := 'SR';
       v_minted := public.delivery_promo_mint_voucher(uid, 'BOX35K', 'Hộp Mù SR Giảm 35.000đ', 'fixed', 35000, 35000, 120000, 7);
       v_title := 'Hộp Mù [SR]: Voucher 35.000đ';
-      v_summary := 'Mã cá nhân ' || v_minted.code || ' • Đơn từ 120.000đ (7 ngày).';
+      v_summary := 'Mã cá nhân ' || v_minted.code || ' • Đơn từ 120.000đ · 7 ngày.';
     elsif v_roll < 98 then
       v_rarity := 'SSR'; v_coins := 300;
       v_title := 'Hộp Mù [SSR]: Kho Báu +300 Xu!';

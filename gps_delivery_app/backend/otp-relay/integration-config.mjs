@@ -21,11 +21,11 @@ const url = (label, defaultValue = '') => field(label, { type: 'url', defaultVal
 
 export const INTEGRATION_DEFINITIONS = {
   backend: { label: 'Triển khai backend', required: ['DATABASE_URL'], fields: {
-    DATABASE_URL: secret('Kết nối PostgreSQL (DATABASE_URL)'),
-    DATABASE_CA_CERT: field('Chung chi CA PostgreSQL (PEM)', { type: 'certificate' }),
+    DATABASE_URL: secret('Kết nối PostgreSQL DATABASE_URL'),
+    DATABASE_CA_CERT: field('Chứng chỉ CA PostgreSQL PEM', { type: 'certificate' }),
     PUBLIC_BASE_URL: url('URL HTTPS công khai của backend', 'http://127.0.0.1:8787'),
     PUBLIC_APP_URL: url('URL ứng dụng nhận liên kết theo dõi'),
-    MARKET_JOBS_ENABLED: bool('Tự xử lý đơn mua quá hạn (sau cập nhật schema)', 'false'),
+    MARKET_JOBS_ENABLED: bool('Tự xử lý đơn mua quá hạn', 'false'),
   } },
   google: { label: 'Google OAuth desktop', toggle: 'GOOGLE_ENABLED', required: ['GOOGLE_CLIENT_ID'], fields: {
     GOOGLE_CLIENT_ID: field('OAuth Client ID'), GOOGLE_CLIENT_SECRET: secret('Client secret'),
@@ -46,10 +46,10 @@ export const INTEGRATION_DEFINITIONS = {
   photon: { label: 'Photon địa chỉ', toggle: 'PHOTON_ENABLED', required: ['PHOTON_BASE_URL'], fields: {
     PHOTON_BASE_URL: url('Base URL', 'https://photon.komoot.io/'), PHOTON_AUTOCOMPLETE: bool('Autocomplete', 'false'),
   } },
-  trackasia: { label: 'TrackAsia Maps Việt Nam (Địa chỉ / Tuyến đường / ETA)', toggle: 'TRACKASIA_ENABLED', required: ['TRACKASIA_API_KEY'], fields: {
+  trackasia: { label: 'TrackAsia Maps Việt Nam', toggle: 'TRACKASIA_ENABLED', required: ['TRACKASIA_API_KEY'], fields: {
     TRACKASIA_API_KEY: secret('TrackAsia API key'),
   } },
-  google_maps: { label: 'Google Maps Platform (Places / Geocoding / Routes)', toggle: 'GOOGLE_MAPS_ENABLED', required: ['GOOGLE_MAPS_API_KEY'], fields: {
+  google_maps: { label: 'Google Maps Platform', toggle: 'GOOGLE_MAPS_ENABLED', required: ['GOOGLE_MAPS_API_KEY'], fields: {
     GOOGLE_MAPS_API_KEY: secret('Google Maps API key'),
   } },
   osrm: { label: 'OSRM tuyến đường / ETA', toggle: 'OSRM_ENABLED', required: ['OSRM_BASE_URL'], fields: {
@@ -71,7 +71,7 @@ export const INTEGRATION_DEFINITIONS = {
   telegram: { label: 'Telegram cảnh báo', toggle: 'TELEGRAM_ALERTS_ENABLED', required: ['TELEGRAM_BOT_TOKEN', 'TELEGRAM_CHAT_ID'], fields: {
     TELEGRAM_BOT_TOKEN: secret('Bot token'), TELEGRAM_CHAT_ID: field('Chat ID'),
   } },
-  gemini: { label: 'AI Chatbot & Trợ lý (Gemini / OpenAI API)', toggle: 'GEMINI_ENABLED', required: ['GEMINI_BASE_URL', 'GEMINI_API_KEY', 'GEMINI_MODEL'], fields: {
+  gemini: { label: 'AI Chatbot & Trợ lý Gemini / OpenAI', toggle: 'GEMINI_ENABLED', required: ['GEMINI_BASE_URL', 'GEMINI_API_KEY', 'GEMINI_MODEL'], fields: {
     GEMINI_BASE_URL: url('API Base URL', 'https://generativelanguage.googleapis.com/v1beta'),
     GEMINI_API_KEY: secret('API key'),
     GEMINI_MODEL: field('Model', { defaultValue: 'gemini-2.5-flash' }),
@@ -166,7 +166,7 @@ export function assertSafeAiUrl(rawUrl, { allowLoopback = true } = {}) {
   let parsed;
   try { parsed = new URL(String(rawUrl || '').trim()); } catch { throw new ConfigError('URL AI không hợp lệ.'); }
   if (parsed.search) {
-    throw new ConfigError('URL AI không được chứa tham số truy vấn (?key=...). Hãy nhập API key vào ô riêng.');
+    throw new ConfigError('URL AI không được chứa tham số truy vấn ?key=.... Hãy nhập API key vào ô riêng.');
   }
   if (!['https:', 'http:'].includes(parsed.protocol) || parsed.username || parsed.password || parsed.hash) {
     throw new ConfigError('URL AI không hợp lệ.');
@@ -519,7 +519,7 @@ export async function testIntegration(provider, { env = process.env, fetcher = f
       ]);
       const missing = [!placesOk && 'Autocomplete', !geoOk && 'Geocoding', !routeOk && 'Routing'].filter(Boolean);
       if (missing.length) return finish(false, `Kiểm tra TrackAsia thất bại tại: ${missing.join(', ')}.`);
-      return finish(true, 'Đã xác minh đủ 3 dịch vụ TrackAsia (Autocomplete, Geocoding, Routing).');
+      return finish(true, 'Đã xác minh đủ 3 dịch vụ TrackAsia: Autocomplete, Geocoding, Routing.');
     } else if (provider === 'google_maps') {
       const geocodeUrl = new URL('https://maps.googleapis.com/maps/api/geocode/json');
       geocodeUrl.search = new URLSearchParams({ latlng: '10.77251,106.69802', language: 'vi', key: env.GOOGLE_MAPS_API_KEY, solution_id: 'gmp_git_agentskills_v1' }).toString();
@@ -546,14 +546,14 @@ export async function testIntegration(provider, { env = process.env, fetcher = f
         }).then(d => Array.isArray(d.routes) && d.routes.length > 0).catch(() => false),
       ]);
       const missingApis = [
-        !placesOk && 'Places API (New)',
+        !placesOk && 'Places API New',
         !geoOk && 'Geocoding API',
         !routesOk && 'Routes API',
       ].filter(Boolean);
       if (missingApis.length) {
         return finish(false, `Kiểm tra thất bại hoặc chưa bật đủ API trên Google Cloud: ${missingApis.join(', ')}.`);
       }
-      return finish(true, 'Đã xác minh đủ 3 dịch vụ Google Maps (Places API New, Geocoding API, Routes API).');
+      return finish(true, 'Đã xác minh đủ 3 dịch vụ Google Maps: Places API New, Geocoding API, Routes API.');
     } else if (provider === 'osrm') {
       const data = await getJson(new URL('route/v1/driving/106.7,10.77;106.71,10.78?overview=false', `${configValue('OSRM_BASE_URL', env).replace(/\/$/, '')}/`));
       if (data.code !== 'Ok') throw new Error('invalid');

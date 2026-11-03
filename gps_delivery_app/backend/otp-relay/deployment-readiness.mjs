@@ -201,7 +201,7 @@ export function createDeploymentReadiness({ env = process.env, database = create
       schema?.browse_schema ? 'Đã có tìm kiếm, lọc giá/tồn và phân trang tại server.' : 'Cần migration 20261105_market_browse.sql.');
     add('configuration_schema','Lựa chọn, lịch bán và giỏ hàng',schema ? schema.configuration_schema ? 'ok' : 'missing' : 'unchecked',
       schema?.configuration_schema ? 'Đã có giá lựa chọn tại server, giỏ theo từng dòng và giới hạn hoàn hàng.' : 'Cần migration 20261106_catalog_configuration.sql.');
-    add('commercial_suite_schema','Thương mại điện tử toàn diện (P1–P6)',schema ? schema.commercial_suite_schema ? 'ok' : 'missing' : 'unchecked',
+    add('commercial_suite_schema','Thương mại điện tử toàn diện P1–P6',schema ? schema.commercial_suite_schema ? 'ok' : 'missing' : 'unchecked',
       schema?.commercial_suite_schema ? 'Đã có biến thể SKU, nhân sự shop, trả trước multi-shop, bằng chứng riêng tư, voucher, flash sale và xu.' : 'Cần migration 20261107_cloud_commercial_suite.sql.');
     add('logistics_schema','Thu gom, tín nhiệm người nhận và thống kê giao hàng',schema ? schema.logistics_schema ? 'ok' : 'missing' : 'unchecked',
       schema?.logistics_schema ? 'Đã có phiếu thu gom, chỉ dẫn giao hàng, cờ rủi ro người nhận riêng tư và thống kê từ đơn hàng.' : 'Cần migration 20261108_cloud_logistics.sql.');
