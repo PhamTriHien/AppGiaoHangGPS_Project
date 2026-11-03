@@ -4,6 +4,9 @@ graphify-out/
 .graphify_*
 .agents/
 .codex/
+AGENTS.md
+Thuyet_Minh_De_Tai_De_An_Chuyen_Nganh_Nhom14.docx
+Tom_Tat_Pham_Vi_Chuc_Nang_De_Tai.docx
 
 **/build/
 **/.dart_tool/
