@@ -295,7 +295,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
       child: Container(
         decoration: const BoxDecoration(
           border: Border(
-            right: BorderSide(color: AdminStudioColors.line),
+            right: BorderSide(color: AdminStudioColors.ink, width: 2),
           ),
         ),
         child: LayoutBuilder(
@@ -322,7 +322,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 18,
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w900,
                                 letterSpacing: 0.4,
                               ),
                             ),
@@ -351,7 +351,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                             Container(
                               width: 26,
                               height: 2,
-                              color: AdminStudioColors.acid,
+                              color: AdminStudioColors.pink,
                             ),
                             const SizedBox(width: 10),
                             Container(
@@ -360,20 +360,19 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                                 vertical: 5,
                               ),
                               decoration: BoxDecoration(
-                                color: AdminStudioColors.shellElevated,
-                                borderRadius: BorderRadius.circular(999),
+                                color: AdminStudioColors.acid,
                                 border: Border.all(
-                                  color: AdminStudioColors.shellLine,
+                                  color: AdminStudioColors.ink,
                                 ),
                               ),
                               child: const Text(
                                 'TRUNG TÂM ĐIỀU HÀNH BẢO MẬT',
                                 style: TextStyle(
-                                  color: AdminStudioColors.acid,
+                                  color: AdminStudioColors.ink,
                                   fontSize: 10.5,
                                   fontFamily: 'monospace',
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.6,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.8,
                                 ),
                               ),
                             ),
@@ -384,10 +383,10 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                           'Điều phối vận đơn, đối tác và dịch vụ tích hợp trên một mặt phẳng duy nhất.',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 24,
-                            height: 1.26,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.5,
+                            fontSize: 25,
+                            height: 1.22,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.6,
                           ),
                         ),
                         const SizedBox(height: 24),
@@ -397,7 +396,6 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
                               color: AdminStudioColors.shellElevated,
-                              borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: AdminStudioColors.shellLine,
                               ),
@@ -406,18 +404,19 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Container(
-                                  width: 36,
-                                  height: 36,
+                                  width: 34,
+                                  height: 34,
                                   decoration: BoxDecoration(
                                     color: p.$2,
-                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: AdminStudioColors.ink,
+                                      width: 1.2,
+                                    ),
                                   ),
                                   child: Icon(
                                     p.$1,
                                     size: 18,
-                                    color: p.$2.computeLuminance() < 0.45
-                                        ? Colors.white
-                                        : AdminStudioColors.ink,
+                                    color: AdminStudioColors.ink,
                                   ),
                                 ),
                                 const SizedBox(width: 12),
@@ -473,7 +472,8 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
     constraints: const BoxConstraints(maxWidth: 420),
     child: AdminNeoBox(
       padding: const EdgeInsets.all(28),
-      borderRadius: 20,
+      borderWidth: 2,
+      shadowOffset: const Offset(6, 6),
       child: AutofillGroup(
         child: Form(
           key: _formKey,
@@ -487,13 +487,22 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: AdminStudioColors.violetSoft,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AdminStudioColors.line),
+                      color: AdminStudioColors.violet,
+                      border: Border.all(
+                        color: AdminStudioColors.ink,
+                        width: 1.5,
+                      ),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: AdminStudioColors.ink,
+                          offset: Offset(2, 2),
+                          blurRadius: 0,
+                        ),
+                      ],
                     ),
                     child: const Icon(
                       Icons.admin_panel_settings_outlined,
-                      color: AdminStudioColors.violet,
+                      color: Colors.white,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -505,7 +514,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                           'Đăng nhập quản trị',
                           style: TextStyle(
                             fontSize: 22,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w900,
                             color: AdminStudioColors.ink,
                             letterSpacing: -0.4,
                           ),
@@ -515,7 +524,8 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                           'Xác thực phiên Điều hành viên',
                           style: TextStyle(
                             fontSize: 12,
-                            fontWeight: FontWeight.w600,
+                            fontFamily: 'monospace',
+                            fontWeight: FontWeight.w700,
                             color: AdminStudioColors.violet,
                           ),
                         ),
@@ -530,7 +540,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                 style: TextStyle(
                   fontSize: 13,
                   color: AdminStudioColors.muted,
-                  height: 1.45,
+                  height: 1.4,
                 ),
               ),
               const SizedBox(height: 22),
@@ -576,9 +586,9 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: AdminStudioColors.dangerSoft,
-                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: AdminStudioColors.danger.withValues(alpha: 0.35),
+                      color: AdminStudioColors.danger,
+                      width: 1.5,
                     ),
                   ),
                   child: Row(
@@ -596,7 +606,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                           style: const TextStyle(
                             color: AdminStudioColors.danger,
                             fontSize: 13,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
@@ -605,32 +615,40 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                 ),
               ],
               const SizedBox(height: 24),
-              FilledButton(
-                onPressed: _busy ? null : _signIn,
-                style: FilledButton.styleFrom(
-                  backgroundColor: AdminStudioColors.violet,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+              Container(
+                decoration: const BoxDecoration(
+                  boxShadow: [
+                    BoxShadow(
+                      color: AdminStudioColors.ink,
+                      offset: Offset(4, 4),
+                      blurRadius: 0,
+                    ),
+                  ],
                 ),
-                child: _busy
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
+                child: FilledButton(
+                  onPressed: _busy ? null : _signIn,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AdminStudioColors.violet,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 50),
+                  ),
+                  child: _busy
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text(
+                          'Đăng nhập',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
-                      )
-                    : const Text(
-                        'Đăng nhập',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+                ),
               ),
             ],
           ),
@@ -925,7 +943,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
       child: Container(
         decoration: const BoxDecoration(
           border: Border(
-            right: BorderSide(color: AdminStudioColors.line),
+            right: BorderSide(color: AdminStudioColors.ink, width: 2),
           ),
         ),
         child: Column(
@@ -948,7 +966,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 14,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w900,
                             letterSpacing: 0.3,
                           ),
                         ),
@@ -996,11 +1014,9 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                     padding: const EdgeInsets.only(bottom: 6),
                     child: Material(
                       color: selected
-                          ? AdminStudioColors.shellActive
+                          ? AdminStudioColors.acid
                           : Colors.transparent,
-                      borderRadius: BorderRadius.circular(10),
                       child: InkWell(
-                        borderRadius: BorderRadius.circular(10),
                         onTap: () => setState(() {
                           _tab = index;
                           if (index == 1) _accountsFilter = 'all';
@@ -1011,14 +1027,21 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                             vertical: 11,
                           ),
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
                             border: Border.all(
                               color: selected
-                                  ? AdminStudioColors.acid.withValues(
-                                      alpha: 0.45,
-                                    )
+                                  ? AdminStudioColors.ink
                                   : Colors.transparent,
+                              width: 1.2,
                             ),
+                            boxShadow: selected
+                                ? const [
+                                    BoxShadow(
+                                      color: AdminStudioColors.violet,
+                                      offset: Offset(3, 3),
+                                      blurRadius: 0,
+                                    ),
+                                  ]
+                                : null,
                           ),
                           child: Row(
                             children: [
@@ -1026,7 +1049,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                                 selected ? d.$2 : d.$1,
                                 size: 19,
                                 color: selected
-                                    ? AdminStudioColors.acid
+                                    ? AdminStudioColors.ink
                                     : AdminStudioColors.mutedOnDark,
                               ),
                               const SizedBox(width: 12),
@@ -1036,10 +1059,12 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
-                                    color: Colors.white,
+                                    color: selected
+                                        ? AdminStudioColors.ink
+                                        : Colors.white,
                                     fontSize: 13.5,
                                     fontWeight: selected
-                                        ? FontWeight.w800
+                                        ? FontWeight.w900
                                         : FontWeight.w600,
                                   ),
                                 ),
@@ -1066,11 +1091,9 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AdminStudioColors.acid,
                       backgroundColor: AdminStudioColors.shellElevated,
-                      side: BorderSide(
-                        color: AdminStudioColors.acid.withValues(alpha: 0.45),
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                      side: const BorderSide(
+                        color: AdminStudioColors.acid,
+                        width: 1.2,
                       ),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
@@ -1084,7 +1107,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 12.5,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                   ),
@@ -1095,7 +1118,6 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: AdminStudioColors.shellElevated,
-                borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: AdminStudioColors.shellLine),
               ),
               child: Row(
@@ -1103,10 +1125,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                   Container(
                     width: 28,
                     height: 28,
-                    decoration: BoxDecoration(
-                      color: AdminStudioColors.violet,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                    color: AdminStudioColors.violet,
                     child: const Icon(
                       Icons.verified_user_rounded,
                       size: 16,
@@ -1159,7 +1178,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
         padding: const EdgeInsets.symmetric(horizontal: 24),
         decoration: const BoxDecoration(
           border: Border(
-            bottom: BorderSide(color: AdminStudioColors.line),
+            bottom: BorderSide(color: AdminStudioColors.ink, width: 2),
           ),
         ),
         child: LayoutBuilder(
@@ -1171,14 +1190,16 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    color: AdminStudioColors.violetSoft,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AdminStudioColors.line),
+                    color: AdminStudioColors.acid,
+                    border: Border.all(
+                      color: AdminStudioColors.ink,
+                      width: 1.4,
+                    ),
                   ),
                   child: Icon(
                     active.$2,
                     size: 20,
-                    color: AdminStudioColors.violet,
+                    color: AdminStudioColors.ink,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -1241,11 +1262,14 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                         },
                       ),
                       style: IconButton.styleFrom(
-                        backgroundColor: AdminStudioColors.surfaceSubtle,
+                        backgroundColor: AdminStudioColors.paper,
                         foregroundColor: AdminStudioColors.ink,
-                        side: const BorderSide(color: AdminStudioColors.line),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                        side: const BorderSide(
+                          color: AdminStudioColors.ink,
+                          width: 1.4,
+                        ),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.zero,
                         ),
                       ),
                       icon: Badge.count(
@@ -1264,11 +1288,14 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                   tooltip: 'Đăng xuất',
                   onPressed: _signOut,
                   style: IconButton.styleFrom(
-                    backgroundColor: AdminStudioColors.surfaceSubtle,
+                    backgroundColor: AdminStudioColors.paper,
                     foregroundColor: AdminStudioColors.ink,
-                    side: const BorderSide(color: AdminStudioColors.line),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                    side: const BorderSide(
+                      color: AdminStudioColors.ink,
+                      width: 1.4,
+                    ),
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.zero,
                     ),
                   ),
                   icon: const Icon(Icons.logout_rounded, size: 19),
@@ -1496,7 +1523,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                 height: 64,
                 decoration: const BoxDecoration(
                   border: Border(
-                    top: BorderSide(color: AdminStudioColors.line),
+                    top: BorderSide(color: AdminStudioColors.ink, width: 2),
                   ),
                 ),
                 child: Row(
@@ -1524,14 +1551,18 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                                 children: [
                                   Container(
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
+                                      horizontal: 9,
                                       vertical: 3,
                                     ),
                                     decoration: BoxDecoration(
                                       color: _tab == i
-                                          ? AdminStudioColors.violetSoft
+                                          ? AdminStudioColors.acid
                                           : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(999),
+                                      border: _tab == i
+                                          ? Border.all(
+                                              color: AdminStudioColors.ink,
+                                            )
+                                          : null,
                                     ),
                                     child: Icon(
                                       _tab == i
@@ -1539,7 +1570,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                                           : _destinations[i].$1,
                                       size: 19,
                                       color: _tab == i
-                                          ? AdminStudioColors.violet
+                                          ? AdminStudioColors.ink
                                           : AdminStudioColors.muted,
                                     ),
                                   ),
@@ -1554,7 +1585,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                                           ? FontWeight.w800
                                           : FontWeight.w600,
                                       color: _tab == i
-                                          ? AdminStudioColors.violetInk
+                                          ? AdminStudioColors.ink
                                           : AdminStudioColors.muted,
                                     ),
                                   ),
@@ -1648,8 +1679,7 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
               height: compact ? 30 : 36,
               decoration: BoxDecoration(
                 color: tint,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AdminStudioColors.line),
+                border: Border.all(color: AdminStudioColors.ink, width: 1.2),
               ),
               child: Icon(icon, size: compact ? 16 : 19, color: accent),
             ),
@@ -1713,8 +1743,7 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
               height: 36,
               decoration: BoxDecoration(
                 color: tint,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AdminStudioColors.line),
+                border: Border.all(color: AdminStudioColors.ink, width: 1.2),
               ),
               child: Icon(icon, size: 19, color: accent),
             ),
@@ -1723,7 +1752,7 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
               child: Text(
                 title,
                 style: const TextStyle(
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w900,
                   fontSize: 15.5,
                   color: AdminStudioColors.ink,
                 ),
@@ -1731,21 +1760,18 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
             ),
             if (completionRatio != null)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: AdminStudioColors.acidSoft,
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(
-                    color: AdminStudioColors.acidInk.withValues(alpha: 0.25),
-                  ),
+                  color: AdminStudioColors.acid,
+                  border: Border.all(color: AdminStudioColors.ink, width: 1.1),
                 ),
                 child: Text(
                   '${(completionRatio * 100).round()}%',
                   style: const TextStyle(
                     fontSize: 11.5,
                     fontFamily: 'monospace',
-                    fontWeight: FontWeight.w800,
-                    color: AdminStudioColors.acidInk,
+                    fontWeight: FontWeight.w900,
+                    color: AdminStudioColors.ink,
                   ),
                 ),
               ),
@@ -1754,11 +1780,13 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
         if (completionRatio != null) ...[
           const SizedBox(height: 12),
           ExcludeSemantics(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(999),
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: AdminStudioColors.ink),
+              ),
               child: LinearProgressIndicator(
                 value: completionRatio.clamp(0.0, 1.0),
-                minHeight: 7,
+                minHeight: 6,
                 backgroundColor: AdminStudioColors.paper,
                 valueColor: AlwaysStoppedAnimation<Color>(accent),
               ),
@@ -1826,83 +1854,82 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: AdminStudioGridBackdrop(
-                      child: Container(
-                        padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: AdminStudioColors.shellLine,
+                  AdminStudioGridBackdrop(
+                    child: Container(
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: AdminStudioColors.ink,
+                          width: 2,
+                        ),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: AdminStudioColors.violet,
+                            offset: Offset(4, 4),
+                            blurRadius: 0,
                           ),
-                        ),
-                        child: LayoutBuilder(
-                          builder: (context, headerBox) {
-                            final compact = headerBox.maxWidth < 520;
-                            return Row(
-                              children: [
-                                const Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Chỉ số vận hành thời gian thực',
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w800,
-                                          color: Colors.white,
-                                          letterSpacing: -0.3,
-                                        ),
+                        ],
+                      ),
+                      child: LayoutBuilder(
+                        builder: (context, headerBox) {
+                          final compact = headerBox.maxWidth < 520;
+                          return Row(
+                            children: [
+                              const Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Chỉ số vận hành thời gian thực',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w900,
+                                        color: Colors.white,
+                                        letterSpacing: -0.3,
                                       ),
-                                      SizedBox(height: 4),
-                                      Text(
-                                        'Tổng hợp trực tiếp từ dữ liệu đơn hàng và sổ cái giao dịch.',
-                                        style: TextStyle(
-                                          fontSize: 12.5,
-                                          color: AdminStudioColors.acid,
-                                          fontWeight: FontWeight.w600,
-                                        ),
+                                    ),
+                                    SizedBox(height: 4),
+                                    Text(
+                                      'Tổng hợp trực tiếp từ dữ liệu đơn hàng và sổ cái giao dịch.',
+                                      style: TextStyle(
+                                        fontSize: 12.5,
+                                        color: AdminStudioColors.acid,
+                                        fontWeight: FontWeight.w600,
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(width: 10),
-                                if (compact)
-                                  IconButton(
-                                    tooltip: 'Làm mới',
-                                    style: IconButton.styleFrom(
-                                      backgroundColor:
-                                          AdminStudioColors.shellElevated,
-                                      foregroundColor: Colors.white,
-                                      side: const BorderSide(
-                                        color: AdminStudioColors.shellLine,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
+                              ),
+                              const SizedBox(width: 10),
+                              if (compact)
+                                IconButton(
+                                  tooltip: 'Làm mới',
+                                  style: IconButton.styleFrom(
+                                    backgroundColor: AdminStudioColors.acid,
+                                    foregroundColor: AdminStudioColors.ink,
+                                    shape: const RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.zero,
                                     ),
-                                    onPressed: _busy ? null : _load,
-                                    icon: const Icon(Icons.refresh_rounded),
-                                  )
-                                else
-                                  FilledButton.icon(
-                                    onPressed: _busy ? null : _load,
-                                    style: FilledButton.styleFrom(
-                                      backgroundColor: AdminStudioColors.acid,
-                                      foregroundColor: AdminStudioColors.ink,
-                                    ),
-                                    icon: const Icon(
-                                      Icons.refresh_rounded,
-                                      size: 18,
-                                    ),
-                                    label: const Text('Làm mới'),
                                   ),
-                              ],
-                            );
-                          },
-                        ),
+                                  onPressed: _busy ? null : _load,
+                                  icon: const Icon(Icons.refresh_rounded),
+                                )
+                              else
+                                FilledButton.icon(
+                                  onPressed: _busy ? null : _load,
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: AdminStudioColors.acid,
+                                    foregroundColor: AdminStudioColors.ink,
+                                  ),
+                                  icon: const Icon(
+                                    Icons.refresh_rounded,
+                                    size: 18,
+                                  ),
+                                  label: const Text('Làm mới'),
+                                ),
+                            ],
+                          );
+                        },
                       ),
                     ),
                   ),

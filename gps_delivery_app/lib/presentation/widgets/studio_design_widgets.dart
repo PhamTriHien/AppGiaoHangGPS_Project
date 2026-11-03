@@ -6,6 +6,22 @@ import '../../data/datasources/local/app_state_store.dart';
 import 'animated_3d_ui_icons.dart';
 import 'system_state_screens.dart';
 
+class _StudioPolygonMarkClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    return Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width, 0)
+      ..lineTo(size.width, size.height * 0.72)
+      ..lineTo(size.width * 0.72, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
+}
+
 class StudioMarkWordmark extends StatelessWidget {
   final bool light;
   final String title;
@@ -22,68 +38,63 @@ class StudioMarkWordmark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final markBg = light ? AppColors.primary : AppColors.primarySoft;
-    final markFg = light ? Colors.white : AppColors.primaryInk;
-    final leftBarColor = light ? AppColors.acid : AppColors.primary;
-    final tagColor = light ? AppColors.acid : AppColors.teal;
+    final markBg = light ? AppColors.acid : AppColors.ink;
+    final markFg = light ? AppColors.techBg : Colors.white;
+    final leftBarColor = light ? AppColors.violet : AppColors.acid;
+    final tagColor = light ? AppColors.violet : AppColors.acid;
     final wordColor = light ? Colors.white : AppColors.ink;
-    final suffixColor = light ? AppColors.acid : AppColors.primary;
+    final suffixColor = light ? AppColors.acid : AppColors.violet;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          width: 40,
-          height: 40,
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
+        ClipPath(
+          clipper: _StudioPolygonMarkClipper(),
+          child: Container(
+            width: 40,
+            height: 40,
             color: markBg,
-            borderRadius: BorderRadius.circular(11),
-            border: Border.all(
-              color: light
-                  ? Colors.white.withValues(alpha: 0.16)
-                  : AppColors.primaryBorder,
-            ),
-          ),
-          child: Stack(
-            children: [
-              Positioned(
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: 4.5,
-                child: ColoredBox(color: leftBarColor),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(left: 10),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'G',
-                    style: TextStyle(
-                      color: markFg,
-                      fontSize: 19,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.6,
-                      height: 1.0,
+            child: Stack(
+              children: [
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: 5,
+                  child: ColoredBox(color: leftBarColor),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(left: 10),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'G',
+                      style: TextStyle(
+                        color: markFg,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -1.0,
+                        height: 1.0,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              Positioned(
-                right: 4,
-                top: 5,
-                child: Text(
-                  badgeTag,
-                  style: TextStyle(
-                    color: tagColor,
-                    fontSize: 6.5,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.1,
+                Positioned(
+                  right: 4,
+                  top: 5,
+                  child: Text(
+                    badgeTag,
+                    style: TextStyle(
+                      color: tagColor,
+                      fontSize: 6.5,
+                      fontWeight: FontWeight.w800,
+                      fontFamily: 'Consolas',
+                      letterSpacing: -0.2,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
         const SizedBox(width: 11),
@@ -97,10 +108,10 @@ class StudioMarkWordmark extends StatelessWidget {
                   text: title,
                   style: TextStyle(
                     color: wordColor,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.6,
-                    height: 1.05,
+                    fontSize: 21,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -1.1,
+                    height: 1.0,
                   ),
                 ),
                 TextSpan(
@@ -108,8 +119,9 @@ class StudioMarkWordmark extends StatelessWidget {
                   style: TextStyle(
                     color: suffixColor,
                     fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.2,
+                    fontWeight: FontWeight.w800,
+                    fontFamily: 'Consolas',
+                    letterSpacing: -0.4,
                   ),
                 ),
               ],
@@ -339,11 +351,10 @@ class _Studio3dStartupSplashScreenState
 
   Widget _buildBootMetricChip(String label, String value) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.surfaceSubtle,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.line),
+        color: Colors.white,
+        border: Border.all(color: AppColors.ink, width: 1.2),
       ),
       child: Text(
         '$label: $value',
@@ -419,7 +430,6 @@ class _Studio3dStartupSplashScreenState
                           top: 18,
                           right: 22,
                           child: InkWell(
-                            borderRadius: BorderRadius.circular(999),
                             onTap: _handleSkip,
                             child: Container(
                               padding: const EdgeInsets.symmetric(
@@ -428,8 +438,17 @@ class _Studio3dStartupSplashScreenState
                               ),
                               decoration: BoxDecoration(
                                 color: AppColors.techPanel,
-                                borderRadius: BorderRadius.circular(999),
-                                border: Border.all(color: AppColors.techLine),
+                                border: Border.all(
+                                  color: AppColors.acid,
+                                  width: 1.4,
+                                ),
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: AppColors.violet,
+                                    offset: Offset(4, 4),
+                                    blurRadius: 0,
+                                  ),
+                                ],
                               ),
                               child: const Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -476,14 +495,19 @@ class _Studio3dStartupSplashScreenState
                                         .clamp(240.0, 620.0),
                                     height: (constraints.maxHeight * 0.34)
                                         .clamp(172.0, 340.0),
-                                    clipBehavior: Clip.antiAlias,
                                     decoration: BoxDecoration(
-                                      color: AppColors.techPanel,
-                                      borderRadius: BorderRadius.circular(18),
+                                      color: const Color(0xCC0A0E14),
                                       border: Border.all(
-                                        color: AppColors.techLine,
+                                        color: AppColors.acid,
+                                        width: 1.6,
                                       ),
-                                      boxShadow: AppColors.elevatedShadow,
+                                      boxShadow: const [
+                                        BoxShadow(
+                                          color: AppColors.violet,
+                                          offset: Offset(12, 12),
+                                          blurRadius: 0,
+                                        ),
+                                      ],
                                     ),
                                     child: CustomPaint(
                                       painter: Studio3dBootScenePainter(
@@ -526,12 +550,20 @@ class _Studio3dStartupSplashScreenState
                                 Container(
                                   width: (constraints.maxWidth * 0.82)
                                       .clamp(240.0, 650.0),
-                                  padding: const EdgeInsets.all(16),
+                                  padding: const EdgeInsets.all(14),
                                   decoration: BoxDecoration(
-                                    color: AppColors.surface,
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(color: AppColors.line),
-                                    boxShadow: AppColors.elevatedShadow,
+                                    color: AppColors.paper,
+                                    border: Border.all(
+                                      color: AppColors.ink,
+                                      width: 2.0,
+                                    ),
+                                    boxShadow: const [
+                                      BoxShadow(
+                                        color: AppColors.violet,
+                                        offset: Offset(6, 6),
+                                        blurRadius: 0,
+                                      ),
+                                    ],
                                   ),
                                   child: Column(
                                     crossAxisAlignment:
@@ -812,7 +844,7 @@ class Studio3dBootScenePainter extends CustomPainter {
       ([4, 5, 6, 7], const Color(0xFF1E1A34)), // Mặt đáy
       ([0, 1, 5, 4], const Color(0xFF3A2399)), // Mặt sau
       ([0, 3, 7, 4], const Color(0xFF492BC4)), // Mặt trái
-      ([1, 2, 6, 5], const Color(0xFF1E56C5)), // Mặt phải
+      ([1, 2, 6, 5], const Color(0xFF2563EB)), // Mặt phải
       ([3, 2, 6, 7], const Color(0xFF724DFF)), // Mặt trước
       ([0, 1, 2, 3], AppColors.paper), // Mặt nắp trên
     ];
@@ -1050,41 +1082,43 @@ class Studio3dLoginAmbientMapPainter extends CustomPainter {
         !phase.isFinite) {
       return;
     }
+    // 1. Hai quầng sáng chiều sâu đối xứng (Dual Radial Volumetric Glow)
     final topRightGlow = Offset(size.width * 0.82, size.height * 0.22);
     canvas.drawCircle(
       topRightGlow,
-      size.width * 0.42,
+      size.width * 0.38,
       Paint()
         ..shader = RadialGradient(
           colors: [
-            AppColors.primary.withValues(alpha: 0.11),
+            AppColors.violet.withValues(alpha: 0.26),
             Colors.transparent,
           ],
         ).createShader(
-          Rect.fromCircle(center: topRightGlow, radius: size.width * 0.42),
+          Rect.fromCircle(center: topRightGlow, radius: size.width * 0.38),
         ),
     );
 
     final bottomLeftGlow = Offset(size.width * 0.18, size.height * 0.80);
     canvas.drawCircle(
       bottomLeftGlow,
-      size.width * 0.38,
+      size.width * 0.34,
       Paint()
         ..shader = RadialGradient(
           colors: [
-            AppColors.teal.withValues(alpha: 0.09),
-            AppColors.primary.withValues(alpha: 0.05),
+            AppColors.acid.withValues(alpha: 0.12),
+            AppColors.violet.withValues(alpha: 0.08),
             Colors.transparent,
           ],
           stops: const [0.0, 0.5, 1.0],
         ).createShader(
-          Rect.fromCircle(center: bottomLeftGlow, radius: size.width * 0.38),
+          Rect.fromCircle(center: bottomLeftGlow, radius: size.width * 0.34),
         ),
     );
 
+    // 2. Lưới mặt phẳng bản đồ phối cảnh 3D (3D Ground Grid)
     const groundY = 120.0;
     final gridPaint = Paint()
-      ..color = const Color(0x161E3A5F)
+      ..color = const Color(0x1694A0AE)
       ..strokeWidth = 1.0;
 
     for (int i = -9; i <= 9; i++) {
@@ -1098,6 +1132,7 @@ class Studio3dLoginAmbientMapPainter extends CustomPainter {
       canvas.drawLine(q1, q2, gridPaint);
     }
 
+    // 3. Các khối tòa nhà 3D Wireframe ở hai bên cánh (Tạo chiều sâu đô thị 3D)
     const buildingSpecs = <(double, double, double, double, double, bool)>[
       (-480, -220, 42, 42, 95, true),
       (-360, -90, 36, 36, 64, false),
@@ -1119,17 +1154,18 @@ class Studio3dLoginAmbientMapPainter extends CustomPainter {
         d: b.$4,
         h: b.$5,
         strokeColor: b.$6
-            ? AppColors.teal.withValues(alpha: 0.22)
-            : AppColors.primary.withValues(alpha: 0.18),
+            ? AppColors.acid.withValues(alpha: 0.22)
+            : const Color(0x33D1E7FF),
         topFillColor: b.$6
-            ? AppColors.teal.withValues(alpha: 0.06)
-            : AppColors.primary.withValues(alpha: 0.06),
+            ? AppColors.acid.withValues(alpha: 0.06)
+            : AppColors.violet.withValues(alpha: 0.08),
       );
     }
 
+    // 4. Vòng sóng Radar 3D lan tỏa tại 2 trạm điều phối hai bên
     final radarNodes = <(double, double, Color)>[
-      (-410.0, 20.0, AppColors.teal),
-      (420.0, -20.0, AppColors.primary),
+      (-410.0, 20.0, AppColors.acid),
+      (420.0, -20.0, AppColors.pink),
     ];
 
     for (final node in radarNodes) {
@@ -1155,13 +1191,14 @@ class Studio3dLoginAmbientMapPainter extends CustomPainter {
         canvas.drawPath(
           ringPath,
           Paint()
-            ..color = node.$3.withValues(alpha: (1.0 - rp) * 0.26)
+            ..color = node.$3.withValues(alpha: (1.0 - rp) * 0.35)
             ..style = PaintingStyle.stroke
-            ..strokeWidth = 1.4,
+            ..strokeWidth = 1.5,
         );
       }
     }
 
+    // 5. Bốn tuyến lộ trình giao hàng 3D Map & Đội xe 3D Meshy Scooter chạy thực tế dưới nền Login
     final routes = <(List<(double, double)>, Color)>[
       (
         [
@@ -1172,7 +1209,7 @@ class Studio3dLoginAmbientMapPainter extends CustomPainter {
           (450, 60),
           (640, 250),
         ],
-        AppColors.teal,
+        AppColors.acid,
       ),
       (
         [
@@ -1183,7 +1220,7 @@ class Studio3dLoginAmbientMapPainter extends CustomPainter {
           (-480, -40),
           (-650, -210),
         ],
-        AppColors.primary,
+        const Color(0xFF00E5FF),
       ),
       (
         [
@@ -1193,7 +1230,7 @@ class Studio3dLoginAmbientMapPainter extends CustomPainter {
           (380, 220),
           (600, 320),
         ],
-        AppColors.accent,
+        const Color(0xFFFF6B00),
       ),
       (
         [
@@ -1203,7 +1240,7 @@ class Studio3dLoginAmbientMapPainter extends CustomPainter {
           (410, -240),
           (630, -300),
         ],
-        const Color(0xFF2B6CB0),
+        AppColors.pink,
       ),
     ];
 
@@ -1223,32 +1260,35 @@ class Studio3dLoginAmbientMapPainter extends CustomPainter {
         routePath.lineTo(projectedPts[i].dx, projectedPts[i].dy);
       }
 
+      // Mặt đường nhựa 3D (3D Asphalt Road Ribbon)
       canvas.drawPath(
         routePath,
         Paint()
-          ..color = const Color(0x14122033)
+          ..color = const Color(0x780B1320)
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 11.0
+          ..strokeWidth = 14.0
+          ..strokeCap = StrokeCap.round
+          ..strokeJoin = StrokeJoin.round,
+      );
+      // Quầng sáng làn đường 3D
+      canvas.drawPath(
+        routePath,
+        Paint()
+          ..color = color.withValues(alpha: 0.20)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 6.5
           ..strokeCap = StrokeCap.round
           ..strokeJoin = StrokeJoin.round,
       );
       canvas.drawPath(
         routePath,
         Paint()
-          ..color = color.withValues(alpha: 0.18)
+          ..color = color.withValues(alpha: 0.56)
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 5.0
-          ..strokeCap = StrokeCap.round
-          ..strokeJoin = StrokeJoin.round,
-      );
-      canvas.drawPath(
-        routePath,
-        Paint()
-          ..color = color.withValues(alpha: 0.45)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.5,
+          ..strokeWidth = 1.8,
       );
 
+      // Nội suy theo độ dài cung (Arc-Length) & tiếp tuyến 3D mượt liên tục
       final tGlobal = (phase + rIdx * 0.27) % 1.0;
       final sample = MeshyScooter3dMesh.sampleRouteArcLength3D(
         smoothCurve,
@@ -1271,6 +1311,7 @@ class Studio3dLoginAmbientMapPainter extends CustomPainter {
       final heading = math.atan2(tangentDy, tangentDx);
       final depthScale = _worldDepthScale(wx, groundY - 2.0, wz);
 
+      // Vệt sáng GPS Wake Trail uốn cong bám sát mặt đường phía sau đuôi xe 3D
       if (sample.trailPoints.length >= 2) {
         final projectedTrail = sample.trailPoints
             .map((tp) => _projectWorld3D(tp.$1, groundY - 2.0, tp.$2, size))
@@ -1286,18 +1327,19 @@ class Studio3dLoginAmbientMapPainter extends CustomPainter {
             ..shader = LinearGradient(
               colors: [
                 color.withValues(alpha: 0.0),
-                color.withValues(alpha: 0.72),
+                color.withValues(alpha: 0.92),
               ],
             ).createShader(
               Rect.fromPoints(projectedTrail.first, projectedTrail.last),
             )
             ..style = PaintingStyle.stroke
-            ..strokeWidth = 3.6 * depthScale
+            ..strokeWidth = 4.2 * depthScale
             ..strokeCap = StrokeCap.round
             ..strokeJoin = StrokeJoin.round,
         );
       }
 
+      // Luồng đèn pha 3D (Volumetric Headlight Beam) chiếu thẳng phía trước mũi xe trên mặt đường 3D
       final dirX = math.cos(heading);
       final dirY = math.sin(heading);
       final perpX = -dirY;
@@ -1306,8 +1348,8 @@ class Studio3dLoginAmbientMapPainter extends CustomPainter {
         groundBeacon.dx + dirX * (8.0 * depthScale),
         groundBeacon.dy + dirY * (8.0 * depthScale),
       );
-      final beamLen = 46.0 * depthScale;
-      final beamSpread = 14.0 * depthScale;
+      final beamLen = 50.0 * depthScale;
+      final beamSpread = 16.0 * depthScale;
       final beamTipCenter = Offset(
         groundBeacon.dx + dirX * beamLen,
         groundBeacon.dy + dirY * beamLen,
@@ -1330,27 +1372,29 @@ class Studio3dLoginAmbientMapPainter extends CustomPainter {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              color.withValues(alpha: 0.24),
-              color.withValues(alpha: 0.10),
+              const Color(0x88FFF6B0),
+              color.withValues(alpha: 0.18),
               Colors.transparent,
             ],
           ).createShader(Rect.fromPoints(beamOrigin, beamTipCenter)),
       );
 
+      // Vòng sóng định vị GPS dưới bánh xe 3D
       canvas.drawCircle(
         groundBeacon,
-        14.0 * depthScale,
-        Paint()..color = color.withValues(alpha: 0.16),
+        15.0 * depthScale,
+        Paint()..color = color.withValues(alpha: 0.22),
       );
       canvas.drawCircle(
         groundBeacon,
-        14.0 * depthScale,
+        15.0 * depthScale,
         Paint()
-          ..color = color.withValues(alpha: 0.52)
+          ..color = color.withValues(alpha: 0.68)
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.3,
+          ..strokeWidth = 1.4,
       );
 
+      // Render mô hình Xe máy Giao hàng 3D thật (Meshy 10,071-triangle 3D Mesh) bám chuẩn 100% hướng tiếp tuyến lộ trình
       final scooterCenter = Offset(
         groundBeacon.dx,
         groundBeacon.dy - 14.0 * depthScale,
@@ -1365,24 +1409,25 @@ class Studio3dLoginAmbientMapPainter extends CustomPainter {
         MeshyScooter3dMesh.instance.renderToCanvas(
           canvas,
           center: scooterCenter,
-          scalePx: 29.0 * depthScale,
+          scalePx: 30.0 * depthScale,
           yawRadians: scooterYaw,
           pitchRadians: scooterPitch,
         );
       } else {
         canvas.drawCircle(
           scooterCenter,
-          6.5 * depthScale,
-          Paint()..color = color,
+          7.0 * depthScale,
+          Paint()..color = const Color(0xFFFF6B00),
         );
       }
     }
 
+    // 6. Bốn dấu chữ thập ngắm tọa độ ở 4 góc màn hình (Corner HUD Crosshairs)
     final crossPaint = Paint()
-      ..color = const Color(0x281E3A5F)
-      ..strokeWidth = 1.1;
+      ..color = const Color(0x45D1E7FF)
+      ..strokeWidth = 1.2;
     const margin = 26.0;
-    const arm = 7.0;
+    const arm = 8.0;
     final corners = [
       const Offset(margin, margin),
       Offset(size.width - margin, margin),

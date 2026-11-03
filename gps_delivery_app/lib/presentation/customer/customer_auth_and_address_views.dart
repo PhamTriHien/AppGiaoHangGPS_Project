@@ -12,7 +12,7 @@ extension _CustomerAuthAndAddressViews on _CustomerSubsystemEntryState {
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            color: const Color(0xFF1E56C5),
+            color: const Color(0xFF2563EB),
             child: const Row(
               children: [
                 Icon(
@@ -74,7 +74,7 @@ extension _CustomerAuthAndAddressViews on _CustomerSubsystemEntryState {
                                     : 'Chạm trực tiếp lên bản đồ để ghim địa chỉ mới')));
                     return Container(
                       decoration: BoxDecoration(
-                        border: Border.all(color: const Color(0xFF122033)),
+                        border: Border.all(color: const Color(0xFF0F172A)),
                       ),
                       clipBehavior: Clip.antiAlias,
                       child: Map3dPerspectiveWidget(
@@ -119,7 +119,7 @@ extension _CustomerAuthAndAddressViews on _CustomerSubsystemEntryState {
                   height: 44,
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFC85A17),
+                      backgroundColor: const Color(0xFFF43F5E),
                       foregroundColor: Colors.white,
                       shape: const RoundedRectangleBorder(
                         borderRadius: BorderRadius.all(Radius.zero),
@@ -177,7 +177,7 @@ extension _CustomerAuthAndAddressViews on _CustomerSubsystemEntryState {
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 14.5,
-                    color: Color(0xFF122033),
+                    color: Color(0xFF0F172A),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -186,8 +186,8 @@ extension _CustomerAuthAndAddressViews on _CustomerSubsystemEntryState {
                     margin: const EdgeInsets.only(bottom: 10),
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEEF3F8),
-                      border: Border.all(color: const Color(0xFF122033)),
+                      color: const Color(0xFFF4F7FA),
+                      border: Border.all(color: const Color(0xFF0F172A)),
                     ),
                     child: const Text(
                       'Bạn chưa lưu địa chỉ nào. Hãy nhập địa chỉ thường dùng bên dưới và nhấn "Thêm địa chỉ".',
@@ -218,13 +218,13 @@ extension _CustomerAuthAndAddressViews on _CustomerSubsystemEntryState {
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: isFocused
-                              ? const Color(0xFFEEF3F8)
+                              ? const Color(0xFFF4F7FA)
                               : Colors.white,
                           borderRadius: BorderRadius.all(Radius.zero),
                           border: Border.all(
                             color: isFocused
-                                ? const Color(0xFF1E56C5)
-                                : const Color(0xFF122033),
+                                ? const Color(0xFF2563EB)
+                                : const Color(0xFF0F172A),
                             width: isFocused ? 1.5 : 1.0,
                           ),
                         ),
@@ -238,7 +238,7 @@ extension _CustomerAuthAndAddressViews on _CustomerSubsystemEntryState {
                                   width: 40,
                                   height: 40,
                                   decoration: const BoxDecoration(
-                                    color: Color(0xFFE9E9E4),
+                                    color: Color(0xFFEFF3F8),
                                     borderRadius: BorderRadius.all(Radius.zero),
                                   ),
                                   child: Icon(
@@ -248,7 +248,7 @@ extension _CustomerAuthAndAddressViews on _CustomerSubsystemEntryState {
                                                 addr.label.contains('Công ty')
                                             ? Icons.business_rounded
                                             : Icons.location_on_rounded,
-                                    color: const Color(0xFF1E56C5),
+                                    color: const Color(0xFF2563EB),
                                   ),
                                 ),
                                 const SizedBox(width: 12),
@@ -277,7 +277,7 @@ extension _CustomerAuthAndAddressViews on _CustomerSubsystemEntryState {
                                                 horizontal: 6,
                                                 vertical: 2,
                                               ),
-                                              color: const Color(0xFF1E56C5),
+                                              color: const Color(0xFF2563EB),
                                               child: const Text(
                                                 'Mặc định',
                                                 style: TextStyle(
@@ -401,7 +401,7 @@ extension _CustomerAuthAndAddressViews on _CustomerSubsystemEntryState {
                                     icon: const Icon(
                                       Icons.star_outline_rounded,
                                       size: 14,
-                                      color: Color(0xFF1E56C5),
+                                      color: Color(0xFF2563EB),
                                     ),
                                     label: const Text(
                                       'Đặt mặc định',
@@ -459,7 +459,7 @@ extension _CustomerAuthAndAddressViews on _CustomerSubsystemEntryState {
                           },
                           icon: const Icon(
                             Icons.travel_explore_rounded,
-                            color: Color(0xFF1E56C5),
+                            color: Color(0xFF2563EB),
                             size: 18,
                           ),
                         ),
@@ -467,7 +467,7 @@ extension _CustomerAuthAndAddressViews on _CustomerSubsystemEntryState {
                     );
                     final addBtn = ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFC85A17),
+                        backgroundColor: const Color(0xFFF43F5E),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 14,
@@ -525,7 +525,7 @@ extension _CustomerAuthAndAddressViews on _CustomerSubsystemEntryState {
                         avatar: const Icon(
                           Icons.location_searching_rounded,
                           size: 13,
-                          color: Color(0xFF1E56C5),
+                          color: Color(0xFF2563EB),
                         ),
                         label: Text(
                           place.title,

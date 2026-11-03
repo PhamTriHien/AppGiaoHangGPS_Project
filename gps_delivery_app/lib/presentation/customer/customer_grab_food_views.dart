@@ -188,7 +188,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0E7C66),
+                      color: const Color(0xFF00B14F),
                       border: Border.all(color: AppColors.ink, width: 1.2),
                     ),
                     child: const Icon(
@@ -230,7 +230,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
               FilledButton.icon(
                 style: FilledButton.styleFrom(
                   visualDensity: VisualDensity.compact,
-                  backgroundColor: const Color(0xFF0E7C66),
+                  backgroundColor: const Color(0xFF00B14F),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
@@ -519,7 +519,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
             border: Border.all(color: AppColors.ink, width: 1.5),
             boxShadow: const [
               BoxShadow(
-                color: Color(0xFF0E7C66),
+                color: Color(0xFF00B14F),
                 offset: Offset(5, 5),
                 blurRadius: 0,
               ),
@@ -538,7 +538,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                       horizontal: 8,
                       vertical: 3,
                     ),
-                    color: const Color(0xFF0E7C66),
+                    color: const Color(0xFF00B14F),
                     child: const Text(
                       'GRABFOOD SMART DINING',
                       style: TextStyle(
@@ -844,7 +844,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                                 FilledButton.icon(
                                   style: FilledButton.styleFrom(
                                     visualDensity: VisualDensity.compact,
-                                    backgroundColor: const Color(0xFF0E7C66),
+                                    backgroundColor: const Color(0xFF00B14F),
                                     foregroundColor: Colors.white,
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 8,
@@ -1208,7 +1208,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                         : AppColors.paper,
                     border: Border.all(
                       color: qtyInCart > 0
-                          ? const Color(0xFF0E7C66)
+                          ? const Color(0xFF00B14F)
                           : AppColors.ink,
                       width: qtyInCart > 0 ? 1.5 : 1.0,
                     ),
@@ -1307,7 +1307,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                             FilledButton.icon(
                               style: FilledButton.styleFrom(
                                 visualDensity: VisualDensity.compact,
-                                backgroundColor: const Color(0xFF0E7C66),
+                                backgroundColor: const Color(0xFF00B14F),
                                 foregroundColor: Colors.white,
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 10,
@@ -1356,7 +1356,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                                       _addGrabFoodItemToCart(context, dish),
                                   icon: const Icon(
                                     Icons.add_circle_rounded,
-                                    color: Color(0xFF0E7C66),
+                                    color: Color(0xFF00B14F),
                                     size: 20,
                                   ),
                                 ),
@@ -1473,7 +1473,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
         border: Border.all(color: AppColors.ink, width: 1.6),
         boxShadow: const [
           BoxShadow(
-            color: Color(0xFF0E7C66),
+            color: Color(0xFF00B14F),
             offset: Offset(4, 4),
             blurRadius: 0,
           ),
@@ -1486,7 +1486,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
             children: [
               const Icon(
                 Icons.shopping_bag_rounded,
-                color: Color(0xFF0E7C66),
+                color: Color(0xFF00B14F),
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -1605,7 +1605,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                       icon: const Icon(
                         Icons.add_circle_outline,
                         size: 18,
-                        color: Color(0xFF0E7C66),
+                        color: Color(0xFF00B14F),
                       ),
                     ),
                   ],
@@ -1686,7 +1686,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                   ),
                 ),
                 Switch.adaptive(
-                  activeThumbColor: const Color(0xFF0E7C66),
+                  activeThumbColor: const Color(0xFF00B14F),
                   value: _foodPreferEcoEv,
                   onChanged: (v) =>
                       _rebuildCustomerUi(() => _foodPreferEcoEv = v),
@@ -1705,7 +1705,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                   ),
                 ),
                 Switch.adaptive(
-                  activeThumbColor: const Color(0xFF0E7C66),
+                  activeThumbColor: const Color(0xFF00B14F),
                   value: _foodGreenFund,
                   onChanged: (v) =>
                       _rebuildCustomerUi(() => _foodGreenFund = v),
@@ -1822,7 +1822,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                       style: const TextStyle(fontSize: 11.5),
                     ),
                     selected: _foodPaymentMethod == method,
-                    selectedColor: const Color(0xFF0E7C66),
+                    selectedColor: const Color(0xFF00B14F),
                     labelStyle: TextStyle(
                       color: _foodPaymentMethod == method
                           ? Colors.white
@@ -1882,7 +1882,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
             const SizedBox(height: 12),
             FilledButton.icon(
               style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF0E7C66),
+                backgroundColor: const Color(0xFF00B14F),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 13),
               ),

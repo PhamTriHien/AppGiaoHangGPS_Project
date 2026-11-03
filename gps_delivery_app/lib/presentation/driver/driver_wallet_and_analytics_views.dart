@@ -176,7 +176,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                           labelStyle: TextStyle(
                             color: selected
                                 ? Colors.white
-                                : const Color(0xFF122033),
+                                : const Color(0xFF0F172A),
                             fontWeight: FontWeight.w800,
                           ),
                           onSelected: (_) =>
@@ -190,9 +190,9 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEEF3F8),
+                    color: const Color(0xFFF4F7FA),
                     borderRadius: BorderRadius.all(Radius.zero),
-                    border: Border.all(color: const Color(0xFF122033)),
+                    border: Border.all(color: const Color(0xFF0F172A)),
                   ),
                   child: SizedBox(
                     height: 120,
@@ -248,7 +248,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.all(Radius.zero),
-                    border: Border.all(color: const Color(0xFF122033)),
+                    border: Border.all(color: const Color(0xFF0F172A)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -278,7 +278,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                                 style: const TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.w900,
-                                  color: Color(0xFF122033),
+                                  color: Color(0xFF0F172A),
                                 ),
                               ),
                               Text(
@@ -296,7 +296,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                             children: [
                               ElevatedButton(
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF122033),
+                                  backgroundColor: const Color(0xFF0F172A),
                                   foregroundColor: Colors.white,
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 18,
@@ -478,7 +478,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                       ),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        border: Border.all(color: const Color(0xFF122033)),
+                        border: Border.all(color: const Color(0xFF0F172A)),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -494,7 +494,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                                     fontSize: 13,
                                     color: isCredit
                                         ? const Color(0xFF14B866)
-                                        : const Color(0xFF122033),
+                                        : const Color(0xFF0F172A),
                                   ),
                                 ),
                                 Text(
@@ -594,7 +594,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                       selectedColor: const Color(0xFF14B866),
                       labelStyle: TextStyle(
                         color:
-                            selected ? Colors.white : const Color(0xFF122033),
+                            selected ? Colors.white : const Color(0xFF0F172A),
                         fontWeight: FontWeight.w800,
                       ),
                       onSelected: (_) =>
@@ -607,8 +607,8 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEEF3F8),
-                      border: Border.all(color: const Color(0xFF122033)),
+                      color: const Color(0xFFF4F7FA),
+                      border: Border.all(color: const Color(0xFF0F172A)),
                     ),
                     child: Text(
                       'Chưa có chuyến giao hàng nào trong khoảng thời gian "$_driverHistoryPeriod".',
@@ -646,7 +646,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.all(Radius.zero),
-                        border: Border.all(color: const Color(0xFF122033)),
+                        border: Border.all(color: const Color(0xFF0F172A)),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withValues(alpha: 0.03),
@@ -682,7 +682,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                                   child: Icon(
                                     Icons.circle,
                                     size: 8,
-                                    color: Color(0xFF1E56C5),
+                                    color: Color(0xFF2563EB),
                                   ),
                                 ),
                                 Positioned(
@@ -908,7 +908,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
-                            color: isCur ? Colors.white : const Color(0xFF122033),
+                            color: isCur ? Colors.white : const Color(0xFF0F172A),
                           ),
                         ),
                         selected: isCur,
@@ -1131,8 +1131,8 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                       margin: const EdgeInsets.only(bottom: 8),
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEEF3F8),
-                        border: Border.all(color: const Color(0xFF122033)),
+                        color: const Color(0xFFF4F7FA),
+                        border: Border.all(color: const Color(0xFF0F172A)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1260,7 +1260,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFF122033),
+        color: const Color(0xFF0F172A),
         borderRadius: BorderRadius.all(Radius.zero),
       ),
       child: Column(
@@ -1291,7 +1291,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                       p,
                       style: TextStyle(
                         fontSize: 11,
-                        color: selected ? Colors.white : const Color(0xFF122033),
+                        color: selected ? Colors.white : const Color(0xFF0F172A),
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -1308,7 +1308,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFF122033),
+              color: const Color(0xFF0F172A),
               borderRadius: BorderRadius.all(Radius.zero),
             ),
             child: Row(
@@ -1350,7 +1350,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                 child: Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF122033),
+                    color: const Color(0xFF0F172A),
                     borderRadius: BorderRadius.all(Radius.zero),
                   ),
                   child: Column(
@@ -1395,7 +1395,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                 child: Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF122033),
+                    color: const Color(0xFF0F172A),
                     borderRadius: BorderRadius.all(Radius.zero),
                   ),
                   child: Column(
@@ -1474,7 +1474,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFF122033),
+              color: const Color(0xFF0F172A),
               borderRadius: BorderRadius.all(Radius.zero),
             ),
             child: Column(
@@ -1560,7 +1560,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF122033),
+                  color: const Color(0xFF0F172A),
                   borderRadius: BorderRadius.all(Radius.zero),
                 ),
                 child: Column(

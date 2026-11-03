@@ -168,64 +168,45 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
     return Scaffold(
       backgroundColor: AppColors.paper,
       appBar: AppBar(
-        backgroundColor: AppColors.surface,
-        foregroundColor: AppColors.ink,
-        surfaceTintColor: Colors.transparent,
+        backgroundColor: AppColors.ink,
+        foregroundColor: Colors.white,
         elevation: 0,
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(1),
-          child: Divider(height: 1, color: AppColors.line),
-        ),
-        title: Row(
+        title: const Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: AppColors.primarySoft,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.radar_rounded,
-                size: 18,
-                color: AppColors.primary,
-              ),
-            ),
-            const SizedBox(width: 10),
-            const Expanded(
+            Icon(Icons.radar_rounded, size: 20, color: AppColors.acid),
+            SizedBox(width: 8),
+            Expanded(
               child: Text(
                 'Tra cứu & Theo dõi Hành trình Trực tiếp',
                 style: TextStyle(
                   fontSize: 15.5,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.ink,
+                  color: Colors.white,
                 ),
               ),
             ),
           ],
         ),
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: TextButton.icon(
-              onPressed: () {
-                if (Navigator.of(context).canPop()) {
-                  Navigator.of(context).pop();
-                } else {
-                  Navigator.of(context).pushReplacementNamed('/');
-                }
-              },
-              icon: const Icon(
-                Icons.home_outlined,
-                size: 17,
-                color: AppColors.primary,
-              ),
-              label: const Text(
-                'Trang chủ',
-                style: TextStyle(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 12.5,
-                ),
+          TextButton.icon(
+            onPressed: () {
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).pop();
+              } else {
+                Navigator.of(context).pushReplacementNamed('/');
+              }
+            },
+            icon: const Icon(
+              Icons.login_rounded,
+              size: 16,
+              color: AppColors.acid,
+            ),
+            label: const Text(
+              'Trang chủ',
+              style: TextStyle(
+                color: AppColors.acid,
+                fontWeight: FontWeight.w800,
+                fontSize: 12,
               ),
             ),
           ),
@@ -240,12 +221,10 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.line),
-                    boxShadow: AppColors.cardShadow,
+                    color: Colors.white,
+                    border: Border.all(color: AppColors.ink, width: 1.5),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -253,22 +232,20 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
                       const Text(
                         'TRA CỨU HÀNH TRÌNH VẬN ĐƠN BẢO MẬT',
                         style: TextStyle(
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w900,
                           fontSize: 12.5,
-                          letterSpacing: 0.3,
-                          color: AppColors.primaryInk,
+                          color: AppColors.ink,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 4),
                       const Text(
                         'Nhập mã vận đơn kèm 4 số cuối SĐT người nhận, hoặc dán mã chia sẻ 64 ký tự. Địa chỉ, SĐT đầy đủ và mã OTP nhận hàng luôn được bảo mật.',
                         style: TextStyle(
-                          fontSize: 12.5,
-                          height: 1.45,
+                          fontSize: 11.5,
                           color: AppColors.textSecondary,
                         ),
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 10),
                       LayoutBuilder(
                         builder: (context, constraints) {
                           final wide = constraints.maxWidth >= 620;
@@ -293,16 +270,13 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
                               prefixIcon: Icon(Icons.pin_outlined),
                             ),
                           );
-                          final button = FilledButton.icon(
-                            style: FilledButton.styleFrom(
-                              backgroundColor: AppColors.primary,
+                          final button = ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.violet,
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 18,
+                                horizontal: 16,
                                 vertical: 14,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
                               ),
                             ),
                             onPressed: _busy ? null : _submitSearch,
@@ -374,25 +348,22 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
     required IconData icon,
   }) => Container(
     width: double.infinity,
-    padding: const EdgeInsets.all(22),
+    padding: const EdgeInsets.all(24),
     decoration: BoxDecoration(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: AppColors.line),
-      boxShadow: AppColors.cardShadow,
+      color: Colors.white,
+      border: Border.all(color: AppColors.ink, width: 1.4),
     ),
     child: Row(
       children: [
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppColors.primarySoft,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.primaryBorder),
+            color: const Color(0xFFF4F7FA),
+            border: Border.all(color: AppColors.ink),
           ),
-          child: Icon(icon, size: 28, color: AppColors.primary),
+          child: Icon(icon, size: 30, color: AppColors.violet),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 14),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -400,7 +371,7 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
               Text(
                 title,
                 style: const TextStyle(
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w900,
                   fontSize: 14.5,
                   color: AppColors.ink,
                 ),
@@ -409,8 +380,7 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
               Text(
                 subtitle,
                 style: const TextStyle(
-                  fontSize: 12.5,
-                  height: 1.45,
+                  fontSize: 12,
                   color: AppColors.textSecondary,
                 ),
               ),
@@ -437,12 +407,10 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
     final code = '${data['tracking_code']}';
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.line),
-        boxShadow: AppColors.cardShadow,
+        color: Colors.white,
+        border: Border.all(color: AppColors.ink, width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -460,8 +428,8 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
                     'Vận đơn $code • ${cloudServiceTypes[service] ?? service}',
                     style: const TextStyle(
                       fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.primary,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.violet,
                     ),
                   ),
                   Text(
@@ -487,13 +455,12 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
             decoration: BoxDecoration(
-              color: AppColors.surfaceSubtle,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.line),
+              color: const Color(0xFFF4F7FA),
+              border: Border.all(color: AppColors.ink),
             ),
             child: Wrap(
               spacing: 16,
@@ -591,12 +558,10 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
         marketStates[data['state']] ??
         'Đang cập nhật';
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.line),
-        boxShadow: AppColors.cardShadow,
+        color: Colors.white,
+        border: Border.all(color: AppColors.ink, width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -605,8 +570,8 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
             '${data['shop_name'] ?? 'GHST Express'}',
             style: const TextStyle(
               fontSize: 16,
-              fontWeight: FontWeight.w800,
-              color: AppColors.primary,
+              fontWeight: FontWeight.w900,
+              color: AppColors.violet,
             ),
           ),
           const SizedBox(height: 6),

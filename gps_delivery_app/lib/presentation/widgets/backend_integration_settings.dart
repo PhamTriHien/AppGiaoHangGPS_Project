@@ -350,24 +350,23 @@ class _BackendIntegrationSettingsState
             AdminStudioColors.goldSoft,
           )
         : provider['enabled'] == true
-        ? ('Đang bật', AdminStudioColors.acidInk, AdminStudioColors.acidSoft)
+        ? ('Đang bật', AdminStudioColors.ink, AdminStudioColors.acid)
         : ('Đang tắt', AdminStudioColors.muted, AdminStudioColors.paperWarm);
 
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.only(top: 5),
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: fg.withValues(alpha: 0.22)),
+          border: Border.all(color: AdminStudioColors.ink, width: 1.1),
         ),
         child: Text(
           text,
           style: TextStyle(
             fontSize: 11,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w800,
             color: fg,
           ),
         ),
@@ -414,17 +413,14 @@ class _BackendIntegrationSettingsState
               height: 38,
               decoration: BoxDecoration(
                 color: active
-                    ? AdminStudioColors.acidSoft
+                    ? AdminStudioColors.acid
                     : AdminStudioColors.paperWarm,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AdminStudioColors.line),
+                border: Border.all(color: AdminStudioColors.ink, width: 1.2),
               ),
               child: Icon(
                 _providerIcon(id),
                 size: 19,
-                color: active
-                    ? AdminStudioColors.acidInk
-                    : AdminStudioColors.ink,
+                color: AdminStudioColors.ink,
               ),
             ),
             title: Text(
@@ -443,9 +439,11 @@ class _BackendIntegrationSettingsState
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AdminStudioColors.surfaceSubtle,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AdminStudioColors.line),
+                    color: AdminStudioColors.paperWarm,
+                    border: Border.all(
+                      color: AdminStudioColors.ink,
+                      width: 1.2,
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -655,139 +653,139 @@ class _BackendIntegrationSettingsState
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: AdminStudioGridBackdrop(
-              child: Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AdminStudioColors.shellLine),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: AdminStudioColors.shellElevated,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: AdminStudioColors.shellLine,
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.hub_outlined,
-                            size: 20,
-                            color: AdminStudioColors.acid,
+          AdminStudioGridBackdrop(
+            child: Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                border: Border.all(color: AdminStudioColors.ink, width: 2),
+                boxShadow: const [
+                  BoxShadow(
+                    color: AdminStudioColors.violet,
+                    offset: Offset(4, 4),
+                    blurRadius: 0,
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: AdminStudioColors.acid,
+                          border: Border.all(
+                            color: AdminStudioColors.ink,
+                            width: 1.5,
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Cổng tích hợp & Dịch vụ Backend',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 16,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              if (_providers != null)
-                                Text(
-                                  'Kích hoạt $activeCount/${_providers!.length} dịch vụ${_storage == 'cloud_postgres' ? ' · Lưu trữ tập trung' : ''}',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: AdminStudioColors.acid,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                            ],
-                          ),
+                        child: const Icon(
+                          Icons.hub_outlined,
+                          size: 20,
+                          color: AdminStudioColors.ink,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        FilledButton.icon(
-                          onPressed: _busy ? null : _load,
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AdminStudioColors.acid,
-                            foregroundColor: AdminStudioColors.ink,
-                          ),
-                          icon: const Icon(Icons.settings_outlined, size: 18),
-                          label: Text(
-                            _providers == null
-                                ? 'Quản lý API backend'
-                                : 'Tải lại cấu hình',
-                          ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Cổng tích hợp & Dịch vụ Backend',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w900,
+                                fontSize: 16,
+                                color: Colors.white,
+                              ),
+                            ),
+                            if (_providers != null)
+                              Text(
+                                'Kích hoạt $activeCount/${_providers!.length} dịch vụ${_storage == 'cloud_postgres' ? ' · Lưu trữ tập trung' : ''}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AdminStudioColors.acid,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                          ],
                         ),
-                        if (_providers != null)
-                          IconButton(
-                            tooltip: 'Sẵn sàng triển khai',
-                            style: IconButton.styleFrom(
-                              backgroundColor: AdminStudioColors.shellElevated,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                side: BorderSide(
-                                  color: AdminStudioColors.acid.withValues(
-                                    alpha: 0.45,
-                                  ),
-                                ),
-                              ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      FilledButton.icon(
+                        onPressed: _busy ? null : _load,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AdminStudioColors.acid,
+                          foregroundColor: AdminStudioColors.ink,
+                        ),
+                        icon: const Icon(Icons.settings_outlined, size: 18),
+                        label: Text(
+                          _providers == null
+                              ? 'Quản lý API backend'
+                              : 'Tải lại cấu hình',
+                        ),
+                      ),
+                      if (_providers != null)
+                        IconButton(
+                          tooltip: 'Sẵn sàng triển khai',
+                          style: IconButton.styleFrom(
+                            backgroundColor: AdminStudioColors.shellElevated,
+                            foregroundColor: Colors.white,
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.zero,
+                              side: BorderSide(color: AdminStudioColors.acid),
                             ),
-                            onPressed: _busy ? null : _readiness,
-                            icon: const Icon(Icons.fact_check_outlined),
                           ),
-                        if (_providers != null)
-                          IconButton(
-                            tooltip: 'Hoạt động API',
-                            style: IconButton.styleFrom(
-                              backgroundColor: AdminStudioColors.shellElevated,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                side: const BorderSide(
-                                  color: AdminStudioColors.shellLine,
-                                ),
+                          onPressed: _busy ? null : _readiness,
+                          icon: const Icon(Icons.fact_check_outlined),
+                        ),
+                      if (_providers != null)
+                        IconButton(
+                          tooltip: 'Hoạt động API',
+                          style: IconButton.styleFrom(
+                            backgroundColor: AdminStudioColors.shellElevated,
+                            foregroundColor: Colors.white,
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.zero,
+                              side: BorderSide(
+                                color: AdminStudioColors.shellLine,
                               ),
                             ),
-                            onPressed: _busy
-                                ? null
-                                : () => _run(() async {
-                                    final response = await _api.request(
-                                      'admin/integrations/usage',
-                                      localAuth: _localAuth,
-                                    );
-                                    if (mounted) {
-                                      setState(() => _usage = response);
-                                    }
-                                  }),
-                            icon: const Icon(Icons.monitor_heart_outlined),
                           ),
-                        if (_providers != null)
-                          IconButton(
-                            tooltip: 'Lịch sử cấu hình',
-                            style: IconButton.styleFrom(
-                              backgroundColor: AdminStudioColors.shellElevated,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                side: const BorderSide(
-                                  color: AdminStudioColors.shellLine,
-                                ),
+                          onPressed: _busy
+                              ? null
+                              : () => _run(() async {
+                                  final response = await _api.request(
+                                    'admin/integrations/usage',
+                                    localAuth: _localAuth,
+                                  );
+                                  if (mounted) {
+                                    setState(() => _usage = response);
+                                  }
+                                }),
+                          icon: const Icon(Icons.monitor_heart_outlined),
+                        ),
+                      if (_providers != null)
+                        IconButton(
+                          tooltip: 'Lịch sử cấu hình',
+                          style: IconButton.styleFrom(
+                            backgroundColor: AdminStudioColors.shellElevated,
+                            foregroundColor: Colors.white,
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.zero,
+                              side: BorderSide(
+                                color: AdminStudioColors.shellLine,
                               ),
                             ),
+                          ),
                           onPressed: _busy
                               ? null
                               : () => _run(() async {
@@ -804,10 +802,9 @@ class _BackendIntegrationSettingsState
                                 }),
                           icon: const Icon(Icons.history),
                         ),
-                      ],
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ),

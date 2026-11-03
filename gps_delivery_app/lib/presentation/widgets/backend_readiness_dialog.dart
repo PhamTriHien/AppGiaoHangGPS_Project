@@ -180,8 +180,7 @@ class _BackendReadinessDialogState extends State<BackendReadinessDialog> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AdminStudioColors.line),
+        border: Border.all(color: AdminStudioColors.ink, width: 1.2),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -223,9 +222,8 @@ class _BackendReadinessDialogState extends State<BackendReadinessDialog> {
     margin: const EdgeInsets.only(top: 8),
     padding: const EdgeInsets.all(12),
     decoration: BoxDecoration(
-      color: AdminStudioColors.surfaceSubtle,
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: AdminStudioColors.line),
+      color: AdminStudioColors.surface,
+      border: Border.all(color: AdminStudioColors.ink, width: 1.2),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

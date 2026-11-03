@@ -215,12 +215,11 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
   }
 
   Widget _panel(Widget child) => Container(
-    padding: const EdgeInsets.all(16),
+    padding: const EdgeInsets.all(14),
     decoration: BoxDecoration(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: AppColors.line),
-      boxShadow: AppColors.cardShadow,
+      color: Colors.white,
+      border: Border.all(color: AppColors.ink, width: 1.5),
+      boxShadow: const [BoxShadow(color: AppColors.ink, offset: Offset(3, 3))],
     ),
     child: Material(type: MaterialType.transparency, child: child),
   );
@@ -231,10 +230,10 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
         child: Text(
           title,
           style: const TextStyle(
-            fontSize: 15,
+            fontSize: 13.5,
             color: AppColors.ink,
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.2,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0,
           ),
         ),
       ),
@@ -243,12 +242,7 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
   );
 
   Widget _readState(String section, String empty) {
-    if (_loading.contains(section)) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(99),
-        child: const LinearProgressIndicator(minHeight: 4),
-      );
-    }
+    if (_loading.contains(section)) return const LinearProgressIndicator();
     if (_errors.contains(section)) {
       return Row(
         children: [
@@ -263,7 +257,7 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
     }
     return Text(
       empty,
-      style: const TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
+      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
     );
   }
 
@@ -272,7 +266,7 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _heading('Dịch vụ Giao nhận & Ăn uống nhanh'),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         LayoutBuilder(
           builder: (context, constraints) {
             final columns = constraints.maxWidth >= 520 ? 3 : 2;
@@ -281,7 +275,7 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
               (
                 'Giao nhanh',
                 Icons.bolt_rounded,
-                AppColors.accent,
+                AppColors.pink,
                 widget.session.canCreateShippingOrder
                     ? () => widget.onCreateOrder({'service_type': 'express'})
                     : null,
@@ -289,7 +283,7 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
               (
                 'Ghép đơn 2H',
                 Icons.hub_outlined,
-                const Color(0xFF0284C7),
+                const Color(0xFF0EA5E9),
                 widget.session.canCreateShippingOrder
                     ? () => widget.onCreateOrder({
                         'service_type': 'same_day_2h',
@@ -299,7 +293,7 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
               (
                 'Tiêu chuẩn',
                 Icons.inventory_2_outlined,
-                AppColors.primary,
+                AppColors.violet,
                 widget.session.canCreateShippingOrder
                     ? () => widget.onCreateOrder({'service_type': 'standard'})
                     : null,
@@ -307,7 +301,7 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
               (
                 'Tiết kiệm 4h',
                 Icons.savings_outlined,
-                AppColors.teal,
+                AppColors.success,
                 widget.session.canCreateShippingOrder
                     ? () => widget.onCreateOrder({'service_type': 'saving'})
                     : null,
@@ -315,7 +309,7 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
               (
                 'Xe tải nhẹ',
                 Icons.local_shipping_outlined,
-                const Color(0xFF334155),
+                AppColors.ink,
                 widget.session.canCreateShippingOrder
                     ? () => widget.onCreateOrder({'service_type': 'truck'})
                     : null,
@@ -323,7 +317,7 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
               (
                 'Ăn uống & Mua sắm',
                 Icons.restaurant_menu_rounded,
-                AppColors.success,
+                const Color(0xFF00B14F),
                 widget.onCatalog,
               ),
             ];
@@ -342,50 +336,46 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
                         button: true,
                         enabled: entry.$4 != null,
                         child: InkWell(
-                          borderRadius: BorderRadius.circular(12),
                           onTap: entry.$4,
                           child: Container(
-                            constraints: const BoxConstraints(minHeight: 68),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 10,
-                            ),
+                            constraints: const BoxConstraints(minHeight: 70),
+                            padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
                               color: entry.$4 == null
-                                  ? AppColors.warmStone.withValues(alpha: 0.55)
-                                  : AppColors.surfaceSubtle,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppColors.line),
+                                  ? const Color(0xFFF3F4F6)
+                                  : Colors.white,
+                              border: Border.all(
+                                color: entry.$4 == null
+                                    ? AppColors.techMuted
+                                    : entry.$3,
+                                width: 1.2,
+                              ),
                             ),
                             child: Row(
                               children: [
-                                Container(
-                                  width: 36,
-                                  height: 36,
-                                  decoration: BoxDecoration(
-                                    color: entry.$4 == null
-                                        ? AppColors.warmStone
-                                        : entry.$3.withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: Icon(
-                                    entry.$2,
-                                    color: entry.$4 == null
-                                        ? AppColors.textSecondary
-                                        : entry.$3,
-                                    size: 19,
+                                SizedBox(
+                                  width: 32,
+                                  height: 32,
+                                  child: ColoredBox(
+                                    color: entry.$3.withValues(alpha: .14),
+                                    child: Icon(
+                                      entry.$2,
+                                      color: entry.$4 == null
+                                          ? AppColors.textSecondary
+                                          : entry.$3,
+                                      size: 18,
+                                    ),
                                   ),
                                 ),
-                                const SizedBox(width: 10),
+                                const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
                                     entry.$1,
-                                    style: TextStyle(
-                                      fontSize: 12.5,
-                                      fontWeight: FontWeight.w700,
-                                      color: entry.$4 == null
-                                          ? AppColors.textSecondary
-                                          : AppColors.ink,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w900,
+                                      color: AppColors.ink,
+                                      letterSpacing: 0,
                                     ),
                                   ),
                                 ),
@@ -433,10 +423,9 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
             const Text(
               'Săn Voucher • Flash Sale • Vòng Xoay',
               style: TextStyle(
-                fontSize: 15,
+                fontSize: 13.5,
                 color: AppColors.ink,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.2,
+                fontWeight: FontWeight.w900,
               ),
             ),
             Row(
@@ -444,22 +433,19 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
+                    horizontal: 8,
+                    vertical: 3,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.tealSoft,
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: AppColors.teal.withValues(alpha: 0.3),
-                    ),
+                    color: AppColors.acid,
+                    border: Border.all(color: AppColors.ink, width: 1.2),
                   ),
                   child: Text(
                     '${widget.session.coinBalance} Xu',
                     style: const TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.teal,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.ink,
                     ),
                   ),
                 ),
@@ -473,7 +459,7 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         LayoutBuilder(
           builder: (context, constraints) {
             final cols = constraints.maxWidth >= 520 ? 4 : 2;
@@ -483,28 +469,28 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
                 'Điểm danh & Sale',
                 'Nhận Xu mỗi ngày',
                 Icons.flash_on_rounded,
-                AppColors.accent,
+                AppColors.pink,
                 0,
               ),
               (
                 'Vòng Xoay May Mắn',
                 'Săn Voucher 50K',
                 Icons.casino_outlined,
-                AppColors.primary,
+                AppColors.violet,
                 1,
               ),
               (
                 'Hộp Mù Bí Ẩn',
                 'Khui quà R/SR/SSR',
                 Icons.card_giftcard,
-                const Color(0xFFB45309),
+                const Color(0xFFD97706),
                 2,
               ),
               (
                 'Kho Voucher',
                 'Đổi Xu & Mã giảm',
                 Icons.confirmation_num_outlined,
-                AppColors.teal,
+                const Color(0xFF059669),
                 3,
               ),
             ];
@@ -517,39 +503,34 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
                     width: width,
                     child: InkWell(
                       key: ValueKey('home-promo-tab-${item.$5}'),
-                      borderRadius: BorderRadius.circular(12),
                       onTap: () => _openPromo(item.$5),
                       child: Container(
-                        constraints: const BoxConstraints(minHeight: 82),
-                        padding: const EdgeInsets.all(12),
+                        constraints: const BoxConstraints(minHeight: 74),
+                        padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: AppColors.surfaceSubtle,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.line),
+                          color: AppColors.paper,
+                          border: Border.all(color: AppColors.ink, width: 1.3),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Container(
-                              width: 32,
-                              height: 32,
+                              width: 28,
+                              height: 28,
                               alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                color: item.$4.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(9),
-                              ),
+                              color: item.$4,
                               child: Icon(
                                 item.$3,
-                                size: 17,
-                                color: item.$4,
+                                size: 16,
+                                color: Colors.white,
                               ),
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 6),
                             Text(
                               item.$1,
                               style: const TextStyle(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w900,
                                 color: AppColors.ink,
                               ),
                             ),
@@ -557,9 +538,9 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
                             Text(
                               item.$2,
                               style: const TextStyle(
-                                fontSize: 11,
+                                fontSize: 10.5,
                                 color: AppColors.textSecondary,
-                                fontWeight: FontWeight.w500,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ],
@@ -580,23 +561,20 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: AppColors.primarySoft,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.primaryBorder),
-              ),
-              child: const Icon(
-                Icons.location_on_rounded,
-                color: AppColors.primary,
-                size: 21,
+            const SizedBox(
+              width: 36,
+              height: 36,
+              child: ColoredBox(
+                color: AppColors.pink,
+                child: Icon(
+                  Icons.location_on_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -604,10 +582,10 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
                   const Text(
                     'Bạn muốn giao hàng hay đặt món đến đâu?',
                     style: TextStyle(
-                      fontSize: 15.5,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
                       color: AppColors.ink,
-                      letterSpacing: -0.2,
+                      letterSpacing: 0,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -618,7 +596,7 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
                     Text(
                       'Vị trí hiện tại: ${_defaultAddress?['full_address'] ?? 'Chưa chọn điểm lấy hàng'}',
                       style: const TextStyle(
-                        fontSize: 12.5,
+                        fontSize: 11.5,
                         color: AppColors.textSecondary,
                       ),
                     ),
@@ -627,32 +605,32 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 10),
         Wrap(
           spacing: 8,
           runSpacing: 8,
           children: [
-            if (widget.session.canCreateShippingOrder)
-              FilledButton.icon(
-                onPressed: () => widget.onCreateOrder({}),
-                icon: const Icon(Icons.arrow_forward_rounded, size: 16),
-                label: const Text('Đặt đơn'),
-              ),
             OutlinedButton.icon(
               onPressed: widget.onAddresses,
-              icon: const Icon(Icons.bookmarks_outlined, size: 16),
+              icon: const Icon(Icons.bookmarks_outlined, size: 15),
               label: const Text('Sổ địa chỉ'),
             ),
             OutlinedButton.icon(
               onPressed: widget.onOrders,
-              icon: const Icon(Icons.receipt_long_outlined, size: 16),
+              icon: const Icon(Icons.receipt_long_outlined, size: 15),
               label: const Text('Đơn hàng của tôi'),
             ),
             if (widget.onAiAssistant != null)
               OutlinedButton.icon(
                 onPressed: widget.onAiAssistant,
-                icon: const Icon(Icons.auto_awesome_outlined, size: 16),
+                icon: const Icon(Icons.auto_awesome_outlined, size: 15),
                 label: const Text('Hỏi Trợ lý AI'),
+              ),
+            if (widget.session.canCreateShippingOrder)
+              FilledButton.icon(
+                onPressed: () => widget.onCreateOrder({}),
+                icon: const Icon(Icons.arrow_forward_rounded, size: 15),
+                label: const Text('Đặt đơn'),
               ),
           ],
         ),
@@ -703,36 +681,33 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
               onChanged: (id) => setState(() => _trackedId = id),
             ),
           ],
-          const SizedBox(height: 10),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Map3dPerspectiveWidget(
-              key: const ValueKey('ghst-home-map'),
-              height: mapHeight,
-              showTopBanner: false,
-              mode: MapViewMode.customerPreview,
-              singlePinPoint: _route(_trackedOrder).length == 2
-                  ? null
-                  : _savedPoint,
-              singlePinLabel: 'Địa chỉ đã lưu',
-              customFleetDrivers: const [],
-              useGlobalFallbackRoute: false,
-              routePoints: _route(_trackedOrder),
-              pickupLabel: 'Điểm lấy',
-              dropoffLabel: 'Điểm giao',
-              onTapGeoPoint:
-                  !widget.session.canCreateShippingOrder ||
-                      _route(_trackedOrder).isNotEmpty
-                  ? null
-                  : (point) {
-                      if (_allowed) {
-                        widget.onCreateOrder({
-                          'dropoff_lat': point.latitude,
-                          'dropoff_lng': point.longitude,
-                        });
-                      }
-                    },
-            ),
+          const SizedBox(height: 8),
+          Map3dPerspectiveWidget(
+            key: const ValueKey('ghst-home-map'),
+            height: mapHeight,
+            showTopBanner: false,
+            mode: MapViewMode.customerPreview,
+            singlePinPoint: _route(_trackedOrder).length == 2
+                ? null
+                : _savedPoint,
+            singlePinLabel: 'Địa chỉ đã lưu',
+            customFleetDrivers: const [],
+            useGlobalFallbackRoute: false,
+            routePoints: _route(_trackedOrder),
+            pickupLabel: 'Điểm lấy',
+            dropoffLabel: 'Điểm giao',
+            onTapGeoPoint:
+                !widget.session.canCreateShippingOrder ||
+                    _route(_trackedOrder).isNotEmpty
+                ? null
+                : (point) {
+                    if (_allowed) {
+                      widget.onCreateOrder({
+                        'dropoff_lat': point.latitude,
+                        'dropoff_lng': point.longitude,
+                      });
+                    }
+                  },
           ),
         ],
       ),
@@ -760,37 +735,12 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
             for (final order in orders.take(widget.trackingOnly ? 10 : 3))
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: AppColors.primarySoft,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.local_shipping_outlined,
-                    size: 19,
-                    color: AppColors.primary,
-                  ),
-                ),
-                title: Text(
-                  '${order['tracking_code'] ?? order['id']}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13.5,
-                  ),
-                ),
+                leading: const Icon(Icons.local_shipping_outlined),
+                title: Text('${order['tracking_code'] ?? order['id']}'),
                 subtitle: Text(
                   '${cloudStatuses[order['status']] ?? order['status'] ?? ''}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
                 ),
-                trailing: const Icon(
-                  Icons.chevron_right,
-                  color: AppColors.textSecondary,
-                ),
+                trailing: const Icon(Icons.chevron_right),
                 onTap: () => _details(order),
               ),
         ],
@@ -819,54 +769,30 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
             for (final product in products.take(4))
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: SizedBox(
-                    width: 48,
-                    height: 48,
-                    child: (product['image_url'] as String? ?? '').isEmpty
-                        ? const ColoredBox(
-                            color: AppColors.primarySoft,
-                            child: Icon(
-                              Icons.storefront_outlined,
-                              color: AppColors.primary,
-                            ),
-                          )
-                        : Image.network(
-                            '${product['image_url']}',
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, _, _) => const ColoredBox(
-                              color: AppColors.surfaceSubtle,
-                              child: Icon(
-                                Icons.image_not_supported_outlined,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ),
-                  ),
+                leading: SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: (product['image_url'] as String? ?? '').isEmpty
+                      ? const ColoredBox(
+                          color: Color(0xFFEFF6FF),
+                          child: Icon(Icons.storefront_outlined),
+                        )
+                      : Image.network(
+                          '${product['image_url']}',
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) =>
+                              const Icon(Icons.image_not_supported_outlined),
+                        ),
                 ),
-                title: Text(
-                  '${product['name']}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13.5,
-                  ),
-                ),
-                subtitle: Text(
-                  '${product['shop_name']}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
+                title: Text('${product['name']}'),
+                subtitle: Text('${product['shop_name']}'),
                 trailing: Text(
                   CurrencyFormatter.formatVnd(
                     (product['price'] as num? ?? 0).toDouble(),
                   ),
                   style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12.5,
-                    color: AppColors.primaryInk,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 12,
                   ),
                 ),
                 onTap: widget.onCatalog,
@@ -883,7 +809,7 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
       onRefresh: _load,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(18, 12, 18, 22),
+        padding: const EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -891,17 +817,13 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
               alignment: Alignment.centerRight,
               child: IconButton(
                 tooltip: 'Tải lại trang chủ',
-                visualDensity: VisualDensity.compact,
                 onPressed: _loading.isEmpty ? _load : null,
-                icon: const Icon(
-                  Icons.refresh_rounded,
-                  color: AppColors.textSecondary,
-                ),
+                icon: const Icon(Icons.refresh),
               ),
             ),
             if (!widget.trackingOnly) ...[
               _location(),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
             ],
             LayoutBuilder(
               builder: (context, constraints) {
@@ -910,9 +832,9 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _services(),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     _promoHub(),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     _discovery(),
                   ],
                 );
@@ -920,7 +842,7 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _map(viewportHeight),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     _recent(),
                   ],
                 );
@@ -930,13 +852,13 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(flex: 7, child: services),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 14),
                       Expanded(flex: 5, child: tracking),
                     ],
                   );
                 }
                 return Column(
-                  children: [services, const SizedBox(height: 16), tracking],
+                  children: [services, const SizedBox(height: 12), tracking],
                 );
               },
             ),

@@ -160,20 +160,20 @@ class _GhstAiChatScreenState extends State<GhstAiChatScreen> {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 920),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _buildBanner(),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               Expanded(
                 child: Container(
-                  clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.line),
-                    boxShadow: AppColors.cardShadow,
+                    color: Colors.white,
+                    border: Border.all(color: AppColors.ink, width: 1.5),
+                    boxShadow: const [
+                      BoxShadow(color: AppColors.ink, offset: Offset(4, 4)),
+                    ],
                   ),
                   child: GhstAiChatBody(
                     controller: _controller,
@@ -190,50 +190,46 @@ class _GhstAiChatScreenState extends State<GhstAiChatScreen> {
   );
 
   Widget _buildBanner() => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
     decoration: BoxDecoration(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: AppColors.line),
-      boxShadow: AppColors.cardShadow,
+      color: AppColors.techBg,
+      border: Border.all(color: AppColors.ink, width: 1.5),
     ),
     child: Row(
       children: [
-        Container(
-          width: 38,
-          height: 38,
-          decoration: BoxDecoration(
-            color: AppColors.primarySoft,
-            borderRadius: BorderRadius.circular(11),
-            border: Border.all(color: AppColors.primaryBorder),
-          ),
-          child: const Icon(
-            Icons.auto_awesome_rounded,
-            color: AppColors.primary,
-            size: 19,
+        const SizedBox(
+          width: 34,
+          height: 34,
+          child: ColoredBox(
+            color: AppColors.acid,
+            child: Icon(
+              Icons.auto_awesome_rounded,
+              color: AppColors.ink,
+              size: 19,
+            ),
           ),
         ),
-        const SizedBox(width: 12),
-        const Expanded(
+        const SizedBox(width: 10),
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+            children: const [
               Text(
                 'TRỢ LÝ AI GHST EXPRESS',
                 style: TextStyle(
-                  color: AppColors.ink,
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.1,
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0,
                 ),
               ),
               SizedBox(height: 2),
               Text(
                 'Tra cứu đơn hàng & giải đáp dịch vụ',
                 style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
+                  color: AppColors.techMuted,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -245,7 +241,7 @@ class _GhstAiChatScreenState extends State<GhstAiChatScreen> {
             onPressed: _controller.busy ? null : _controller.reset,
             icon: const Icon(
               Icons.refresh_rounded,
-              color: AppColors.primary,
+              color: AppColors.acid,
               size: 20,
             ),
           ),
@@ -361,41 +357,38 @@ class _GhstAiFloatingBubbleState extends State<GhstAiFloatingBubble> {
                       label: 'Mở bong bóng Trợ lý AI',
                       child: InkWell(
                         key: const ValueKey('ghst-ai-floating-bubble'),
-                        borderRadius: BorderRadius.circular(16),
                         onTap: () => setState(() => _open = true),
                         child: Container(
                           width: bubbleWidth,
                           height: bubbleHeight,
                           decoration: BoxDecoration(
-                            color: AppColors.primary,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.25),
-                            ),
-                            boxShadow: AppColors.elevatedShadow,
+                            color: AppColors.techBg,
+                            border: Border.all(color: AppColors.acid, width: 2),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: AppColors.violet,
+                                offset: Offset(4, 4),
+                              ),
+                            ],
                           ),
                           child: Stack(
                             alignment: Alignment.center,
                             children: [
                               const Icon(
                                 Icons.auto_awesome_rounded,
-                                color: Colors.white,
-                                size: 23,
+                                color: AppColors.acid,
+                                size: 24,
                               ),
                               if (hasMessages)
                                 Positioned(
-                                  top: 8,
-                                  right: 8,
+                                  top: 6,
+                                  right: 6,
                                   child: Container(
                                     width: 9,
                                     height: 9,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.acid,
+                                    decoration: const BoxDecoration(
+                                      color: AppColors.pink,
                                       shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: AppColors.primary,
-                                        width: 1.5,
-                                      ),
                                     ),
                                   ),
                                 ),
@@ -431,46 +424,45 @@ class _GhstAiFloatingBubbleState extends State<GhstAiFloatingBubble> {
             width: panelWidth,
             height: panelHeight,
             child: Material(
-              color: Colors.transparent,
+              color: Colors.white,
               child: Container(
                 key: const ValueKey('ghst-ai-floating-panel'),
-                clipBehavior: Clip.antiAlias,
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: AppColors.line),
-                  boxShadow: AppColors.elevatedShadow,
+                  color: Colors.white,
+                  border: Border.all(color: AppColors.ink, width: 1.8),
+                  boxShadow: const [
+                    BoxShadow(color: AppColors.ink, offset: Offset(5, 5)),
+                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 9,
+                        horizontal: 10,
+                        vertical: 7,
                       ),
                       decoration: const BoxDecoration(
                         color: AppColors.techBg,
                         border: Border(
-                          bottom: BorderSide(color: AppColors.techLine),
+                          bottom: BorderSide(color: AppColors.ink, width: 1.4),
                         ),
                       ),
                       child: Row(
                         children: [
-                          Container(
-                            width: 28,
-                            height: 28,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(
-                              Icons.auto_awesome_rounded,
-                              color: Colors.white,
-                              size: 15,
+                          const SizedBox(
+                            width: 26,
+                            height: 26,
+                            child: ColoredBox(
+                              color: AppColors.acid,
+                              child: Icon(
+                                Icons.auto_awesome_rounded,
+                                color: AppColors.ink,
+                                size: 15,
+                              ),
                             ),
                           ),
-                          const SizedBox(width: 9),
+                          const SizedBox(width: 8),
                           const Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -481,8 +473,8 @@ class _GhstAiFloatingBubbleState extends State<GhstAiFloatingBubble> {
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
                                     color: Colors.white,
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w700,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w900,
                                   ),
                                 ),
                                 Text(
@@ -490,9 +482,9 @@ class _GhstAiFloatingBubbleState extends State<GhstAiFloatingBubble> {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
-                                    color: AppColors.techMuted,
-                                    fontSize: 10.5,
-                                    fontWeight: FontWeight.w500,
+                                    color: AppColors.acid,
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
                               ],
@@ -534,7 +526,7 @@ class _GhstAiFloatingBubbleState extends State<GhstAiFloatingBubble> {
                             onPressed: () => setState(() => _open = false),
                             icon: const Icon(
                               Icons.keyboard_arrow_down_rounded,
-                              color: Colors.white,
+                              color: AppColors.acid,
                               size: 22,
                             ),
                           ),
@@ -646,7 +638,7 @@ class _GhstAiChatBodyState extends State<GhstAiChatBody> {
               ? _buildEmptyState(c)
               : _buildMessageList(c),
         ),
-        const Divider(color: AppColors.line, height: 1),
+        const Divider(color: AppColors.ink, height: 1, thickness: 1.2),
         _buildComposer(c),
       ],
     );
@@ -654,17 +646,15 @@ class _GhstAiChatBodyState extends State<GhstAiChatBody> {
 
   Widget _buildErrorStrip(GhstAiChatController c) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-    decoration: BoxDecoration(
-      color: AppColors.dangerSoft,
-      border: Border(
-        bottom: BorderSide(color: AppColors.danger.withValues(alpha: 0.25)),
-      ),
+    decoration: const BoxDecoration(
+      color: Color(0xFFFEF2F2),
+      border: Border(bottom: BorderSide(color: Color(0xFFFECACA))),
     ),
     child: Row(
       children: [
         const Icon(
           Icons.error_outline_rounded,
-          color: AppColors.danger,
+          color: Color(0xFFB91C1C),
           size: 17,
         ),
         const SizedBox(width: 6),
@@ -672,9 +662,9 @@ class _GhstAiChatBodyState extends State<GhstAiChatBody> {
           child: Text(
             c.error!,
             style: const TextStyle(
-              color: AppColors.danger,
+              color: Color(0xFF991B1B),
               fontSize: 11.5,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ),
@@ -696,18 +686,19 @@ class _GhstAiChatBodyState extends State<GhstAiChatBody> {
           'Xin chào! Tôi có thể hỗ trợ bạn kiểm tra trạng thái đơn hàng, tính cước vận chuyển 5 chế độ, chính sách bảo hiểm, Voucher & Xu hoặc hậu mãi.',
           style: TextStyle(
             color: AppColors.ink,
-            fontSize: widget.compact ? 12.5 : 13.5,
-            fontWeight: FontWeight.w500,
-            height: 1.45,
+            fontSize: widget.compact ? 12 : 13,
+            fontWeight: FontWeight.w700,
+            height: 1.4,
           ),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 12),
         const Text(
-          'Gợi ý câu hỏi nhanh',
+          'GỢI Ý CÂU HỎI NHANH',
           style: TextStyle(
             color: AppColors.textSecondary,
-            fontSize: 11.5,
-            fontWeight: FontWeight.w700,
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0,
           ),
         ),
         const SizedBox(height: 8),
@@ -719,12 +710,9 @@ class _GhstAiChatBodyState extends State<GhstAiChatBody> {
               OutlinedButton(
                 onPressed: c.busy ? null : () => unawaited(c.send(suggestion)),
                 style: OutlinedButton.styleFrom(
-                  backgroundColor: AppColors.surfaceSubtle,
+                  backgroundColor: AppColors.paper,
                   foregroundColor: AppColors.ink,
-                  side: const BorderSide(color: AppColors.line),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+                  side: const BorderSide(color: AppColors.ink, width: 1.1),
                   padding: EdgeInsets.symmetric(
                     horizontal: widget.compact ? 10 : 12,
                     vertical: widget.compact ? 7 : 9,
@@ -734,8 +722,8 @@ class _GhstAiChatBodyState extends State<GhstAiChatBody> {
                   suggestion,
                   style: TextStyle(
                     color: AppColors.ink,
-                    fontSize: widget.compact ? 11.5 : 12.5,
-                    fontWeight: FontWeight.w600,
+                    fontSize: widget.compact ? 11.5 : 12,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
@@ -758,9 +746,8 @@ class _GhstAiChatBodyState extends State<GhstAiChatBody> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: AppColors.surfaceSubtle,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.line),
+                color: AppColors.paper,
+                border: Border.all(color: AppColors.ink, width: 1.2),
               ),
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
@@ -776,7 +763,7 @@ class _GhstAiChatBodyState extends State<GhstAiChatBody> {
                     style: TextStyle(
                       color: AppColors.ink,
                       fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],
@@ -791,11 +778,18 @@ class _GhstAiChatBodyState extends State<GhstAiChatBody> {
           child: ConstrainedBox(
             constraints: BoxConstraints(maxWidth: widget.compact ? 290 : 680),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
               decoration: BoxDecoration(
-                color: isUser ? AppColors.primary : AppColors.surfaceSubtle,
-                borderRadius: BorderRadius.circular(14),
-                border: isUser ? null : Border.all(color: AppColors.line),
+                color: isUser ? AppColors.techBg : AppColors.paper,
+                border: Border.all(color: AppColors.ink, width: 1.2),
+                boxShadow: isUser
+                    ? null
+                    : const [
+                        BoxShadow(
+                          color: AppColors.violet,
+                          offset: Offset(2, 2),
+                        ),
+                      ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -803,11 +797,10 @@ class _GhstAiChatBodyState extends State<GhstAiChatBody> {
                   Text(
                     isUser ? 'BẠN' : 'TRỢ LÝ AI',
                     style: TextStyle(
-                      color: isUser
-                          ? Colors.white.withValues(alpha: 0.85)
-                          : AppColors.primary,
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w700,
+                      color: isUser ? AppColors.acid : AppColors.violet,
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0,
                     ),
                   ),
                   const SizedBox(height: 3),
@@ -815,9 +808,9 @@ class _GhstAiChatBodyState extends State<GhstAiChatBody> {
                     turn.content,
                     style: TextStyle(
                       color: isUser ? Colors.white : AppColors.ink,
-                      fontSize: widget.compact ? 12.5 : 13.5,
-                      fontWeight: FontWeight.w500,
-                      height: 1.45,
+                      fontSize: widget.compact ? 12.5 : 13,
+                      fontWeight: FontWeight.w600,
+                      height: 1.42,
                     ),
                   ),
                 ],

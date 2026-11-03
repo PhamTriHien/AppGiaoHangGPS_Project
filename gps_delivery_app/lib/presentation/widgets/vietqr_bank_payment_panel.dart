@@ -199,15 +199,9 @@ class _VietQrBankPaymentPanelState extends State<VietQrBankPaymentPanel> {
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.line),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0A0F172A),
-            blurRadius: 12,
-            offset: Offset(0, 3),
-          ),
-        ],
+        borderRadius: BorderRadius.zero,
+        border: Border.all(color: AppColors.ink, width: 1.2),
+        boxShadow: const [BoxShadow(color: AppColors.ink, offset: Offset(3, 3))],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -225,7 +219,7 @@ class _VietQrBankPaymentPanelState extends State<VietQrBankPaymentPanel> {
             textAlign: TextAlign.center,
             style: theme.textTheme.bodySmall?.copyWith(
               fontWeight: FontWeight.w700,
-              color: AppColors.ink,
+              color: const Color(0xFF334155),
             ),
           ),
         ],
@@ -308,7 +302,7 @@ class _VietQrBankPaymentPanelState extends State<VietQrBankPaymentPanel> {
             child: Text(
               _copiedNotice!,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: AppColors.teal,
+                color: const Color(0xFF047857),
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -319,9 +313,9 @@ class _VietQrBankPaymentPanelState extends State<VietQrBankPaymentPanel> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surfaceSubtle,
-        border: Border.all(color: AppColors.line),
-        borderRadius: BorderRadius.circular(14),
+        color: AppColors.paper,
+        border: Border.all(color: AppColors.ink, width: 1.5),
+        borderRadius: BorderRadius.zero,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -374,7 +368,7 @@ class _VietQrBankPaymentPanelState extends State<VietQrBankPaymentPanel> {
             Text(
               widget.reconciliationNote!,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: AppColors.textSecondary,
+                color: const Color(0xFF475569),
               ),
             ),
           ],
@@ -403,14 +397,14 @@ class _VietQrBankPaymentPanelState extends State<VietQrBankPaymentPanel> {
                   label,
                   style: const TextStyle(
                     fontSize: 11.5,
-                    color: AppColors.textSecondary,
+                    color: Color(0xFF64748B),
                   ),
                 ),
                 SelectableText(
                   value,
                   style: TextStyle(
                     fontSize: 13.5,
-                    color: AppColors.ink,
+                    color: const Color(0xFF0F172A),
                     fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
                   ),
                 ),
@@ -427,7 +421,7 @@ class _VietQrBankPaymentPanelState extends State<VietQrBankPaymentPanel> {
               icon: const Icon(
                 Icons.copy_outlined,
                 size: 16,
-                color: AppColors.primary,
+                color: Color(0xFF2563EB),
               ),
             ),
         ],

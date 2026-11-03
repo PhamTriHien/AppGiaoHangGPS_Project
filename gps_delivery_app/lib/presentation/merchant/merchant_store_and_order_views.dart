@@ -17,7 +17,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
           style: TextStyle(
             fontSize: 26,
             fontWeight: FontWeight.w800,
-            color: Color(0xFF122033),
+            color: Color(0xFF0F172A),
           ),
         ),
         const SizedBox(height: 12),
@@ -61,7 +61,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                   style: const TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 12.5,
-                    color: Color(0xFF122033),
+                    color: Color(0xFF0F172A),
                   ),
                 ),
               ),
@@ -117,7 +117,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.all(Radius.zero),
-            border: Border.all(color: const Color(0xFF122033)),
+            border: Border.all(color: const Color(0xFF0F172A)),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.04),
@@ -332,7 +332,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                 height: 48,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFC85A17),
+                    backgroundColor: const Color(0xFFF43F5E),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.all(Radius.zero),
@@ -415,7 +415,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
     required String label,
     required bool active,
   }) {
-    final color = active ? const Color(0xFFC85A17) : const Color(0xFF122033);
+    final color = active ? const Color(0xFFF43F5E) : const Color(0xFF0F172A);
     return Column(
       children: [
         Container(
@@ -434,7 +434,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
           style: TextStyle(
             fontSize: 11.5,
             fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-            color: active ? const Color(0xFFC85A17) : const Color(0xFF4A4754),
+            color: active ? const Color(0xFFF43F5E) : const Color(0xFF4A4754),
           ),
         ),
       ],
@@ -446,7 +446,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
       width: 65,
       height: 2,
       margin: const EdgeInsets.only(bottom: 20, left: 6, right: 6),
-      color: active ? const Color(0xFFC85A17) : const Color(0xFF122033),
+      color: active ? const Color(0xFFF43F5E) : const Color(0xFF0F172A),
     );
   }
 
@@ -486,10 +486,10 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
         decoration: BoxDecoration(
-          color: isAttached ? const Color(0xFFDCFCE7) : const Color(0xFFEEF3F8),
+          color: isAttached ? const Color(0xFFDCFCE7) : const Color(0xFFF4F7FA),
           borderRadius: const BorderRadius.all(Radius.zero),
           border: Border.all(
-            color: isAttached ? AppColors.success : const Color(0xFF122033),
+            color: isAttached ? AppColors.success : const Color(0xFF0F172A),
             width: isAttached ? 1.5 : 1.0,
           ),
         ),
@@ -552,7 +552,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.w800,
-            color: Color(0xFF122033),
+            color: Color(0xFF0F172A),
           ),
         ),
         const SizedBox(height: 14),
@@ -563,7 +563,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: const BorderRadius.all(Radius.zero),
-                border: Border.all(color: const Color(0xFF122033)),
+                border: Border.all(color: const Color(0xFF0F172A)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -609,13 +609,13 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? const Color(0xFFEEF3F8)
+                              ? const Color(0xFFF4F7FA)
                               : Colors.white,
                           borderRadius: const BorderRadius.all(Radius.zero),
                           border: Border.all(
                             color: isSelected
-                                ? const Color(0xFFC85A17)
-                                : const Color(0xFF122033),
+                                ? const Color(0xFFF43F5E)
+                                : const Color(0xFF0F172A),
                             width: isSelected ? 1.5 : 1,
                           ),
                         ),
@@ -642,7 +642,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                                       vertical: 2,
                                     ),
                                     decoration: const BoxDecoration(
-                                      color: Color(0xFFC85A17),
+                                      color: Color(0xFFF43F5E),
                                       borderRadius: BorderRadius.all(
                                         Radius.zero,
                                       ),
@@ -683,14 +683,14 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                                     icon: const Icon(
                                       Icons.star_border_rounded,
                                       size: 15,
-                                      color: Color(0xFF1E56C5),
+                                      color: Color(0xFF2563EB),
                                     ),
                                     label: const Text(
                                       'Đặt mặc định',
                                       style: TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w700,
-                                        color: Color(0xFF1E56C5),
+                                        color: Color(0xFF2563EB),
                                       ),
                                     ),
                                   ),
@@ -760,7 +760,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                   const SizedBox(height: 6),
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFC85A17),
+                      backgroundColor: const Color(0xFFF43F5E),
                       foregroundColor: Colors.white,
                     ),
                     onPressed: () => _showAddMerchantWarehouseDialog(context),
@@ -775,7 +775,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: const BorderRadius.all(Radius.zero),
-                border: Border.all(color: const Color(0xFF122033)),
+                border: Border.all(color: const Color(0xFF0F172A)),
               ),
               child: Material(
                 color: Colors.transparent,
@@ -889,7 +889,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                     const SizedBox(height: 6),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFC85A17),
+                        backgroundColor: const Color(0xFFF43F5E),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 13),
                       ),
@@ -996,7 +996,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: const BorderRadius.all(Radius.zero),
-                border: Border.all(color: const Color(0xFF122033)),
+                border: Border.all(color: const Color(0xFF0F172A)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1101,7 +1101,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                   Container(
                     decoration: BoxDecoration(
                       borderRadius: const BorderRadius.all(Radius.zero),
-                      border: Border.all(color: const Color(0xFF122033)),
+                      border: Border.all(color: const Color(0xFF0F172A)),
                     ),
                     clipBehavior: Clip.antiAlias,
                     child: Map3dPerspectiveWidget(
@@ -1244,7 +1244,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFC85A17),
+                    backgroundColor: const Color(0xFFF43F5E),
                     foregroundColor: Colors.white,
                   ),
                   onPressed: () {
@@ -1429,7 +1429,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.w800,
-            color: Color(0xFF122033),
+            color: Color(0xFF0F172A),
           ),
         ),
         const SizedBox(height: 2),
@@ -1446,7 +1446,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.all(Radius.zero),
-                border: Border.all(color: const Color(0xFF122033)),
+                border: Border.all(color: const Color(0xFF0F172A)),
               ),
               child: Material(
                 type: MaterialType.transparency,
@@ -1861,7 +1861,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                           avatar: const Icon(
                             Icons.swap_horiz_rounded,
                             size: 15,
-                            color: Color(0xFF1E56C5),
+                            color: Color(0xFF2563EB),
                           ),
                           label: const Text('Giao 2 chiều (Khứ hồi)'),
                           selected: _merchantIsRoundTrip,
@@ -2003,7 +2003,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: const BorderRadius.all(Radius.zero),
-                    border: Border.all(color: const Color(0xFF122033)),
+                    border: Border.all(color: const Color(0xFF0F172A)),
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: Map3dPerspectiveWidget(
@@ -2054,7 +2054,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.all(Radius.zero),
-                    border: Border.all(color: const Color(0xFF122033)),
+                    border: Border.all(color: const Color(0xFF0F172A)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -2131,7 +2131,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w800,
-                              color: Color(0xFF122033),
+                              color: Color(0xFF0F172A),
                             ),
                           ),
                         ],
@@ -2144,7 +2144,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                   height: 50,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFC85A17),
+                      backgroundColor: const Color(0xFFF43F5E),
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.all(Radius.zero),
@@ -2370,7 +2370,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
             style: const TextStyle(
               fontWeight: FontWeight.w700,
               fontSize: 13.5,
-              color: Color(0xFF122033),
+              color: Color(0xFF0F172A),
             ),
           ),
         ),
@@ -2397,7 +2397,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
             decoration: const BoxDecoration(
-              color: Color(0xFFC85A17),
+              color: Color(0xFFF43F5E),
               borderRadius: BorderRadius.vertical(top: Radius.circular(0)),
             ),
             child: const Text(
@@ -2420,7 +2420,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                   children: [
                     ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1E56C5),
+                        backgroundColor: const Color(0xFF2563EB),
                       ),
                       onPressed: () {
                         final path = _store.exportReportFileToDisk(
@@ -2508,7 +2508,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                       labelText: 'Kho lấy hàng áp dụng cho lô đơn CSV',
                       prefixIcon: Icon(
                         Icons.warehouse_outlined,
-                        color: Color(0xFF1E56C5),
+                        color: Color(0xFF2563EB),
                         size: 18,
                       ),
                     ),
@@ -2568,7 +2568,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                   width: double.infinity,
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEEF3F8),
+                    color: const Color(0xFFF4F7FA),
                     borderRadius: BorderRadius.all(Radius.zero),
                     border: Border.all(color: AppColors.divider),
                   ),
@@ -2579,7 +2579,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                         children: [
                           Icon(
                             Icons.cloud_upload_outlined,
-                            color: Color(0xFF1E56C5),
+                            color: Color(0xFF2563EB),
                           ),
                           SizedBox(width: 8),
                           Expanded(
@@ -2669,7 +2669,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                   scrollDirection: Axis.horizontal,
                   child: DataTable(
                     headingRowColor: WidgetStateProperty.all(
-                      const Color(0xFFEEF3F8),
+                      const Color(0xFFF4F7FA),
                     ),
                     columns: const [
                       DataColumn(label: Text('Dòng')),
@@ -2744,7 +2744,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                   alignment: Alignment.centerRight,
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFC85A17),
+                      backgroundColor: const Color(0xFFF43F5E),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 22,
                         vertical: 13,
@@ -2848,7 +2848,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
             const SizedBox(height: 14),
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFC85A17),
+                backgroundColor: const Color(0xFFF43F5E),
                 foregroundColor: Colors.white,
               ),
               onPressed: () =>
@@ -2890,7 +2890,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                   ),
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFC85A17),
+                      backgroundColor: const Color(0xFFF43F5E),
                     ),
                     onPressed: () async {
                       final savedPath =
@@ -2931,7 +2931,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                 child: DataTable(
                   showCheckboxColumn: false,
                   headingRowColor: WidgetStateProperty.all(
-                    const Color(0xFFEEF3F8),
+                    const Color(0xFFF4F7FA),
                   ),
                   columns: const [
                     DataColumn(label: Text('Chọn')),
@@ -2957,7 +2957,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                             isSelected
                                 ? Icons.check_box
                                 : Icons.check_box_outline_blank,
-                            color: const Color(0xFFC85A17),
+                            color: const Color(0xFFF43F5E),
                             size: 18,
                           ),
                         ),
@@ -3079,7 +3079,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                           style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF1E56C5),
+                            color: Color(0xFF2563EB),
                           ),
                         ),
                       ),

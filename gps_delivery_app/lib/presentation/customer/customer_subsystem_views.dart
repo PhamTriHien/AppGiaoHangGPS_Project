@@ -422,7 +422,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
                 'Ăn uống (GrabFood)',
                 13,
                 cartQty > 0 ? '$cartQty' : 'MỚI',
-                const Color(0xFF0E7C66),
+                const Color(0xFF00B14F),
               ),
             ],
           ),
@@ -745,7 +745,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFF00853B),
                     side: const BorderSide(
-                      color: Color(0xFF0E7C66),
+                      color: Color(0xFF00B14F),
                       width: 1.3,
                     ),
                     padding: const EdgeInsets.symmetric(
@@ -757,7 +757,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
                   icon: const Icon(
                     Icons.restaurant_menu_rounded,
                     size: 15,
-                    color: Color(0xFF0E7C66),
+                    color: Color(0xFF00B14F),
                   ),
                   label: Text(
                     _grabFoodCart.isEmpty
@@ -931,8 +931,8 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
         boxShadow: const [
           BoxShadow(
             color: AppColors.violet,
-            offset: Offset(0, 3),
-            blurRadius: 12,
+            offset: Offset(6, 6),
+            blurRadius: 0,
           ),
         ],
       ),
@@ -1085,8 +1085,8 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
         boxShadow: const [
           BoxShadow(
             color: AppColors.violet,
-            offset: Offset(0, -2),
-            blurRadius: 12,
+            offset: Offset(5, 5),
+            blurRadius: 0,
           ),
         ],
       ),
@@ -1121,7 +1121,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
                                 horizontal: 4,
                                 vertical: 1,
                               ),
-                              color: const Color(0xFF0E7C66),
+                              color: const Color(0xFF00B14F),
                               child: Text(
                                 '$cartQty',
                                 style: const TextStyle(
@@ -1335,7 +1335,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
                         ? 'Giỏ: $cartTotalItems món • Đặt ngay'
                         : 'Gợi ý quán ngon gần bạn',
                     Icons.restaurant_menu_rounded,
-                    const Color(0xFF0E7C66),
+                    const Color(0xFF00B14F),
                     null,
                     true,
                   ),

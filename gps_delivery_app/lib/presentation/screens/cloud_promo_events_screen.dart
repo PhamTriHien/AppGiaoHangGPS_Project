@@ -352,17 +352,10 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
   }
 
   Color _rarityColor(String rarity) => switch (rarity) {
-    'Legendary' || 'SSR' => AppColors.warningSoft,
-    'Epic' || 'SR' => AppColors.accentSoft,
-    'Rare' || 'R' => AppColors.tealSoft,
-    _ => AppColors.surfaceSubtle,
-  };
-
-  Color _rarityInkColor(String rarity) => switch (rarity) {
-    'Legendary' || 'SSR' => AppColors.warningInk,
-    'Epic' || 'SR' => AppColors.accent,
-    'Rare' || 'R' => AppColors.teal,
-    _ => AppColors.textSecondary,
+    'Legendary' || 'SSR' => AppColors.gold,
+    'Epic' || 'SR' => AppColors.pink,
+    'Rare' || 'R' => AppColors.acid,
+    _ => const Color(0xFFE9E2D4),
   };
 
   Future<void> _showRewardDialog(Map<String, dynamic> reward) {
@@ -372,16 +365,14 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
       context: context,
       builder: (dialogCtx) => Dialog(
         insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-        backgroundColor: AppColors.surface,
-        surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: AppColors.line),
+        backgroundColor: AppColors.paper,
+        shape: const RoundedRectangleBorder(
+          side: BorderSide(color: AppColors.ink, width: 2),
         ),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 420),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(22),
+            padding: const EdgeInsets.all(20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -394,25 +385,23 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 10,
-                            vertical: 5,
+                            vertical: 4,
                           ),
                           decoration: BoxDecoration(
                             color: _rarityColor(rarity),
-                            borderRadius: BorderRadius.circular(999),
                             border: Border.all(
-                              color: _rarityInkColor(
-                                rarity,
-                              ).withValues(alpha: 0.25),
+                              color: AppColors.ink,
+                              width: 1.5,
                             ),
                           ),
                           child: Text(
                             'PHẦN THƯỞNG • ${rarity.toUpperCase()}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: _rarityInkColor(rarity),
+                              fontWeight: FontWeight.w900,
+                              color: AppColors.ink,
                             ),
                           ),
                         ),
@@ -431,7 +420,7 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                   '${reward['title'] ?? 'Nhận thưởng thành công'}',
                   style: const TextStyle(
                     fontSize: 19,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w900,
                     color: AppColors.ink,
                   ),
                 ),
@@ -440,19 +429,20 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                   '${reward['summary'] ?? ''}',
                   style: const TextStyle(
                     fontSize: 13.5,
-                    height: 1.45,
                     color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 if (voucherCode != null && voucherCode.isNotEmpty) ...[
                   const SizedBox(height: 14),
                   Container(
-                    padding: const EdgeInsets.all(14),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppColors.primarySoft,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.primaryBorder),
+                      color: Colors.white,
+                      border: Border.all(color: AppColors.ink, width: 1.5),
+                      boxShadow: const [
+                        BoxShadow(color: AppColors.ink, offset: Offset(3, 3)),
+                      ],
                     ),
                     child: Wrap(
                       spacing: 8,
@@ -465,7 +455,7 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                           children: [
                             const Icon(
                               Icons.confirmation_num_outlined,
-                              color: AppColors.primary,
+                              color: AppColors.violet,
                             ),
                             const SizedBox(width: 8),
                             Flexible(
@@ -473,8 +463,8 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                                 voucherCode,
                                 style: const TextStyle(
                                   fontSize: 15,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.primaryInk,
+                                  fontWeight: FontWeight.w900,
+                                  color: AppColors.ink,
                                 ),
                               ),
                             ),
@@ -521,15 +511,14 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
 
   Widget _neoCard({
     required Widget child,
-    Color color = AppColors.surface,
-    EdgeInsetsGeometry padding = const EdgeInsets.all(16),
+    Color color = Colors.white,
+    EdgeInsetsGeometry padding = const EdgeInsets.all(14),
   }) => Container(
     padding: padding,
     decoration: BoxDecoration(
       color: color,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: AppColors.line),
-      boxShadow: AppColors.cardShadow,
+      border: Border.all(color: AppColors.ink, width: 1.5),
+      boxShadow: const [BoxShadow(color: AppColors.ink, offset: Offset(3, 3))],
     ),
     child: Material(type: MaterialType.transparency, child: child),
   );
@@ -538,8 +527,8 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       decoration: const BoxDecoration(
-        color: AppColors.surface,
-        border: Border(bottom: BorderSide(color: AppColors.line)),
+        color: AppColors.studioDark,
+        border: Border(bottom: BorderSide(color: AppColors.ink, width: 2)),
       ),
       child: Center(
         child: ConstrainedBox(
@@ -551,26 +540,25 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               InkWell(
-                borderRadius: BorderRadius.circular(999),
                 onTap: () =>
                     showCoinWalletDialog(context, session: widget.session),
                 child: _walletChip(
                   icon: Icons.monetization_on_rounded,
-                  bg: AppColors.tealSoft,
-                  fg: AppColors.teal,
+                  bg: AppColors.acid,
+                  fg: AppColors.ink,
                   label: 'Ví Xu: $_coinBalance Xu',
                 ),
               ),
               _walletChip(
                 icon: Icons.casino_outlined,
-                bg: AppColors.primarySoft,
-                fg: AppColors.primaryInk,
+                bg: AppColors.violet,
+                fg: Colors.white,
                 label: 'Vé Vòng Xoay: $_spinTickets',
               ),
               _walletChip(
                 icon: Icons.card_giftcard,
-                bg: AppColors.accentSoft,
-                fg: AppColors.accent,
+                bg: AppColors.pink,
+                fg: Colors.white,
                 label: 'Vé Hộp Mù: $_boxTickets',
               ),
             ],
@@ -586,11 +574,10 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
     required Color fg,
     required String label,
   }) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
     decoration: BoxDecoration(
       color: bg,
-      borderRadius: BorderRadius.circular(999),
-      border: Border.all(color: fg.withValues(alpha: 0.22)),
+      border: Border.all(color: AppColors.ink, width: 1.4),
     ),
     child: Row(
       mainAxisSize: MainAxisSize.min,
@@ -601,7 +588,7 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
           label,
           style: TextStyle(
             fontSize: 12,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w900,
             color: fg,
           ),
         ),
@@ -629,7 +616,7 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                   _neoCard(
-                    color: AppColors.surface,
+                    color: const Color(0xFFFFFDF8),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -643,37 +630,32 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                               'Điểm danh 7 ngày nhận Xu & Vé quay · $streak/7',
                               style: const TextStyle(
                                 fontSize: 15,
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w900,
                                 color: AppColors.ink,
                               ),
                             ),
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
+                                horizontal: 8,
+                                vertical: 3,
                               ),
-                              decoration: BoxDecoration(
-                                color: checkedToday
-                                    ? AppColors.tealSoft
-                                    : AppColors.warningSoft,
-                                borderRadius: BorderRadius.circular(999),
-                              ),
+                              color: checkedToday
+                                  ? AppColors.acid
+                                  : AppColors.gold,
                               child: Text(
                                 checkedToday
                                     ? 'ĐÃ ĐIỂM DANH HÔM NAY'
                                     : 'CHƯA ĐIỂM DANH',
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 10.5,
-                                  fontWeight: FontWeight.w800,
-                                  color: checkedToday
-                                      ? AppColors.teal
-                                      : AppColors.warningInk,
+                                  fontWeight: FontWeight.w900,
+                                  color: AppColors.ink,
                                 ),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 14),
+                        const SizedBox(height: 12),
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
@@ -691,19 +673,16 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                                   final done = day <= streak;
                                   return Container(
                                     width: 112,
-                                    padding: const EdgeInsets.all(10),
+                                    padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
                                       color: done
-                                          ? AppColors.tealSoft
-                                          : AppColors.surfaceSubtle,
-                                      borderRadius: BorderRadius.circular(12),
+                                          ? AppColors.acid.withValues(
+                                              alpha: 0.45,
+                                            )
+                                          : Colors.white,
                                       border: Border.all(
-                                        color: done
-                                            ? AppColors.teal.withValues(
-                                                alpha: 0.45,
-                                              )
-                                            : AppColors.line,
-                                        width: done ? 1.4 : 1.0,
+                                        color: AppColors.ink,
+                                        width: done ? 1.8 : 1.2,
                                       ),
                                     ),
                                     child: Column(
@@ -712,12 +691,10 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                                       children: [
                                         Text(
                                           'Ngày $day ${done ? '✓' : ''}',
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                             fontSize: 11.5,
-                                            fontWeight: FontWeight.w800,
-                                            color: done
-                                                ? AppColors.teal
-                                                : AppColors.ink,
+                                            fontWeight: FontWeight.w900,
+                                            color: AppColors.ink,
                                           ),
                                         ),
                                         const SizedBox(height: 3),
@@ -725,8 +702,8 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                                           '+$coins Xu',
                                           style: const TextStyle(
                                             fontSize: 12.5,
-                                            fontWeight: FontWeight.w800,
-                                            color: AppColors.primary,
+                                            fontWeight: FontWeight.w900,
+                                            color: AppColors.violet,
                                           ),
                                         ),
                                         if (spins > 0 || boxes > 0)
@@ -737,7 +714,7 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                                             ].join(' · '),
                                             style: const TextStyle(
                                               fontSize: 10.5,
-                                              fontWeight: FontWeight.w600,
+                                              fontWeight: FontWeight.w700,
                                               color: AppColors.textSecondary,
                                             ),
                                           ),
@@ -814,11 +791,13 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                           for (final fs in flashSales) ...[
                             Container(
                               margin: const EdgeInsets.only(bottom: 8),
-                              padding: const EdgeInsets.all(12),
+                              padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: AppColors.surfaceSubtle,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: AppColors.line),
+                                color: AppColors.paper,
+                                border: Border.all(
+                                  color: AppColors.ink,
+                                  width: 1.2,
+                                ),
                               ),
                               child: Wrap(
                                 spacing: 10,
@@ -895,13 +874,15 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                         for (final m in missions)
                           Container(
                             margin: const EdgeInsets.only(bottom: 10),
-                            padding: const EdgeInsets.all(12),
+                            padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
                               color: m['claimed'] == true
-                                  ? AppColors.surfaceSubtle
-                                  : AppColors.surface,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppColors.line),
+                                  ? const Color(0xFFF3F4F6)
+                                  : Colors.white,
+                              border: Border.all(
+                                color: AppColors.ink,
+                                width: 1.2,
+                              ),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -999,11 +980,13 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                         for (final item in exchange)
                           Container(
                             margin: const EdgeInsets.only(bottom: 10),
-                            padding: const EdgeInsets.all(12),
+                            padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: AppColors.surfaceSubtle,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppColors.line),
+                              color: AppColors.paper,
+                              border: Border.all(
+                                color: AppColors.ink,
+                                width: 1.2,
+                              ),
                             ),
                             child: Wrap(
                               spacing: 10,
@@ -1146,13 +1129,18 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                                 height: 74,
                                 alignment: Alignment.center,
                                 decoration: BoxDecoration(
-                                  color: AppColors.surface,
+                                  color: AppColors.acid,
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: AppColors.primary,
+                                    color: AppColors.ink,
                                     width: 3,
                                   ),
-                                  boxShadow: AppColors.elevatedShadow,
+                                  boxShadow: const [
+                                    BoxShadow(
+                                      color: AppColors.ink,
+                                      offset: Offset(2, 2),
+                                    ),
+                                  ],
                                 ),
                                 child: Text(
                                   _busy ? '...' : 'QUAY\n$_spinTickets VÉ',
@@ -1160,7 +1148,7 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                                   style: const TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w900,
-                                    color: AppColors.primaryInk,
+                                    color: AppColors.ink,
                                     height: 1.15,
                                   ),
                                 ),
@@ -1296,7 +1284,6 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                                   width: itemWidth,
                                   child: InkWell(
                                     key: ValueKey('blind-box-$i'),
-                                    borderRadius: BorderRadius.circular(14),
                                     onTap: _busy || !_enabled || isOpened
                                         ? null
                                         : () => _openBlindBox(i),
@@ -1304,20 +1291,23 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                                       constraints: const BoxConstraints(
                                         minHeight: 138,
                                       ),
-                                      padding: const EdgeInsets.all(14),
+                                      padding: const EdgeInsets.all(12),
                                       decoration: BoxDecoration(
                                         color: isOpened
-                                            ? _rarityColor(rarity)
-                                            : AppColors.techPanel,
-                                        borderRadius: BorderRadius.circular(14),
+                                            ? _rarityColor(
+                                                rarity,
+                                              ).withValues(alpha: 0.32)
+                                            : AppColors.studioDark,
                                         border: Border.all(
-                                          color: isOpened
-                                              ? _rarityInkColor(
-                                                  rarity,
-                                                ).withValues(alpha: 0.3)
-                                              : AppColors.techLine,
+                                          color: AppColors.ink,
+                                          width: 1.8,
                                         ),
-                                        boxShadow: AppColors.cardShadow,
+                                        boxShadow: const [
+                                          BoxShadow(
+                                            color: AppColors.ink,
+                                            offset: Offset(3, 3),
+                                          ),
+                                        ],
                                       ),
                                       child: isOpened
                                           ? Column(
@@ -1327,25 +1317,17 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                                                 Container(
                                                   padding:
                                                       const EdgeInsets.symmetric(
-                                                        horizontal: 8,
-                                                        vertical: 3,
+                                                        horizontal: 6,
+                                                        vertical: 2,
                                                       ),
-                                                  decoration: BoxDecoration(
-                                                    color: AppColors.surface,
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          999,
-                                                        ),
-                                                  ),
+                                                  color: _rarityColor(rarity),
                                                   child: Text(
                                                     'HẠNG $rarity',
-                                                    style: TextStyle(
+                                                    style: const TextStyle(
                                                       fontSize: 10,
                                                       fontWeight:
-                                                          FontWeight.w800,
-                                                      color: _rarityInkColor(
-                                                        rarity,
-                                                      ),
+                                                          FontWeight.w900,
+                                                      color: AppColors.ink,
                                                     ),
                                                   ),
                                                 ),
@@ -1354,7 +1336,7 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                                                   '${boxMap['title'] ?? ''}',
                                                   style: const TextStyle(
                                                     fontSize: 12.5,
-                                                    fontWeight: FontWeight.w800,
+                                                    fontWeight: FontWeight.w900,
                                                     color: AppColors.ink,
                                                   ),
                                                 ),
@@ -1373,9 +1355,8 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                                                       style: const TextStyle(
                                                         fontSize: 11,
                                                         fontWeight:
-                                                            FontWeight.w700,
-                                                        color:
-                                                            AppColors.primary,
+                                                            FontWeight.w800,
+                                                        color: AppColors.violet,
                                                       ),
                                                     ),
                                                   ),
@@ -1396,7 +1377,7 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                                                   'HỘP MÙ #${i + 1}',
                                                   style: const TextStyle(
                                                     fontSize: 13,
-                                                    fontWeight: FontWeight.w800,
+                                                    fontWeight: FontWeight.w900,
                                                     color: Colors.white,
                                                   ),
                                                 ),
@@ -1408,8 +1389,8 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                                                   textAlign: TextAlign.center,
                                                   style: const TextStyle(
                                                     fontSize: 10.5,
-                                                    fontWeight: FontWeight.w700,
-                                                    color: AppColors.techMuted,
+                                                    fontWeight: FontWeight.w800,
+                                                    color: AppColors.gold,
                                                   ),
                                                 ),
                                               ],
@@ -1472,16 +1453,14 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                           for (final v in vouchers)
                             Container(
                               margin: const EdgeInsets.only(bottom: 10),
-                              padding: const EdgeInsets.all(14),
+                              padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
                                 color: v['personal'] == true
-                                    ? AppColors.primarySoft
-                                    : AppColors.surfaceSubtle,
-                                borderRadius: BorderRadius.circular(12),
+                                    ? const Color(0xFFFDF7FF)
+                                    : AppColors.paper,
                                 border: Border.all(
-                                  color: v['personal'] == true
-                                      ? AppColors.primaryBorder
-                                      : AppColors.line,
+                                  color: AppColors.ink,
+                                  width: 1.4,
                                 ),
                               ),
                               child: Wrap(
@@ -1507,16 +1486,12 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                                             Container(
                                               padding:
                                                   const EdgeInsets.symmetric(
-                                                    horizontal: 8,
-                                                    vertical: 3,
+                                                    horizontal: 7,
+                                                    vertical: 2,
                                                   ),
-                                              decoration: BoxDecoration(
-                                                color: v['personal'] == true
-                                                    ? AppColors.primary
-                                                    : AppColors.techBg,
-                                                borderRadius:
-                                                    BorderRadius.circular(999),
-                                              ),
+                                              color: v['personal'] == true
+                                                  ? AppColors.violet
+                                                  : AppColors.ink,
                                               child: Text(
                                                 v['personal'] == true
                                                     ? 'CÁ NHÂN'
@@ -1525,7 +1500,7 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                                                           : '${v['shop_name']}'),
                                                 style: const TextStyle(
                                                   fontSize: 10,
-                                                  fontWeight: FontWeight.w800,
+                                                  fontWeight: FontWeight.w900,
                                                   color: Colors.white,
                                                 ),
                                               ),
@@ -1647,13 +1622,11 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
     return Scaffold(
       backgroundColor: AppColors.paper,
       appBar: AppBar(
-        backgroundColor: AppColors.surface,
-        foregroundColor: AppColors.ink,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
+        backgroundColor: AppColors.studioDark,
+        foregroundColor: Colors.white,
         title: const Text(
           'Sự kiện & Vòng xoay',
-          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
         ),
         actions: [
           IconButton(
@@ -1666,16 +1639,11 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
           controller: _tabController,
           isScrollable: isCompact,
           tabAlignment: isCompact ? TabAlignment.start : TabAlignment.fill,
-          indicatorColor: AppColors.primary,
-          dividerColor: AppColors.line,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textSecondary,
+          indicatorColor: AppColors.acid,
+          labelColor: AppColors.acid,
+          unselectedLabelColor: Colors.white70,
           labelStyle: const TextStyle(
-            fontWeight: FontWeight.w800,
-            fontSize: 12.5,
-          ),
-          unselectedLabelStyle: const TextStyle(
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w900,
             fontSize: 12.5,
           ),
           tabs: const [
@@ -1694,16 +1662,13 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
           if (!_enabled)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: const BoxDecoration(
-                color: AppColors.warningSoft,
-                border: Border(bottom: BorderSide(color: AppColors.line)),
-              ),
+              color: AppColors.gold,
               child: const Text(
                 'Chương trình sự kiện hiện đang tạm dừng. Kho Voucher đã nhận vẫn dùng bình thường.',
                 style: TextStyle(
                   fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.warningInk,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.ink,
                 ),
               ),
             ),
@@ -1766,14 +1731,14 @@ class _CloudSpinWheelPainter extends CustomPainter {
   ];
 
   static const _sliceColors = [
-    AppColors.primary,
-    AppColors.primarySoft,
-    AppColors.teal,
-    AppColors.tealSoft,
-    AppColors.accent,
-    AppColors.warningSoft,
-    Color(0xFF294163),
-    AppColors.surfaceSubtle,
+    AppColors.violet,
+    AppColors.paper,
+    AppColors.pink,
+    AppColors.acid,
+    AppColors.studioDark,
+    Color(0xFFE9E2D4),
+    AppColors.gold,
+    Color(0xFF3E1EB8),
   ];
 
   @override
@@ -1783,9 +1748,9 @@ class _CloudSpinWheelPainter extends CustomPainter {
     final sliceAngle = (2 * math.pi) / 8;
 
     final borderPaint = Paint()
-      ..color = Colors.white
+      ..color = AppColors.ink
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0;
+      ..strokeWidth = 2.6;
 
     for (var i = 0; i < 8; i++) {
       final start = -math.pi / 2 + i * sliceAngle;
@@ -1811,7 +1776,7 @@ class _CloudSpinWheelPainter extends CustomPainter {
       final label = i < segments.length
           ? '${segments[i]['label'] ?? _defaultLabels[i]}'
           : _defaultLabels[i];
-      final darkBg = i == 0 || i == 2 || i == 4 || i == 6;
+      final darkBg = i == 0 || i == 2 || i == 4 || i == 7;
 
       canvas.save();
       canvas.translate(center.dx, center.dy);
@@ -1822,7 +1787,7 @@ class _CloudSpinWheelPainter extends CustomPainter {
           style: TextStyle(
             color: darkBg ? Colors.white : AppColors.ink,
             fontSize: 10.5,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w900,
           ),
         ),
         textDirection: TextDirection.ltr,
@@ -1837,9 +1802,9 @@ class _CloudSpinWheelPainter extends CustomPainter {
       center,
       radius,
       Paint()
-        ..color = AppColors.techBg
+        ..color = AppColors.ink
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 3.5,
+        ..strokeWidth = 4,
     );
   }
 

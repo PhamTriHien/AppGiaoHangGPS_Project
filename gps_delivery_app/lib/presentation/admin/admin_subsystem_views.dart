@@ -680,15 +680,15 @@ class _GoMauRevenueLineChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final gridPaint = Paint()
-      ..color = const Color(0xFF122033)
+      ..color = const Color(0xFF0F172A)
       ..strokeWidth = 1;
     for (var i = 0; i <= 4; i++) {
       final y = size.height * (i / 4.0);
       canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
     }
 
-    _drawSmoothSeries(canvas, size, blueNorm, const Color(0xFF1E56C5));
-    _drawSmoothSeries(canvas, size, orangeNorm, const Color(0xFFC85A17));
+    _drawSmoothSeries(canvas, size, blueNorm, const Color(0xFF2563EB));
+    _drawSmoothSeries(canvas, size, orangeNorm, const Color(0xFFF43F5E));
   }
 
   void _drawSmoothSeries(
@@ -745,8 +745,8 @@ class _GoMauOrderDonutPainter extends CustomPainter {
     final insetRect = rect.deflate(strokeWidth / 2);
 
     final segments = [
-      (deliveredRatio, const Color(0xFF1E56C5)),
-      (inTransitRatio, const Color(0xFFC85A17)),
+      (deliveredRatio, const Color(0xFF2563EB)),
+      (inTransitRatio, const Color(0xFFF43F5E)),
       (cancelledRatio, const Color(0xFFDC2626)),
       (otherRatio, const Color(0xFF94A3B8)),
     ];

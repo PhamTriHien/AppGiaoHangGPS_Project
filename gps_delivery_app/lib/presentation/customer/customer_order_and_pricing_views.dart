@@ -1613,10 +1613,10 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFFEEF3F8) : Colors.white,
+          color: selected ? const Color(0xFFF4F7FA) : Colors.white,
           borderRadius: BorderRadius.all(Radius.zero),
           border: Border.all(
-            color: selected ? const Color(0xFF1E56C5) : const Color(0xFF122033),
+            color: selected ? const Color(0xFF2563EB) : const Color(0xFF0F172A),
             width: selected ? 2.0 : 1.0,
           ),
         ),
@@ -1628,7 +1628,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                 right: 0,
                 child: CircleAvatar(
                   radius: 10,
-                  backgroundColor: Color(0xFFC85A17),
+                  backgroundColor: Color(0xFFF43F5E),
                   child: Icon(Icons.check, size: 13, color: Colors.white),
                 ),
               ),
@@ -1650,7 +1650,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                   style: const TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 12.5,
-                    color: Color(0xFF122033),
+                    color: Color(0xFF0F172A),
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -1668,8 +1668,8 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                     fontSize: 14,
                     fontWeight: FontWeight.w900,
                     color: selected
-                        ? const Color(0xFFC85A17)
-                        : const Color(0xFF1E56C5),
+                        ? const Color(0xFFF43F5E)
+                        : const Color(0xFF2563EB),
                   ),
                 ),
               ],
@@ -1843,7 +1843,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w800,
-                              color: Color(0xFF1E56C5),
+                              color: Color(0xFF2563EB),
                             ),
                           ),
                           Text(
@@ -1875,7 +1875,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.all(Radius.zero),
-                border: Border.all(color: const Color(0xFF122033)),
+                border: Border.all(color: const Color(0xFF0F172A)),
               ),
               clipBehavior: Clip.antiAlias,
               child: Column(
@@ -1886,7 +1886,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                       horizontal: 16,
                       vertical: 10,
                     ),
-                    color: const Color(0xFF1E56C5),
+                    color: const Color(0xFF2563EB),
                     child: const Text(
                       'Tóm tắt ước tính',
                       style: TextStyle(
@@ -1959,7 +1959,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                           'Tổng cộng',
                           CurrencyFormatter.formatVnd(estimate.totalAmount),
                           isBold: true,
-                          valueColor: const Color(0xFFC85A17),
+                          valueColor: const Color(0xFFF43F5E),
                         ),
                       ],
                     ),
@@ -2002,11 +2002,11 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                   ChoiceChip(
                     label: Text(method),
                     selected: _selectedPaymentMethod == method,
-                    selectedColor: const Color(0xFF1E56C5),
+                    selectedColor: const Color(0xFF2563EB),
                     labelStyle: TextStyle(
                       color: _selectedPaymentMethod == method
                           ? Colors.white
-                          : const Color(0xFF122033),
+                          : const Color(0xFF0F172A),
                       fontWeight: FontWeight.w700,
                     ),
                     onSelected: (_) => _rebuildCustomerUi(
@@ -2038,8 +2038,8 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
               ),
               decoration: BoxDecoration(
                 color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                borderRadius: BorderRadius.all(Radius.zero),
+                border: Border.all(color: const Color(0xFF0F172A)),
               ),
               child: LayoutBuilder(
                 builder: (context, constraints) {
@@ -2061,7 +2061,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                           children: [
                             const Icon(
                               Icons.account_balance_wallet_rounded,
-                              color: Color(0xFF1E56C5),
+                              color: Color(0xFF2563EB),
                             ),
                             const SizedBox(width: 10),
                             Expanded(
@@ -2069,7 +2069,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                                 'Phương thức đã chọn: $_selectedPaymentMethod',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w800,
-                                  color: Color(0xFF1E56C5),
+                                  color: Color(0xFF2563EB),
                                 ),
                               ),
                             ),
@@ -2084,7 +2084,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                     children: [
                       const Icon(
                         Icons.account_balance_wallet_rounded,
-                        color: Color(0xFF1E56C5),
+                        color: Color(0xFF2563EB),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
@@ -2092,7 +2092,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                           'Phương thức đã chọn: $_selectedPaymentMethod',
                           style: const TextStyle(
                             fontWeight: FontWeight.w800,
-                            color: Color(0xFF1E56C5),
+                            color: Color(0xFF2563EB),
                           ),
                         ),
                       ),
@@ -2124,11 +2124,11 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                         style: const TextStyle(fontSize: 11.5),
                       ),
                       selected: _cashFeePayer == payer,
-                      selectedColor: const Color(0xFF1E56C5),
+                      selectedColor: const Color(0xFF2563EB),
                       labelStyle: TextStyle(
                         color: _cashFeePayer == payer
                             ? Colors.white
-                            : const Color(0xFF122033),
+                            : const Color(0xFF0F172A),
                         fontWeight: FontWeight.w700,
                       ),
                       onSelected: (_) =>
@@ -2143,7 +2143,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
               height: 48,
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1E56C5),
+                  backgroundColor: const Color(0xFF2563EB),
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -2340,7 +2340,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                           style: TextStyle(
                             fontSize: 19,
                             fontWeight: FontWeight.w800,
-                            color: Color(0xFF1E56C5),
+                            color: Color(0xFF2563EB),
                           ),
                         ),
                         Text(
@@ -2359,8 +2359,8 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEEF3F8),
-                      border: Border.all(color: const Color(0xFF122033)),
+                      color: const Color(0xFFF4F7FA),
+                      border: Border.all(color: const Color(0xFF0F172A)),
                     ),
                     child: const Text(
                       'Chưa có chuyến giao',
@@ -2397,8 +2397,8 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEEF3F8),
-                  border: Border.all(color: const Color(0xFF122033)),
+                  color: const Color(0xFFF4F7FA),
+                  border: Border.all(color: const Color(0xFF0F172A)),
                 ),
                 child: Row(
                   children: [
@@ -2418,7 +2418,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                             style: TextStyle(
                               fontWeight: FontWeight.w900,
                               fontSize: 14,
-                              color: Color(0xFF122033),
+                              color: Color(0xFF0F172A),
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -2536,8 +2536,8 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF5F3FF),
-                    border: Border.all(color: const Color(0xFF1E56C5)),
+                    color: const Color(0xFFEFF6FF),
+                    border: Border.all(color: const Color(0xFF2563EB)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -2565,11 +2565,11 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                                   fontWeight: FontWeight.w700,
                                   color: selected
                                       ? Colors.white
-                                      : const Color(0xFF122033),
+                                      : const Color(0xFF0F172A),
                                 ),
                               ),
                               selected: selected,
-                              selectedColor: const Color(0xFF1E56C5),
+                              selectedColor: const Color(0xFF2563EB),
                               onSelected: (_) {
                                 _store.setQuickDeliveryInstruction(
                                   activeOrder.trackingCode,
@@ -2600,7 +2600,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                       style: TextStyle(
                         fontSize: 19,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF1E56C5),
+                        color: Color(0xFF2563EB),
                       ),
                     ),
                     Text(
@@ -2615,7 +2615,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEEF3F8),
+                    color: const Color(0xFFF4F7FA),
                     borderRadius: BorderRadius.all(Radius.zero),
                     border: Border.all(color: const Color(0xFF93C5FD)),
                   ),
@@ -2630,7 +2630,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                         ? 'Trạng thái: ${activeOrder.status.displayName}'
                         : 'Dự kiến: ~$etaMinutes phút nữa (${(remMeters / 1000).toStringAsFixed(2)} km)',
                     style: const TextStyle(
-                      color: Color(0xFF1E56C5),
+                      color: Color(0xFF2563EB),
                       fontWeight: FontWeight.w800,
                       fontSize: 12,
                     ),
@@ -2754,7 +2754,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                       ),
                     ),
                     selected: isCurrent,
-                    selectedColor: const Color(0xFF1E56C5),
+                    selectedColor: const Color(0xFF2563EB),
                     onSelected: (_) => _rebuildCustomerUi(() {
                       _store.selectCustomerOrder(ordItem.trackingCode);
                     }),
@@ -2799,8 +2799,8 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
               decoration: BoxDecoration(
                 color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                borderRadius: BorderRadius.all(Radius.zero),
+                border: Border.all(color: const Color(0xFF0F172A)),
               ),
               child: Row(
                 children: [
@@ -2842,7 +2842,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.all(Radius.zero),
-                border: Border.all(color: const Color(0xFF122033)),
+                border: Border.all(color: const Color(0xFF0F172A)),
               ),
               child: Row(
                 children: [
@@ -2884,7 +2884,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                   if (activeOrder.assignedDriverName != null) ...[
                     IconButton.filled(
                       style: IconButton.styleFrom(
-                        backgroundColor: const Color(0xFF1E56C5),
+                        backgroundColor: const Color(0xFF2563EB),
                       ),
                       onPressed: () {
                         final rawPhone = assignedDriverRecord?.phone ?? '';
@@ -2927,7 +2927,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                     const SizedBox(width: 6),
                     IconButton.filled(
                       style: IconButton.styleFrom(
-                        backgroundColor: const Color(0xFF1E56C5),
+                        backgroundColor: const Color(0xFF2563EB),
                       ),
                       onPressed: () =>
                           _rebuildCustomerUi(() => _selectedScreenIndex = 5),
@@ -2980,7 +2980,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                 if (activeOrder.assignedDriverName != null)
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1E56C5),
+                      backgroundColor: const Color(0xFF2563EB),
                       foregroundColor: Colors.white,
                     ),
                     onPressed: () =>
@@ -3028,8 +3028,8 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
     final color = done
         ? const Color(0xFF14B866)
         : active
-        ? const Color(0xFFC85A17)
-        : const Color(0xFF122033);
+        ? const Color(0xFFF43F5E)
+        : const Color(0xFF0F172A);
     return Expanded(
       child: Column(
         children: [
@@ -3055,9 +3055,9 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
               fontSize: 10.5,
               fontWeight: (done || active) ? FontWeight.w800 : FontWeight.w500,
               color: active
-                  ? const Color(0xFFC85A17)
+                  ? const Color(0xFFF43F5E)
                   : done
-                  ? const Color(0xFF122033)
+                  ? const Color(0xFF0F172A)
                   : const Color(0xFF4A4754),
             ),
           ),
@@ -3071,7 +3071,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
       width: 24,
       height: 2.5,
       margin: const EdgeInsets.only(bottom: 16),
-      color: done ? const Color(0xFF14B866) : const Color(0xFF122033),
+      color: done ? const Color(0xFF14B866) : const Color(0xFF0F172A),
     );
   }
 }
