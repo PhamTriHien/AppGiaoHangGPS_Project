@@ -10,7 +10,7 @@ The public/publishable key cannot execute migrations. Use either:
 
 1. In Supabase SQL Editor, run `database/migrations/20261028_cloud_orders.sql`
    (after `20261027_delivery_integrations.sql`) and subsequent additive migrations
-   through `20261111_profile_push_shipping_coins.sql`. Do not install the legacy
+   through `20261112_shipping_cash_settlement.sql`. Do not install the legacy
    `database/schema.sql` as a prerequisite.
 2. Put the real PostgreSQL connection string from Supabase **Connect** in backend
    `.env` as `DATABASE_URL`, then run `npm run migrate:cloud`. Use the direct or
@@ -28,10 +28,10 @@ or orders are inserted. Its default tariff is 25,000 VND for the first 2 km,
 5,000 per additional started km, 10,000 express surcharge, and 3,000 per started
 kg over 5 kg. Admin can change these values in **Bang gia cloud**.
 
-### Workflow version 17 & profile schema 3
+### Workflow version 18 & profile schema 3
 
 `npm run migrate:cloud` applies all additive migrations through
-`database/migrations/20261111_profile_push_shipping_coins.sql` (`workflowVersion: 17`),
+`database/migrations/20261112_shipping_cash_settlement.sql` (`workflowVersion: 18`),
 preserving accounts, tariffs, existing orders, history and login sessions.
 `GET /delivery/cloud/profile` reports `schema_version: 3` with independently
 approved `merchant` and `driver` memberships (`delivery_cloud_memberships`),

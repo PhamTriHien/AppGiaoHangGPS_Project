@@ -130,7 +130,7 @@ test('Independent partner memberships preserve buyer rights and enforce each app
   await t.test('Operator account governance RPC manages incomplete Auth accounts, profile edits, direct grants and self-lockout guards',async()=>{
     await db.exec('reset role');
     for (const extra of ['20261102_local_address_import','20261103_catalog_stock_versions','20261104_market_media',
-      '20261105_market_browse','20261106_catalog_configuration','20261107_cloud_commercial_suite','20261108_cloud_logistics','20261109_admin_account_management','20261110_cloud_promo_events','20261111_profile_push_shipping_coins']) {
+      '20261105_market_browse','20261106_catalog_configuration','20261107_cloud_commercial_suite','20261108_cloud_logistics','20261109_admin_account_management','20261110_cloud_promo_events','20261111_profile_push_shipping_coins','20261112_shipping_cash_settlement']) {
       await db.exec(await readFile(new URL(`../../database/migrations/${extra}.sql`,import.meta.url),'utf8'));
     }
     const incompleteId=randomUUID();

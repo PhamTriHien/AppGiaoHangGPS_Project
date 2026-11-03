@@ -125,6 +125,24 @@ export function normalizeAiApiKey(raw) {
     .replace(/^["']+|["']+$/g, '')
     .trim();
 }
+export function normalizeCredentialToken(raw) {
+  return String(raw ?? '')
+    .replace(/[\r\n]+/g, '')
+    .trim()
+    .replace(/^["']+|["']+$/g, '')
+    .trim();
+}
+export function publicBackendUrl(value) {
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase().replace(/^\[|\]$/g, '');
+    if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash ||
+        !host.includes('.') || host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.local') ||
+        /^(?:127\.|10\.|0\.|169\.254\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.)/.test(host) ||
+        host.includes(':')) return null;
+    return new URL(url.href.endsWith('/') ? url.href : `${url.href}/`);
+  } catch { return null; }
+}
 function providerReady(provider, env) {
   const definition = INTEGRATION_DEFINITIONS[provider];
   if (provider === 'sms') {
@@ -368,7 +386,11 @@ export async function updateIntegrationConfig(values, { clear = [], actor = 'unk
   const patch = Object.fromEntries(Object.entries(values).map(([key, value]) => {
     if (!['string', 'number', 'boolean'].includes(typeof value) && value !== null) throw new ConfigError(`Giá trị không hợp lệ: ${key}`);
     const text = String(value ?? '').trim();
-    return [key, key === 'GEMINI_API_KEY' ? normalizeAiApiKey(text) : text];
+    if (key === 'GEMINI_API_KEY') return [key, normalizeAiApiKey(text)];
+    if (['PAYOS_CLIENT_ID', 'PAYOS_API_KEY', 'PAYOS_CHECKSUM_KEY'].includes(key)) {
+      return [key, normalizeCredentialToken(text)];
+    }
+    return [key, text];
   }));
   for (const key of clear) patch[key] = '';
   for (const [key, value] of Object.entries(patch)) {
@@ -625,6 +647,51 @@ export async function testIntegration(provider, { env = process.env, fetcher = f
     } else if (provider === 'ghn') {
       const data = await getJson(new URL('master-data/province', env.GHN_BASE_URL), { headers: { Token: env.GHN_TOKEN, ShopId: env.GHN_SHOP_ID } });
       if (data.code !== 200 || !Array.isArray(data.data)) throw new Error('invalid');
+    } else if (provider === 'payos') {
+      const clientId = normalizeCredentialToken(configValue('PAYOS_CLIENT_ID', env));
+      const apiKey = normalizeCredentialToken(configValue('PAYOS_API_KEY', env));
+      const checksumKey = normalizeCredentialToken(configValue('PAYOS_CHECKSUM_KEY', env));
+      if (!clientId || !apiKey || !checksumKey) {
+        return finish(false, 'Cần nhập đầy đủ Client ID, API Key và Checksum Key của payOS.', false);
+      }
+      const publicBase = publicBackendUrl(configValue('PUBLIC_BASE_URL', env));
+      if (publicBase) {
+        const webhookUrl = new URL('delivery/payments/webhook', publicBase).href;
+        const response = await fetcher('https://api-merchant.payos.vn/confirm-webhook', {
+          method: 'POST',
+          headers: {
+            'x-client-id': clientId,
+            'x-api-key': apiKey,
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ webhookUrl }),
+          redirect: 'error',
+          signal: AbortSignal.timeout(15000),
+        });
+        const body = await response.json().catch(() => null);
+        if (response.ok && body?.code === '00') {
+          return finish(true, 'Đã xác minh đủ 3 khóa payOS và đăng ký tự động Webhook thanh toán.', true);
+        }
+        if (response.status === 401 || response.status === 403 || body?.code === '214') {
+          return finish(false, 'Client ID hoặc API Key payOS không hợp lệ hoặc kênh đang tạm dừng.', false);
+        }
+        return finish(false, 'Không xác nhận được Webhook payOS. Kiểm tra Checksum Key và URL HTTPS công khai của backend.', false);
+      }
+      const response = await fetcher('https://api-merchant.payos.vn/v2/payment-requests/0', {
+        headers: {
+          'x-client-id': clientId,
+          'x-api-key': apiKey,
+          Accept: 'application/json',
+        },
+        redirect: 'error',
+        signal: AbortSignal.timeout(12000),
+      });
+      const body = await response.json().catch(() => null);
+      if (response.ok && ['00', '101'].includes(body?.code)) {
+        return finish(true, 'Đã xác minh Client ID & API Key payOS; cần URL HTTPS công khai để đăng ký Webhook.', false);
+      }
+      return finish(false, 'Client ID hoặc API Key payOS không hợp lệ hoặc kênh đang tạm dừng.', false);
     } else if (provider === 'meilisearch') {
       const data = await getJson(new URL('/stats', env.MEILISEARCH_URL), { headers: { Authorization: `Bearer ${env.MEILISEARCH_MASTER_KEY}` } });
       if (!data.indexes || typeof data.indexes !== 'object') throw new Error('invalid');

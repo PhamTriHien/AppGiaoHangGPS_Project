@@ -49,6 +49,7 @@ test('Profile birth_date & CCCD, unified notification center/push webhook, and s
     '20261110_cloud_promo_events.sql',
     '20261111_profile_push_shipping_coins.sql',
     '20261111_profile_push_shipping_coins.sql',
+    '20261112_shipping_cash_settlement.sql',
   ];
   for (const file of files) {
     await db.exec(await readFile(new URL(`../../database/migrations/${file}`, import.meta.url), 'utf8'));
@@ -436,7 +437,7 @@ test('Profile birth_date & CCCD, unified notification center/push webhook, and s
       },
       fetcher: async (url, options) => {
         rpcCalls.push({ url: String(url), body: JSON.parse(options.body) });
-        return new Response(JSON.stringify({ unread_count: 2 }), { status: 200 });
+        return new Response(JSON.stringify({ unread_count: 2, schema_version: 3 }), { status: 200 });
       },
     }));
     let pushPayloads = [];
@@ -490,6 +491,14 @@ test('Profile birth_date & CCCD, unified notification center/push webhook, and s
     });
     assert.equal(okRes.status, 200);
     assert.equal(rpcCalls[0].body.p_action, 'unread_count');
+
+    const cashTransition = await fetch(`${base}/cloud/orders/${ids.merchant}/transition`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'collect_cash', version: 2, request_key: randomUUID(), reason: '' }),
+    });
+    assert.equal(cashTransition.status, 200);
+    assert.equal(rpcCalls.at(-1).body.p_action, 'collect_cash');
 
     const whRes = await fetch(`${base}/notify/market-notification-webhook`, {
       method: 'POST',

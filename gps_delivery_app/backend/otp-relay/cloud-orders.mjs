@@ -239,7 +239,7 @@ export function createCloudOrders({ env = process.env, authenticate, fetcher = f
     p_order: uuid(req.params.id), p_action: 'revoke', p_share: uuid(req.params.shareId),
   }))));
   router.post('/orders/:id/transition', route(async (req, res) => {
-    if (!['ready','claim','cancel','arrive','pickup','deliver','fail','retry','return','complete_return'].includes(req.body?.action) ||
+    if (!['ready','claim','cancel','arrive','pickup','deliver','fail','retry','return','complete_return','collect_cash'].includes(req.body?.action) ||
       (req.body.reason != null && (typeof req.body.reason !== 'string' || req.body.reason.length > 500))) throw new IntegrationError(400, 'Thao tác không hợp lệ.');
     if (['cancel','fail','return'].includes(req.body.action) && (req.body.reason || '').trim().length < 3) throw new IntegrationError(400, 'Cần nhập lý do ít nhất 3 ký tự.');
     await requireWorkflow(req);
