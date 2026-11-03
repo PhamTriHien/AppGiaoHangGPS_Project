@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
 import 'animated_3d_ui_icons.dart';
+import 'motion_3d_effects.dart';
 import 'studio_design_widgets.dart';
 import 'system_state_screens.dart';
 
@@ -107,41 +108,81 @@ class _StudioUserAuthFrameState extends State<StudioUserAuthFrame>
                       constraints: const BoxConstraints(maxWidth: 460),
                       child: ValueListenableBuilder<Offset>(
                         valueListenable: _parallax,
-                        builder: (_, value, child) => Container(
-                          width: double.infinity,
-                          padding: EdgeInsets.fromLTRB(
-                            compact ? 20 : 30,
-                            26,
-                            compact ? 20 : 30,
-                            28,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.90),
-                              width: 1,
+                        builder: (context, value, child) {
+                          final card = Container(
+                            width: double.infinity,
+                            padding: EdgeInsets.fromLTRB(
+                              compact ? 20 : 30,
+                              26,
+                              compact ? 20 : 30,
+                              28,
                             ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(
-                                  0xFF020617,
-                                ).withValues(alpha: 0.34),
-                                blurRadius: 36,
-                                offset: Offset(
-                                  -value.dx * 3,
-                                  16 - value.dy * 3,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.92),
+                                width: 1,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(
+                                    0xFF020617,
+                                  ).withValues(alpha: 0.36),
+                                  blurRadius: 38,
+                                  offset: Offset(
+                                    -value.dx * 7,
+                                    18 - value.dy * 6,
+                                  ),
                                 ),
-                              ),
-                              BoxShadow(
-                                color: AppColors.violet.withValues(alpha: 0.16),
-                                blurRadius: 24,
-                                offset: const Offset(0, 6),
-                              ),
+                                BoxShadow(
+                                  color: AppColors.violet.withValues(
+                                    alpha: 0.18,
+                                  ),
+                                  blurRadius: 26,
+                                  offset: Offset(
+                                    -value.dx * 3,
+                                    6 - value.dy * 2,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            child: child,
+                          );
+                          return Stack(
+                            fit: StackFit.passthrough,
+                            children: [
+                              card,
+                              if (value.distance > 0.01)
+                                Positioned.fill(
+                                  child: IgnorePointer(
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(24),
+                                      child: DecoratedBox(
+                                        decoration: BoxDecoration(
+                                          gradient: RadialGradient(
+                                            center: Alignment(
+                                              value.dx,
+                                              value.dy,
+                                            ),
+                                            radius: 1.15,
+                                            colors: [
+                                              AppColors.primarySoft.withValues(
+                                                alpha: 0.30,
+                                              ),
+                                              Colors.white.withValues(
+                                                alpha: 0.0,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
                             ],
-                          ),
-                          child: child,
-                        ),
+                          );
+                        },
                         child: widget.child,
                       ),
                     ),
@@ -250,11 +291,16 @@ class _TabPill extends StatelessWidget {
   Widget build(BuildContext context) => Semantics(
     button: true,
     selected: selected,
-    child: Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(10),
-        onTap: onTap,
+    child: Motion3dInteractiveSurface(
+      borderRadius: const BorderRadius.all(Radius.circular(10)),
+      maxTilt: 0.045,
+      pressScale: 0.968,
+      hoverLift: -1.0,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOutCubic,
@@ -285,6 +331,7 @@ class _TabPill extends StatelessWidget {
               fontSize: 13,
               fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
               color: selected ? AppColors.ink : AppColors.textSecondary,
+            ),
             ),
           ),
         ),

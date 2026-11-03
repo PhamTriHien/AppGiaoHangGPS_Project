@@ -1,4 +1,8 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+
+import '../../presentation/widgets/motion_3d_effects.dart';
 
 class AdminStudioColors {
   const AdminStudioColors._();
@@ -280,48 +284,142 @@ class AdminStudioMark extends StatelessWidget {
   }
 }
 
-class AdminStudioGridBackdrop extends StatelessWidget {
+class AdminStudioGridBackdrop extends StatefulWidget {
   const AdminStudioGridBackdrop({
     super.key,
     required this.child,
     this.backgroundColor = AdminStudioColors.shellDark,
     this.gridSpacing = 48,
+    this.enable3dHorizon = false,
   });
 
   final Widget child;
   final Color backgroundColor;
   final double gridSpacing;
+  final bool enable3dHorizon;
 
   @override
-  Widget build(BuildContext context) => CustomPaint(
-    painter: _StudioGridPainter(
-      backgroundColor: backgroundColor,
-      gridSpacing: gridSpacing,
-    ),
-    child: child,
+  State<AdminStudioGridBackdrop> createState() =>
+      _AdminStudioGridBackdropState();
+}
+
+class _AdminStudioGridBackdropState extends State<AdminStudioGridBackdrop>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(seconds: 10),
+    value: 0.25,
   );
+  final ValueNotifier<Offset> _parallax = ValueNotifier<Offset>(Offset.zero);
+  late final Listenable _merged = Listenable.merge([_controller, _parallax]);
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncAnimation();
+  }
+
+  @override
+  void didUpdateWidget(covariant AdminStudioGridBackdrop oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _syncAnimation();
+  }
+
+  void _syncAnimation() {
+    if (widget.enable3dHorizon && Motion3dEnvironment.shouldAnimate(context)) {
+      if (!_controller.isAnimating) {
+        _controller.repeat();
+      }
+    } else if (_controller.isAnimating) {
+      _controller.stop();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _parallax.dispose();
+    super.dispose();
+  }
+
+  void _onHover(Offset local, Size size) {
+    if (!widget.enable3dHorizon || size.isEmpty) return;
+    final next = Offset(
+      ((local.dx / size.width) * 2.0 - 1.0).clamp(-1.0, 1.0),
+      ((local.dy / size.height) * 2.0 - 1.0).clamp(-1.0, 1.0),
+    );
+    if ((next - _parallax.value).distance > 0.02) {
+      _parallax.value = next;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.enable3dHorizon) {
+      return CustomPaint(
+        painter: _StudioGridPainter(
+          backgroundColor: widget.backgroundColor,
+          gridSpacing: widget.gridSpacing,
+          phase: 0.25,
+          parallax: Offset.zero,
+          drawHorizon: false,
+        ),
+        child: widget.child,
+      );
+    }
+    return LayoutBuilder(
+      builder: (context, constraints) => MouseRegion(
+        onHover: (e) => _onHover(e.localPosition, constraints.biggest),
+        onExit: (_) => _parallax.value = Offset.zero,
+        child: AnimatedBuilder(
+          animation: _merged,
+          child: widget.child,
+          builder: (context, child) => CustomPaint(
+            painter: _StudioGridPainter(
+              backgroundColor: widget.backgroundColor,
+              gridSpacing: widget.gridSpacing,
+              phase: _controller.value,
+              parallax: _parallax.value,
+              drawHorizon: true,
+            ),
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _StudioGridPainter extends CustomPainter {
   const _StudioGridPainter({
     required this.backgroundColor,
     required this.gridSpacing,
+    required this.phase,
+    required this.parallax,
+    required this.drawHorizon,
   });
 
   final Color backgroundColor;
   final double gridSpacing;
+  final double phase;
+  final Offset parallax;
+  final bool drawHorizon;
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (size.isEmpty) return;
     final rect = Offset.zero & size;
     canvas.drawRect(rect, Paint()..color = backgroundColor);
 
-    final glowCenter = Offset(size.width * 0.78, size.height * 0.14);
+    final glowCenter = Offset(
+      size.width * (0.78 + parallax.dx * 0.06),
+      size.height * (0.14 + parallax.dy * 0.06),
+    );
     final glowRadius = (size.shortestSide * 0.75).clamp(160.0, 440.0);
     final glowPaint = Paint()
       ..shader = RadialGradient(
         colors: [
-          AdminStudioColors.violet.withValues(alpha: 0.28),
+          AdminStudioColors.violet.withValues(alpha: 0.30),
           AdminStudioColors.violet.withValues(alpha: 0.0),
         ],
       ).createShader(Rect.fromCircle(center: glowCenter, radius: glowRadius));
@@ -336,12 +434,94 @@ class _StudioGridPainter extends CustomPainter {
     for (double y = 0; y <= size.height; y += gridSpacing) {
       canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
     }
+
+    if (!drawHorizon) return;
+
+    final mintGlowCenter = Offset(
+      size.width * (0.24 - parallax.dx * 0.05),
+      size.height * (0.82 - parallax.dy * 0.04),
+    );
+    final mintGlowPaint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          AdminStudioColors.acid.withValues(alpha: 0.14),
+          AdminStudioColors.acid.withValues(alpha: 0.0),
+        ],
+      ).createShader(
+        Rect.fromCircle(center: mintGlowCenter, radius: glowRadius * 0.75),
+      );
+    canvas.drawCircle(mintGlowCenter, glowRadius * 0.75, mintGlowPaint);
+
+    final horizonY = size.height * (0.64 + parallax.dy * 0.025);
+    final vanishX = size.width * (0.50 + parallax.dx * 0.06);
+    final perspectiveLinePaint = Paint()
+      ..color = AdminStudioColors.acid.withValues(alpha: 0.09)
+      ..strokeWidth = 1.0;
+
+    for (int i = -6; i <= 6; i++) {
+      final bottomX = vanishX + i * (size.width * 0.15);
+      canvas.drawLine(
+        Offset(vanishX, horizonY),
+        Offset(bottomX, size.height),
+        perspectiveLinePaint,
+      );
+    }
+
+    final beltOffset = phase % 1.0;
+    for (int r = 0; r < 6; r++) {
+      final t = ((r + beltOffset) / 6.0).clamp(0.0, 1.0);
+      final depthT = t * t;
+      final y = horizonY + (size.height - horizonY) * depthT;
+      final rowPaint = Paint()
+        ..color = AdminStudioColors.violet.withValues(
+          alpha: (0.04 + 0.14 * depthT).clamp(0.0, 0.22),
+        )
+        ..strokeWidth = 1.0;
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), rowPaint);
+    }
+
+    final orbitCenter = Offset(
+      size.width * (0.76 + parallax.dx * 0.04),
+      size.height * (0.24 + parallax.dy * 0.03),
+    );
+    final orbitRx = (size.shortestSide * 0.22).clamp(54.0, 118.0);
+    final orbitRy = orbitRx * 0.42;
+    final orbitRect = Rect.fromCenter(
+      center: orbitCenter,
+      width: orbitRx * 2,
+      height: orbitRy * 2,
+    );
+    canvas.drawOval(
+      orbitRect,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.1
+        ..color = AdminStudioColors.acid.withValues(alpha: 0.20),
+    );
+    final sweepAngle = phase * math.pi * 2.0;
+    final satPos = Offset(
+      orbitCenter.dx + math.cos(sweepAngle) * orbitRx,
+      orbitCenter.dy + math.sin(sweepAngle) * orbitRy,
+    );
+    canvas.drawCircle(
+      satPos,
+      4.0,
+      Paint()..color = AdminStudioColors.acid.withValues(alpha: 0.85),
+    );
+    canvas.drawCircle(
+      satPos,
+      10.0,
+      Paint()..color = AdminStudioColors.acid.withValues(alpha: 0.20),
+    );
   }
 
   @override
   bool shouldRepaint(covariant _StudioGridPainter oldDelegate) =>
       oldDelegate.backgroundColor != backgroundColor ||
-      oldDelegate.gridSpacing != gridSpacing;
+      oldDelegate.gridSpacing != gridSpacing ||
+      oldDelegate.phase != phase ||
+      oldDelegate.parallax != parallax ||
+      oldDelegate.drawHorizon != drawHorizon;
 }
 
 class AdminNeoBox extends StatelessWidget {
@@ -356,6 +536,9 @@ class AdminNeoBox extends StatelessWidget {
     this.borderWidth = 1.0,
     this.borderRadius = 14.0,
     this.shadowOffset = const Offset(0, 4),
+    this.interactive3d = false,
+    this.maxTilt = 0.055,
+    this.enablePressScale = false,
   });
 
   final Widget child;
@@ -367,45 +550,55 @@ class AdminNeoBox extends StatelessWidget {
   final double borderWidth;
   final double borderRadius;
   final Offset shadowOffset;
+  final bool interactive3d;
+  final double maxTilt;
+  final bool enablePressScale;
 
   @override
   Widget build(BuildContext context) {
     final effectiveBorder = borderColor == AdminStudioColors.ink
         ? AdminStudioColors.line
         : borderColor;
-    return Semantics(
-      container: true,
-      child: Container(
-        margin: margin,
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          borderRadius: BorderRadius.circular(borderRadius),
-          border: Border.all(color: effectiveBorder, width: borderWidth),
-          boxShadow: shadowOffset == Offset.zero
-              ? null
-              : const [
-                  BoxShadow(
-                    color: Color(0x0A0F172A),
-                    offset: Offset(0, 4),
-                    blurRadius: 14,
-                  ),
-                  BoxShadow(
-                    color: Color(0x050F172A),
-                    offset: Offset(0, 1),
-                    blurRadius: 3,
-                  ),
-                ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(borderRadius),
-          child: Material(
-            type: MaterialType.transparency,
-            child: padding == EdgeInsets.zero
-                ? child
-                : Padding(padding: padding, child: child),
-          ),
+    final radius = BorderRadius.circular(borderRadius);
+    Widget box = Container(
+      margin: margin,
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: radius,
+        border: Border.all(color: effectiveBorder, width: borderWidth),
+        boxShadow: shadowOffset == Offset.zero
+            ? null
+            : const [
+                BoxShadow(
+                  color: Color(0x0A0F172A),
+                  offset: Offset(0, 4),
+                  blurRadius: 14,
+                ),
+                BoxShadow(
+                  color: Color(0x050F172A),
+                  offset: Offset(0, 1),
+                  blurRadius: 3,
+                ),
+              ],
+      ),
+      child: ClipRRect(
+        borderRadius: radius,
+        child: Material(
+          type: MaterialType.transparency,
+          child: padding == EdgeInsets.zero
+              ? child
+              : Padding(padding: padding, child: child),
         ),
       ),
     );
+    if (interactive3d) {
+      box = Motion3dInteractiveSurface(
+        borderRadius: radius,
+        maxTilt: maxTilt,
+        enablePressScale: enablePressScale,
+        child: box,
+      );
+    }
+    return Semantics(container: true, child: box);
   }
 }

@@ -6,6 +6,7 @@ import '../../core/integrations/cloud_account_session.dart';
 import '../../core/integrations/cloud_session_lease.dart';
 import '../../core/network/public_json_api.dart';
 import '../../core/theme/app_colors.dart';
+import '../widgets/motion_3d_effects.dart';
 
 class GhstAiChatController extends ChangeNotifier {
   GhstAiChatController({required this.session})
@@ -359,13 +360,23 @@ class _GhstAiFloatingBubbleState extends State<GhstAiFloatingBubble> {
                     child: Semantics(
                       button: true,
                       label: 'Mở bong bóng Trợ lý AI',
-                      child: InkWell(
-                        key: const ValueKey('ghst-ai-floating-bubble'),
-                        borderRadius: BorderRadius.circular(16),
-                        onTap: () => setState(() => _open = true),
-                        child: Container(
-                          width: bubbleWidth,
-                          height: bubbleHeight,
+                      child: Motion3dInteractiveSurface(
+                        borderRadius: const BorderRadius.all(
+                          Radius.circular(16),
+                        ),
+                        maxTilt: 0.10,
+                        pressScale: 0.94,
+                        hoverLift: -2.0,
+                        child: InkWell(
+                          key: const ValueKey('ghst-ai-floating-bubble'),
+                          borderRadius: BorderRadius.circular(16),
+                          onTap: () => setState(() => _open = true),
+                          child: Motion3dFloatingLayer(
+                            floatAmplitude: 2.8,
+                            tiltAmplitude: 0.03,
+                            child: Container(
+                              width: bubbleWidth,
+                              height: bubbleHeight,
                           decoration: BoxDecoration(
                             color: AppColors.primary,
                             borderRadius: BorderRadius.circular(16),
@@ -402,6 +413,8 @@ class _GhstAiFloatingBubbleState extends State<GhstAiFloatingBubble> {
                             ],
                           ),
                         ),
+                        ),
+                        ),
                       ),
                     ),
                   ),
@@ -430,10 +443,13 @@ class _GhstAiFloatingBubbleState extends State<GhstAiFloatingBubble> {
             bottom: baseBottom,
             width: panelWidth,
             height: panelHeight,
-            child: Material(
-              color: Colors.transparent,
-              child: Container(
-                key: const ValueKey('ghst-ai-floating-panel'),
+            child: Motion3dSectionTransition(
+              transitionKey: _open,
+              originAlignment: Alignment.bottomRight,
+              child: Material(
+                color: Colors.transparent,
+                child: Container(
+                  key: const ValueKey('ghst-ai-floating-panel'),
                 clipBehavior: Clip.antiAlias,
                 decoration: BoxDecoration(
                   color: AppColors.surface,
@@ -550,6 +566,7 @@ class _GhstAiFloatingBubbleState extends State<GhstAiFloatingBubble> {
                       ),
                     ),
                   ],
+                ),
                 ),
               ),
             ),

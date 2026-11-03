@@ -12,6 +12,7 @@ import '../../core/network/public_json_api.dart';
 import '../../core/theme/admin_studio_theme.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../widgets/admin_accounts_panel.dart';
+import '../widgets/animated_3d_ui_icons.dart';
 import '../widgets/backend_integration_settings.dart';
 import '../widgets/cloud_logistics_panels.dart';
 import '../widgets/cloud_notification_center.dart';
@@ -19,6 +20,7 @@ import '../widgets/cloud_order_labels.dart';
 import '../widgets/cloud_pricing_dialog.dart';
 import '../widgets/cloud_session_boundary.dart';
 import '../widgets/market_commercial_sheets.dart';
+import '../widgets/motion_3d_effects.dart';
 import 'cloud_orders_screen.dart';
 import 'market_order_services_screen.dart';
 import 'marketplace_view.dart';
@@ -292,6 +294,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
     ];
 
     return AdminStudioGridBackdrop(
+      enable3dHorizon: true,
       child: Container(
         decoration: const BoxDecoration(
           border: Border(
@@ -348,12 +351,12 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Container(
-                              width: 26,
-                              height: 2,
-                              color: AdminStudioColors.acid,
+                            const Animated3dIconBadge(
+                              style: Icon3dStyle.gpsPinRadar,
+                              size: 46,
+                              showRadarPulse: true,
                             ),
-                            const SizedBox(width: 10),
+                            const SizedBox(width: 12),
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 10,
@@ -392,61 +395,72 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                         ),
                         const SizedBox(height: 24),
                         for (final p in pillars)
-                          Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color: AdminStudioColors.shellElevated,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: AdminStudioColors.shellLine,
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Motion3dInteractiveSurface(
+                              borderRadius: const BorderRadius.all(
+                                Radius.circular(12),
                               ),
-                            ),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  width: 36,
-                                  height: 36,
-                                  decoration: BoxDecoration(
-                                    color: p.$2,
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: Icon(
-                                    p.$1,
-                                    size: 18,
-                                    color: p.$2.computeLuminance() < 0.45
-                                        ? Colors.white
-                                        : AdminStudioColors.ink,
+                              maxTilt: 0.06,
+                              hoverLift: -2.0,
+                              enablePressScale: false,
+                              child: Container(
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: AdminStudioColors.shellElevated,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: AdminStudioColors.shellLine,
                                   ),
                                 ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        p.$3,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w800,
-                                          fontSize: 13.5,
-                                        ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      width: 36,
+                                      height: 36,
+                                      decoration: BoxDecoration(
+                                        color: p.$2,
+                                        borderRadius: BorderRadius.circular(10),
                                       ),
-                                      const SizedBox(height: 3),
-                                      Text(
-                                        p.$4,
-                                        style: const TextStyle(
-                                          color: AdminStudioColors.mutedOnDark,
-                                          fontSize: 12,
-                                          height: 1.4,
-                                        ),
+                                      child: Icon(
+                                        p.$1,
+                                        size: 18,
+                                        color: p.$2.computeLuminance() < 0.45
+                                            ? Colors.white
+                                            : AdminStudioColors.ink,
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            p.$3,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w800,
+                                              fontSize: 13.5,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 3),
+                                          Text(
+                                            p.$4,
+                                            style: const TextStyle(
+                                              color:
+                                                  AdminStudioColors.mutedOnDark,
+                                              fontSize: 12,
+                                              height: 1.4,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ],
+                              ),
                             ),
                           ),
                       ],
@@ -483,17 +497,21 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
             children: [
               Row(
                 children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: AdminStudioColors.violetSoft,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AdminStudioColors.line),
-                    ),
-                    child: const Icon(
-                      Icons.admin_panel_settings_outlined,
-                      color: AdminStudioColors.violet,
+                  Motion3dFloatingLayer(
+                    floatAmplitude: 2.5,
+                    tiltAmplitude: 0.04,
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: AdminStudioColors.violetSoft,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AdminStudioColors.line),
+                      ),
+                      child: const Icon(
+                        Icons.admin_panel_settings_outlined,
+                        color: AdminStudioColors.violet,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -605,32 +623,38 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                 ),
               ],
               const SizedBox(height: 24),
-              FilledButton(
-                onPressed: _busy ? null : _signIn,
-                style: FilledButton.styleFrom(
-                  backgroundColor: AdminStudioColors.violet,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              Motion3dInteractiveSurface(
+                borderRadius: const BorderRadius.all(Radius.circular(12)),
+                maxTilt: 0.055,
+                pressScale: 0.975,
+                hoverLift: -1.5,
+                child: FilledButton(
+                  onPressed: _busy ? null : _signIn,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AdminStudioColors.violet,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 50),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
+                  child: _busy
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text(
+                          'Đăng nhập',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                 ),
-                child: _busy
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Text(
-                        'Đăng nhập',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
               ),
             ],
           ),
@@ -694,8 +718,10 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                   constraints: const BoxConstraints(maxWidth: 420),
                   child: AdminNeoBox(
                     padding: const EdgeInsets.all(28),
-                    borderWidth: 2,
-                    shadowOffset: const Offset(5, 5),
+                    borderRadius: 20,
+                    interactive3d: true,
+                    maxTilt: 0.035,
+                    enablePressScale: false,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -718,9 +744,11 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                             height: 52,
                             decoration: BoxDecoration(
                               color: AdminStudioColors.dangerSoft,
+                              borderRadius: BorderRadius.circular(14),
                               border: Border.all(
-                                color: AdminStudioColors.ink,
-                                width: 1.5,
+                                color: AdminStudioColors.danger.withValues(
+                                  alpha: 0.35,
+                                ),
                               ),
                             ),
                             child: const Icon(
@@ -778,9 +806,10 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                   constraints: const BoxConstraints(maxWidth: 440),
                   child: AdminNeoBox(
                     padding: const EdgeInsets.all(28),
-                    borderWidth: 2,
-                    shadowColor: AdminStudioColors.pink,
-                    shadowOffset: const Offset(6, 6),
+                    borderRadius: 20,
+                    interactive3d: true,
+                    maxTilt: 0.035,
+                    enablePressScale: false,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -789,9 +818,11 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                           height: 60,
                           decoration: BoxDecoration(
                             color: AdminStudioColors.dangerSoft,
+                            borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: AdminStudioColors.ink,
-                              width: 1.5,
+                              color: AdminStudioColors.danger.withValues(
+                                alpha: 0.35,
+                              ),
                             ),
                           ),
                           child: const Icon(
@@ -892,11 +923,9 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                         margin: const EdgeInsets.only(bottom: 8),
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: AdminStudioColors.surface,
-                          border: Border.all(
-                            color: AdminStudioColors.ink,
-                            width: 1.2,
-                          ),
+                          color: AdminStudioColors.surfaceSubtle,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AdminStudioColors.line),
                         ),
                         child: SelectableText(
                           '${adminAuditActionLabel(e['action'])} · ${e['action']} · ${e['target_id'] ?? ''}\n${cloudDate(e['created_at'])} · ${e['actor_id']}',
@@ -994,17 +1023,22 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                   final selected = _tab == index;
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 6),
-                    child: Material(
-                      color: selected
-                          ? AdminStudioColors.shellActive
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(10),
-                      child: InkWell(
+                    child: Motion3dInteractiveSurface(
+                      borderRadius: const BorderRadius.all(Radius.circular(10)),
+                      maxTilt: 0.045,
+                      pressScale: 0.972,
+                      hoverLift: -1.0,
+                      child: Material(
+                        color: selected
+                            ? AdminStudioColors.shellActive
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(10),
-                        onTap: () => setState(() {
-                          _tab = index;
-                          if (index == 1) _accountsFilter = 'all';
-                        }),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(10),
+                          onTap: () => setState(() {
+                            _tab = index;
+                            if (index == 1) _accountsFilter = 'all';
+                          }),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 12,
@@ -1046,6 +1080,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                               ),
                             ],
                           ),
+                        ),
                         ),
                       ),
                     ),
@@ -1315,6 +1350,11 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
       ),
     };
 
+    final animatedBody = Motion3dSectionTransition(
+      transitionKey: _tab,
+      child: body,
+    );
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= 960;
@@ -1328,7 +1368,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                     child: Column(
                       children: [
                         _buildDesktopTopBar(),
-                        Expanded(child: body),
+                        Expanded(child: animatedBody),
                       ],
                     ),
                   ),
@@ -1445,38 +1485,45 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                           button: true,
                           label: 'Giao diện Khách hàng',
                           excludeSemantics: true,
-                          child: InkWell(
-                            key: const ValueKey('admin-switch-user-mode'),
-                            onTap: widget.onSwitchToUserMode,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 5,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AdminStudioColors.acid,
-                                border: Border.all(
-                                  color: AdminStudioColors.ink,
+                          child: Motion3dInteractiveSurface(
+                            borderRadius: const BorderRadius.all(
+                              Radius.circular(999),
+                            ),
+                            maxTilt: 0.055,
+                            pressScale: 0.96,
+                            hoverLift: -1.0,
+                            child: InkWell(
+                              key: const ValueKey('admin-switch-user-mode'),
+                              borderRadius: BorderRadius.circular(999),
+                              onTap: widget.onSwitchToUserMode,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 11,
+                                  vertical: 5,
                                 ),
-                              ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.swap_horiz_rounded,
-                                    size: 14,
-                                    color: AdminStudioColors.ink,
-                                  ),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    'Giao diện Khách hàng',
-                                    style: TextStyle(
+                                decoration: BoxDecoration(
+                                  color: AdminStudioColors.acid,
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.swap_horiz_rounded,
+                                      size: 14,
                                       color: AdminStudioColors.ink,
-                                      fontSize: 11.5,
-                                      fontWeight: FontWeight.w800,
                                     ),
-                                  ),
-                                ],
+                                    SizedBox(width: 4),
+                                    Text(
+                                      'Giao diện Khách hàng',
+                                      style: TextStyle(
+                                        color: AdminStudioColors.ink,
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
@@ -1484,7 +1531,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                       ],
                     ),
                   ),
-                Expanded(child: body),
+                Expanded(child: animatedBody),
               ],
             ),
           ),
@@ -1638,6 +1685,9 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
     bool compact = false,
   }) => AdminNeoBox(
     padding: EdgeInsets.all(compact ? 12 : 16),
+    interactive3d: true,
+    maxTilt: 0.055,
+    enablePressScale: false,
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1703,6 +1753,9 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
     double? completionRatio,
   }) => AdminNeoBox(
     padding: const EdgeInsets.all(18),
+    interactive3d: true,
+    maxTilt: 0.032,
+    enablePressScale: false,
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1829,6 +1882,7 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(16),
                     child: AdminStudioGridBackdrop(
+                      enable3dHorizon: true,
                       child: Container(
                         padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../widgets/animated_3d_ui_icons.dart';
+import '../widgets/motion_3d_effects.dart';
 import '../widgets/studio_design_widgets.dart';
 
 enum GhstRoleMode {
@@ -297,7 +298,12 @@ class GhstUserShell extends StatelessWidget {
                       children: [
                         wide ? _desktopHeader() : _mobileHeader(),
                         if (!wide && _canSwitchRole) _mobileRoleSwitcher(),
-                        Expanded(child: child),
+                        Expanded(
+                          child: Motion3dSectionTransition(
+                            transitionKey: '${roleMode.name}:${section.name}',
+                            child: child,
+                          ),
+                        ),
                         if (!wide) _bottomBar(),
                       ],
                     ),
@@ -321,10 +327,15 @@ class GhstUserShell extends StatelessWidget {
       selected: active,
       label: 'Vai trò ${mode.label}',
       excludeSemantics: true,
-      child: InkWell(
-        key: ValueKey('ghst-role-${mode.name}'),
-        borderRadius: BorderRadius.circular(999),
-        onTap: () => onRoleModeChanged?.call(mode),
+      child: Motion3dInteractiveSurface(
+        borderRadius: const BorderRadius.all(Radius.circular(999)),
+        maxTilt: 0.055,
+        pressScale: 0.96,
+        hoverLift: -1.0,
+        child: InkWell(
+          key: ValueKey('ghst-role-${mode.name}'),
+          borderRadius: BorderRadius.circular(999),
+          onTap: () => onRoleModeChanged?.call(mode),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
           decoration: BoxDecoration(
@@ -359,6 +370,7 @@ class GhstUserShell extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }
@@ -707,9 +719,14 @@ class GhstUserShell extends StatelessWidget {
     child: Semantics(
       button: true,
       selected: selected,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(10),
-        onTap: action,
+      child: Motion3dInteractiveSurface(
+        borderRadius: const BorderRadius.all(Radius.circular(10)),
+        maxTilt: 0.045,
+        pressScale: 0.972,
+        hoverLift: -1.0,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: action,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
           decoration: BoxDecoration(
@@ -759,18 +776,25 @@ class GhstUserShell extends StatelessWidget {
             ],
           ),
         ),
+        ),
       ),
     ),
   );
 
   Widget _roleHeaderBadge({double size = 38}) {
-    if (roleMode == GhstRoleMode.customer) {
+    final badgeStyle = switch (roleMode) {
+      GhstRoleMode.customer => Icon3dStyle.scooterExpress,
+      GhstRoleMode.driver => Icon3dStyle.gpsPinRadar,
+      GhstRoleMode.merchant => Icon3dStyle.parcelBox,
+      GhstRoleMode.operator => null,
+    };
+    if (badgeStyle != null) {
       return Animated3dIconBadge(
-        style: Icon3dStyle.scooterExpress,
+        style: badgeStyle,
         size: size,
         showRadarPulse: false,
         isSelected: true,
-        animateIdle: false,
+        animateIdle: true,
       );
     }
     return Container(
@@ -1051,10 +1075,15 @@ class GhstUserShell extends StatelessWidget {
               child: Semantics(
                 button: true,
                 selected: activeIdx == i,
-                child: InkWell(
-                  key: ValueKey('ghst-nav-${items[i].$3.name}'),
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: () => onNavigate(items[i].$3),
+                child: Motion3dInteractiveSurface(
+                  borderRadius: const BorderRadius.all(Radius.circular(12)),
+                  maxTilt: 0.06,
+                  pressScale: 0.955,
+                  hoverLift: -1.0,
+                  child: InkWell(
+                    key: ValueKey('ghst-nav-${items[i].$3.name}'),
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () => onNavigate(items[i].$3),
                   child: Container(
                     margin: const EdgeInsets.symmetric(
                       horizontal: 4,
@@ -1101,6 +1130,7 @@ class GhstUserShell extends StatelessWidget {
                       ],
                     ),
                   ),
+                ),
                 ),
               ),
             ),

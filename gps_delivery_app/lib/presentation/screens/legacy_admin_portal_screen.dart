@@ -3,10 +3,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../core/auth/real_auth_delivery_service.dart';
 import '../../core/config/env_config.dart';
+import '../../core/theme/admin_studio_theme.dart';
 import '../../data/datasources/local/app_state_store.dart';
 import '../../domain/enums/user_role.dart';
 import '../admin/admin_subsystem_views.dart';
 import '../bloc/system_architecture_cubit.dart';
+import '../widgets/motion_3d_effects.dart';
 
 class LegacyAdminPortalScreen extends StatefulWidget {
   const LegacyAdminPortalScreen({super.key});
@@ -218,67 +220,84 @@ class _LegacyAdminPortalScreenState extends State<LegacyAdminPortalScreen> {
       );
     }
     return Theme(
-      data: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF087F5B)),
-        scaffoldBackgroundColor: const Color(0xFFF4F6F5),
-        inputDecorationTheme: const InputDecorationTheme(
-          border: OutlineInputBorder(),
-          filled: true,
-          fillColor: Colors.white,
-        ),
-      ),
+      data: AdminStudioTheme.themeData(),
       child: Scaffold(
         body: SafeArea(
           child: Column(
             children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 20,
-                ),
-                color: Colors.white,
-                child: const Row(
-                  children: [
-                    Icon(
-                      Icons.admin_panel_settings_outlined,
-                      color: Color(0xFF087F5B),
+              AdminStudioGridBackdrop(
+                enable3dHorizon: true,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 14,
+                  ),
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: AdminStudioColors.shellLine),
                     ),
-                    SizedBox(width: 10),
-                    Text(
-                      'GO-MAU ADMIN',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
+                  ),
+                  child: const Row(
+                    children: [
+                      AdminStudioMark(size: 36),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'GHST ADMIN',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                              ),
+                            ),
+                            SizedBox(height: 1),
+                            Text(
+                              'Cổng Quản trị Lưu trữ',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                                color: AdminStudioColors.acid,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               Expanded(
                 child: Center(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(20),
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 400),
-                      child: AutofillGroup(
-                        child: Form(
-                          key: _formKey,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                _setup
-                                    ? 'Thiết lập quản trị viên'
-                                    : 'Đăng nhập quản trị',
-                                style: const TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              const SizedBox(height: 28),
+                      constraints: const BoxConstraints(maxWidth: 420),
+                      child: AdminNeoBox(
+                        padding: const EdgeInsets.all(24),
+                        borderRadius: 20,
+                        child: AutofillGroup(
+                          child: Form(
+                              key: _formKey,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    _setup
+                                        ? 'Thiết lập quản trị viên'
+                                        : 'Đăng nhập quản trị',
+                                    style: const TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w800,
+                                      color: AdminStudioColors.ink,
+                                      letterSpacing: -0.3,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 20),
                               if (_pendingAdmin == null) ...[
                                 if (_setup) ...[
                                   TextFormField(
@@ -374,37 +393,62 @@ class _LegacyAdminPortalScreenState extends State<LegacyAdminPortalScreen> {
                                 ),
                               ],
                               if (_error != null) ...[
-                                const SizedBox(height: 16),
-                                Text(
-                                  _error!,
-                                  style: const TextStyle(
-                                    color: Color(0xFFB42318),
+                                const SizedBox(height: 14),
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: AdminStudioColors.dangerSoft,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: AdminStudioColors.danger
+                                          .withValues(alpha: 0.35),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    _error!,
+                                    style: const TextStyle(
+                                      color: AdminStudioColors.danger,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                 ),
                               ],
-                              const SizedBox(height: 24),
-                              FilledButton(
-                                onPressed: _busy ? null : _submit,
-                                style: FilledButton.styleFrom(
-                                  minimumSize: const Size(double.infinity, 48),
+                              const SizedBox(height: 20),
+                              Motion3dInteractiveSurface(
+                                borderRadius: const BorderRadius.all(
+                                  Radius.circular(12),
                                 ),
-                                child: _busy
-                                    ? const SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
+                                maxTilt: 0.055,
+                                pressScale: 0.975,
+                                hoverLift: -1.5,
+                                child: FilledButton(
+                                  onPressed: _busy ? null : _submit,
+                                  style: FilledButton.styleFrom(
+                                    minimumSize: const Size(
+                                      double.infinity,
+                                      48,
+                                    ),
+                                  ),
+                                  child: _busy
+                                      ? const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : Text(
+                                          _pendingAdmin != null
+                                              ? 'Xác nhận OTP'
+                                              : _setup
+                                              ? 'Tạo quản trị viên'
+                                              : 'Đăng nhập',
                                         ),
-                                      )
-                                    : Text(
-                                        _pendingAdmin != null
-                                            ? 'Xác nhận OTP'
-                                            : _setup
-                                            ? 'Tạo quản trị viên'
-                                            : 'Đăng nhập',
-                                      ),
+                                ),
                               ),
-                              const SizedBox(height: 12),
+                              const SizedBox(height: 10),
                               TextButton.icon(
                                 onPressed: _busy
                                     ? null
@@ -433,6 +477,7 @@ class _LegacyAdminPortalScreenState extends State<LegacyAdminPortalScreen> {
                             ],
                           ),
                         ),
+                      ),
                       ),
                     ),
                   ),

@@ -9,8 +9,10 @@ import '../../core/utils/currency_formatter.dart';
 import '../../domain/entities/geo_point.dart';
 import '../screens/cloud_order_details_screen.dart';
 import '../screens/cloud_promo_events_screen.dart';
+import '../widgets/animated_3d_ui_icons.dart';
 import '../widgets/cloud_order_labels.dart';
 import '../widgets/cloud_session_boundary.dart';
+import '../widgets/motion_3d_effects.dart';
 import '../widgets/system_state_screens.dart';
 
 /// Original customer home composition, with exclusively session-scoped reads.
@@ -214,22 +216,33 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
     if (_allowed) await _load();
   }
 
-  Widget _panel(Widget child) => Container(
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: const Color(0xFFE2E8F0)),
-      boxShadow: const [
-        BoxShadow(
-          color: Color(0x0A0F172A),
-          blurRadius: 16,
-          offset: Offset(0, 4),
-        ),
-      ],
-    ),
-    child: Material(type: MaterialType.transparency, child: child),
-  );
+  Widget _panel(Widget child, {bool interactive = false}) {
+    final box = Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A0F172A),
+            blurRadius: 16,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(type: MaterialType.transparency, child: child),
+    );
+    if (!interactive) return box;
+    return Motion3dInteractiveSurface(
+      borderRadius: const BorderRadius.all(Radius.circular(16)),
+      maxTilt: 0.024,
+      hoverLift: -1.5,
+      enablePressScale: false,
+      glintOpacity: 0.10,
+      child: box,
+    );
+  }
 
   Widget _heading(String title, {Widget? action}) => Row(
     children: [
@@ -342,9 +355,17 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
                       child: Semantics(
                         button: true,
                         enabled: entry.$4 != null,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(12),
-                          onTap: entry.$4,
+                        child: Motion3dInteractiveSurface(
+                          borderRadius: const BorderRadius.all(
+                            Radius.circular(12),
+                          ),
+                          maxTilt: 0.085,
+                          pressScale: 0.968,
+                          hoverLift: -2.2,
+                          enabled: entry.$4 != null,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: entry.$4,
                           child: Container(
                             constraints: const BoxConstraints(minHeight: 68),
                             padding: const EdgeInsets.all(11),
@@ -390,6 +411,7 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
                                 ),
                               ],
                             ),
+                          ),
                           ),
                         ),
                       ),
@@ -511,10 +533,15 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
                 for (final item in items)
                   SizedBox(
                     width: width,
-                    child: InkWell(
-                      key: ValueKey('home-promo-tab-${item.$5}'),
-                      borderRadius: BorderRadius.circular(12),
-                      onTap: () => _openPromo(item.$5),
+                    child: Motion3dInteractiveSurface(
+                      borderRadius: const BorderRadius.all(Radius.circular(12)),
+                      maxTilt: 0.085,
+                      pressScale: 0.968,
+                      hoverLift: -2.2,
+                      child: InkWell(
+                        key: ValueKey('home-promo-tab-${item.$5}'),
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () => _openPromo(item.$5),
                       child: Container(
                         constraints: const BoxConstraints(minHeight: 76),
                         padding: const EdgeInsets.all(11),
@@ -563,6 +590,7 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
                           ],
                         ),
                       ),
+                      ),
                     ),
                   ),
               ],
@@ -574,23 +602,16 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
   );
 
   Widget _location() => _panel(
+    interactive: true,
     Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(
           children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: AppColors.pink.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                Icons.location_on_rounded,
-                color: AppColors.pink,
-                size: 21,
-              ),
+            const Animated3dIconBadge(
+              style: Icon3dStyle.gpsPinRadar,
+              size: 44,
+              showRadarPulse: true,
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -786,6 +807,7 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
   Widget _discovery() {
     final products = _data['catalog'] ?? const [];
     return _panel(
+      interactive: true,
       Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
