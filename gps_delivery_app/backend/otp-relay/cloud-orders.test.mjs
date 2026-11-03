@@ -284,3 +284,26 @@ test('Cloud logistics gateway allows only fixed actions and forwards the user JW
   assert.equal(calls[0].options.headers.Authorization,'Bearer user-jwt');
   assert.deepEqual(JSON.parse(calls[0].options.body),{p_action:'recipient_trust',p_payload:{phone:'0912345678'}});
 });
+
+test('Cloud preferences, AI history, live order journey and driver_reviews enforce fixed actions and payload limits', async t => {
+  const calls=[];
+  const app=express(); app.use(express.json());
+  app.use('/cloud',createCloudOrders({env:{SUPABASE_URL:'https://example.supabase.co',SUPABASE_ANON_KEY:'public-key'},
+    authenticate(req,_res,next){req.deliveryIdentity={id:'verified-user',token:'user-jwt',local:false};next();},
+    fetcher:async (url,options)=>{calls.push({url:String(url),body:JSON.parse(options.body)});return new Response(JSON.stringify({ok:true}));}}));
+  app.use((error,_req,res,_next)=>res.status(error.status||500).json({error:error.message}));
+  const server=app.listen(0,'127.0.0.1');t.after(()=>server.close()); await new Promise(resolve=>server.once('listening',resolve));
+  const base=`http://127.0.0.1:${server.address().port}/cloud`;
+  const post=(path,body)=>fetch(`${base}${path}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  assert.equal((await post('/preferences/drop_db',{})).status,400);
+  assert.equal((await post('/ai-history/hack',{})).status,400);
+  assert.equal((await post('/order-live/override_status',{})).status,400);
+  assert.equal(calls.length,0);
+  assert.equal((await post('/preferences/save_ui',{theme_mode:'dark'})).status,200);
+  assert.equal((await post('/ai-history/list',{})).status,200);
+  assert.equal((await post('/order-live/snapshot',{order_id:'10000000-0000-0000-0000-000000000001'})).status,200);
+  assert.equal((await post('/logistics/driver_reviews',{})).status,200);
+  assert.deepEqual(calls.map(c=>c.url.split('/').at(-1)),[
+    'delivery_cloud_preferences','delivery_cloud_ai_history','delivery_cloud_order_live','delivery_cloud_logistics',
+  ]);
+});

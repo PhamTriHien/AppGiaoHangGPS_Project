@@ -4,11 +4,11 @@ import { createCommerceDatabase } from './commerce-db.mjs';
 
 export { publicBackendUrl };
 
-export const COMMERCE_MIGRATION = '20261112_shipping_cash_settlement';
+export const COMMERCE_MIGRATION = '20261113_cloud_sync_and_journey';
 const revisionKey = crypto.randomBytes(32);
 export const databaseRevision = env => crypto.createHmac('sha256', revisionKey)
   .update(JSON.stringify([configValue('DATABASE_URL', env), configValue('DATABASE_CA_CERT', env)])).digest('hex');
-const migrations = ['20261027_delivery_integrations.sql', '20261028_cloud_orders.sql', '20261029_payments_ghn.sql', '20261029_cloud_addresses.sql', '20261030_marketplace.sql', '20261031_market_operations.sql', '20261101_partner_memberships.sql', '20261102_local_address_import.sql', '20261103_catalog_stock_versions.sql', '20261104_market_media.sql', '20261105_market_browse.sql', '20261106_catalog_configuration.sql', '20261107_cloud_commercial_suite.sql', '20261108_cloud_logistics.sql', '20261109_admin_account_management.sql', '20261110_cloud_promo_events.sql', '20261111_profile_push_shipping_coins.sql', '20261112_shipping_cash_settlement.sql'];
+const migrations = ['20261027_delivery_integrations.sql', '20261028_cloud_orders.sql', '20261029_payments_ghn.sql', '20261029_cloud_addresses.sql', '20261030_marketplace.sql', '20261031_market_operations.sql', '20261101_partner_memberships.sql', '20261102_local_address_import.sql', '20261103_catalog_stock_versions.sql', '20261104_market_media.sql', '20261105_market_browse.sql', '20261106_catalog_configuration.sql', '20261107_cloud_commercial_suite.sql', '20261108_cloud_logistics.sql', '20261109_admin_account_management.sql', '20261110_cloud_promo_events.sql', '20261111_profile_push_shipping_coins.sql', '20261112_shipping_cash_settlement.sql', '20261113_cloud_sync_and_journey.sql'];
 
 // Catalog-only queries: never create users, orders, provider requests or payments.
 export const DEPLOYMENT_SCHEMA_SQL = `with commerce_tables as (
@@ -112,6 +112,21 @@ select
     and table_name='delivery_cloud_orders' and column_name in ('cash_collected_fee','cash_collected_cod','cash_collected_at','cash_collected_by'))
     and exists(select 1 from pg_constraint where conrelid=to_regclass('public.delivery_cloud_orders')
       and conname='delivery_cloud_orders_cash_collected_check') as shipping_cash_schema,
+  to_regprocedure('public.delivery_cloud_preferences(text,jsonb)') is not null
+    and to_regprocedure('public.delivery_cloud_ai_history(text,jsonb)') is not null
+    and to_regprocedure('public.delivery_cloud_order_live(text,jsonb)') is not null
+    and (select count(*)=2 from information_schema.columns where table_schema='public'
+      and table_name='delivery_cloud_accounts' and column_name in ('ui_preferences','shipping_draft'))
+    and exists(select 1 from pg_class where oid=to_regclass('public.delivery_ai_chat_messages') and relrowsecurity)
+    and not exists(select 1 from (select oid from pg_roles where rolname in ('anon','authenticated')) r
+      cross join unnest(array['SELECT','INSERT','UPDATE','DELETE']) p(privilege)
+      where coalesce(has_table_privilege(r.oid,to_regclass('public.delivery_ai_chat_messages'),p.privilege),false))
+    and not has_function_privilege((select oid from pg_roles where rolname='anon'),
+      to_regprocedure('public.delivery_cloud_preferences(text,jsonb)'),'EXECUTE')
+    and not has_function_privilege((select oid from pg_roles where rolname='anon'),
+      to_regprocedure('public.delivery_cloud_ai_history(text,jsonb)'),'EXECUTE')
+    and not has_function_privilege((select oid from pg_roles where rolname='anon'),
+      to_regprocedure('public.delivery_cloud_order_live(text,jsonb)'),'EXECUTE') as cloud_sync_journey_schema,
   to_regprocedure('public.delivery_market_selection(uuid,jsonb)') is not null
     and to_regprocedure('public.delivery_market_configured_cart()') is not null
     and (select count(*)=4 from information_schema.columns where table_schema='public'
@@ -225,6 +240,8 @@ export function createDeploymentReadiness({ env = process.env, database = create
       schema?.profile_push_coins_schema ? 'Đã đồng bộ ngày sinh, CCCD định danh 12 số, hộp thư thông báo đẩy và giảm cước phí bằng Xu.' : 'Cần migration 20261111_profile_push_shipping_coins.sql.');
     add('shipping_cash_schema','Đối soát thu tiền mặt cước & COD',schema ? schema.shipping_cash_schema ? 'ok' : 'missing' : 'unchecked',
       schema?.shipping_cash_schema ? 'Đã đồng bộ xác nhận thu tiền mặt cước, thu hộ COD và bảo vệ chống thu trùng.' : 'Cần migration 20261112_shipping_cash_settlement.sql.');
+    add('cloud_sync_journey_schema','Đồng bộ giao diện, bản nháp, lịch sử AI & hành trình trực tiếp',schema ? schema.cloud_sync_journey_schema ? 'ok' : 'missing' : 'unchecked',
+      schema?.cloud_sync_journey_schema ? 'Đã đồng bộ chủ đề sáng/tối, bản nháp đặt đơn, lịch sử hội thoại AI, tọa độ trực tiếp và điểm dừng chuyến giao.' : 'Cần migration 20261113_cloud_sync_and_journey.sql.');
     const commerceSchema = schema?.commerce_schema && schema?.commerce_guard;
     add('address_schema','Sổ địa chỉ tài khoản',schema ? schema.address_schema ? 'ok' : 'missing' : 'unchecked',
       schema?.address_schema ? 'Đã có RPC và RLS sổ địa chỉ.' : 'Cần migration 20261029_cloud_addresses.sql.');
