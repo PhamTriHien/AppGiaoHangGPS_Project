@@ -236,10 +236,10 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
     if (!interactive) return box;
     return Motion3dInteractiveSurface(
       borderRadius: const BorderRadius.all(Radius.circular(16)),
-      maxTilt: 0.024,
-      hoverLift: -1.5,
+      maxTilt: 0.018,
+      hoverLift: -1.4,
       enablePressScale: false,
-      glintOpacity: 0.10,
+      glintOpacity: 0.08,
       child: box,
     );
   }
@@ -359,9 +359,9 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
                           borderRadius: const BorderRadius.all(
                             Radius.circular(12),
                           ),
-                          maxTilt: 0.085,
-                          pressScale: 0.968,
-                          hoverLift: -2.2,
+                          maxTilt: 0.044,
+                          pressScale: 0.976,
+                          hoverLift: -1.8,
                           enabled: entry.$4 != null,
                           child: InkWell(
                             borderRadius: BorderRadius.circular(12),
@@ -535,9 +535,9 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
                     width: width,
                     child: Motion3dInteractiveSurface(
                       borderRadius: const BorderRadius.all(Radius.circular(12)),
-                      maxTilt: 0.085,
-                      pressScale: 0.968,
-                      hoverLift: -2.2,
+                      maxTilt: 0.044,
+                      pressScale: 0.976,
+                      hoverLift: -1.8,
                       child: InkWell(
                         key: ValueKey('home-promo-tab-${item.$5}'),
                         borderRadius: BorderRadius.circular(12),

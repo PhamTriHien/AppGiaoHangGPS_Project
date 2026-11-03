@@ -30,6 +30,130 @@ class ScooterRouteSample3d {
   });
 }
 
+class PrecomputedRoute3d {
+  final List<(double, double)> points;
+  final Float64List cumulativeDistances;
+  final double totalLength;
+
+  PrecomputedRoute3d._(
+    this.points,
+    this.cumulativeDistances,
+    this.totalLength,
+  );
+
+  factory PrecomputedRoute3d.fromWaypoints(
+    List<(double, double)> waypoints, {
+    int cornerSteps = 14,
+    double filletRatio = 0.28,
+  }) {
+    final curve = MeshyScooter3dMesh.buildSmoothFilletedRoute3D(
+      waypoints,
+      cornerSteps: cornerSteps,
+      filletRatio: filletRatio,
+    );
+    final n = curve.length;
+    final cum = Float64List(n);
+    var acc = 0.0;
+    for (var i = 1; i < n; i++) {
+      final dx = curve[i].$1 - curve[i - 1].$1;
+      final dz = curve[i].$2 - curve[i - 1].$2;
+      acc += math.sqrt(dx * dx + dz * dz);
+      cum[i] = acc;
+    }
+    return PrecomputedRoute3d._(List.unmodifiable(curve), cum, acc);
+  }
+
+  (double, double, double, double) _evalAtDistance(double s) {
+    final n = points.length;
+    if (n == 0) return (0.0, 0.0, 1.0, 0.0);
+    if (n == 1 || totalLength < 1e-4) {
+      return (points.first.$1, points.first.$2, 1.0, 0.0);
+    }
+    final clampedS = s.clamp(0.0, totalLength);
+    var lo = 0;
+    var hi = n - 2;
+    while (lo < hi) {
+      final mid = (lo + hi + 1) >> 1;
+      if (cumulativeDistances[mid] <= clampedS) {
+        lo = mid;
+      } else {
+        hi = mid - 1;
+      }
+    }
+    final segStart = cumulativeDistances[lo];
+    final segLen = cumulativeDistances[lo + 1] - segStart;
+    final localU = segLen > 1e-6
+        ? ((clampedS - segStart) / segLen).clamp(0.0, 1.0)
+        : 0.0;
+    final p0 = points[lo];
+    final p1 = points[lo + 1];
+    final dx = p1.$1 - p0.$1;
+    final dz = p1.$2 - p0.$2;
+    final norm = math.sqrt(dx * dx + dz * dz);
+    final tx = norm > 1e-6 ? dx / norm : 1.0;
+    final tz = norm > 1e-6 ? dz / norm : 0.0;
+    return (p0.$1 + dx * localU, p0.$2 + dz * localU, tx, tz);
+  }
+
+  ScooterRouteSample3d sample(
+    double progress01, {
+    double trailWorldLength = 92.0,
+    int trailSteps = 8,
+  }) {
+    if (points.isEmpty) {
+      return const ScooterRouteSample3d(
+        worldX: 0,
+        worldZ: 0,
+        tangentX: 1,
+        tangentZ: 0,
+        trailPoints: [(0, 0)],
+      );
+    }
+    if (points.length == 1 || totalLength < 1e-4) {
+      final first = points.first;
+      return ScooterRouteSample3d(
+        worldX: first.$1,
+        worldZ: first.$2,
+        tangentX: 1,
+        tangentZ: 0,
+        trailPoints: [first],
+      );
+    }
+
+    final targetS = progress01.clamp(0.0, 1.0) * totalLength;
+    final cur = _evalAtDistance(targetS);
+    final lookWindow = math.min(22.0, totalLength * 0.025);
+    final ahead = _evalAtDistance(targetS + lookWindow);
+    final behind = _evalAtDistance(targetS - lookWindow);
+    var smoothTx = ahead.$1 - behind.$1;
+    var smoothTz = ahead.$2 - behind.$2;
+    final smoothNorm = math.sqrt(smoothTx * smoothTx + smoothTz * smoothTz);
+    if (smoothNorm > 1e-5) {
+      smoothTx /= smoothNorm;
+      smoothTz /= smoothNorm;
+    } else {
+      smoothTx = cur.$3;
+      smoothTz = cur.$4;
+    }
+
+    final trailPts = <(double, double)>[];
+    final startTrailS = math.max(0.0, targetS - trailWorldLength);
+    for (var k = 0; k <= trailSteps; k++) {
+      final ts = startTrailS + (targetS - startTrailS) * (k / trailSteps);
+      final pt = _evalAtDistance(ts);
+      trailPts.add((pt.$1, pt.$2));
+    }
+
+    return ScooterRouteSample3d(
+      worldX: cur.$1,
+      worldZ: cur.$2,
+      tangentX: smoothTx,
+      tangentZ: smoothTz,
+      trailPoints: trailPts,
+    );
+  }
+}
+
 /// Bộ nạp & kết xuất GPU trực tiếp mô hình 3D Xe máy Giao hàng (Meshy 3D GLB/MSH3 - 4.380 đỉnh / 10.071 đa giác)
 class MeshyScooter3dMesh {
   static final MeshyScooter3dMesh instance = MeshyScooter3dMesh._();
@@ -321,8 +445,105 @@ class MeshyScooter3dMesh {
     }
   }
 
-  static final Paint _sharedVertexPaint = Paint();
+  static final Paint _sharedVertexPaint = Paint()..isAntiAlias = true;
+  static const int _spriteDim = 144;
+  static const double _spriteHalf = 72.0;
+  static const double _spriteUnitScale = 62.0;
+  static const Rect _spriteSrcRect = Rect.fromLTWH(0, 0, 144, 144);
+  final Map<int, ui.Image> _spriteCache = <int, ui.Image>{};
   final Map<int, ui.Vertices> _unitVerticesCache = <int, ui.Vertices>{};
+
+  static int _shadeVertexArgb(int r, int g, int b, double shade) {
+    final cr = (r * shade).round().clamp(0, 255);
+    final cg = (g * shade).round().clamp(0, 255);
+    final cb = (b * shade).round().clamp(0, 255);
+    return (0xFF << 24) | (cr << 16) | (cg << 8) | cb;
+  }
+
+  ui.Vertices _buildSortedGouraudVertices(double qYaw, double qPitch) {
+    final cy = math.cos(qYaw);
+    final sy = math.sin(qYaw);
+    final cp = math.cos(qPitch);
+    final sp = math.sin(qPitch);
+
+    double minZ = 1e9;
+    double maxZ = -1e9;
+
+    for (var i = 0; i < _numVerts; i++) {
+      final x = _vx[i];
+      final y = _vy[i];
+      final z = _vz[i];
+
+      final x1 = x * cy + z * sy;
+      final z1 = -x * sy + z * cy;
+      final y2 = y * cp - z1 * sp;
+      final z2 = y * sp + z1 * cp;
+
+      _projX[i] = x1;
+      _projY[i] = -y2;
+      _projZ[i] = z2;
+      if (z2 < minZ) minZ = z2;
+      if (z2 > maxZ) maxZ = z2;
+
+      final nx1 = _nx[i] * cy + _nz[i] * sy;
+      final nz1 = -_nx[i] * sy + _nz[i] * cy;
+      final ny2 = _ny[i] * cp - nz1 * sp;
+      final nz2 = _ny[i] * sp + nz1 * cp;
+      final keyDot = nx1 * 0.34 + ny2 * 0.54 + nz2 * 0.77;
+      final skyFill = (ny2 * 0.5 + 0.5) * 0.14;
+      _vShade[i] = 0.62 + skyFill + 0.34 * (keyDot > 0.0 ? keyDot : 0.0);
+    }
+
+    for (var b = 0; b < 96; b++) {
+      _bucketHeads[b] = -1;
+    }
+
+    final zSpan = (maxZ - minZ) > 1e-5 ? (maxZ - minZ) : 1.0;
+    for (var t = 0; t < _numTris; t++) {
+      final i0 = _triI0[t];
+      final i1 = _triI1[t];
+      final i2 = _triI2[t];
+      final tz = (_projZ[i0] + _projZ[i1] + _projZ[i2]) * 0.333333;
+      var bIdx = (((tz - minZ) / zSpan) * 95.0).floor();
+      if (bIdx < 0) bIdx = 0;
+      if (bIdx > 95) bIdx = 95;
+      _nextInBucket[t] = _bucketHeads[bIdx];
+      _bucketHeads[bIdx] = t;
+    }
+
+    var outP = 0;
+    var outC = 0;
+    for (var b = 0; b < 96; b++) {
+      var t = _bucketHeads[b];
+      while (t != -1) {
+        final i0 = _triI0[t];
+        final i1 = _triI1[t];
+        final i2 = _triI2[t];
+
+        _gpuPositions[outP++] = _projX[i0];
+        _gpuPositions[outP++] = _projY[i0];
+        _gpuPositions[outP++] = _projX[i1];
+        _gpuPositions[outP++] = _projY[i1];
+        _gpuPositions[outP++] = _projX[i2];
+        _gpuPositions[outP++] = _projY[i2];
+
+        final tr = _triR[t];
+        final tg = _triG[t];
+        final tb = _triB[t];
+        _gpuColors[outC++] = _shadeVertexArgb(tr, tg, tb, _vShade[i0]);
+        _gpuColors[outC++] = _shadeVertexArgb(tr, tg, tb, _vShade[i1]);
+        _gpuColors[outC++] = _shadeVertexArgb(tr, tg, tb, _vShade[i2]);
+
+        t = _nextInBucket[t];
+      }
+    }
+
+    return ui.Vertices.raw(
+      ui.VertexMode.triangles,
+      _gpuPositions,
+      colors: _gpuColors,
+    );
+  }
 
   void renderToCanvas(
     Canvas canvas, {
@@ -330,119 +551,78 @@ class MeshyScooter3dMesh {
     required double scalePx,
     required double yawRadians,
     required double pitchRadians,
+    double opacity = 1.0,
   }) {
-    if (!_isLoaded || _numTris == 0 || scalePx <= 0.1) return;
-
-    const twoPi = math.pi * 2.0;
-    final normYaw = ((yawRadians % twoPi) + twoPi) % twoPi;
-    final yawBucket = ((normYaw / twoPi) * 72.0).round() % 72;
-    final clampedPitch = pitchRadians.clamp(-1.2, 1.2);
-    final pitchBucket = (((clampedPitch + 1.2) / 2.4) * 32.0).round();
-    final cacheKey = (yawBucket << 8) | pitchBucket;
-
-    ui.Vertices? unitVerts = _unitVerticesCache.remove(cacheKey);
-    if (unitVerts != null) {
-      _unitVerticesCache[cacheKey] = unitVerts;
-    } else {
-      final qYaw = (yawBucket / 72.0) * twoPi;
-      final qPitch = -1.2 + (pitchBucket / 32.0) * 2.4;
-      final cy = math.cos(qYaw);
-      final sy = math.sin(qYaw);
-      final cp = math.cos(qPitch);
-      final sp = math.sin(qPitch);
-
-      double minZ = 1e9;
-      double maxZ = -1e9;
-
-      for (var i = 0; i < _numVerts; i++) {
-        final x = _vx[i];
-        final y = _vy[i];
-        final z = _vz[i];
-
-        final x1 = x * cy + z * sy;
-        final z1 = -x * sy + z * cy;
-        final y2 = y * cp - z1 * sp;
-        final z2 = y * sp + z1 * cp;
-
-        _projX[i] = x1;
-        _projY[i] = -y2;
-        _projZ[i] = z2;
-        if (z2 < minZ) minZ = z2;
-        if (z2 > maxZ) maxZ = z2;
-
-        final nx1 = _nx[i] * cy + _nz[i] * sy;
-        final nz1 = -_nx[i] * sy + _nz[i] * cy;
-        final ny2 = _ny[i] * cp - nz1 * sp;
-        final nz2 = _ny[i] * sp + nz1 * cp;
-        final dot = nx1 * 0.35 + ny2 * 0.55 + nz2 * 0.75;
-        _vShade[i] = 0.68 + 0.38 * (dot > 0.0 ? dot : 0.0);
-      }
-
-      for (var b = 0; b < 96; b++) {
-        _bucketHeads[b] = -1;
-      }
-
-      final zSpan = (maxZ - minZ) > 1e-5 ? (maxZ - minZ) : 1.0;
-      for (var t = 0; t < _numTris; t++) {
-        final i0 = _triI0[t];
-        final i1 = _triI1[t];
-        final i2 = _triI2[t];
-        final tz = (_projZ[i0] + _projZ[i1] + _projZ[i2]) * 0.333333;
-        var bIdx = (((tz - minZ) / zSpan) * 95.0).floor();
-        if (bIdx < 0) bIdx = 0;
-        if (bIdx > 95) bIdx = 95;
-        _nextInBucket[t] = _bucketHeads[bIdx];
-        _bucketHeads[bIdx] = t;
-      }
-
-      var outP = 0;
-      var outC = 0;
-      for (var b = 0; b < 96; b++) {
-        var t = _bucketHeads[b];
-        while (t != -1) {
-          final i0 = _triI0[t];
-          final i1 = _triI1[t];
-          final i2 = _triI2[t];
-
-          _gpuPositions[outP++] = _projX[i0];
-          _gpuPositions[outP++] = _projY[i0];
-          _gpuPositions[outP++] = _projX[i1];
-          _gpuPositions[outP++] = _projY[i1];
-          _gpuPositions[outP++] = _projX[i2];
-          _gpuPositions[outP++] = _projY[i2];
-
-          final shade = (_vShade[i0] + _vShade[i1] + _vShade[i2]) * 0.333333;
-          final cr = (_triR[t] * shade).round().clamp(0, 255);
-          final cg = (_triG[t] * shade).round().clamp(0, 255);
-          final cb = (_triB[t] * shade).round().clamp(0, 255);
-          final argb = (0xFF << 24) | (cr << 16) | (cg << 8) | cb;
-
-          _gpuColors[outC++] = argb;
-          _gpuColors[outC++] = argb;
-          _gpuColors[outC++] = argb;
-
-          t = _nextInBucket[t];
-        }
-      }
-
-      unitVerts = ui.Vertices.raw(
-        ui.VertexMode.triangles,
-        _gpuPositions,
-        colors: _gpuColors,
-      );
-      if (_unitVerticesCache.length >= 28) {
-        final oldestKey = _unitVerticesCache.keys.first;
-        final evicted = _unitVerticesCache.remove(oldestKey);
-        evicted?.dispose();
-      }
-      _unitVerticesCache[cacheKey] = unitVerts;
+    if (!_isLoaded || _numTris == 0 || scalePx <= 0.1 || opacity <= 0.004) {
+      return;
     }
 
-    canvas.save();
-    canvas.translate(center.dx, center.dy);
-    canvas.scale(scalePx, scalePx);
-    canvas.drawVertices(unitVerts, BlendMode.dst, _sharedVertexPaint);
-    canvas.restore();
+    const twoPi = math.pi * 2.0;
+    const yawSteps = 180;
+    const pitchSteps = 36;
+    final normYaw = ((yawRadians % twoPi) + twoPi) % twoPi;
+    final yawBucket = ((normYaw / twoPi) * yawSteps).round() % yawSteps;
+    final clampedPitch = pitchRadians.clamp(-1.2, 1.2);
+    final pitchBucket = (((clampedPitch + 1.2) / 2.4) * pitchSteps).round();
+    final cacheKey = (yawBucket << 8) | pitchBucket;
+    final qYaw = (yawBucket / yawSteps) * twoPi;
+    final qPitch = -1.2 + (pitchBucket / pitchSteps) * 2.4;
+
+    ui.Image? sprite = _spriteCache.remove(cacheKey);
+    if (sprite != null) {
+      _spriteCache[cacheKey] = sprite;
+    } else {
+      final verts = _buildSortedGouraudVertices(qYaw, qPitch);
+      try {
+        final recorder = ui.PictureRecorder();
+        final offscreen = Canvas(recorder, _spriteSrcRect);
+        offscreen.translate(_spriteHalf, _spriteHalf);
+        offscreen.scale(_spriteUnitScale, _spriteUnitScale);
+        offscreen.drawVertices(verts, BlendMode.dst, _sharedVertexPaint);
+        final picture = recorder.endRecording();
+        sprite = picture.toImageSync(_spriteDim, _spriteDim);
+        picture.dispose();
+        verts.dispose();
+        if (_spriteCache.length >= 144) {
+          final oldestKey = _spriteCache.keys.first;
+          _spriteCache.remove(oldestKey)?.dispose();
+        }
+        _spriteCache[cacheKey] = sprite;
+      } catch (_) {
+        if (_unitVerticesCache.length >= 48) {
+          final oldestKey = _unitVerticesCache.keys.first;
+          _unitVerticesCache.remove(oldestKey)?.dispose();
+        }
+        _unitVerticesCache[cacheKey] = verts;
+      }
+    }
+
+    final clampedOpacity = opacity.clamp(0.0, 1.0);
+    if (sprite != null) {
+      final dstHalf = scalePx * (_spriteHalf / _spriteUnitScale);
+      final dstRect = Rect.fromCenter(
+        center: center,
+        width: dstHalf * 2.0,
+        height: dstHalf * 2.0,
+      );
+      final spritePaint = Paint()
+        ..isAntiAlias = true
+        ..filterQuality = FilterQuality.medium;
+      if (clampedOpacity < 0.999) {
+        spritePaint.color = Color.fromRGBO(255, 255, 255, clampedOpacity);
+      }
+      canvas.drawImageRect(sprite, _spriteSrcRect, dstRect, spritePaint);
+      return;
+    }
+
+    final fallbackVerts = _unitVerticesCache[cacheKey];
+    if (fallbackVerts != null) {
+      canvas.save();
+      canvas.translate(center.dx, center.dy);
+      canvas.scale(scalePx, scalePx);
+      canvas.drawVertices(fallbackVerts, BlendMode.dst, _sharedVertexPaint);
+      canvas.restore();
+    }
   }
 }
 

@@ -307,11 +307,25 @@ class _AdminStudioGridBackdropState extends State<AdminStudioGridBackdrop>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    duration: const Duration(seconds: 10),
+    duration: const Duration(seconds: 14),
     value: 0.25,
-  );
+  )..addListener(_smoothParallax);
   final ValueNotifier<Offset> _parallax = ValueNotifier<Offset>(Offset.zero);
+  Offset _targetParallax = Offset.zero;
   late final Listenable _merged = Listenable.merge([_controller, _parallax]);
+
+  void _smoothParallax() {
+    final current = _parallax.value;
+    final delta = _targetParallax - current;
+    if (delta.distanceSquared > 0.000004) {
+      _parallax.value = Offset(
+        current.dx + delta.dx * 0.11,
+        current.dy + delta.dy * 0.11,
+      );
+    } else if (current != _targetParallax) {
+      _parallax.value = _targetParallax;
+    }
+  }
 
   @override
   void didChangeDependencies() {
@@ -337,6 +351,7 @@ class _AdminStudioGridBackdropState extends State<AdminStudioGridBackdrop>
 
   @override
   void dispose() {
+    _controller.removeListener(_smoothParallax);
     _controller.dispose();
     _parallax.dispose();
     super.dispose();
@@ -348,7 +363,8 @@ class _AdminStudioGridBackdropState extends State<AdminStudioGridBackdrop>
       ((local.dx / size.width) * 2.0 - 1.0).clamp(-1.0, 1.0),
       ((local.dy / size.height) * 2.0 - 1.0).clamp(-1.0, 1.0),
     );
-    if ((next - _parallax.value).distance > 0.02) {
+    _targetParallax = next;
+    if (!_controller.isAnimating && (next - _parallax.value).distance > 0.005) {
       _parallax.value = next;
     }
   }
@@ -370,20 +386,35 @@ class _AdminStudioGridBackdropState extends State<AdminStudioGridBackdrop>
     return LayoutBuilder(
       builder: (context, constraints) => MouseRegion(
         onHover: (e) => _onHover(e.localPosition, constraints.biggest),
-        onExit: (_) => _parallax.value = Offset.zero,
-        child: AnimatedBuilder(
-          animation: _merged,
-          child: widget.child,
-          builder: (context, child) => CustomPaint(
-            painter: _StudioGridPainter(
-              backgroundColor: widget.backgroundColor,
-              gridSpacing: widget.gridSpacing,
-              phase: _controller.value,
-              parallax: _parallax.value,
-              drawHorizon: true,
+        onExit: (_) {
+          _targetParallax = Offset.zero;
+          if (!_controller.isAnimating) {
+            _parallax.value = Offset.zero;
+          }
+        },
+        child: Stack(
+          fit: StackFit.passthrough,
+          children: [
+            Positioned.fill(
+              child: IgnorePointer(
+                child: RepaintBoundary(
+                  child: AnimatedBuilder(
+                    animation: _merged,
+                    builder: (_, _) => CustomPaint(
+                      painter: _StudioGridPainter(
+                        backgroundColor: widget.backgroundColor,
+                        gridSpacing: widget.gridSpacing,
+                        phase: _controller.value,
+                        parallax: _parallax.value,
+                        drawHorizon: true,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
-            child: child,
-          ),
+            widget.child,
+          ],
         ),
       ),
     );
@@ -455,6 +486,7 @@ class _StudioGridPainter extends CustomPainter {
     final horizonY = size.height * (0.64 + parallax.dy * 0.025);
     final vanishX = size.width * (0.50 + parallax.dx * 0.06);
     final perspectiveLinePaint = Paint()
+      ..isAntiAlias = true
       ..color = AdminStudioColors.acid.withValues(alpha: 0.09)
       ..strokeWidth = 1.0;
 
@@ -473,6 +505,7 @@ class _StudioGridPainter extends CustomPainter {
       final depthT = t * t;
       final y = horizonY + (size.height - horizonY) * depthT;
       final rowPaint = Paint()
+        ..isAntiAlias = true
         ..color = AdminStudioColors.violet.withValues(
           alpha: (0.04 + 0.14 * depthT).clamp(0.0, 0.22),
         )
@@ -494,6 +527,7 @@ class _StudioGridPainter extends CustomPainter {
     canvas.drawOval(
       orbitRect,
       Paint()
+        ..isAntiAlias = true
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.1
         ..color = AdminStudioColors.acid.withValues(alpha: 0.20),
@@ -506,12 +540,16 @@ class _StudioGridPainter extends CustomPainter {
     canvas.drawCircle(
       satPos,
       4.0,
-      Paint()..color = AdminStudioColors.acid.withValues(alpha: 0.85),
+      Paint()
+        ..isAntiAlias = true
+        ..color = AdminStudioColors.acid.withValues(alpha: 0.85),
     );
     canvas.drawCircle(
       satPos,
       10.0,
-      Paint()..color = AdminStudioColors.acid.withValues(alpha: 0.20),
+      Paint()
+        ..isAntiAlias = true
+        ..color = AdminStudioColors.acid.withValues(alpha: 0.20),
     );
   }
 
@@ -537,7 +575,7 @@ class AdminNeoBox extends StatelessWidget {
     this.borderRadius = 14.0,
     this.shadowOffset = const Offset(0, 4),
     this.interactive3d = false,
-    this.maxTilt = 0.055,
+    this.maxTilt = 0.035,
     this.enablePressScale = false,
   });
 
@@ -560,6 +598,12 @@ class AdminNeoBox extends StatelessWidget {
         ? AdminStudioColors.line
         : borderColor;
     final radius = BorderRadius.circular(borderRadius);
+    final Widget innerContent = Material(
+      type: MaterialType.transparency,
+      child: padding == EdgeInsets.zero
+          ? child
+          : Padding(padding: padding, child: child),
+    );
     Widget box = Container(
       margin: margin,
       decoration: BoxDecoration(
@@ -581,15 +625,9 @@ class AdminNeoBox extends StatelessWidget {
                 ),
               ],
       ),
-      child: ClipRRect(
-        borderRadius: radius,
-        child: Material(
-          type: MaterialType.transparency,
-          child: padding == EdgeInsets.zero
-              ? child
-              : Padding(padding: padding, child: child),
-        ),
-      ),
+      child: interactive3d
+          ? innerContent
+          : ClipRRect(borderRadius: radius, child: innerContent),
     );
     if (interactive3d) {
       box = Motion3dInteractiveSurface(

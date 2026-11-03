@@ -22,13 +22,27 @@ class _StudioUserAuthFrameState extends State<StudioUserAuthFrame>
     with SingleTickerProviderStateMixin {
   late final _animation = AnimationController(
     vsync: this,
-    duration: const Duration(seconds: 9),
+    duration: const Duration(seconds: 16),
     value: 0.35,
-  );
+  )..addListener(_smoothParallax);
   final _parallax = ValueNotifier<Offset>(Offset.zero);
+  Offset _targetParallax = Offset.zero;
   late final _backdrop = Listenable.merge([_animation, _parallax]);
   bool get _testing =>
       WidgetsBinding.instance.runtimeType.toString().contains('Test');
+
+  void _smoothParallax() {
+    final current = _parallax.value;
+    final delta = _targetParallax - current;
+    if (delta.distanceSquared > 0.000004) {
+      _parallax.value = Offset(
+        current.dx + delta.dx * 0.11,
+        current.dy + delta.dy * 0.11,
+      );
+    } else if (current != _targetParallax) {
+      _parallax.value = _targetParallax;
+    }
+  }
 
   @override
   void initState() {
@@ -58,6 +72,7 @@ class _StudioUserAuthFrameState extends State<StudioUserAuthFrame>
 
   @override
   void dispose() {
+    _animation.removeListener(_smoothParallax);
     _animation.dispose();
     _parallax.dispose();
     super.dispose();
@@ -69,7 +84,10 @@ class _StudioUserAuthFrameState extends State<StudioUserAuthFrame>
       ((point.dx - size.width / 2) / (size.width / 2)).clamp(-1, 1),
       ((point.dy - size.height / 2) / (size.height / 2)).clamp(-1, 1),
     );
-    if ((next - _parallax.value).distance > 0.02) _parallax.value = next;
+    _targetParallax = next;
+    if (!_animation.isAnimating && (next - _parallax.value).distance > 0.005) {
+      _parallax.value = next;
+    }
   }
 
   @override
@@ -80,7 +98,12 @@ class _StudioUserAuthFrameState extends State<StudioUserAuthFrame>
         final compact = constraints.maxWidth < 400;
         return MouseRegion(
           onHover: (event) => _hover(event.localPosition, constraints.biggest),
-          onExit: (_) => _parallax.value = Offset.zero,
+          onExit: (_) {
+            _targetParallax = Offset.zero;
+            if (!_animation.isAnimating) {
+              _parallax.value = Offset.zero;
+            }
+          },
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -153,33 +176,35 @@ class _StudioUserAuthFrameState extends State<StudioUserAuthFrame>
                             fit: StackFit.passthrough,
                             children: [
                               card,
-                              if (value.distance > 0.01)
-                                Positioned.fill(
-                                  child: IgnorePointer(
-                                    child: ClipRRect(
+                              Positioned.fill(
+                                child: IgnorePointer(
+                                  child: DecoratedBox(
+                                    decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(24),
-                                      child: DecoratedBox(
-                                        decoration: BoxDecoration(
-                                          gradient: RadialGradient(
-                                            center: Alignment(
-                                              value.dx,
-                                              value.dy,
-                                            ),
-                                            radius: 1.15,
-                                            colors: [
-                                              AppColors.primarySoft.withValues(
-                                                alpha: 0.30,
+                                      gradient: value.distance > 0.008
+                                          ? RadialGradient(
+                                              center: Alignment(
+                                                value.dx,
+                                                value.dy,
                                               ),
-                                              Colors.white.withValues(
-                                                alpha: 0.0,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
+                                              radius: 1.15,
+                                              colors: [
+                                                AppColors.primarySoft
+                                                    .withValues(
+                                                      alpha: (0.26 *
+                                                              value.distance)
+                                                          .clamp(0.0, 0.26),
+                                                    ),
+                                                Colors.white.withValues(
+                                                  alpha: 0.0,
+                                                ),
+                                              ],
+                                            )
+                                          : null,
                                     ),
                                   ),
                                 ),
+                              ),
                             ],
                           );
                         },
@@ -293,9 +318,9 @@ class _TabPill extends StatelessWidget {
     selected: selected,
     child: Motion3dInteractiveSurface(
       borderRadius: const BorderRadius.all(Radius.circular(10)),
-      maxTilt: 0.045,
-      pressScale: 0.968,
-      hoverLift: -1.0,
+      maxTilt: 0.030,
+      pressScale: 0.976,
+      hoverLift: -0.8,
       child: Material(
         color: Colors.transparent,
         child: InkWell(

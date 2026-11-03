@@ -89,8 +89,10 @@ class Animated3dIconBadge extends StatefulWidget {
 class _Animated3dIconBadgeState extends State<Animated3dIconBadge>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  double _pointerTiltX = -0.08;
-  double _pointerTiltY = 0.12;
+  double _pointerTiltX = -0.06;
+  double _pointerTiltY = 0.09;
+  double _targetPointerTiltX = -0.06;
+  double _targetPointerTiltY = 0.09;
   double _tapImpulse = 0.0;
 
   /// Phát hiện môi trường kiểm thử tự động để không làm treo lệnh pumpAndSettle
@@ -105,7 +107,7 @@ class _Animated3dIconBadgeState extends State<Animated3dIconBadge>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2600),
+      duration: const Duration(milliseconds: 3600),
       value: widget.animateIdle ? 0.0 : 0.25,
     )..addListener(_decayTapImpulse);
     _startAnimationLoop();
@@ -116,6 +118,15 @@ class _Animated3dIconBadgeState extends State<Animated3dIconBadge>
       _tapImpulse = (_tapImpulse * 0.92).clamp(0.0, 1.0);
     } else if (_tapImpulse != 0.0) {
       _tapImpulse = 0.0;
+    }
+    final dx = _targetPointerTiltX - _pointerTiltX;
+    final dy = _targetPointerTiltY - _pointerTiltY;
+    if (dx.abs() > 0.0004 || dy.abs() > 0.0004) {
+      _pointerTiltX += dx * 0.16;
+      _pointerTiltY += dy * 0.16;
+    } else {
+      _pointerTiltX = _targetPointerTiltX;
+      _pointerTiltY = _targetPointerTiltY;
     }
   }
 
@@ -160,16 +171,18 @@ class _Animated3dIconBadgeState extends State<Animated3dIconBadge>
     if (half <= 0) return;
     final normX = ((localPosition.dx - half) / half).clamp(-1.0, 1.0);
     final normY = ((localPosition.dy - half) / half).clamp(-1.0, 1.0);
-    final nextTiltY = normX * 0.40;
-    final nextTiltX = -normY * 0.40;
-    if ((nextTiltY - _pointerTiltY).abs() < 0.015 &&
-        (nextTiltX - _pointerTiltX).abs() < 0.015) {
-      return;
+    final nextTiltY = normX * 0.24;
+    final nextTiltX = -normY * 0.24;
+    _targetPointerTiltY = nextTiltY;
+    _targetPointerTiltX = nextTiltX;
+    if (!_controller.isAnimating &&
+        ((nextTiltY - _pointerTiltY).abs() > 0.004 ||
+            (nextTiltX - _pointerTiltX).abs() > 0.004)) {
+      setState(() {
+        _pointerTiltY += (nextTiltY - _pointerTiltY) * 0.35;
+        _pointerTiltX += (nextTiltX - _pointerTiltX) * 0.35;
+      });
     }
-    setState(() {
-      _pointerTiltY = nextTiltY;
-      _pointerTiltX = nextTiltX;
-    });
   }
 
   void _trigger3dPulseWave() {
@@ -191,15 +204,18 @@ class _Animated3dIconBadgeState extends State<Animated3dIconBadge>
       return const SizedBox.shrink();
     }
     final dpr = MediaQuery.devicePixelRatioOf(context).clamp(1.0, 3.0);
-    final targetCachePx = (effectiveSize * dpr * 1.2).round().clamp(64, 256);
+    final targetCachePx = (effectiveSize * dpr * 2.0).round().clamp(160, 512);
     return RepaintBoundary(
       child: MouseRegion(
         onHover: (event) => _updateTiltFromLocalOffset(event.localPosition),
         onExit: (_) {
-          if (_pointerTiltX != -0.08 || _pointerTiltY != 0.12) {
+          _targetPointerTiltX = -0.06;
+          _targetPointerTiltY = 0.09;
+          if (!_controller.isAnimating &&
+              (_pointerTiltX != -0.06 || _pointerTiltY != 0.09)) {
             setState(() {
-              _pointerTiltX = -0.08;
-              _pointerTiltY = 0.12;
+              _pointerTiltX = -0.06;
+              _pointerTiltY = 0.09;
             });
           }
         },
@@ -223,13 +239,13 @@ class _Animated3dIconBadgeState extends State<Animated3dIconBadge>
 
             final dynamicTiltX = _pointerTiltX + motion.pitchX;
             final dynamicTiltY = _pointerTiltY + motion.yawY;
-            final impulseScale = 1.0 + _tapImpulse * 0.14;
+            final impulseScale = 1.0 + _tapImpulse * 0.11;
 
             final transform3d = Matrix4.identity()
-              ..setEntry(3, 2, 0.0026)
+              ..setEntry(3, 2, 0.0015)
               ..translateByDouble(
                 motion.offsetX,
-                motion.offsetY - _tapImpulse * 5.0,
+                motion.offsetY - _tapImpulse * 4.0,
                 0.0,
                 1.0,
               )
@@ -244,8 +260,8 @@ class _Animated3dIconBadgeState extends State<Animated3dIconBadge>
               );
 
             final shadowScale = (1.0 - (motion.offsetY.abs() / 34.0)).clamp(
-              0.64,
-              1.06,
+              0.68,
+              1.05,
             );
 
             return SizedBox(
@@ -282,7 +298,7 @@ class _Animated3dIconBadgeState extends State<Animated3dIconBadge>
                           boxShadow: [
                             BoxShadow(
                               color: widget.style.secondaryColor.withValues(
-                                alpha: 0.42 * shadowScale,
+                                alpha: 0.40 * shadowScale,
                               ),
                               blurRadius: 15,
                               spreadRadius: 2,
@@ -295,6 +311,7 @@ class _Animated3dIconBadgeState extends State<Animated3dIconBadge>
                   // Khối Mô hình 3D Studio Chân thực + Lớp phủ Quang học Volumetric 60 FPS
                   Transform(
                     alignment: Alignment.center,
+                    filterQuality: FilterQuality.medium,
                     transform: transform3d,
                     child: Container(
                       width: widget.size * 0.88,
@@ -306,19 +323,19 @@ class _Animated3dIconBadgeState extends State<Animated3dIconBadge>
                           color: widget.isSelected
                               ? widget.style.primaryColor
                               : Colors.white.withValues(alpha: 0.95),
-                          width: widget.isSelected ? 2.6 : 1.8,
+                          width: widget.isSelected ? 2.4 : 1.7,
                         ),
                         boxShadow: [
                           BoxShadow(
                             color: widget.style.primaryColor.withValues(
-                              alpha: widget.isSelected ? 0.54 : 0.32,
+                              alpha: widget.isSelected ? 0.50 : 0.30,
                             ),
                             blurRadius: widget.isSelected ? 18 : 12,
                             offset: const Offset(0, 6),
                           ),
                           BoxShadow(
                             color: widget.style.glowColor.withValues(
-                              alpha: widget.isSelected ? 0.38 : 0.18,
+                              alpha: widget.isSelected ? 0.36 : 0.16,
                             ),
                             blurRadius: 10,
                             spreadRadius: 1,
@@ -332,12 +349,14 @@ class _Animated3dIconBadgeState extends State<Animated3dIconBadge>
                             // Lớp 1: Kết xuất Mô hình 3D Studio độ phân giải cao (Ray-traced Clay/Metallic AI Render)
                             Transform.scale(
                               scale: 1.09,
+                              filterQuality: FilterQuality.medium,
                               child: Image.asset(
                                 widget.style.assetPath,
                                 fit: BoxFit.cover,
                                 cacheWidth: targetCachePx,
                                 cacheHeight: targetCachePx,
                                 filterQuality: FilterQuality.medium,
+                                isAntiAlias: true,
                                 errorBuilder: (_, _, _) {
                                   return DecoratedBox(
                                     decoration: BoxDecoration(
@@ -389,47 +408,45 @@ class _Animated3dIconBadgeState extends State<Animated3dIconBadge>
     required bool isSelected,
     required double tapImpulse,
   }) {
-    final baseSelectLift = isSelected ? -2.2 : 0.0;
+    final baseSelectLift = isSelected ? -1.8 : 0.0;
+    final smoothBounce1 = 0.5 * (1.0 - math.cos(fullAngle));
+    final smoothBounce2 = 0.5 * (1.0 - math.cos(fullAngle * 2.0));
     switch (style) {
       case Icon3dStyle.scooterExpress:
-        // Xe máy nghiêng ôm cua chữ S (banking roll), nhấp nhô giảm xóc nhịp nhanh và chồm nhẹ về trước
         return _Physical3dMotion(
-          offsetX: math.sin(fullAngle) * 1.8,
-          offsetY: baseSelectLift - 3.2 * math.sin(fullAngle * 2.0).abs(),
-          pitchX: 0.12 * math.sin(fullAngle * 2.0),
-          yawY: 0.22 * math.cos(fullAngle),
-          rollZ: 0.06 * math.sin(fullAngle),
-          scale: 1.0 + 0.035 * math.sin(fullAngle * 2.0),
+          offsetX: math.sin(fullAngle) * 1.4,
+          offsetY: baseSelectLift - 2.6 * smoothBounce2,
+          pitchX: 0.08 * math.sin(fullAngle * 2.0),
+          yawY: 0.14 * math.cos(fullAngle),
+          rollZ: 0.04 * math.sin(fullAngle),
+          scale: 1.0 + 0.024 * math.sin(fullAngle * 2.0),
         );
       case Icon3dStyle.parcelBox:
-        // Kiện hàng bay lơ lửng êm ái và xoay bàn xoay 3D (turntable yaw)
         return _Physical3dMotion(
           offsetX: 0.0,
-          offsetY: baseSelectLift - 4.8 * math.sin(fullAngle),
-          pitchX: 0.14 * math.cos(fullAngle),
-          yawY: 0.24 * math.sin(fullAngle),
-          rollZ: 0.03 * math.cos(fullAngle),
-          scale: 1.0 + 0.03 * math.sin(fullAngle),
+          offsetY: baseSelectLift - 3.4 * math.sin(fullAngle),
+          pitchX: 0.09 * math.cos(fullAngle),
+          yawY: 0.15 * math.sin(fullAngle),
+          rollZ: 0.025 * math.cos(fullAngle),
+          scale: 1.0 + 0.022 * math.sin(fullAngle),
         );
       case Icon3dStyle.gpsPinRadar:
-        // Ghim định vị GPS nảy nhịp nhàng theo xung sóng định vị và nghiêng đĩa radar
         return _Physical3dMotion(
           offsetX: 0.0,
-          offsetY: baseSelectLift - 5.2 * math.sin(fullAngle).abs(),
-          pitchX: 0.16 * math.sin(fullAngle),
-          yawY: 0.20 * math.cos(fullAngle),
+          offsetY: baseSelectLift - 3.6 * smoothBounce1,
+          pitchX: 0.10 * math.sin(fullAngle),
+          yawY: 0.13 * math.cos(fullAngle),
           rollZ: 0.0,
-          scale: 1.0 + 0.04 * math.sin(fullAngle).abs(),
+          scale: 1.0 + 0.026 * smoothBounce1,
         );
       case Icon3dStyle.walletVault:
-        // Ví ký quỹ & khiên vàng lắc con quay hồi chuyển 3D sang trọng
         return _Physical3dMotion(
-          offsetX: math.cos(fullAngle) * 1.2,
-          offsetY: baseSelectLift - 4.0 * math.sin(fullAngle),
-          pitchX: 0.13 * math.sin(fullAngle),
-          yawY: 0.22 * math.cos(fullAngle),
-          rollZ: 0.04 * math.sin(fullAngle),
-          scale: 1.0 + 0.035 * math.cos(fullAngle),
+          offsetX: math.cos(fullAngle) * 1.0,
+          offsetY: baseSelectLift - 3.0 * math.sin(fullAngle),
+          pitchX: 0.085 * math.sin(fullAngle),
+          yawY: 0.14 * math.cos(fullAngle),
+          rollZ: 0.03 * math.sin(fullAngle),
+          scale: 1.0 + 0.024 * math.cos(fullAngle),
         );
     }
   }
@@ -523,15 +540,18 @@ class _Holographic3dPedestalPainter extends CustomPainter {
       canvas.drawOval(
         orbitRect,
         Paint()
+          ..isAntiAlias = true
           ..color = (ringIdx == 0 ? glowColor : primaryColor).withValues(
             alpha: isSelected ? 0.44 : 0.24,
           )
           ..style = PaintingStyle.stroke
-          ..strokeWidth = isSelected ? 1.6 : 1.1,
+          ..strokeWidth = isSelected ? 1.5 : 1.1,
       );
 
       // Hạt vệ tinh Photon 3D bay dọc theo vành elip quỹ đạo
-      final satAngle = angle * dir * (ringIdx == 0 ? 1.0 : 1.5);
+      final satAngle =
+          angle * dir * (ringIdx == 0 ? 1.0 : 2.0) +
+          (ringIdx == 1 ? math.pi * 0.5 : 0.0);
       final satPos = Offset(
         rx * math.cos(satAngle),
         ry * math.sin(satAngle),
@@ -895,7 +915,7 @@ class _Photorealistic3dVfxOverlayPainter extends CustomPainter {
       Offset(w * 0.52, h * 0.35),
     ];
     for (int i = 0; i < sparkleAnchors.length; i++) {
-      final localP = (phase * 1.5 + i * 0.25) % 1.0;
+      final localP = (phase * 2.0 + i * 0.25) % 1.0;
       final pos = sparkleAnchors[i].translate(
         math.sin(angle + i) * w * 0.024,
         -localP * h * 0.09,

@@ -329,9 +329,9 @@ class GhstUserShell extends StatelessWidget {
       excludeSemantics: true,
       child: Motion3dInteractiveSurface(
         borderRadius: const BorderRadius.all(Radius.circular(999)),
-        maxTilt: 0.055,
-        pressScale: 0.96,
-        hoverLift: -1.0,
+        maxTilt: 0.032,
+        pressScale: 0.972,
+        hoverLift: -0.8,
         child: InkWell(
           key: ValueKey('ghst-role-${mode.name}'),
           borderRadius: BorderRadius.circular(999),
@@ -721,9 +721,9 @@ class GhstUserShell extends StatelessWidget {
       selected: selected,
       child: Motion3dInteractiveSurface(
         borderRadius: const BorderRadius.all(Radius.circular(10)),
-        maxTilt: 0.045,
-        pressScale: 0.972,
-        hoverLift: -1.0,
+        maxTilt: 0.028,
+        pressScale: 0.978,
+        hoverLift: -0.8,
         child: InkWell(
           borderRadius: BorderRadius.circular(10),
           onTap: action,
@@ -794,7 +794,7 @@ class GhstUserShell extends StatelessWidget {
         size: size,
         showRadarPulse: false,
         isSelected: true,
-        animateIdle: true,
+        animateIdle: false,
       );
     }
     return Container(
@@ -1077,9 +1077,9 @@ class GhstUserShell extends StatelessWidget {
                 selected: activeIdx == i,
                 child: Motion3dInteractiveSurface(
                   borderRadius: const BorderRadius.all(Radius.circular(12)),
-                  maxTilt: 0.06,
-                  pressScale: 0.955,
-                  hoverLift: -1.0,
+                  maxTilt: 0.035,
+                  pressScale: 0.968,
+                  hoverLift: -0.8,
                   child: InkWell(
                     key: ValueKey('ghst-nav-${items[i].$3.name}'),
                     borderRadius: BorderRadius.circular(12),

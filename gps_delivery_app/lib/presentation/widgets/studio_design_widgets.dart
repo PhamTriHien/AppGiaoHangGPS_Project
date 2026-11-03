@@ -1051,6 +1051,7 @@ class Studio3dLoginAmbientMapPainter extends CustomPainter {
     );
 
     final wirePaint = Paint()
+      ..isAntiAlias = true
       ..color = strokeColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
@@ -1060,6 +1061,79 @@ class Studio3dLoginAmbientMapPainter extends CustomPainter {
     canvas.drawLine(t1, b1, wirePaint);
     canvas.drawLine(t2, b2, wirePaint);
     canvas.drawLine(t3, b3, wirePaint);
+  }
+
+  static final List<(PrecomputedRoute3d, Color)> _loginRoutes = [
+    (
+      PrecomputedRoute3d.fromWaypoints(const [
+        (-640, 260),
+        (-430, 80),
+        (-360, -180),
+        (360, -190),
+        (450, 60),
+        (640, 250),
+      ], cornerSteps: 16),
+      AppColors.acid,
+    ),
+    (
+      PrecomputedRoute3d.fromWaypoints(const [
+        (650, -230),
+        (430, -90),
+        (360, 190),
+        (-350, 210),
+        (-480, -40),
+        (-650, -210),
+      ], cornerSteps: 16),
+      const Color(0xFF00E5FF),
+    ),
+    (
+      PrecomputedRoute3d.fromWaypoints(const [
+        (-560, 340),
+        (-340, 240),
+        (20, 280),
+        (380, 220),
+        (600, 320),
+      ], cornerSteps: 16),
+      const Color(0xFFFF6B00),
+    ),
+    (
+      PrecomputedRoute3d.fromWaypoints(const [
+        (-600, -310),
+        (-290, -250),
+        (80, -270),
+        (410, -240),
+        (630, -300),
+      ], cornerSteps: 16),
+      AppColors.pink,
+    ),
+  ];
+
+  static Path _buildSmoothProjectedPath(List<Offset> pts) {
+    final path = Path();
+    if (pts.isEmpty) return path;
+    path.moveTo(pts.first.dx, pts.first.dy);
+    if (pts.length == 2) {
+      path.lineTo(pts[1].dx, pts[1].dy);
+      return path;
+    }
+    for (var i = 1; i < pts.length - 1; i++) {
+      final midX = (pts[i].dx + pts[i + 1].dx) * 0.5;
+      final midY = (pts[i].dy + pts[i + 1].dy) * 0.5;
+      path.quadraticBezierTo(pts[i].dx, pts[i].dy, midX, midY);
+    }
+    path.lineTo(pts.last.dx, pts.last.dy);
+    return path;
+  }
+
+  static double _routeEdgeAlpha(double t) {
+    const fadeZone = 0.08;
+    double u = 1.0;
+    if (t < fadeZone) {
+      u = (t / fadeZone).clamp(0.0, 1.0);
+    } else if (t > 1.0 - fadeZone) {
+      u = ((1.0 - t) / fadeZone).clamp(0.0, 1.0);
+    }
+    return u * u * (3.0 - 2.0 * u);
   }
 
   @override
@@ -1106,6 +1180,7 @@ class Studio3dLoginAmbientMapPainter extends CustomPainter {
     // 2. Lưới mặt phẳng bản đồ phối cảnh 3D (3D Ground Grid)
     const groundY = 120.0;
     final gridPaint = Paint()
+      ..isAntiAlias = true
       ..color = const Color(0x1694A0AE)
       ..strokeWidth = 1.0;
 
@@ -1158,10 +1233,10 @@ class Studio3dLoginAmbientMapPainter extends CustomPainter {
 
     for (final node in radarNodes) {
       for (int r = 0; r < 2; r++) {
-        final rp = (phase * 1.5 + r * 0.5) % 1.0;
+        final rp = (phase * 2.0 + r * 0.5) % 1.0;
         final radius = 26.0 + rp * 150.0;
         final ringPath = Path();
-        const segs = 32;
+        const segs = 40;
         for (int s = 0; s <= segs; s++) {
           final a = (s / segs) * math.pi * 2.0;
           final pt = _projectWorld3D(
@@ -1179,79 +1254,35 @@ class Studio3dLoginAmbientMapPainter extends CustomPainter {
         canvas.drawPath(
           ringPath,
           Paint()
+            ..isAntiAlias = true
             ..color = node.$3.withValues(alpha: (1.0 - rp) * 0.35)
             ..style = PaintingStyle.stroke
-            ..strokeWidth = 1.5,
+            ..strokeWidth = 1.4,
         );
       }
     }
 
     // 5. Bốn tuyến lộ trình giao hàng 3D Map & Đội xe 3D Meshy Scooter chạy thực tế dưới nền Login
-    final routes = <(List<(double, double)>, Color)>[
-      (
-        [
-          (-640, 260),
-          (-430, 80),
-          (-360, -180),
-          (360, -190),
-          (450, 60),
-          (640, 250),
-        ],
-        AppColors.acid,
-      ),
-      (
-        [
-          (650, -230),
-          (430, -90),
-          (360, 190),
-          (-350, 210),
-          (-480, -40),
-          (-650, -210),
-        ],
-        const Color(0xFF00E5FF),
-      ),
-      (
-        [
-          (-560, 340),
-          (-340, 240),
-          (20, 280),
-          (380, 220),
-          (600, 320),
-        ],
-        const Color(0xFFFF6B00),
-      ),
-      (
-        [
-          (-600, -310),
-          (-290, -250),
-          (80, -270),
-          (410, -240),
-          (630, -300),
-        ],
-        AppColors.pink,
-      ),
-    ];
-
-    for (int rIdx = 0; rIdx < routes.length; rIdx++) {
-      final waypoints = routes[rIdx].$1;
-      final color = routes[rIdx].$2;
-      final smoothCurve = MeshyScooter3dMesh.buildSmoothFilletedRoute3D(
-        waypoints,
+    for (int rIdx = 0; rIdx < _loginRoutes.length; rIdx++) {
+      final cachedRoute = _loginRoutes[rIdx].$1;
+      final color = _loginRoutes[rIdx].$2;
+      final smoothCurve = cachedRoute.points;
+      final projectedPts = List<Offset>.generate(
+        smoothCurve.length,
+        (i) {
+          final wp = smoothCurve[i];
+          return _projectWorld3D(wp.$1, groundY - 2.0, wp.$2, size);
+        },
+        growable: false,
       );
-      final projectedPts = smoothCurve
-          .map((wp) => _projectWorld3D(wp.$1, groundY - 2.0, wp.$2, size))
-          .toList();
 
-      final routePath = Path()
-        ..moveTo(projectedPts.first.dx, projectedPts.first.dy);
-      for (int i = 1; i < projectedPts.length; i++) {
-        routePath.lineTo(projectedPts[i].dx, projectedPts[i].dy);
-      }
+      final routePath = _buildSmoothProjectedPath(projectedPts);
 
       // Mặt đường nhựa 3D (3D Asphalt Road Ribbon)
       canvas.drawPath(
         routePath,
         Paint()
+          ..isAntiAlias = true
           ..color = const Color(0x780B1320)
           ..style = PaintingStyle.stroke
           ..strokeWidth = 14.0
@@ -1262,6 +1293,7 @@ class Studio3dLoginAmbientMapPainter extends CustomPainter {
       canvas.drawPath(
         routePath,
         Paint()
+          ..isAntiAlias = true
           ..color = color.withValues(alpha: 0.20)
           ..style = PaintingStyle.stroke
           ..strokeWidth = 6.5
@@ -1271,17 +1303,23 @@ class Studio3dLoginAmbientMapPainter extends CustomPainter {
       canvas.drawPath(
         routePath,
         Paint()
+          ..isAntiAlias = true
           ..color = color.withValues(alpha: 0.56)
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.8,
+          ..strokeWidth = 1.8
+          ..strokeCap = StrokeCap.round
+          ..strokeJoin = StrokeJoin.round,
       );
 
       // Nội suy theo độ dài cung (Arc-Length) & tiếp tuyến 3D mượt liên tục
       final tGlobal = (phase + rIdx * 0.27) % 1.0;
-      final sample = MeshyScooter3dMesh.sampleRouteArcLength3D(
-        smoothCurve,
+      final edgeAlpha = _routeEdgeAlpha(tGlobal);
+      if (edgeAlpha <= 0.004) continue;
+
+      final sample = cachedRoute.sample(
         tGlobal,
         trailWorldLength: 92.0,
+        trailSteps: 8,
       );
       final wx = sample.worldX;
       final wz = sample.worldZ;
@@ -1303,19 +1341,16 @@ class Studio3dLoginAmbientMapPainter extends CustomPainter {
       if (sample.trailPoints.length >= 2) {
         final projectedTrail = sample.trailPoints
             .map((tp) => _projectWorld3D(tp.$1, groundY - 2.0, tp.$2, size))
-            .toList();
-        final trailPath = Path()
-          ..moveTo(projectedTrail.first.dx, projectedTrail.first.dy);
-        for (var i = 1; i < projectedTrail.length; i++) {
-          trailPath.lineTo(projectedTrail[i].dx, projectedTrail[i].dy);
-        }
+            .toList(growable: false);
+        final trailPath = _buildSmoothProjectedPath(projectedTrail);
         canvas.drawPath(
           trailPath,
           Paint()
+            ..isAntiAlias = true
             ..shader = LinearGradient(
               colors: [
                 color.withValues(alpha: 0.0),
-                color.withValues(alpha: 0.92),
+                color.withValues(alpha: 0.90 * edgeAlpha),
               ],
             ).createShader(
               Rect.fromPoints(projectedTrail.first, projectedTrail.last),
@@ -1356,12 +1391,13 @@ class Studio3dLoginAmbientMapPainter extends CustomPainter {
       canvas.drawPath(
         beamPath,
         Paint()
+          ..isAntiAlias = true
           ..shader = LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              const Color(0x88FFF6B0),
-              color.withValues(alpha: 0.18),
+              const Color(0xFFFFF6B0).withValues(alpha: 0.53 * edgeAlpha),
+              color.withValues(alpha: 0.18 * edgeAlpha),
               Colors.transparent,
             ],
           ).createShader(Rect.fromPoints(beamOrigin, beamTipCenter)),
@@ -1371,13 +1407,16 @@ class Studio3dLoginAmbientMapPainter extends CustomPainter {
       canvas.drawCircle(
         groundBeacon,
         15.0 * depthScale,
-        Paint()..color = color.withValues(alpha: 0.22),
+        Paint()
+          ..isAntiAlias = true
+          ..color = color.withValues(alpha: 0.22 * edgeAlpha),
       );
       canvas.drawCircle(
         groundBeacon,
         15.0 * depthScale,
         Paint()
-          ..color = color.withValues(alpha: 0.68)
+          ..isAntiAlias = true
+          ..color = color.withValues(alpha: 0.68 * edgeAlpha)
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1.4,
       );
@@ -1400,18 +1439,22 @@ class Studio3dLoginAmbientMapPainter extends CustomPainter {
           scalePx: 30.0 * depthScale,
           yawRadians: scooterYaw,
           pitchRadians: scooterPitch,
+          opacity: edgeAlpha,
         );
       } else {
         canvas.drawCircle(
           scooterCenter,
           7.0 * depthScale,
-          Paint()..color = const Color(0xFFFF6B00),
+          Paint()
+            ..isAntiAlias = true
+            ..color = const Color(0xFFFF6B00).withValues(alpha: edgeAlpha),
         );
       }
     }
 
     // 6. Bốn dấu chữ thập ngắm tọa độ ở 4 góc màn hình (Corner HUD Crosshairs)
     final crossPaint = Paint()
+      ..isAntiAlias = true
       ..color = const Color(0x45D1E7FF)
       ..strokeWidth = 1.2;
     const margin = 26.0;
@@ -1567,6 +1610,7 @@ class Studio3dMainWorkspaceMapPainter extends CustomPainter {
     );
 
     final wirePaint = Paint()
+      ..isAntiAlias = true
       ..color = strokeColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.05;
@@ -1577,6 +1621,39 @@ class Studio3dMainWorkspaceMapPainter extends CustomPainter {
     canvas.drawLine(t2, b2, wirePaint);
     canvas.drawLine(t3, b3, wirePaint);
   }
+
+  static final List<PrecomputedRoute3d> _workspaceCurves = [
+    PrecomputedRoute3d.fromWaypoints(const [
+      (-680, 270),
+      (-440, 80),
+      (-320, -190),
+      (340, -200),
+      (470, 70),
+      (680, 260),
+    ], cornerSteps: 16),
+    PrecomputedRoute3d.fromWaypoints(const [
+      (680, -240),
+      (440, -90),
+      (340, 200),
+      (-340, 220),
+      (-490, -50),
+      (-680, -220),
+    ], cornerSteps: 16),
+    PrecomputedRoute3d.fromWaypoints(const [
+      (-600, 350),
+      (-320, 250),
+      (40, 290),
+      (390, 230),
+      (640, 330),
+    ], cornerSteps: 16),
+    PrecomputedRoute3d.fromWaypoints(const [
+      (-620, -320),
+      (-280, -260),
+      (90, -280),
+      (420, -250),
+      (660, -310),
+    ], cornerSteps: 16),
+  ];
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -1638,6 +1715,7 @@ class Studio3dMainWorkspaceMapPainter extends CustomPainter {
     // 2. Lưới mặt phẳng Bản đồ 3D Phối cảnh (3D Perspective Ground Map Grid)
     const groundY = 125.0;
     final mapGridPaint = Paint()
+      ..isAntiAlias = true
       ..color = const Color(0x1D1F4E79)
       ..strokeWidth = 1.0;
 
@@ -1693,10 +1771,10 @@ class Studio3dMainWorkspaceMapPainter extends CustomPainter {
 
     for (final node in radarNodes) {
       for (int r = 0; r < 2; r++) {
-        final rp = (phase * 1.6 + r * 0.5) % 1.0;
+        final rp = (phase * 2.0 + r * 0.5) % 1.0;
         final radius = 28.0 + rp * 165.0;
         final ringPath = Path();
-        const segs = 32;
+        const segs = 40;
         for (int s = 0; s <= segs; s++) {
           final a = (s / segs) * math.pi * 2.0;
           final pt = _projectWorkspace3D(
@@ -1714,79 +1792,44 @@ class Studio3dMainWorkspaceMapPainter extends CustomPainter {
         canvas.drawPath(
           ringPath,
           Paint()
+            ..isAntiAlias = true
             ..color = node.$3.withValues(alpha: (1.0 - rp) * 0.32)
             ..style = PaintingStyle.stroke
-            ..strokeWidth = 1.5,
+            ..strokeWidth = 1.4,
         );
       }
     }
 
     // 5. Bốn tuyến Đại lộ Giao hàng 3D & Đội xe 3D Meshy chạy liên tục dưới nền Giao diện Chính
-    final routes = <(List<(double, double)>, Color)>[
-      (
-        [
-          (-680, 270),
-          (-440, 80),
-          (-320, -190),
-          (340, -200),
-          (470, 70),
-          (680, 260),
-        ],
-        const Color(0xFFFF6B00),
-      ),
-      (
-        [
-          (680, -240),
-          (440, -90),
-          (340, 200),
-          (-340, 220),
-          (-490, -50),
-          (-680, -220),
-        ],
-        accentColor,
-      ),
-      (
-        [
-          (-600, 350),
-          (-320, 250),
-          (40, 290),
-          (390, 230),
-          (640, 330),
-        ],
-        const Color(0xFF0088AA),
-      ),
-      (
-        [
-          (-620, -320),
-          (-280, -260),
-          (90, -280),
-          (420, -250),
-          (660, -310),
-        ],
-        AppColors.pink,
-      ),
+    final routeColors = <Color>[
+      const Color(0xFFFF6B00),
+      accentColor,
+      const Color(0xFF0088AA),
+      AppColors.pink,
     ];
 
-    for (int rIdx = 0; rIdx < routes.length; rIdx++) {
-      final waypoints = routes[rIdx].$1;
-      final color = routes[rIdx].$2;
-      final smoothCurve = MeshyScooter3dMesh.buildSmoothFilletedRoute3D(
-        waypoints,
+    for (int rIdx = 0; rIdx < _workspaceCurves.length; rIdx++) {
+      final cachedRoute = _workspaceCurves[rIdx];
+      final color = routeColors[rIdx];
+      final smoothCurve = cachedRoute.points;
+      final projectedPts = List<Offset>.generate(
+        smoothCurve.length,
+        (i) {
+          final wp = smoothCurve[i];
+          return _projectWorkspace3D(wp.$1, groundY - 2.0, wp.$2, size);
+        },
+        growable: false,
       );
-      final projectedPts = smoothCurve
-          .map((wp) => _projectWorkspace3D(wp.$1, groundY - 2.0, wp.$2, size))
-          .toList();
 
-      final routePath = Path()
-        ..moveTo(projectedPts.first.dx, projectedPts.first.dy);
-      for (int i = 1; i < projectedPts.length; i++) {
-        routePath.lineTo(projectedPts[i].dx, projectedPts[i].dy);
-      }
+      final routePath = Studio3dLoginAmbientMapPainter._buildSmoothProjectedPath(
+        projectedPts,
+      );
 
       // Mặt đường 3D mảnh tinh tế trên nền sáng (Architectural 3D Road Ribbon)
       canvas.drawPath(
         routePath,
         Paint()
+          ..isAntiAlias = true
           ..color = const Color(0x1815131E)
           ..style = PaintingStyle.stroke
           ..strokeWidth = 11.0
@@ -1796,6 +1839,7 @@ class Studio3dMainWorkspaceMapPainter extends CustomPainter {
       canvas.drawPath(
         routePath,
         Paint()
+          ..isAntiAlias = true
           ..color = color.withValues(alpha: 0.22)
           ..style = PaintingStyle.stroke
           ..strokeWidth = 5.0
@@ -1805,16 +1849,22 @@ class Studio3dMainWorkspaceMapPainter extends CustomPainter {
       canvas.drawPath(
         routePath,
         Paint()
+          ..isAntiAlias = true
           ..color = color.withValues(alpha: 0.55)
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.6,
+          ..strokeWidth = 1.6
+          ..strokeCap = StrokeCap.round
+          ..strokeJoin = StrokeJoin.round,
       );
 
       final tGlobal = (phase + rIdx * 0.25) % 1.0;
-      final sample = MeshyScooter3dMesh.sampleRouteArcLength3D(
-        smoothCurve,
+      final edgeAlpha = Studio3dLoginAmbientMapPainter._routeEdgeAlpha(tGlobal);
+      if (edgeAlpha <= 0.004) continue;
+
+      final sample = cachedRoute.sample(
         tGlobal,
         trailWorldLength: 92.0,
+        trailSteps: 8,
       );
       final wx = sample.worldX;
       final wz = sample.worldZ;
@@ -1836,19 +1886,19 @@ class Studio3dMainWorkspaceMapPainter extends CustomPainter {
       if (sample.trailPoints.length >= 2) {
         final projectedTrail = sample.trailPoints
             .map((tp) => _projectWorkspace3D(tp.$1, groundY - 2.0, tp.$2, size))
-            .toList();
-        final trailPath = Path()
-          ..moveTo(projectedTrail.first.dx, projectedTrail.first.dy);
-        for (var i = 1; i < projectedTrail.length; i++) {
-          trailPath.lineTo(projectedTrail[i].dx, projectedTrail[i].dy);
-        }
+            .toList(growable: false);
+        final trailPath =
+            Studio3dLoginAmbientMapPainter._buildSmoothProjectedPath(
+              projectedTrail,
+            );
         canvas.drawPath(
           trailPath,
           Paint()
+            ..isAntiAlias = true
             ..shader = LinearGradient(
               colors: [
                 color.withValues(alpha: 0.0),
-                color.withValues(alpha: 0.85),
+                color.withValues(alpha: 0.85 * edgeAlpha),
               ],
             ).createShader(
               Rect.fromPoints(projectedTrail.first, projectedTrail.last),
@@ -1889,12 +1939,13 @@ class Studio3dMainWorkspaceMapPainter extends CustomPainter {
       canvas.drawPath(
         beamPath,
         Paint()
+          ..isAntiAlias = true
           ..shader = LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              color.withValues(alpha: 0.32),
-              AppColors.acid.withValues(alpha: 0.16),
+              color.withValues(alpha: 0.32 * edgeAlpha),
+              AppColors.acid.withValues(alpha: 0.16 * edgeAlpha),
               Colors.transparent,
             ],
           ).createShader(Rect.fromPoints(beamOrigin, beamTipCenter)),
@@ -1904,13 +1955,16 @@ class Studio3dMainWorkspaceMapPainter extends CustomPainter {
       canvas.drawCircle(
         groundBeacon,
         14.0 * depthScale,
-        Paint()..color = color.withValues(alpha: 0.18),
+        Paint()
+          ..isAntiAlias = true
+          ..color = color.withValues(alpha: 0.18 * edgeAlpha),
       );
       canvas.drawCircle(
         groundBeacon,
         14.0 * depthScale,
         Paint()
-          ..color = color.withValues(alpha: 0.62)
+          ..isAntiAlias = true
+          ..color = color.withValues(alpha: 0.62 * edgeAlpha)
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1.3,
       );
@@ -1933,12 +1987,15 @@ class Studio3dMainWorkspaceMapPainter extends CustomPainter {
           scalePx: 28.0 * depthScale,
           yawRadians: scooterYaw,
           pitchRadians: scooterPitch,
+          opacity: edgeAlpha,
         );
       } else {
         canvas.drawCircle(
           scooterCenter,
           6.5 * depthScale,
-          Paint()..color = color,
+          Paint()
+            ..isAntiAlias = true
+            ..color = color.withValues(alpha: edgeAlpha),
         );
       }
     }

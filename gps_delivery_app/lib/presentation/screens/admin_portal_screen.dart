@@ -401,8 +401,8 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                               borderRadius: const BorderRadius.all(
                                 Radius.circular(12),
                               ),
-                              maxTilt: 0.06,
-                              hoverLift: -2.0,
+                              maxTilt: 0.035,
+                              hoverLift: -1.6,
                               enablePressScale: false,
                               child: Container(
                                 padding: const EdgeInsets.all(14),
@@ -1025,9 +1025,9 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                     padding: const EdgeInsets.only(bottom: 6),
                     child: Motion3dInteractiveSurface(
                       borderRadius: const BorderRadius.all(Radius.circular(10)),
-                      maxTilt: 0.045,
-                      pressScale: 0.972,
-                      hoverLift: -1.0,
+                      maxTilt: 0.028,
+                      pressScale: 0.978,
+                      hoverLift: -0.8,
                       child: Material(
                         color: selected
                             ? AdminStudioColors.shellActive
@@ -1686,7 +1686,7 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
   }) => AdminNeoBox(
     padding: EdgeInsets.all(compact ? 12 : 16),
     interactive3d: true,
-    maxTilt: 0.055,
+    maxTilt: 0.034,
     enablePressScale: false,
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1754,7 +1754,7 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
   }) => AdminNeoBox(
     padding: const EdgeInsets.all(18),
     interactive3d: true,
-    maxTilt: 0.032,
+    maxTilt: 0.022,
     enablePressScale: false,
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2334,7 +2334,7 @@ class _AdminModerationPanelState extends State<_AdminModerationPanel> {
         decoration: const BoxDecoration(
           color: AdminStudioColors.surface,
           border: Border(
-            bottom: BorderSide(color: AdminStudioColors.ink, width: 1.5),
+            bottom: BorderSide(color: AdminStudioColors.line),
           ),
         ),
         child: Center(

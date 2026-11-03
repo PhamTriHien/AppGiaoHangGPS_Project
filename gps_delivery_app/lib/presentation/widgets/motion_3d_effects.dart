@@ -22,16 +22,91 @@ class Motion3dEnvironment {
   }
 }
 
+class _Spring1D {
+  _Spring1D(this.value);
+
+  double value;
+  double velocity = 0.0;
+
+  void step(double target, double dt, {required double stiffness}) {
+    final damping = 2.0 * math.sqrt(stiffness);
+    final force = (target - value) * stiffness - velocity * damping;
+    velocity += force * dt;
+    value += velocity * dt;
+  }
+
+  bool isSettled(double target, {double epsilon = 0.0004}) =>
+      (value - target).abs() < epsilon && velocity.abs() < epsilon * 8.0;
+
+  void snap(double target) {
+    value = target;
+    velocity = 0.0;
+  }
+}
+
+@immutable
+class _Motion3dFrame {
+  const _Motion3dFrame({
+    required this.tiltX,
+    required this.tiltY,
+    required this.scale,
+    required this.liftY,
+    required this.glintAlpha,
+    required this.glintX,
+    required this.glintY,
+  });
+
+  const _Motion3dFrame.rest()
+    : tiltX = 0.0,
+      tiltY = 0.0,
+      scale = 1.0,
+      liftY = 0.0,
+      glintAlpha = 0.0,
+      glintX = 0.0,
+      glintY = -0.4;
+
+  final double tiltX;
+  final double tiltY;
+  final double scale;
+  final double liftY;
+  final double glintAlpha;
+  final double glintX;
+  final double glintY;
+
+  bool get atRest =>
+      tiltX == 0.0 &&
+      tiltY == 0.0 &&
+      scale == 1.0 &&
+      liftY == 0.0 &&
+      glintAlpha <= 0.001;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is _Motion3dFrame &&
+          other.tiltX == tiltX &&
+          other.tiltY == tiltY &&
+          other.scale == scale &&
+          other.liftY == liftY &&
+          other.glintAlpha == glintAlpha &&
+          other.glintX == glintX &&
+          other.glintY == glintY;
+
+  @override
+  int get hashCode =>
+      Object.hash(tiltX, tiltY, scale, liftY, glintAlpha, glintX, glintY);
+}
+
 class Motion3dInteractiveSurface extends StatefulWidget {
   const Motion3dInteractiveSurface({
     super.key,
     required this.child,
     this.borderRadius = const BorderRadius.all(Radius.circular(14)),
-    this.maxTilt = 0.075,
-    this.pressScale = 0.976,
-    this.hoverLift = -2.5,
-    this.perspective = 0.0016,
-    this.glintOpacity = 0.14,
+    this.maxTilt = 0.042,
+    this.pressScale = 0.978,
+    this.hoverLift = -2.0,
+    this.perspective = 0.0009,
+    this.glintOpacity = 0.11,
     this.glintColor = Colors.white,
     this.enablePressScale = true,
     this.enableSpecularGlint = true,
@@ -61,17 +136,20 @@ class _Motion3dInteractiveSurfaceState extends State<Motion3dInteractiveSurface>
     with SingleTickerProviderStateMixin {
   Ticker? _ticker;
   Duration? _lastElapsed;
+  final ValueNotifier<_Motion3dFrame> _frame = ValueNotifier<_Motion3dFrame>(
+    const _Motion3dFrame.rest(),
+  );
 
   bool _hovered = false;
   bool _pressed = false;
 
-  double _tiltX = 0.0;
-  double _tiltY = 0.0;
-  double _scale = 1.0;
-  double _liftY = 0.0;
-  double _glintAlpha = 0.0;
-  double _glintX = 0.0;
-  double _glintY = -0.4;
+  final _Spring1D _tiltX = _Spring1D(0.0);
+  final _Spring1D _tiltY = _Spring1D(0.0);
+  final _Spring1D _scale = _Spring1D(1.0);
+  final _Spring1D _liftY = _Spring1D(0.0);
+  final _Spring1D _glintAlpha = _Spring1D(0.0);
+  final _Spring1D _glintX = _Spring1D(0.0);
+  final _Spring1D _glintY = _Spring1D(-0.4);
 
   double _targetTiltX = 0.0;
   double _targetTiltY = 0.0;
@@ -99,54 +177,57 @@ class _Motion3dInteractiveSurfaceState extends State<Motion3dInteractiveSurface>
   }
 
   void _onTick(Duration elapsed) {
-    final prev = _lastElapsed;
-    _lastElapsed = elapsed;
-    final rawDt = prev == null
-        ? (1.0 / 60.0)
-        : (elapsed - prev).inMicroseconds / 1000000.0;
-    final dt = rawDt.clamp(0.001, 0.050);
-    final k = 1.0 - math.exp(-16.0 * dt);
-
-    final nextTiltX = _tiltX + (_targetTiltX - _tiltX) * k;
-    final nextTiltY = _tiltY + (_targetTiltY - _tiltY) * k;
-    final nextScale = _scale + (_targetScale - _scale) * k;
-    final nextLiftY = _liftY + (_targetLiftY - _liftY) * k;
-    final nextGlintAlpha = _glintAlpha + (_targetGlintAlpha - _glintAlpha) * k;
-    final nextGlintX = _glintX + (_targetGlintX - _glintX) * k;
-    final nextGlintY = _glintY + (_targetGlintY - _glintY) * k;
-
-    final settled =
-        (nextTiltX - _targetTiltX).abs() < 0.0005 &&
-        (nextTiltY - _targetTiltY).abs() < 0.0005 &&
-        (nextScale - _targetScale).abs() < 0.0005 &&
-        (nextLiftY - _targetLiftY).abs() < 0.02 &&
-        (nextGlintAlpha - _targetGlintAlpha).abs() < 0.002;
-
     if (!mounted) {
       _ticker?.stop();
       return;
     }
 
-    setState(() {
-      if (settled) {
-        _tiltX = _targetTiltX;
-        _tiltY = _targetTiltY;
-        _scale = _targetScale;
-        _liftY = _targetLiftY;
-        _glintAlpha = _targetGlintAlpha;
-        _glintX = _targetGlintX;
-        _glintY = _targetGlintY;
-        _ticker?.stop();
-      } else {
-        _tiltX = nextTiltX;
-        _tiltY = nextTiltY;
-        _scale = nextScale;
-        _liftY = nextLiftY;
-        _glintAlpha = nextGlintAlpha;
-        _glintX = nextGlintX;
-        _glintY = nextGlintY;
-      }
-    });
+    final prev = _lastElapsed;
+    _lastElapsed = elapsed;
+    final rawDt = prev == null
+        ? (1.0 / 60.0)
+        : (elapsed - prev).inMicroseconds / 1000000.0;
+    final clampedDt = rawDt.clamp(0.001, 0.050);
+    final subSteps = (clampedDt / (1.0 / 120.0)).ceil().clamp(1, 6);
+    final subDt = clampedDt / subSteps;
+
+    for (var i = 0; i < subSteps; i++) {
+      _tiltX.step(_targetTiltX, subDt, stiffness: 280.0);
+      _tiltY.step(_targetTiltY, subDt, stiffness: 280.0);
+      _scale.step(_targetScale, subDt, stiffness: 380.0);
+      _liftY.step(_targetLiftY, subDt, stiffness: 280.0);
+      _glintAlpha.step(_targetGlintAlpha, subDt, stiffness: 260.0);
+      _glintX.step(_targetGlintX, subDt, stiffness: 260.0);
+      _glintY.step(_targetGlintY, subDt, stiffness: 260.0);
+    }
+
+    final settled =
+        _tiltX.isSettled(_targetTiltX, epsilon: 0.0003) &&
+        _tiltY.isSettled(_targetTiltY, epsilon: 0.0003) &&
+        _scale.isSettled(_targetScale, epsilon: 0.0003) &&
+        _liftY.isSettled(_targetLiftY, epsilon: 0.015) &&
+        _glintAlpha.isSettled(_targetGlintAlpha, epsilon: 0.0015);
+
+    if (settled) {
+      _tiltX.snap(_targetTiltX);
+      _tiltY.snap(_targetTiltY);
+      _scale.snap(_targetScale);
+      _liftY.snap(_targetLiftY);
+      _glintAlpha.snap(_targetGlintAlpha);
+      _glintX.snap(_targetGlintX);
+      _glintY.snap(_targetGlintY);
+      _ticker?.stop();
+    }
+
+    _frame.value = _Motion3dFrame(
+      tiltX: _tiltX.value,
+      tiltY: _tiltY.value,
+      scale: _scale.value,
+      liftY: _liftY.value,
+      glintAlpha: _glintAlpha.value,
+      glintX: _glintX.value,
+      glintY: _glintY.value,
+    );
   }
 
   (double, double)? _normalizedOffset(Offset localPosition) {
@@ -164,15 +245,15 @@ class _Motion3dInteractiveSurfaceState extends State<Motion3dInteractiveSurface>
     final norm = _normalizedOffset(localPosition);
     if (norm == null) return;
     final (nx, ny) = norm;
-    final boost = pressing ? 1.15 : 1.0;
+    final boost = pressing ? 1.12 : 1.0;
     _targetTiltY = nx * widget.maxTilt * boost;
     _targetTiltX = -ny * widget.maxTilt * boost;
     _targetScale = pressing && widget.enablePressScale
         ? widget.pressScale
         : 1.0;
-    _targetLiftY = pressing ? 0.8 : widget.hoverLift;
+    _targetLiftY = pressing ? 0.5 : widget.hoverLift;
     _targetGlintAlpha = widget.enableSpecularGlint
-        ? (pressing ? widget.glintOpacity * 1.25 : widget.glintOpacity)
+        ? (pressing ? widget.glintOpacity * 1.2 : widget.glintOpacity)
         : 0.0;
     _targetGlintX = nx;
     _targetGlintY = ny;
@@ -199,62 +280,72 @@ class _Motion3dInteractiveSurfaceState extends State<Motion3dInteractiveSurface>
   @override
   void dispose() {
     _ticker?.dispose();
+    _frame.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final atRest =
-        _tiltX == 0.0 &&
-        _tiltY == 0.0 &&
-        _scale == 1.0 &&
-        _liftY == 0.0 &&
-        _glintAlpha <= 0.001;
+    final Widget animatedSurface = RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _frame,
+        child: widget.child,
+        builder: (context, cachedChild) {
+          final current = _frame.value;
+          final atRest = current.atRest;
+          final matrix = atRest
+              ? Matrix4.identity()
+              : (Matrix4.identity()
+                  ..setEntry(3, 2, widget.perspective)
+                  ..translateByDouble(0.0, current.liftY, 0.0, 1.0)
+                  ..scaleByDouble(current.scale, current.scale, 1.0, 1.0)
+                  ..rotateX(current.tiltX)
+                  ..rotateY(current.tiltY));
 
-    final matrix = atRest
-        ? Matrix4.identity()
-        : (Matrix4.identity()
-            ..setEntry(3, 2, widget.perspective)
-            ..translateByDouble(0.0, _liftY, 0.0, 1.0)
-            ..scaleByDouble(_scale, _scale, 1.0, 1.0)
-            ..rotateX(_tiltX)
-            ..rotateY(_tiltY));
-
-    final Widget body = widget.enableSpecularGlint
-        ? Stack(
-            fit: StackFit.passthrough,
-            children: [
-              widget.child,
-              if (_glintAlpha > 0.002)
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: ClipRRect(
-                      borderRadius: widget.borderRadius,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: RadialGradient(
-                            center: Alignment(_glintX, _glintY),
-                            radius: 1.05,
-                            colors: [
-                              widget.glintColor.withValues(
-                                alpha: _glintAlpha.clamp(0.0, 0.35),
-                              ),
-                              widget.glintColor.withValues(alpha: 0.0),
-                            ],
+          final Widget body = widget.enableSpecularGlint
+              ? Stack(
+                  fit: StackFit.passthrough,
+                  children: [
+                    cachedChild!,
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            borderRadius: widget.borderRadius,
+                            gradient: current.glintAlpha > 0.0015
+                                ? RadialGradient(
+                                    center: Alignment(
+                                      current.glintX,
+                                      current.glintY,
+                                    ),
+                                    radius: 1.08,
+                                    colors: [
+                                      widget.glintColor.withValues(
+                                        alpha: current.glintAlpha.clamp(
+                                          0.0,
+                                          0.32,
+                                        ),
+                                      ),
+                                      widget.glintColor.withValues(alpha: 0.0),
+                                    ],
+                                  )
+                                : null,
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ),
-            ],
-          )
-        : widget.child;
+                  ],
+                )
+              : cachedChild!;
 
-    final Widget content = Transform(
-      alignment: Alignment.center,
-      transform: matrix,
-      child: body,
+          return Transform(
+            alignment: Alignment.center,
+            filterQuality: atRest ? null : FilterQuality.medium,
+            transform: matrix,
+            child: body,
+          );
+        },
+      ),
     );
 
     return MouseRegion(
@@ -289,7 +380,7 @@ class _Motion3dInteractiveSurfaceState extends State<Motion3dInteractiveSurface>
           _pressed = false;
           _releaseToRestOrHover();
         },
-        child: content,
+        child: animatedSurface,
       ),
     );
   }
@@ -300,7 +391,7 @@ class Motion3dSectionTransition extends StatefulWidget {
     super.key,
     required this.transitionKey,
     required this.child,
-    this.duration = const Duration(milliseconds: 260),
+    this.duration = const Duration(milliseconds: 220),
     this.originAlignment = Alignment.topCenter,
     this.forceInTest = false,
   });
@@ -318,6 +409,8 @@ class Motion3dSectionTransition extends StatefulWidget {
 
 class _Motion3dSectionTransitionState extends State<Motion3dSectionTransition>
     with SingleTickerProviderStateMixin {
+  static const Cubic _easeOutQuint = Cubic(0.22, 1.0, 0.36, 1.0);
+
   late final AnimationController _controller = AnimationController(
     vsync: this,
     duration: widget.duration,
@@ -349,32 +442,34 @@ class _Motion3dSectionTransitionState extends State<Motion3dSectionTransition>
   }
 
   @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-    animation: _controller,
-    child: widget.child,
-    builder: (context, child) {
-      final raw = _controller.value;
-      final settled = raw >= 0.999;
-      final t = settled
-          ? 1.0
-          : Curves.easeOutCubic.transform(raw.clamp(0.0, 1.0));
-      final opacity = settled ? 1.0 : (0.82 + 0.18 * t).clamp(0.0, 1.0);
-      final matrix = settled
-          ? Matrix4.identity()
-          : (Matrix4.identity()
-              ..setEntry(3, 2, 0.0014)
-              ..translateByDouble(0.0, (1.0 - t) * 10.0, 0.0, 1.0)
-              ..scaleByDouble(0.986 + 0.014 * t, 0.986 + 0.014 * t, 1.0, 1.0)
-              ..rotateX((1.0 - t) * 0.042));
-      return Opacity(
-        opacity: opacity,
-        child: Transform(
-          alignment: widget.originAlignment,
-          transform: matrix,
-          child: child,
-        ),
-      );
-    },
+  Widget build(BuildContext context) => RepaintBoundary(
+    child: AnimatedBuilder(
+      animation: _controller,
+      child: widget.child,
+      builder: (context, child) {
+        final raw = _controller.value;
+        final settled = raw >= 0.999;
+        final t = settled ? 1.0 : _easeOutQuint.transform(raw.clamp(0.0, 1.0));
+        final opacity = settled ? 1.0 : (0.88 + 0.12 * t).clamp(0.0, 1.0);
+        final scale = 0.992 + 0.008 * t;
+        final matrix = settled
+            ? Matrix4.identity()
+            : (Matrix4.identity()
+                ..setEntry(3, 2, 0.00085)
+                ..translateByDouble(0.0, (1.0 - t) * 6.0, 0.0, 1.0)
+                ..scaleByDouble(scale, scale, 1.0, 1.0)
+                ..rotateX((1.0 - t) * 0.018));
+        return Opacity(
+          opacity: opacity,
+          child: Transform(
+            alignment: widget.originAlignment,
+            filterQuality: settled ? null : FilterQuality.medium,
+            transform: matrix,
+            child: child,
+          ),
+        );
+      },
+    ),
   );
 }
 
@@ -382,9 +477,9 @@ class Motion3dFloatingLayer extends StatefulWidget {
   const Motion3dFloatingLayer({
     super.key,
     required this.child,
-    this.floatAmplitude = 3.5,
-    this.tiltAmplitude = 0.024,
-    this.period = const Duration(milliseconds: 4200),
+    this.floatAmplitude = 3.0,
+    this.tiltAmplitude = 0.020,
+    this.period = const Duration(milliseconds: 4800),
     this.forceInTest = false,
   });
 
@@ -446,32 +541,35 @@ class _Motion3dFloatingLayerState extends State<Motion3dFloatingLayer>
       context,
       forceInTest: widget.forceInTest,
     );
-    return AnimatedBuilder(
-      animation: _controller,
-      child: widget.child,
-      builder: (context, child) {
-        if (!active) {
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _controller,
+        child: widget.child,
+        builder: (context, child) {
+          if (!active) {
+            return Transform(
+              alignment: Alignment.center,
+              transform: Matrix4.identity(),
+              child: child,
+            );
+          }
+          final angle = _controller.value * math.pi * 2.0;
+          final dy = math.sin(angle) * widget.floatAmplitude;
+          final rx = math.cos(angle) * widget.tiltAmplitude;
+          final ry = math.sin(angle + 1.1) * (widget.tiltAmplitude * 0.78);
+          final matrix = Matrix4.identity()
+            ..setEntry(3, 2, 0.0009)
+            ..translateByDouble(0.0, dy, 0.0, 1.0)
+            ..rotateX(rx)
+            ..rotateY(ry);
           return Transform(
             alignment: Alignment.center,
-            transform: Matrix4.identity(),
+            filterQuality: FilterQuality.medium,
+            transform: matrix,
             child: child,
           );
-        }
-        final angle = _controller.value * math.pi * 2.0;
-        final dy = math.sin(angle) * widget.floatAmplitude;
-        final rx = math.cos(angle) * widget.tiltAmplitude;
-        final ry = math.sin(angle * 0.5) * widget.tiltAmplitude;
-        final matrix = Matrix4.identity()
-          ..setEntry(3, 2, 0.0014)
-          ..translateByDouble(0.0, dy, 0.0, 1.0)
-          ..rotateX(rx)
-          ..rotateY(ry);
-        return Transform(
-          alignment: Alignment.center,
-          transform: matrix,
-          child: child,
-        );
-      },
+        },
+      ),
     );
   }
 }

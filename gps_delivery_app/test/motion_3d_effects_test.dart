@@ -3,21 +3,24 @@ import 'dart:ui' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gps_delivery_app/presentation/widgets/motion_3d_effects.dart';
+import 'package:gps_delivery_app/presentation/widgets/system_state_screens.dart';
 
-class _MountCounterProbe extends StatefulWidget {
-  const _MountCounterProbe({
+class _MountAndBuildProbe extends StatefulWidget {
+  const _MountAndBuildProbe({
     required this.onInit,
+    required this.onBuild,
     required this.child,
   });
 
   final VoidCallback onInit;
+  final VoidCallback onBuild;
   final Widget child;
 
   @override
-  State<_MountCounterProbe> createState() => _MountCounterProbeState();
+  State<_MountAndBuildProbe> createState() => _MountAndBuildProbeState();
 }
 
-class _MountCounterProbeState extends State<_MountCounterProbe> {
+class _MountAndBuildProbeState extends State<_MountAndBuildProbe> {
   @override
   void initState() {
     super.initState();
@@ -25,25 +28,30 @@ class _MountCounterProbeState extends State<_MountCounterProbe> {
   }
 
   @override
-  Widget build(BuildContext context) => widget.child;
+  Widget build(BuildContext context) {
+    widget.onBuild();
+    return widget.child;
+  }
 }
 
 void main() {
   testWidgets(
-    'Motion3dInteractiveSurface applies Matrix4 perspective tilt, preserves child State, and settles',
+    'Motion3dInteractiveSurface uses spring physics, FilterQuality.medium when tilted, zero ClipRRect, and zero child rebuilds',
     (tester) async {
       var tapCount = 0;
       var mountCount = 0;
+      var buildCount = 0;
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: Center(
               child: Motion3dInteractiveSurface(
                 forceInTest: true,
-                maxTilt: 0.10,
-                pressScale: 0.94,
-                child: _MountCounterProbe(
+                maxTilt: 0.05,
+                pressScale: 0.96,
+                child: _MountAndBuildProbe(
                   onInit: () => mountCount++,
+                  onBuild: () => buildCount++,
                   child: Material(
                     color: Colors.blue,
                     borderRadius: BorderRadius.circular(14),
@@ -64,9 +72,18 @@ void main() {
         of: find.byType(Motion3dInteractiveSurface),
         matching: find.byType(Transform),
       );
+      final clipRRectFinder = find.descendant(
+        of: find.byType(Motion3dInteractiveSurface),
+        matching: find.byType(ClipRRect),
+      );
       expect(transformFinder, findsOneWidget);
-      expect(tester.widget<Transform>(transformFinder).transform.isIdentity(), isTrue);
+      expect(clipRRectFinder, findsNothing);
+
+      final restTransform = tester.widget<Transform>(transformFinder);
+      expect(restTransform.transform.isIdentity(), isTrue);
+      expect(restTransform.filterQuality, isNull);
       expect(mountCount, 1);
+      expect(buildCount, 1);
 
       final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
       await gesture.addPointer(location: Offset.zero);
@@ -74,24 +91,30 @@ void main() {
 
       final boxRect = tester.getRect(find.byKey(const ValueKey('target-surface')));
       await gesture.moveTo(boxRect.topRight - const Offset(12, -12));
-      await tester.pump(const Duration(milliseconds: 80));
+      await tester.pump(const Duration(milliseconds: 64));
 
       final hoverTransform = tester.widget<Transform>(transformFinder);
-      expect(hoverTransform.transform.entry(3, 2), closeTo(0.0016, 0.0001));
+      expect(hoverTransform.transform.entry(3, 2), closeTo(0.0009, 0.00005));
       expect(hoverTransform.transform.isIdentity(), isFalse);
+      expect(hoverTransform.filterQuality, FilterQuality.medium);
       expect(mountCount, 1);
+      expect(buildCount, 1);
 
       await gesture.down(boxRect.center);
-      await tester.pump(const Duration(milliseconds: 60));
+      await tester.pump(const Duration(milliseconds: 48));
       await gesture.up();
       await tester.pump();
       expect(tapCount, 1);
       expect(mountCount, 1);
+      expect(buildCount, 1);
 
       await gesture.moveTo(const Offset(2, 2));
       await tester.pumpAndSettle();
-      expect(tester.widget<Transform>(transformFinder).transform.isIdentity(), isTrue);
+      final settledTransform = tester.widget<Transform>(transformFinder);
+      expect(settledTransform.transform.isIdentity(), isTrue);
+      expect(settledTransform.filterQuality, isNull);
       expect(mountCount, 1);
+      expect(buildCount, 1);
     },
   );
 
@@ -110,8 +133,9 @@ void main() {
               builder: (context, active, _) => Motion3dSectionTransition(
                 transitionKey: active,
                 forceInTest: true,
-                child: _MountCounterProbe(
+                child: _MountAndBuildProbe(
                   onInit: () => mountCount++,
+                  onBuild: () {},
                   child: SizedBox(
                     width: 300,
                     height: 200,
@@ -137,17 +161,21 @@ void main() {
       await tester.pump(const Duration(milliseconds: 60));
 
       expect(find.text('Tab 1'), findsOneWidget);
-      expect(tester.widget<Transform>(transformFinder).transform.isIdentity(), isFalse);
+      final activeTransform = tester.widget<Transform>(transformFinder);
+      expect(activeTransform.transform.isIdentity(), isFalse);
+      expect(activeTransform.filterQuality, FilterQuality.medium);
       expect(mountCount, 1);
 
       await tester.pumpAndSettle();
-      expect(tester.widget<Transform>(transformFinder).transform.isIdentity(), isTrue);
+      final endTransform = tester.widget<Transform>(transformFinder);
+      expect(endTransform.transform.isIdentity(), isTrue);
+      expect(endTransform.filterQuality, isNull);
       expect(mountCount, 1);
     },
   );
 
   testWidgets(
-    'Motion3dFloatingLayer animates continuous 3D levitation across frames and disposes cleanly',
+    'Motion3dFloatingLayer animates continuous loop-seamless 3D levitation and disposes cleanly',
     (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
@@ -155,8 +183,8 @@ void main() {
             body: Center(
               child: Motion3dFloatingLayer(
                 forceInTest: true,
-                floatAmplitude: 4.0,
-                tiltAmplitude: 0.03,
+                floatAmplitude: 3.0,
+                tiltAmplitude: 0.02,
                 period: Duration(milliseconds: 1200),
                 child: SizedBox(width: 80, height: 80),
               ),
@@ -179,6 +207,24 @@ void main() {
 
       await tester.pumpWidget(const SizedBox.shrink());
       expect(tester.takeException(), isNull);
+    },
+  );
+
+  test(
+    'PrecomputedRoute3d precomputes smooth filleted arc-length table with normalized tangents',
+    () {
+      final route = PrecomputedRoute3d.fromWaypoints(const [
+        (-640, 260),
+        (-430, 80),
+        (360, -190),
+        (640, 250),
+      ]);
+      expect(route.totalLength, greaterThan(1200.0));
+
+      final mid = route.sample(0.5, trailWorldLength: 92.0, trailSteps: 8);
+      final normSq = mid.tangentX * mid.tangentX + mid.tangentZ * mid.tangentZ;
+      expect(normSq, closeTo(1.0, 1e-4));
+      expect(mid.trailPoints.length, 9);
     },
   );
 }

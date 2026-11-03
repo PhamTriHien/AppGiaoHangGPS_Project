@@ -364,16 +364,16 @@ class _GhstAiFloatingBubbleState extends State<GhstAiFloatingBubble> {
                         borderRadius: const BorderRadius.all(
                           Radius.circular(16),
                         ),
-                        maxTilt: 0.10,
-                        pressScale: 0.94,
-                        hoverLift: -2.0,
+                        maxTilt: 0.055,
+                        pressScale: 0.955,
+                        hoverLift: -1.8,
                         child: InkWell(
                           key: const ValueKey('ghst-ai-floating-bubble'),
                           borderRadius: BorderRadius.circular(16),
                           onTap: () => setState(() => _open = true),
                           child: Motion3dFloatingLayer(
-                            floatAmplitude: 2.8,
-                            tiltAmplitude: 0.03,
+                            floatAmplitude: 2.2,
+                            tiltAmplitude: 0.020,
                             child: Container(
                               width: bubbleWidth,
                               height: bubbleHeight,
