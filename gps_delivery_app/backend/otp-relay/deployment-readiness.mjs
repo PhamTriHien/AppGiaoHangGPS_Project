@@ -4,11 +4,11 @@ import { createCommerceDatabase } from './commerce-db.mjs';
 
 export { publicBackendUrl };
 
-export const COMMERCE_MIGRATION = '20261113_cloud_sync_and_journey';
+export const COMMERCE_MIGRATION = '20261114_merchant_cloud_suite';
 const revisionKey = crypto.randomBytes(32);
 export const databaseRevision = env => crypto.createHmac('sha256', revisionKey)
   .update(JSON.stringify([configValue('DATABASE_URL', env), configValue('DATABASE_CA_CERT', env)])).digest('hex');
-const migrations = ['20261027_delivery_integrations.sql', '20261028_cloud_orders.sql', '20261029_payments_ghn.sql', '20261029_cloud_addresses.sql', '20261030_marketplace.sql', '20261031_market_operations.sql', '20261101_partner_memberships.sql', '20261102_local_address_import.sql', '20261103_catalog_stock_versions.sql', '20261104_market_media.sql', '20261105_market_browse.sql', '20261106_catalog_configuration.sql', '20261107_cloud_commercial_suite.sql', '20261108_cloud_logistics.sql', '20261109_admin_account_management.sql', '20261110_cloud_promo_events.sql', '20261111_profile_push_shipping_coins.sql', '20261112_shipping_cash_settlement.sql', '20261113_cloud_sync_and_journey.sql'];
+const migrations = ['20261027_delivery_integrations.sql', '20261028_cloud_orders.sql', '20261029_payments_ghn.sql', '20261029_cloud_addresses.sql', '20261030_marketplace.sql', '20261031_market_operations.sql', '20261101_partner_memberships.sql', '20261102_local_address_import.sql', '20261103_catalog_stock_versions.sql', '20261104_market_media.sql', '20261105_market_browse.sql', '20261106_catalog_configuration.sql', '20261107_cloud_commercial_suite.sql', '20261108_cloud_logistics.sql', '20261109_admin_account_management.sql', '20261110_cloud_promo_events.sql', '20261111_profile_push_shipping_coins.sql', '20261112_shipping_cash_settlement.sql', '20261113_cloud_sync_and_journey.sql', '20261114_merchant_cloud_suite.sql'];
 
 // Catalog-only queries: never create users, orders, provider requests or payments.
 export const DEPLOYMENT_SCHEMA_SQL = `with commerce_tables as (
@@ -127,6 +127,15 @@ select
       to_regprocedure('public.delivery_cloud_ai_history(text,jsonb)'),'EXECUTE')
     and not has_function_privilege((select oid from pg_roles where rolname='anon'),
       to_regprocedure('public.delivery_cloud_order_live(text,jsonb)'),'EXECUTE') as cloud_sync_journey_schema,
+  to_regprocedure('public.delivery_merchant_suite(text,jsonb)') is not null
+    and to_regprocedure('public.delivery_can_access_cloud_order_as_shop_staff(uuid,uuid)') is not null
+    and to_regprocedure('public.delivery_is_order_shop_staff(uuid)') is not null
+    and not exists(select 1 from (select oid from pg_roles where rolname in ('anon','authenticated')) r
+      where has_function_privilege(r.oid,to_regprocedure('public.delivery_can_access_cloud_order_as_shop_staff(uuid,uuid)'),'EXECUTE'))
+    and not has_function_privilege((select oid from pg_roles where rolname='anon'),
+      to_regprocedure('public.delivery_merchant_suite(text,jsonb)'),'EXECUTE')
+    and not has_function_privilege((select oid from pg_roles where rolname='anon'),
+      to_regprocedure('public.delivery_is_order_shop_staff(uuid)'),'EXECUTE') as merchant_suite_schema,
   to_regprocedure('public.delivery_market_selection(uuid,jsonb)') is not null
     and to_regprocedure('public.delivery_market_configured_cart()') is not null
     and (select count(*)=4 from information_schema.columns where table_schema='public'
@@ -242,6 +251,8 @@ export function createDeploymentReadiness({ env = process.env, database = create
       schema?.shipping_cash_schema ? 'Đã đồng bộ xác nhận thu tiền mặt cước, thu hộ COD và bảo vệ chống thu trùng.' : 'Cần migration 20261112_shipping_cash_settlement.sql.');
     add('cloud_sync_journey_schema','Đồng bộ giao diện, bản nháp, lịch sử AI & hành trình trực tiếp',schema ? schema.cloud_sync_journey_schema ? 'ok' : 'missing' : 'unchecked',
       schema?.cloud_sync_journey_schema ? 'Đã đồng bộ chủ đề sáng/tối, bản nháp đặt đơn, lịch sử hội thoại AI, tọa độ trực tiếp và điểm dừng chuyến giao.' : 'Cần migration 20261113_cloud_sync_and_journey.sql.');
+    add('merchant_suite_schema','Vận hành cửa hàng, tồn kho, khuyến mãi & hậu mãi toàn diện',schema ? schema.merchant_suite_schema ? 'ok' : 'missing' : 'unchecked',
+      schema?.merchant_suite_schema ? 'Đã đồng bộ tổng quan cửa hàng, sổ biến động kho, khuyến mãi, hàng đợi đơn, đối soát và hành trình giao cho nhân sự shop.' : 'Cần migration 20261114_merchant_cloud_suite.sql.');
     const commerceSchema = schema?.commerce_schema && schema?.commerce_guard;
     add('address_schema','Sổ địa chỉ tài khoản',schema ? schema.address_schema ? 'ok' : 'missing' : 'unchecked',
       schema?.address_schema ? 'Đã có RPC và RLS sổ địa chỉ.' : 'Cần migration 20261029_cloud_addresses.sql.');
