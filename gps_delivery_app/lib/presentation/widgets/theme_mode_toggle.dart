@@ -56,7 +56,7 @@ class ThemeModeIconButton extends StatelessWidget {
               alignment: Alignment.center,
               child: GhstAiIcon(
                 style: Icon3dStyle.themeSunMoon,
-                size: compact ? 22 : 24,
+                size: compact ? 23 : 28,
                 circular: true,
                 selected: isDark,
               ),

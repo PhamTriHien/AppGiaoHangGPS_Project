@@ -367,15 +367,13 @@ class GhstButtonIcon extends StatelessWidget {
       final resolvedColor = opacity < 1.0
           ? baseColor.withValues(alpha: baseColor.a * opacity)
           : baseColor;
-      core = RepaintBoundary(
-        child: SizedBox.square(
-          dimension: effectiveSize,
-          child: CustomPaint(
-            painter: _GhstActionGlyphPainter(
-              kind: kind,
-              color: resolvedColor,
-              selected: selected,
-            ),
+      core = SizedBox.square(
+        dimension: effectiveSize,
+        child: CustomPaint(
+          painter: _GhstActionGlyphPainter(
+            kind: kind,
+            color: resolvedColor,
+            selected: selected,
           ),
         ),
       );
@@ -865,7 +863,7 @@ class _GhstActionGlyphPainter extends CustomPainter {
       return;
     }
 
-    final sw = (s * (selected ? 0.102 : 0.092)).clamp(1.3, 2.5);
+    final sw = (s * (selected ? 0.114 : 0.104)).clamp(1.55, 2.65);
     final stroke = Paint()
       ..isAntiAlias = true
       ..color = color
@@ -876,7 +874,7 @@ class _GhstActionGlyphPainter extends CustomPainter {
 
     final fillSoft = Paint()
       ..isAntiAlias = true
-      ..color = color.withValues(alpha: selected ? 0.24 : 0.15)
+      ..color = color.withValues(alpha: selected ? 0.30 : 0.22)
       ..style = PaintingStyle.fill;
 
     final fillSolid = Paint()

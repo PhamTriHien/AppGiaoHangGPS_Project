@@ -708,7 +708,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
                       label: Text('Đơn lẻ'),
                       icon: GhstAiIcon(
                         style: Icon3dStyle.createPlus,
-                        size: 16,
+                        size: 18,
                         circular: true,
                       ),
                     ),
@@ -717,7 +717,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
                       label: Text('Nhập CSV'),
                       icon: GhstAiIcon(
                         style: Icon3dStyle.csvImport,
-                        size: 16,
+                        size: 18,
                         circular: true,
                       ),
                     ),
@@ -726,7 +726,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
                       label: Text('Đã gửi'),
                       icon: GhstAiIcon(
                         style: Icon3dStyle.orderReceipt,
-                        size: 16,
+                        size: 18,
                         circular: true,
                       ),
                     ),
@@ -735,7 +735,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
                       label: Text('Thu gom'),
                       icon: GhstAiIcon(
                         style: Icon3dStyle.hub2hBatch,
-                        size: 16,
+                        size: 18,
                         circular: true,
                       ),
                     ),
@@ -961,7 +961,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
                           label: Text('Đơn giao hàng'),
                           icon: GhstAiIcon(
                             style: Icon3dStyle.scooterExpress,
-                            size: 18,
+                            size: 21,
                             circular: true,
                           ),
                         ),
@@ -970,7 +970,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
                           label: Text('Đơn mua'),
                           icon: GhstAiIcon(
                             style: Icon3dStyle.shoppingCart,
-                            size: 18,
+                            size: 21,
                             circular: true,
                           ),
                         ),

@@ -378,7 +378,7 @@ class GhstUserShell extends StatelessWidget {
             children: [
               GhstAiIcon(
                 style: mode.icon3d,
-                size: 18,
+                size: 20,
                 circular: true,
                 selected: active,
                 borderColor: active
@@ -459,8 +459,8 @@ class GhstUserShell extends StatelessWidget {
         _menuItem(
           GhstAiIcon(
             style: icon,
-            size: 21,
-            borderRadius: 6,
+            size: 26,
+            borderRadius: 8,
             selected: section == target,
           ),
           label,
@@ -584,8 +584,8 @@ class GhstUserShell extends StatelessWidget {
             _menuItem(
               const GhstAiIcon(
                 style: Icon3dStyle.addressBook,
-                size: 21,
-                borderRadius: 6,
+                size: 26,
+                borderRadius: 8,
               ),
               'Sổ địa chỉ kho',
               false,
@@ -644,8 +644,8 @@ class GhstUserShell extends StatelessWidget {
           _menuItem(
             const GhstAiIcon(
               style: Icon3dStyle.addressBook,
-              size: 21,
-              borderRadius: 6,
+              size: 26,
+              borderRadius: 8,
             ),
             'Sổ địa chỉ nhận hàng',
             false,
@@ -692,8 +692,8 @@ class GhstUserShell extends StatelessWidget {
               _menuItem(
                 GhstAiIcon(
                   style: Icon3dStyle.scooterExpress,
-                  size: 21,
-                  borderRadius: 6,
+                  size: 26,
+                  borderRadius: 8,
                   selected: section == GhstUserSection.driverTrips,
                 ),
                 'Chuyến giao của tôi',
@@ -902,8 +902,8 @@ class GhstUserShell extends StatelessWidget {
               onPressed: () => onNavigate(GhstUserSection.food),
               icon: const GhstAiIcon(
                 style: Icon3dStyle.foodMarket,
-                size: 22,
-                borderRadius: 6,
+                size: 24,
+                borderRadius: 7,
               ),
               label: const Text('Ăn uống'),
             ),
@@ -916,7 +916,7 @@ class GhstUserShell extends StatelessWidget {
               onPressed: onCreateOrder,
               icon: const GhstAiIcon(
                 style: Icon3dStyle.createPlus,
-                size: 25,
+                size: 28,
                 circular: true,
               ),
             ),
@@ -928,7 +928,7 @@ class GhstUserShell extends StatelessWidget {
             onPressed: () => onNavigate(GhstUserSection.aiAssistant),
             icon: GhstAiIcon(
               style: Icon3dStyle.aiAssistant,
-              size: 26,
+              size: 28,
               circular: true,
               selected: section == GhstUserSection.aiAssistant,
             ),
@@ -939,7 +939,7 @@ class GhstUserShell extends StatelessWidget {
               onPressed: onCart,
               icon: const GhstAiIcon(
                 style: Icon3dStyle.shoppingCart,
-                size: 25,
+                size: 28,
                 circular: true,
               ),
             ),
@@ -951,7 +951,7 @@ class GhstUserShell extends StatelessWidget {
               isLabelVisible: unreadNotifications > 0,
               child: GhstAiIcon(
                 style: Icon3dStyle.notificationBell,
-                size: 25,
+                size: 28,
                 circular: true,
                 selected: section == GhstUserSection.notifications,
               ),
@@ -963,7 +963,7 @@ class GhstUserShell extends StatelessWidget {
             onPressed: () => onNavigate(GhstUserSection.settings),
             icon: GhstAiIcon(
               style: Icon3dStyle.settingsGear,
-              size: 25,
+              size: 28,
               circular: true,
               selected: section == GhstUserSection.settings,
             ),
@@ -1089,11 +1089,11 @@ class GhstUserShell extends StatelessWidget {
             tooltip: 'Trợ lý AI',
             visualDensity: VisualDensity.compact,
             constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
-            padding: const EdgeInsets.all(5),
+            padding: const EdgeInsets.all(4),
             onPressed: () => onNavigate(GhstUserSection.aiAssistant),
             icon: GhstAiIcon(
               style: Icon3dStyle.aiAssistant,
-              size: 22,
+              size: 23,
               circular: true,
               selected: section == GhstUserSection.aiAssistant,
             ),
@@ -1103,11 +1103,11 @@ class GhstUserShell extends StatelessWidget {
               tooltip: 'Giỏ hàng',
               visualDensity: VisualDensity.compact,
               constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
-              padding: const EdgeInsets.all(5),
+              padding: const EdgeInsets.all(4),
               onPressed: onCart,
               icon: const GhstAiIcon(
                 style: Icon3dStyle.shoppingCart,
-                size: 21,
+                size: 23,
                 circular: true,
               ),
             )
@@ -1116,11 +1116,11 @@ class GhstUserShell extends StatelessWidget {
               tooltip: 'Bản đồ hành trình',
               visualDensity: VisualDensity.compact,
               constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
-              padding: const EdgeInsets.all(5),
+              padding: const EdgeInsets.all(4),
               onPressed: () => onNavigate(GhstUserSection.tracking),
               icon: GhstAiIcon(
                 style: Icon3dStyle.gpsPinRadar,
-                size: 21,
+                size: 23,
                 circular: true,
                 selected: section == GhstUserSection.tracking,
               ),
@@ -1129,14 +1129,14 @@ class GhstUserShell extends StatelessWidget {
             tooltip: 'Trung tâm thông báo',
             visualDensity: VisualDensity.compact,
             constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
-            padding: const EdgeInsets.all(5),
+            padding: const EdgeInsets.all(4),
             onPressed: () => onNavigate(GhstUserSection.notifications),
             icon: Badge.count(
               count: unreadNotifications,
               isLabelVisible: unreadNotifications > 0,
               child: GhstAiIcon(
                 style: Icon3dStyle.notificationBell,
-                size: 21,
+                size: 23,
                 circular: true,
                 selected: section == GhstUserSection.notifications,
               ),
@@ -1147,11 +1147,11 @@ class GhstUserShell extends StatelessWidget {
             tooltip: 'Cài đặt ứng dụng',
             visualDensity: VisualDensity.compact,
             constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
-            padding: const EdgeInsets.all(5),
+            padding: const EdgeInsets.all(4),
             onPressed: () => onNavigate(GhstUserSection.settings),
             icon: GhstAiIcon(
               style: Icon3dStyle.settingsGear,
-              size: 21,
+              size: 23,
               circular: true,
               selected: section == GhstUserSection.settings,
             ),
@@ -1214,8 +1214,8 @@ class GhstUserShell extends StatelessWidget {
                               unreadNotifications > 0,
                           child: GhstAiIcon(
                             style: items[i].$1,
-                            size: 22,
-                            borderRadius: 7,
+                            size: 25,
+                            borderRadius: 8,
                             selected: activeIdx == i,
                             borderColor: activeIdx == i
                                 ? _highlight

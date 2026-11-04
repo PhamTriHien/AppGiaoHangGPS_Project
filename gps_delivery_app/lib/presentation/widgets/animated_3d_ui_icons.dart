@@ -250,7 +250,7 @@ class GhstAiIcon extends StatelessWidget {
     this.glowColor,
     this.selected = false,
     this.dimmed = false,
-    this.imageScale = 1.15,
+    this.imageScale = 1.0,
   });
 
   @override
@@ -260,54 +260,48 @@ class GhstAiIcon extends StatelessWidget {
       return const SizedBox.shrink();
     }
     final dpr = MediaQuery.devicePixelRatioOf(context).clamp(1.0, 3.0);
-    final cachePx = (effectiveSize * dpr * 2.2).round().clamp(64, 512);
+    final targetPhysical = effectiveSize * dpr;
+    final cachePx = targetPhysical <= 64
+        ? 128
+        : (targetPhysical <= 180 ? 256 : 512);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final effectiveBorderColor =
         borderColor ??
-        (selected
-            ? style.primaryColor.withValues(alpha: 0.85)
-            : style.primaryColor.withValues(alpha: 0.28));
+        style.primaryColor.withValues(
+          alpha: selected ? 0.90 : (isDark ? 0.48 : 0.32),
+        );
     final effectiveGlow = glowColor ?? style.primaryColor;
     final radius = BorderRadius.circular(borderRadius);
+
+    Widget assetImage = Image.asset(
+      style.assetPath,
+      fit: BoxFit.cover,
+      excludeFromSemantics: true,
+      cacheWidth: cachePx,
+      cacheHeight: cachePx,
+      filterQuality: FilterQuality.medium,
+      isAntiAlias: true,
+      errorBuilder: (_, _, _) => CustomPaint(
+        painter: _FallbackOrbPainter(
+          primary: style.primaryColor,
+          secondary: style.secondaryColor,
+          glow: style.glowColor,
+        ),
+      ),
+    );
+    if ((imageScale - 1.0).abs() > 0.001) {
+      assetImage = Transform.scale(
+        scale: imageScale,
+        filterQuality: FilterQuality.medium,
+        child: assetImage,
+      );
+    }
 
     final imageStack = Stack(
       fit: StackFit.expand,
       children: [
-        const ColoredBox(color: Color(0xFFF6FAFF)),
-        Transform.scale(
-          scale: imageScale,
-          filterQuality: FilterQuality.medium,
-          child: Image.asset(
-            style.assetPath,
-            fit: BoxFit.cover,
-            excludeFromSemantics: true,
-            cacheWidth: cachePx,
-            cacheHeight: cachePx,
-            filterQuality: FilterQuality.medium,
-            isAntiAlias: true,
-            errorBuilder: (_, _, _) => CustomPaint(
-              painter: _FallbackOrbPainter(
-                primary: style.primaryColor,
-                secondary: style.secondaryColor,
-                glow: style.glowColor,
-              ),
-            ),
-          ),
-        ),
-        IgnorePointer(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Colors.white.withValues(alpha: 0.34),
-                  Colors.white.withValues(alpha: 0.0),
-                ],
-                stops: const [0.0, 0.42],
-              ),
-            ),
-          ),
-        ),
+        const ColoredBox(color: Color(0xFFEAF4FE)),
+        assetImage,
       ],
     );
 
@@ -319,7 +313,7 @@ class GhstAiIcon extends StatelessWidget {
         borderRadius: circular ? null : radius,
         border: Border.all(
           color: effectiveBorderColor,
-          width: selected ? 1.6 : 1.1,
+          width: selected ? 1.5 : 1.0,
         ),
         boxShadow: dimmed || effectiveSize < 24
             ? null
@@ -344,9 +338,9 @@ class GhstAiIcon extends StatelessWidget {
     );
 
     if (dimmed) {
-      badge = Opacity(opacity: 0.46, child: badge);
+      badge = Opacity(opacity: 0.80, child: badge);
     }
-    return ExcludeSemantics(child: RepaintBoundary(child: badge));
+    return ExcludeSemantics(child: badge);
   }
 }
 
@@ -377,10 +371,10 @@ class Animated3dIconBadge extends StatefulWidget {
 class _Animated3dIconBadgeState extends State<Animated3dIconBadge>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  double _pointerTiltX = -0.06;
-  double _pointerTiltY = 0.09;
-  double _targetPointerTiltX = -0.06;
-  double _targetPointerTiltY = 0.09;
+  double _pointerTiltX = 0.0;
+  double _pointerTiltY = 0.0;
+  double _targetPointerTiltX = 0.0;
+  double _targetPointerTiltY = 0.0;
   double _tapImpulse = 0.0;
 
   bool get _isAutomatedTestBinding {
@@ -395,7 +389,7 @@ class _Animated3dIconBadgeState extends State<Animated3dIconBadge>
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 3600),
-      value: widget.animateIdle ? 0.0 : 0.25,
+      value: 0.0,
     )..addListener(_decayTapImpulse);
     _startAnimationLoop();
   }
@@ -429,7 +423,7 @@ class _Animated3dIconBadgeState extends State<Animated3dIconBadge>
       if (_controller.isAnimating) {
         _controller.stop();
       }
-      _controller.value = 0.25;
+      _controller.value = 0.0;
     }
   }
 
@@ -491,164 +485,187 @@ class _Animated3dIconBadgeState extends State<Animated3dIconBadge>
       return const SizedBox.shrink();
     }
     final dpr = MediaQuery.devicePixelRatioOf(context).clamp(1.0, 3.0);
-    final targetCachePx = (effectiveSize * dpr * 2.0).round().clamp(160, 512);
-    return RepaintBoundary(
-      child: MouseRegion(
-        onHover: (event) => _updateTiltFromLocalOffset(event.localPosition),
-        onExit: (_) {
-          _targetPointerTiltX = -0.06;
-          _targetPointerTiltY = 0.09;
-          if (!_controller.isAnimating &&
-              (_pointerTiltX != -0.06 || _pointerTiltY != 0.09)) {
-            setState(() {
-              _pointerTiltX = -0.06;
-              _pointerTiltY = 0.09;
-            });
-          }
-        },
-        child: GestureDetector(
-          onPanUpdate: (details) =>
-              _updateTiltFromLocalOffset(details.localPosition),
-          onTap: _trigger3dPulseWave,
-          child: AnimatedBuilder(
-            animation: _controller,
-            builder: (context, _) {
-              final phase = _controller.value;
-              final fullAngle = phase * math.pi * 2.0;
+    final targetPhysical = effectiveSize * dpr;
+    final targetCachePx = targetPhysical <= 64
+        ? 128
+        : (targetPhysical <= 192 ? 256 : 512);
+    final discRatio = widget.showRadarPulse ? 0.88 : 0.92;
 
-              final motion = _computePhysical3dMotion(
-                style: widget.style,
-                fullAngle: fullAngle,
-                isSelected: widget.isSelected,
-                tapImpulse: _tapImpulse,
-              );
+    Widget content = MouseRegion(
+      onHover: (event) => _updateTiltFromLocalOffset(event.localPosition),
+      onExit: (_) {
+        _targetPointerTiltX = 0.0;
+        _targetPointerTiltY = 0.0;
+        if (!_controller.isAnimating &&
+            (_pointerTiltX != 0.0 || _pointerTiltY != 0.0)) {
+          setState(() {
+            _pointerTiltX = 0.0;
+            _pointerTiltY = 0.0;
+          });
+        }
+      },
+      child: GestureDetector(
+        onPanUpdate: (details) =>
+            _updateTiltFromLocalOffset(details.localPosition),
+        onTap: _trigger3dPulseWave,
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, _) {
+            final phase = _controller.value;
+            final fullAngle = phase * math.pi * 2.0;
+            final activeMotion =
+                widget.animateIdle ||
+                _controller.isAnimating ||
+                _tapImpulse > 0.001;
 
-              final dynamicTiltX = _pointerTiltX + motion.pitchX;
-              final dynamicTiltY = _pointerTiltY + motion.yawY;
-              final impulseScale = 1.0 + _tapImpulse * 0.11;
+            final motion = activeMotion
+                ? _computePhysical3dMotion(
+                    style: widget.style,
+                    fullAngle: fullAngle,
+                    isSelected: widget.isSelected,
+                    tapImpulse: _tapImpulse,
+                  )
+                : _Physical3dMotion(
+                    offsetX: 0.0,
+                    offsetY: widget.isSelected ? -1.5 : 0.0,
+                    pitchX: 0.0,
+                    yawY: 0.0,
+                    rollZ: 0.0,
+                    scale: 1.0,
+                  );
 
-              final transform3d = Matrix4.identity()
-                ..setEntry(3, 2, 0.0015)
-                ..translateByDouble(
-                  motion.offsetX,
-                  motion.offsetY - _tapImpulse * 4.0,
-                  0.0,
-                  1.0,
-                )
-                ..rotateX(dynamicTiltX)
-                ..rotateY(dynamicTiltY)
-                ..rotateZ(motion.rollZ)
-                ..scaleByDouble(
-                  motion.scale * impulseScale,
-                  motion.scale * impulseScale,
-                  1.0,
-                  1.0,
-                );
+            final dynamicTiltX = _pointerTiltX + motion.pitchX;
+            final dynamicTiltY = _pointerTiltY + motion.yawY;
+            final impulseScale = 1.0 + _tapImpulse * 0.11;
+            final isAtRest =
+                !activeMotion &&
+                dynamicTiltX.abs() < 0.001 &&
+                dynamicTiltY.abs() < 0.001 &&
+                motion.offsetY == 0.0;
 
-              final shadowScale = (1.0 - (motion.offsetY.abs() / 34.0)).clamp(
-                0.68,
-                1.05,
-              );
+            final transform3d = isAtRest
+                ? Matrix4.identity()
+                : (Matrix4.identity()
+                    ..setEntry(3, 2, 0.0014)
+                    ..translateByDouble(
+                      motion.offsetX,
+                      motion.offsetY - _tapImpulse * 4.0,
+                      0.0,
+                      1.0,
+                    )
+                    ..rotateX(dynamicTiltX)
+                    ..rotateY(dynamicTiltY)
+                    ..rotateZ(motion.rollZ)
+                    ..scaleByDouble(
+                      motion.scale * impulseScale,
+                      motion.scale * impulseScale,
+                      1.0,
+                      1.0,
+                    ));
 
-              return SizedBox(
-                width: effectiveSize,
-                height: effectiveSize + 16,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Positioned.fill(
-                      child: CustomPaint(
-                        painter: _Holographic3dPedestalPainter(
-                          progress: phase,
-                          primaryColor: widget.style.primaryColor,
-                          glowColor: widget.style.glowColor,
-                          isSelected: widget.isSelected,
-                          showRadarPulse: widget.showRadarPulse,
-                          tiltX: dynamicTiltX,
-                          tiltY: dynamicTiltY,
-                        ),
+            final shadowScale = (1.0 - (motion.offsetY.abs() / 34.0)).clamp(
+              0.68,
+              1.05,
+            );
+
+            return SizedBox(
+              width: effectiveSize,
+              height: effectiveSize + 16,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Positioned.fill(
+                    child: CustomPaint(
+                      painter: _Holographic3dPedestalPainter(
+                        progress: phase,
+                        primaryColor: widget.style.primaryColor,
+                        glowColor: widget.style.glowColor,
+                        isSelected: widget.isSelected,
+                        showRadarPulse: widget.showRadarPulse,
+                        tiltX: dynamicTiltX,
+                        tiltY: dynamicTiltY,
                       ),
                     ),
-                    Positioned(
-                      bottom: 1,
-                      child: Transform.scale(
-                        scaleX: shadowScale,
-                        scaleY: shadowScale * 0.36,
-                        child: Container(
-                          width: effectiveSize * 0.74,
-                          height: 16,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: widget.style.secondaryColor.withValues(
-                                  alpha: 0.40 * shadowScale,
-                                ),
-                                blurRadius: 15,
-                                spreadRadius: 2,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    Transform(
-                      alignment: Alignment.center,
-                      filterQuality: FilterQuality.medium,
-                      transform: transform3d,
+                  ),
+                  Positioned(
+                    bottom: 1,
+                    child: Transform.scale(
+                      scaleX: shadowScale,
+                      scaleY: shadowScale * 0.36,
                       child: Container(
-                        width: widget.size * 0.88,
-                        height: widget.size * 0.88,
+                        width: effectiveSize * 0.74,
+                        height: 16,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white,
-                          border: Border.all(
-                            color: widget.isSelected
-                                ? widget.style.primaryColor
-                                : Colors.white.withValues(alpha: 0.95),
-                            width: widget.isSelected ? 2.4 : 1.7,
-                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: widget.style.primaryColor.withValues(
-                                alpha: widget.isSelected ? 0.50 : 0.30,
+                              color: widget.style.secondaryColor.withValues(
+                                alpha: 0.40 * shadowScale,
                               ),
-                              blurRadius: widget.isSelected ? 18 : 12,
-                              offset: const Offset(0, 6),
-                            ),
-                            BoxShadow(
-                              color: widget.style.glowColor.withValues(
-                                alpha: widget.isSelected ? 0.36 : 0.16,
-                              ),
-                              blurRadius: 10,
-                              spreadRadius: 1,
+                              blurRadius: 15,
+                              spreadRadius: 2,
                             ),
                           ],
                         ),
-                        child: ClipOval(
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              Transform.scale(
-                                scale: 1.07,
-                                filterQuality: FilterQuality.medium,
-                                child: Image.asset(
-                                  widget.style.assetPath,
-                                  fit: BoxFit.cover,
-                                  excludeFromSemantics: true,
-                                  cacheWidth: targetCachePx,
-                                  cacheHeight: targetCachePx,
-                                  filterQuality: FilterQuality.medium,
-                                  isAntiAlias: true,
-                                  errorBuilder: (_, _, _) => CustomPaint(
-                                    painter: _FallbackOrbPainter(
-                                      primary: widget.style.primaryColor,
-                                      secondary: widget.style.secondaryColor,
-                                      glow: widget.style.glowColor,
-                                    ),
-                                  ),
+                      ),
+                    ),
+                  ),
+                  Transform(
+                    alignment: Alignment.center,
+                    filterQuality: isAtRest ? null : FilterQuality.medium,
+                    transform: transform3d,
+                    child: Container(
+                      width: effectiveSize * discRatio,
+                      height: effectiveSize * discRatio,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: const Color(0xFFEAF4FE),
+                        border: Border.all(
+                          color: widget.isSelected
+                              ? widget.style.primaryColor
+                              : widget.style.primaryColor.withValues(
+                                  alpha: 0.45,
+                                ),
+                          width: widget.isSelected ? 2.2 : 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: widget.style.primaryColor.withValues(
+                              alpha: widget.isSelected ? 0.46 : 0.26,
+                            ),
+                            blurRadius: widget.isSelected ? 16 : 10,
+                            offset: const Offset(0, 5),
+                          ),
+                          BoxShadow(
+                            color: widget.style.glowColor.withValues(
+                              alpha: widget.isSelected ? 0.32 : 0.14,
+                            ),
+                            blurRadius: 8,
+                            spreadRadius: 0.5,
+                          ),
+                        ],
+                      ),
+                      child: ClipOval(
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            Image.asset(
+                              widget.style.assetPath,
+                              fit: BoxFit.cover,
+                              excludeFromSemantics: true,
+                              cacheWidth: targetCachePx,
+                              cacheHeight: targetCachePx,
+                              filterQuality: FilterQuality.medium,
+                              isAntiAlias: true,
+                              errorBuilder: (_, _, _) => CustomPaint(
+                                painter: _FallbackOrbPainter(
+                                  primary: widget.style.primaryColor,
+                                  secondary: widget.style.secondaryColor,
+                                  glow: widget.style.glowColor,
                                 ),
                               ),
+                            ),
+                            if (activeMotion && effectiveSize >= 44)
                               CustomPaint(
                                 painter: _Photorealistic3dVfxOverlayPainter(
                                   style: widget.style,
@@ -657,19 +674,22 @@ class _Animated3dIconBadgeState extends State<Animated3dIconBadge>
                                   tiltY: dynamicTiltY,
                                 ),
                               ),
-                            ],
-                          ),
+                          ],
                         ),
                       ),
                     ),
-                  ],
-                ),
-              );
-            },
-          ),
+                  ),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );
+    if (widget.animateIdle || widget.showRadarPulse) {
+      content = RepaintBoundary(child: content);
+    }
+    return content;
   }
 
   _Physical3dMotion _computePhysical3dMotion({
@@ -1601,45 +1621,47 @@ class _Photorealistic3dVfxOverlayPainter extends CustomPainter {
     for (int i = 0; i < anchors.length; i++) {
       final localP = (phase * 2.0 + i * 0.28) % 1.0;
       final pos = Offset(
-        w * anchors[i].dx + math.sin(angle + i) * w * 0.020,
-        h * anchors[i].dy - localP * h * 0.07,
+        w * anchors[i].dx + math.sin(angle + i) * w * 0.018,
+        h * anchors[i].dy - localP * h * 0.06,
       );
       final alpha = math.sin(localP * math.pi).clamp(0.0, 1.0);
       canvas.drawCircle(
         pos,
-        w * 0.034,
+        w * 0.024,
         Paint()
-          ..color = sparkleColor.withValues(alpha: 0.82 * alpha)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+          ..color = sparkleColor.withValues(alpha: 0.72 * alpha)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5),
       );
       canvas.drawCircle(
         pos,
-        w * 0.013,
+        w * 0.011,
         Paint()..color = Colors.white.withValues(alpha: alpha),
       );
     }
-    final shift = -w * 0.12 + w * 0.24 * phase;
-    canvas.drawCircle(
-      Offset(w * shimmerCenter.dx + shift, h * shimmerCenter.dy + shift * 0.4),
-      w * 0.085,
-      Paint()
-        ..color = Colors.white.withValues(
-          alpha: 0.46 * math.sin(phase * math.pi),
-        )
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 7),
-    );
+    final starAlpha = 0.55 * math.sin(phase * math.pi).clamp(0.0, 1.0);
+    if (starAlpha > 0.02) {
+      final sc = Offset(w * shimmerCenter.dx, h * shimmerCenter.dy);
+      final arm = w * 0.024;
+      final starPaint = Paint()
+        ..isAntiAlias = true
+        ..color = Colors.white.withValues(alpha: starAlpha)
+        ..strokeWidth = 1.2
+        ..strokeCap = StrokeCap.round;
+      canvas.drawLine(sc.translate(-arm, 0), sc.translate(arm, 0), starPaint);
+      canvas.drawLine(sc.translate(0, -arm), sc.translate(0, arm), starPaint);
+    }
   }
 
   void _paintAnisotropicGlassRimLight(Canvas canvas, Size size) {
     final w = size.width;
     final h = size.height;
-    final shiftX = (-tiltY * w * 0.30).clamp(-w * 0.18, w * 0.18);
-    final shiftY = (tiltX * h * 0.30).clamp(-h * 0.18, h * 0.18);
+    final shiftX = (-tiltY * w * 0.24).clamp(-w * 0.14, w * 0.14);
+    final shiftY = (tiltX * h * 0.20).clamp(-h * 0.08, h * 0.08);
 
     final lensRect = Rect.fromCenter(
-      center: Offset(w * 0.34 + shiftX, h * 0.20 + shiftY),
-      width: w * 0.44,
-      height: h * 0.18,
+      center: Offset(w * 0.36 + shiftX, h * 0.11 + shiftY),
+      width: w * 0.36,
+      height: h * 0.09,
     );
     canvas.drawOval(
       lensRect,
@@ -1648,7 +1670,7 @@ class _Photorealistic3dVfxOverlayPainter extends CustomPainter {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Colors.white.withValues(alpha: 0.42),
+            Colors.white.withValues(alpha: 0.16),
             Colors.white.withValues(alpha: 0.0),
           ],
         ).createShader(lensRect),

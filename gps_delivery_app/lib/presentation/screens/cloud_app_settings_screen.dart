@@ -765,7 +765,7 @@ class _CloudAppSettingsScreenState extends State<CloudAppSettingsScreen> {
                   showCheckmark: false,
                   avatar: GhstAiIcon(
                     style: mode.icon3d,
-                    size: 16,
+                    size: 20,
                     circular: true,
                     selected: preferredRaw == _cloudRoleKeyFor(mode),
                   ),
@@ -787,7 +787,7 @@ class _CloudAppSettingsScreenState extends State<CloudAppSettingsScreen> {
                 onPressed: _busy ? null : _openPartnerMemberships,
                 icon: const GhstAiIcon(
                   style: Icon3dStyle.driverPartner,
-                  size: 18,
+                  size: 21,
                   circular: true,
                 ),
                 label: const Text('Đăng ký thêm vai trò Tài xế / Cửa hàng'),
@@ -803,7 +803,7 @@ class _CloudAppSettingsScreenState extends State<CloudAppSettingsScreen> {
             onChanged: (v) => unawaited(_toggleAiBubble(themeController, v)),
             secondary: const GhstAiIcon(
               style: Icon3dStyle.aiAssistant,
-              size: 28,
+              size: 32,
               circular: true,
             ),
             title: const Text(
@@ -823,7 +823,7 @@ class _CloudAppSettingsScreenState extends State<CloudAppSettingsScreen> {
                 onPressed: widget.onOpenAiAssistant,
                 icon: const GhstAiIcon(
                   style: Icon3dStyle.aiAssistant,
-                  size: 18,
+                  size: 21,
                   circular: true,
                 ),
                 label: const Text('Mở Trợ lý AI toàn màn hình'),
@@ -938,7 +938,7 @@ class _CloudAppSettingsScreenState extends State<CloudAppSettingsScreen> {
                     onPressed: _openNotifications,
                     icon: const GhstAiIcon(
                       style: Icon3dStyle.notificationBell,
-                      size: 18,
+                      size: 21,
                       circular: true,
                     ),
                     label: Text(
@@ -1009,7 +1009,7 @@ class _CloudAppSettingsScreenState extends State<CloudAppSettingsScreen> {
                 onPressed: _busy ? null : _openEditProfile,
                 icon: const GhstAiIcon(
                   style: Icon3dStyle.userProfile,
-                  size: 18,
+                  size: 21,
                   circular: true,
                 ),
                 label: const Text('Chỉnh sửa hồ sơ'),
@@ -1020,7 +1020,7 @@ class _CloudAppSettingsScreenState extends State<CloudAppSettingsScreen> {
                   onPressed: _busy ? null : _openPartnerMemberships,
                   icon: const GhstAiIcon(
                     style: Icon3dStyle.driverPartner,
-                    size: 18,
+                    size: 21,
                     circular: true,
                   ),
                   label: const Text('Vai trò Đối tác'),
@@ -1030,7 +1030,7 @@ class _CloudAppSettingsScreenState extends State<CloudAppSettingsScreen> {
                 onPressed: _busy ? null : _openAddressBook,
                 icon: const GhstAiIcon(
                   style: Icon3dStyle.addressBook,
-                  size: 18,
+                  size: 21,
                   circular: true,
                 ),
                 label: const Text('Sổ địa chỉ'),
@@ -1041,7 +1041,7 @@ class _CloudAppSettingsScreenState extends State<CloudAppSettingsScreen> {
                   onPressed: _busy ? null : _openLocalImport,
                   icon: const GhstAiIcon(
                     style: Icon3dStyle.csvImport,
-                    size: 18,
+                    size: 21,
                     circular: true,
                   ),
                   label: const Text('Nhập địa chỉ thiết bị'),
@@ -1052,7 +1052,7 @@ class _CloudAppSettingsScreenState extends State<CloudAppSettingsScreen> {
                   onPressed: widget.onOpenOperator,
                   icon: const GhstAiIcon(
                     style: Icon3dStyle.adminShieldOps,
-                    size: 18,
+                    size: 21,
                     circular: true,
                   ),
                   label: const Text('Cổng Quản trị'),

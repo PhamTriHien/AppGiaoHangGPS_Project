@@ -294,7 +294,48 @@ void main() {
       expect(find.byType(GhstAiIcon), findsNWidgets(52));
       expect(find.byType(Animated3dIconBadge), findsNWidgets(26));
       expect(find.byType(Icon), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byType(GhstAiIcon),
+          matching: find.byType(RepaintBoundary),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(GhstAiIcon),
+          matching: find.byType(Transform),
+        ),
+        findsNothing,
+      );
       expect(tester.takeException(), isNull);
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: Animated3dIconBadge(
+                style: Icon3dStyle.scooterExpress,
+                size: 38,
+                animateIdle: false,
+                showRadarPulse: false,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final badgeTransforms = tester
+          .widgetList<Transform>(
+            find.descendant(
+              of: find.byType(Animated3dIconBadge),
+              matching: find.byType(Transform),
+            ),
+          )
+          .toList();
+      final mainTransform = badgeTransforms.last;
+      expect(mainTransform.transform.isIdentity(), isTrue);
+      expect(mainTransform.filterQuality, isNull);
     },
   );
 
@@ -347,6 +388,13 @@ void main() {
         );
         await tester.pumpAndSettle();
         expect(find.byType(Icon), findsNothing);
+        expect(
+          find.descendant(
+            of: find.byType(GhstButtonIcon),
+            matching: find.byType(RepaintBoundary),
+          ),
+          findsNothing,
+        );
         expect(tester.takeException(), isNull);
       }
     },

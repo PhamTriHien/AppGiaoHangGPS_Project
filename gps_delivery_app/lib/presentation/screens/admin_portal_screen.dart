@@ -1099,8 +1099,8 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                             children: [
                               GhstAiIcon(
                                 style: d.$1,
-                                size: 24,
-                                borderRadius: 7,
+                                size: 26,
+                                borderRadius: 8,
                                 selected: selected,
                                 borderColor: selected
                                     ? AdminStudioColors.acid.withValues(
