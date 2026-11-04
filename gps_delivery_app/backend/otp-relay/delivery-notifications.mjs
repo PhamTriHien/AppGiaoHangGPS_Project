@@ -117,6 +117,12 @@ export function createNotificationRouter({ env = process.env, authenticate, fetc
         const stored = await supabase(`delivery_market_notifications?id=eq.${encodeURIComponent(record.id)}&select=id,user_id,order_id,kind`);
         const notif = stored[0];
         if (!notif) return res.json({ skipped: true });
+        const prefs = await supabase(`delivery_notification_preferences?user_id=eq.${encodeURIComponent(notif.user_id)}&select=push_enabled,market_updates`);
+        if (prefs[0]?.push_enabled === false || prefs[0]?.market_updates === false) {
+          if (completed.size >= 5000) completed.delete(completed.keys().next().value);
+          completed.set(dedupKey, Date.now());
+          return res.json({ sent: 0, skipped: true });
+        }
         const tokens = await supabase(`delivery_device_tokens?user_id=eq.${encodeURIComponent(notif.user_id)}&select=user_id,token`);
         const sent = await dispatchFcm(tokens,
           { title: 'GHST EXPRESS', body: marketNotificationBody(notif.kind) },

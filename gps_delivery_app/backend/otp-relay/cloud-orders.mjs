@@ -65,7 +65,7 @@ export function createCloudOrders({ env = process.env, authenticate, fetcher = f
     catch { throw new IntegrationError(502, 'Phản hồi cloud không hợp lệ.'); }
     if (!response.ok) {
       if (['PGRST202', '42P01', '42883'].includes(data.code)) throw new IntegrationError(503,
-        ['delivery_marketplace','delivery_market_operations','delivery_market_browse','delivery_market_media_reserve','delivery_market_attachment_reserve','delivery_cloud_order_otp','delivery_cloud_share_manage','delivery_cloud_logistics','delivery_cloud_admin_accounts','delivery_cloud_promo_events','delivery_cloud_notifications','delivery_cloud_preferences','delivery_cloud_ai_history','delivery_cloud_order_live','delivery_merchant_suite'].includes(name)
+        ['delivery_marketplace','delivery_market_operations','delivery_market_browse','delivery_market_media_reserve','delivery_market_attachment_reserve','delivery_cloud_order_otp','delivery_cloud_share_manage','delivery_cloud_logistics','delivery_cloud_admin_accounts','delivery_cloud_promo_events','delivery_cloud_notifications','delivery_cloud_preferences','delivery_cloud_ai_history','delivery_cloud_order_live','delivery_merchant_suite','delivery_driver_finance','delivery_cloud_get'].includes(name)
           ? 'Dữ liệu mua hàng cần được cập nhật trong trang quản trị.'
           : name === 'delivery_cloud_addresses_manage'
           ? 'Chưa cài sổ địa chỉ cloud. Chạy migration 20261029_cloud_addresses.sql trên Supabase.'
@@ -127,7 +127,7 @@ export function createCloudOrders({ env = process.env, authenticate, fetcher = f
     res.json(await rpc(req, 'delivery_merchant_suite', { p_action: req.params.action, p_payload: req.body }));
   }));
   const logisticsActions = new Set([
-    'pickup_list','pickup_create','pickup_assign','recipient_trust','recipient_flag','instruction_set','stats','service_eta','driver_reviews',
+    'pickup_list','pickup_create','pickup_assign','pickup_transition','recipient_trust','recipient_flag','instruction_set','stats','service_eta','driver_reviews',
   ]);
   router.post('/logistics/:action', route(async (req, res) => {
     if (!logisticsActions.has(req.params.action) || !req.body || Array.isArray(req.body) ||
@@ -135,6 +135,16 @@ export function createCloudOrders({ env = process.env, authenticate, fetcher = f
       throw new IntegrationError(400, 'Yêu cầu vận hành không hợp lệ.');
     }
     res.json(await rpc(req, 'delivery_cloud_logistics', { p_action: req.params.action, p_payload: req.body }));
+  }));
+  const driverFinanceActions = new Set([
+    'summary','remit_cod','request_payout','admin_list','admin_decide',
+  ]);
+  router.post('/driver-finance/:action', route(async (req, res) => {
+    if (!driverFinanceActions.has(req.params.action) || !req.body || Array.isArray(req.body) ||
+        typeof req.body !== 'object' || Buffer.byteLength(JSON.stringify(req.body)) > 8000) {
+      throw new IntegrationError(400, 'Yêu cầu ví tài xế không hợp lệ.');
+    }
+    res.json(await rpc(req, 'delivery_driver_finance', { p_action: req.params.action, p_payload: req.body }));
   }));
   const preferenceActions = new Set([
     'get','save_ui','save_draft','clear_draft',
@@ -268,6 +278,7 @@ export function createCloudOrders({ env = process.env, authenticate, fetcher = f
     res.json({ order: await rpc(req, 'delivery_cloud_create', { p_details: req.body?.details,
       p_request_key: uuid(req.body?.request_key), p_pricing_version: integer(req.body?.pricing_version), p_expected_fee: integer(req.body?.expected_fee) }) });
   }));
+  router.get('/orders/:id', route(async (req, res) => res.json({ order: await rpc(req, 'delivery_cloud_get', { p_order: uuid(req.params.id) }) })));
   router.get('/orders/:id/history', route(async (req, res) => res.json(await rpc(req, 'delivery_cloud_history_read', { p_order: uuid(req.params.id) }))));
   router.get('/orders/:id/otp', route(async (req, res) => res.json(await rpc(req, 'delivery_cloud_order_otp', { p_order: uuid(req.params.id) }))));
   router.get('/orders/:id/shares', route(async (req, res) => res.json(await rpc(req, 'delivery_cloud_share_manage', { p_order: uuid(req.params.id), p_action: 'list', p_share: null }))));
@@ -279,9 +290,9 @@ export function createCloudOrders({ env = process.env, authenticate, fetcher = f
     p_order: uuid(req.params.id), p_action: 'revoke', p_share: uuid(req.params.shareId),
   }))));
   router.post('/orders/:id/transition', route(async (req, res) => {
-    if (!['ready','claim','cancel','arrive','pickup','deliver','fail','retry','return','complete_return','collect_cash'].includes(req.body?.action) ||
+    if (!['ready','claim','cancel','arrive','pickup','deliver','fail','retry','return','complete_return','collect_cash','release','reassign'].includes(req.body?.action) ||
       (req.body.reason != null && (typeof req.body.reason !== 'string' || req.body.reason.length > 500))) throw new IntegrationError(400, 'Thao tác không hợp lệ.');
-    if (['cancel','fail','return'].includes(req.body.action) && (req.body.reason || '').trim().length < 3) throw new IntegrationError(400, 'Cần nhập lý do ít nhất 3 ký tự.');
+    if (['cancel','fail','return','release','reassign'].includes(req.body.action) && (req.body.reason || '').trim().length < 3) throw new IntegrationError(400, 'Cần nhập lý do ít nhất 3 ký tự.');
     await requireWorkflow(req);
     res.json({ order: await rpc(req, 'delivery_cloud_transition', { p_order: uuid(req.params.id),
       p_action: req.body.action, p_version: integer(req.body.version), p_request_key: uuid(req.body.request_key), p_reason: req.body.reason || '' }) });

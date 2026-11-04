@@ -12,7 +12,18 @@ export async function testCloudLogistics({ db, as, operator, merchant, driver, b
   const sender = buyers[6], stranger = buyers[5];
 
   await check('L0 reapplying 20261108_cloud_logistics keeps orders and passes the deployment schema check', async () => {
-    await db.query(await readFile(new URL('../../../database/migrations/20261108_cloud_logistics.sql', import.meta.url), 'utf8'));
+    for (const file of [
+      '20261108_cloud_logistics',
+      '20261109_admin_account_management',
+      '20261110_cloud_promo_events',
+      '20261111_profile_push_shipping_coins',
+      '20261112_shipping_cash_settlement',
+      '20261113_cloud_sync_and_journey',
+      '20261114_merchant_cloud_suite',
+      '20261115_cross_role_linkage_complete',
+    ]) {
+      await db.query(await readFile(new URL(`../../../database/migrations/${file}.sql`, import.meta.url), 'utf8'));
+    }
     const { DEPLOYMENT_SCHEMA_SQL } = await import('../deployment-readiness.mjs');
     assert.equal((await db.query(DEPLOYMENT_SCHEMA_SQL)).rows[0].logistics_schema, true);
     for (const role of ['anon', 'authenticated']) {
@@ -117,7 +128,7 @@ export async function testCloudLogistics({ db, as, operator, merchant, driver, b
   await check('L5 statistics are scoped to the caller and derived from real transition history', async () => {
     const courier = randomUUID();
     await db.query('insert into auth.users values($1)', [courier]);
-    await as(courier, 'delivery_cloud_profile', [{ full_name: 'Logistics courier', phone: '0901234567', requested_role: 'customer' }]);
+    await as(courier, 'delivery_cloud_profile', [{ full_name: 'Logistics courier', phone: '0901234567', birth_date: '1993-03-12', citizen_id: '079099000555', requested_role: 'customer' }]);
     await as(courier, 'delivery_cloud_membership', ['driver', 'request']);
     await as(operator, 'delivery_cloud_membership', ['driver', 'approve', courier, 1, '']);
     let order = await createOrder(sender, '0912345678');

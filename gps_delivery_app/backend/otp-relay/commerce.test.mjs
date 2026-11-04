@@ -22,7 +22,7 @@ test('commerce uses durable PostgreSQL state, verified receipts and authoritativ
     create function storage.foldername(text) returns text[] language sql immutable as $$select (string_to_array($1,'/'))[1:array_length(string_to_array($1,'/'),1)-1]$$;
     grant usage on schema storage to authenticated; grant select,insert on storage.objects to authenticated;
     create publication supabase_realtime;`);
-  for (const file of ['20261027_delivery_integrations.sql','20261028_cloud_orders.sql','20261029_payments_ghn.sql','20261029_payments_ghn.sql','20261029_cloud_addresses.sql','20261030_marketplace.sql','20261031_market_operations.sql','20261101_partner_memberships.sql','20261102_local_address_import.sql','20261103_catalog_stock_versions.sql','20261104_market_media.sql','20261105_market_browse.sql','20261106_catalog_configuration.sql','20261107_cloud_commercial_suite.sql','20261108_cloud_logistics.sql','20261109_admin_account_management.sql','20261110_cloud_promo_events.sql','20261111_profile_push_shipping_coins.sql','20261112_shipping_cash_settlement.sql','20261113_cloud_sync_and_journey.sql','20261113_cloud_sync_and_journey.sql','20261114_merchant_cloud_suite.sql','20261114_merchant_cloud_suite.sql']) {
+  for (const file of ['20261027_delivery_integrations.sql','20261028_cloud_orders.sql','20261029_payments_ghn.sql','20261029_payments_ghn.sql','20261029_cloud_addresses.sql','20261030_marketplace.sql','20261031_market_operations.sql','20261101_partner_memberships.sql','20261102_local_address_import.sql','20261103_catalog_stock_versions.sql','20261104_market_media.sql','20261105_market_browse.sql','20261106_catalog_configuration.sql','20261107_cloud_commercial_suite.sql','20261108_cloud_logistics.sql','20261109_admin_account_management.sql','20261110_cloud_promo_events.sql','20261111_profile_push_shipping_coins.sql','20261112_shipping_cash_settlement.sql','20261113_cloud_sync_and_journey.sql','20261113_cloud_sync_and_journey.sql','20261114_merchant_cloud_suite.sql','20261114_merchant_cloud_suite.sql','20261115_cross_role_linkage_complete.sql','20261115_cross_role_linkage_complete.sql']) {
     await db.exec(await readFile(new URL(`../../database/migrations/${file}`,import.meta.url),'utf8'));
   }
   const ids = Object.fromEntries(['owner','outsider','operator','driver','blocked'].map(key=>[key,randomUUID()]));
@@ -169,6 +169,11 @@ test('commerce uses durable PostgreSQL state, verified receipts and authoritativ
     const o=await order();const preview=await request(shipment(o,'/preview'),fields,'operator');
     assert.equal(preview.status,200);
     assert.equal(ghnCalls.at(-1).body.cod_amount,120000);assert.equal(ghnCalls.at(-1).body.weight,1000);
+    assert.equal(ghnCalls.at(-1).body.payment_type_id,1);
+    const recipientUnpaid=await order({details:{payment_method:'recipient_cash'}});
+    const recipientPreview=await request(shipment(recipientUnpaid,'/preview'),fields,'operator');
+    assert.equal(recipientPreview.status,200);
+    assert.equal(ghnCalls.at(-1).body.payment_type_id,2);
     await db.query("update delivery_ghn_quotes set expires_at=now()-interval '1 second' where id=$1",[preview.body.quote_id]);
     assert.equal((await request(shipment(o),{quote_id:preview.body.quote_id},'operator')).status,409);
     const quote=(await request(shipment(o,'/preview'),fields,'operator')).body;

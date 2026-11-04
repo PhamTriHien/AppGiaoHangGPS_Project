@@ -6,7 +6,19 @@ export async function testCommercialSuite({ db, as, rpc, operator, merchant, dri
   const ops = (id, action, data = {}) => as(id, 'delivery_market_operations', [action, data]);
 
   await check('P1-P6 reapplying 20261107_cloud_commercial_suite preserves live orders and verifies deployment schema', async () => {
-    await db.query(await readFile(new URL('../../../database/migrations/20261107_cloud_commercial_suite.sql', import.meta.url), 'utf8'));
+    for (const file of [
+      '20261107_cloud_commercial_suite',
+      '20261108_cloud_logistics',
+      '20261109_admin_account_management',
+      '20261110_cloud_promo_events',
+      '20261111_profile_push_shipping_coins',
+      '20261112_shipping_cash_settlement',
+      '20261113_cloud_sync_and_journey',
+      '20261114_merchant_cloud_suite',
+      '20261115_cross_role_linkage_complete',
+    ]) {
+      await db.query(await readFile(new URL(`../../../database/migrations/${file}.sql`, import.meta.url), 'utf8'));
+    }
     const { DEPLOYMENT_SCHEMA_SQL } = await import('../deployment-readiness.mjs');
     const schema = (await db.query(DEPLOYMENT_SCHEMA_SQL)).rows[0];
     for (const [key, value] of Object.entries(schema)) assert.equal(value, true, `schema ${key}`);
@@ -63,7 +75,7 @@ export async function testCommercialSuite({ db, as, rpc, operator, merchant, dri
     assert.equal(browseFar.products.length, 0);
 
     // 4 concurrent buyers racing for 2 units of Size S
-    const racers = buyers.slice(0, 4);
+    const racers = [buyers[0], buyers[1], buyers[4], buyers[5]];
     const varQuotes = [];
     for (const b of racers) {
       let c = await rpc(b, 'cart');

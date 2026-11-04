@@ -64,7 +64,16 @@ export async function ownedOrder(db, req, id, { lock = false, operator = false }
   if (operator && identity.role !== 'operator') throw new IntegrationError(403, 'Cần quyền operator cloud.');
   const found = await db.query(`select o.*,a.full_name as sender_name,a.phone as sender_phone
     from public.delivery_cloud_orders o join public.delivery_cloud_accounts a on a.user_id=coalesce(o.merchant_id,o.owner_id)
-    where o.id=$1 and ($3 or (o.owner_id=$2 or o.merchant_id=$2 or o.driver_id=$2))
+    where o.id=$1 and ($3 or (
+      o.owner_id=$2 or o.merchant_id=$2 or o.driver_id=$2 or exists(
+        select 1 from public.delivery_market_shop_orders so
+        where (
+          so.delivery_id=o.id
+          or exists(select 1 from public.delivery_market_shipments ms where ms.order_id=so.id and ms.delivery_id=o.id)
+          or exists(select 1 from public.delivery_market_returns mr where mr.order_id=so.id and mr.return_delivery_id=o.id)
+        ) and public.delivery_market_can_access_shop(so.shop_id,$2,'staff')
+      )
+    ))
     ${lock ? 'for update of o' : ''}`,
   [orderId(id), identity.id, identity.role === 'operator']);
   const row = found.rows[0];
@@ -82,7 +91,8 @@ export async function ownedPurchase(db, req, id, { lock = false, operator = fals
   const found = await db.query(`select p.*
     from public.delivery_market_purchases p
     where p.id=$1 and ($3 or p.owner_id=$2 or exists(
-      select 1 from public.delivery_market_shop_orders so where so.purchase_id=p.id and so.merchant_id=$2
+      select 1 from public.delivery_market_shop_orders so
+      where so.purchase_id=p.id and (so.merchant_id=$2 or public.delivery_market_can_access_shop(so.shop_id,$2,'manager'))
     ))
     ${lock ? 'for update of p' : ''}`,
   [orderId(id), identity.id, identity.role === 'operator']);

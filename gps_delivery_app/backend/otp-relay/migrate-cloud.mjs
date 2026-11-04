@@ -8,8 +8,8 @@ import { databaseConnectionOptions } from './database-connection.mjs';
 export async function migrateCloud({ env = process.env } = {}) {
   const connectionString = env.DATABASE_URL?.trim();
   if (!connectionString) throw new Error('MISSING_DATABASE_URL');
-  const client = new pg.Client({ ...databaseConnectionOptions(env), connectionTimeoutMillis: 10000,
-    query_timeout: 30000, application_name: 'ghst-cloud-migration' });
+  const client = new pg.Client({ ...databaseConnectionOptions(env), connectionTimeoutMillis: 15000,
+    query_timeout: 120000, application_name: 'ghst-cloud-migration' });
   await client.connect();
   try {
     await client.query('select pg_advisory_lock(734615298)');
@@ -36,6 +36,7 @@ export async function migrateCloud({ env = process.env } = {}) {
     await client.query(await readFile(new URL('../../database/migrations/20261112_shipping_cash_settlement.sql', import.meta.url), 'utf8'));
     await client.query(await readFile(new URL('../../database/migrations/20261113_cloud_sync_and_journey.sql', import.meta.url), 'utf8'));
     await client.query(await readFile(new URL('../../database/migrations/20261114_merchant_cloud_suite.sql', import.meta.url), 'utf8'));
+    await client.query(await readFile(new URL('../../database/migrations/20261115_cross_role_linkage_complete.sql', import.meta.url), 'utf8'));
     const result = await client.query("select to_regprocedure('public.delivery_cloud_create(jsonb,uuid,integer,integer)') is not null and to_regprocedure('public.delivery_cloud_addresses_manage(uuid,jsonb,boolean,integer)') is not null and to_regprocedure('public.delivery_marketplace(text,jsonb)') is not null as ready");
     const operations = await client.query("select to_regprocedure('public.delivery_market_operations(text,jsonb)') is not null and to_regprocedure('public.delivery_market_run_jobs(integer)') is not null as ready");
     const memberships = await client.query("select to_regprocedure('public.delivery_cloud_membership(text,text,uuid,integer,text)') is not null as ready");
@@ -47,8 +48,9 @@ export async function migrateCloud({ env = process.env } = {}) {
     const shippingCash = await client.query("select (select count(*)=4 from information_schema.columns where table_schema='public' and table_name='delivery_cloud_orders' and column_name in ('cash_collected_fee','cash_collected_cod','cash_collected_at','cash_collected_by')) and exists(select 1 from pg_constraint where conrelid=to_regclass('public.delivery_cloud_orders') and conname='delivery_cloud_orders_cash_collected_check') as ready");
     const cloudSyncJourney = await client.query("select to_regprocedure('public.delivery_cloud_preferences(text,jsonb)') is not null and to_regprocedure('public.delivery_cloud_ai_history(text,jsonb)') is not null and to_regprocedure('public.delivery_cloud_order_live(text,jsonb)') is not null and to_regclass('public.delivery_ai_chat_messages') is not null and (select count(*)=2 from information_schema.columns where table_schema='public' and table_name='delivery_cloud_accounts' and column_name in ('ui_preferences','shipping_draft')) as ready");
     const merchantSuite = await client.query("select to_regprocedure('public.delivery_merchant_suite(text,jsonb)') is not null and to_regprocedure('public.delivery_can_access_cloud_order_as_shop_staff(uuid,uuid)') is not null and to_regprocedure('public.delivery_is_order_shop_staff(uuid)') is not null as ready");
-    return { ready: result.rows[0].ready && operations.rows[0].ready && memberships.rows[0].ready && commercial.rows[0].ready && logistics.rows[0].ready && adminAccounts.rows[0].ready && promoEvents.rows[0].ready && profilePushCoins.rows[0].ready && shippingCash.rows[0].ready && cloudSyncJourney.rows[0].ready && merchantSuite.rows[0].ready,
-      migration: '20261114_merchant_cloud_suite', workflowVersion: 20 };
+    const crossRoleLinkage = await client.query("select to_regprocedure('public.delivery_driver_finance(text,jsonb)') is not null and to_regprocedure('public.delivery_cloud_get(uuid)') is not null and to_regclass('public.delivery_driver_wallet_entries') is not null and to_regclass('public.delivery_driver_settlements') is not null and exists(select 1 from information_schema.columns where table_schema='public' and table_name='delivery_cloud_pickups' and column_name='shop_id') as ready");
+    return { ready: result.rows[0].ready && operations.rows[0].ready && memberships.rows[0].ready && commercial.rows[0].ready && logistics.rows[0].ready && adminAccounts.rows[0].ready && promoEvents.rows[0].ready && profilePushCoins.rows[0].ready && shippingCash.rows[0].ready && cloudSyncJourney.rows[0].ready && merchantSuite.rows[0].ready && crossRoleLinkage.rows[0].ready,
+      migration: '20261115_cross_role_linkage_complete', workflowVersion: 21 };
   } finally { await client.end(); }
 }
 

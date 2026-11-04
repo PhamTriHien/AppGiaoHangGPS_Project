@@ -28,7 +28,7 @@ export function buildGhnPayload(order, fields) {
   return { ...payload, is_new_to_address:true, is_new_from_address:true, weight,
     to_name:details.recipient_name,to_phone:details.recipient_phone,to_address:details.dropoff_address,
     from_name:order.sender_name,from_phone:order.sender_phone,from_address:details.pickup_address,
-    content:details.package_description,service_type_id:weight<20000?2:5,payment_type_id:1,
+    content:details.package_description,service_type_id:weight<20000?2:5,payment_type_id:details.payment_method==='recipient_cash'&&order.payment_status!=='PAID'?2:1,
     cod_amount:order.cod_amount,required_note:fields.required_note,client_order_code:`GHST-${order.id.replaceAll('-','')}` };
 }
 const stateMap = {

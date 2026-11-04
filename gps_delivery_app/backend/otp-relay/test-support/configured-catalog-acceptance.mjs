@@ -146,7 +146,9 @@ export async function testConfiguredCatalog({db,as,rpc,operator,merchant,buyer,s
   });
   await check('P1 reapplying configured catalog migration preserves live option data and return identities',async()=>{
     const before=(await db.query('select line_id,quantity,reason from delivery_market_returns where order_id=$1 order by line_id',[order.id])).rows;
-    await db.query(await readFile(new URL('../../../database/migrations/20261106_catalog_configuration.sql',import.meta.url),'utf8'));
+    for(const file of ['20261106_catalog_configuration','20261107_cloud_commercial_suite','20261108_cloud_logistics','20261109_admin_account_management','20261110_cloud_promo_events','20261111_profile_push_shipping_coins','20261112_shipping_cash_settlement','20261113_cloud_sync_and_journey','20261114_merchant_cloud_suite','20261115_cross_role_linkage_complete']){
+      await db.query(await readFile(new URL(`../../../database/migrations/${file}.sql`,import.meta.url),'utf8'));
+    }
     assert.deepEqual((await db.query('select line_id,quantity,reason from delivery_market_returns where order_id=$1 order by line_id',[order.id])).rows,before);
     assert.deepEqual((await ops(buyer,'product_details',{product_id:product.id})).product.option_groups,groups);
   });

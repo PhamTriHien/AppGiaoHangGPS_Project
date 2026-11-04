@@ -10,7 +10,7 @@ The public/publishable key cannot execute migrations. Use either:
 
 1. In Supabase SQL Editor, run `database/migrations/20261028_cloud_orders.sql`
    (after `20261027_delivery_integrations.sql`) and subsequent additive migrations
-   through `20261114_merchant_cloud_suite.sql`. Do not install the legacy
+   through `20261115_cross_role_linkage_complete.sql`. Do not install the legacy
    `database/schema.sql` as a prerequisite.
 2. Put the real PostgreSQL connection string from Supabase **Connect** in backend
    `.env` as `DATABASE_URL`, then run `npm run migrate:cloud`. Use the direct or
@@ -28,15 +28,15 @@ or orders are inserted. Its default tariff is 25,000 VND for the first 2 km,
 5,000 per additional started km, 10,000 express surcharge, and 3,000 per started
 kg over 5 kg. Admin can change these values in **Bang gia cloud**.
 
-### Workflow version 20 & profile schema 3
+### Workflow version 21 & profile schema 3
 
 `npm run migrate:cloud` applies all additive migrations through
-`database/migrations/20261114_merchant_cloud_suite.sql` (`workflowVersion: 20`),
+`database/migrations/20261115_cross_role_linkage_complete.sql` (`workflowVersion: 21`),
 preserving accounts, tariffs, existing orders, history and login sessions.
 `GET /delivery/cloud/profile` reports `schema_version: 3` with independently
-approved `merchant` and `driver` memberships (`delivery_cloud_memberships`),
-optional personal identity fields (`birth_date` and 12-digit `citizen_id` with
-server uniqueness enforcement), `coin_balance`, `unread_notifications`,
+approved `merchant` and `driver` memberships (`delivery_cloud_memberships`,
+requiring verified `birth_date` and 12-digit `citizen_id` before requesting,
+approving or granting partner roles), `coin_balance`, `unread_notifications`,
 `ui_preferences` (`theme_mode`, `preferred_role`), and owner-only `shipping_draft`.
 The backend refuses role, tariff and state mutations on older schemas (`< 2`)
 instead of allowing a return to be incorrectly recorded as a successful delivery.
@@ -168,22 +168,24 @@ authorization checks even when called through Supabase Data API directly.
 | POST `/ai-history/:action` | Sync multi-turn AI Assistant conversation history (`list`, `clear`) in `delivery_ai_chat_messages` |
 | POST `/order-live/:action` | Authorized shipping trip telemetry, Customer ↔ Driver ↔ Merchant (`owner`/`manager`/`staff`) chat, multi-stop/round-trip checkpoints & reviews (`snapshot`, `push_gps`, `send_chat`, `mark_checkpoint`, `driver_reviews`) |
 | POST `/merchant/:action` | Dedicated Merchant & delegated Shop Staff suite (`dashboard`, `shop_quick_pause`, `product_quick_update`, `stock_ledger`, `promotions`, `orders_list`, `aftersales_inbox`) via `delivery_merchant_suite` |
+| POST `/driver-finance/:action` | Driver wallet (`85%` net trip earnings / `15%` platform commission), COD remittance & payout settlements (`summary`, `remit_cod`, `request_payout`, `admin_list`, `admin_decide`) via `delivery_driver_finance` |
 | POST `/notifications/:action` | Unified notification inbox & preferences (`list`, `unread_count`, `mark_read`, `mark_all_read`, `save_preferences`) |
-| POST `/memberships/:role`, POST `/accounts/:id/memberships/:role` | Request or operator-decide (`approve`, `reject`, `revoke`, `grant`) `merchant` / `driver` membership |
+| POST `/memberships/:role`, POST `/accounts/:id/memberships/:role` | Request or operator-decide (`approve`, `reject`, `revoke`, `grant`) `merchant` / `driver` membership (requires KYC `birth_date` + `citizen_id`) |
 | GET `/merchants` | Approved merchant IDs/names only |
 | GET `/accounts`, POST `/accounts/:id` | Legacy operator business profile list and blocking |
 | POST `/admin-accounts/:action` | Operator identity governance (`list`, `detail`, `update_profile`, `set_blocked`, `set_operator`) |
 | GET/POST `/pricing`, GET `/audit` | Operator tariff and audit |
 | POST `/quote` | Server-computed estimate (5 service modes, volumetric weight, extra stops, round-trip, insurance, EV/Green Fund, optional `use_coins` up to 20% discount) |
-| GET `/orders?queue=true` | Redacted queue for approved drivers |
-| GET `/orders` | Up to 50 accessible orders, optional `before` timestamp + `before_id` cursor |
+| GET `/orders?queue=true` | Redacted queue for approved drivers (anti-self-dealing excludes own/delegated-shop orders) |
+| GET `/orders` | Up to 50 accessible orders (including delegated shop staff), optional `before` timestamp + `before_id` cursor |
+| GET `/orders/:id` | Single authorized order lookup with live enrichment (`delivery_cloud_get`) |
 | POST `/orders` | Versioned price-confirmed (`expected_fee == payable_fee`), idempotent creation with atomic `use_coins` deduction |
-| POST `/orders/:id/transition` | Transactional action with expected version; enforces POD photo & 6-digit OTP on `deliver`; `complete_return` closes a return |
+| POST `/orders/:id/transition` | Transactional action with expected version (`ready`, `claim`, `arrive`, `pickup`, `deliver`, `fail`, `retry`, `return`, `complete_return`, `collect_cash`, `release`, `reassign`, `cancel`); enforces POD photo & 6-digit OTP on `deliver` |
 | GET `/orders/:id/history` | Authorized immutable order history (OTP codes sanitized from reasons) |
-| GET `/orders/:id/otp` | Authorized 6-digit `otp_code` read for sender/recipient (`delivery_cloud_order_otp`) |
+| GET `/orders/:id/otp` | Authorized 6-digit `otp_code` read for sender, merchant, delegated shop staff or operator (`delivery_cloud_order_otp`) |
 | GET/POST `/orders/:id/shares`, POST `/orders/:id/shares/:shareId/revoke` | Revocable 256-bit SHA-256 shipping tracking shares (`delivery_cloud_shares`) |
 | POST `/pod`, POST `/pod/sign` | Private POD photo upload and short-lived signed read URL |
-| POST `/logistics/:action` | Fixed `delivery_cloud_logistics` actions: `pickup_list`, `pickup_create` (approved merchant, address-book warehouse, vehicle capacity, slot within 14 days, idempotent `request_key`), `pickup_assign` (operator, approved driver, expected version, audit), `recipient_trust` / `recipient_flag` (counts only the caller's own shipments; private flags), `instruction_set` (owner, expected version, history entry), `stats` (caller scope or network for operators, last 30 days from transition history), `service_eta` (network averages per service, no order data) |
+| POST `/logistics/:action` | Fixed `delivery_cloud_logistics` actions: `pickup_list`, `pickup_create` (approved merchant or delegated shop staff, warehouse address or `shop_id`, vehicle capacity, slot within 14 days, idempotent `request_key`), `pickup_assign` (operator), `pickup_transition` (`claim`, `arrive`, `pickup`, `complete`, `cancel`), `recipient_trust` / `recipient_flag`, `instruction_set`, `stats`, `service_eta` |
 | POST `/delivery/tracking/lookup` | Public non-PII status lookup by Cloud order UUID + 4-digit phone suffix or 64-hex share token |
 
 ## Limits
@@ -214,5 +216,5 @@ review remains an operator process.
 
 The localhost backend must be deployed over HTTPS before separate physical
 devices or external provider webhooks can reach it. Confirm `schema_version: 3`
-and `workflowVersion: 20` using Admin readiness before accepting rollout on a new
+and `workflowVersion: 21` using Admin readiness before accepting rollout on a new
 environment.
