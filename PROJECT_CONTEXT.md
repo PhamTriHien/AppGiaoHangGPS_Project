@@ -50,6 +50,7 @@ All paths below are relative to this repository root.
 | --- | --- |
 | App and routes | `gps_delivery_app/lib/main.dart` |
 | Theme tokens, Light/Dark/System mode & 3D luminous surfaces | `gps_delivery_app/lib/core/theme/ghst_theme_tokens.dart`, `theme_controller.dart`, `app_theme.dart`, `admin_studio_theme.dart`, `gps_delivery_app/lib/presentation/widgets/theme_mode_toggle.dart` |
+| Bespoke AI 3D studio icon suite (`14` styles + Web/Windows launcher icons) | `gps_delivery_app/assets/icons_3d/`, `gps_delivery_app/lib/presentation/widgets/animated_3d_ui_icons.dart`, `gps_delivery_app/web/favicon.png`, `gps_delivery_app/web/icons/`, `gps_delivery_app/windows/runner/resources/app_icon.ico` |
 | Live Customer ↔ Driver ↔ Merchant shipping journey, Cloud UI prefs & AI history (`workflowVersion: 19`–`20`) | `gps_delivery_app/database/migrations/20261113_cloud_sync_and_journey.sql`, `20261114_merchant_cloud_suite.sql`, `gps_delivery_app/lib/presentation/screens/cloud_order_details_screen.dart`, `gps_delivery_app/lib/presentation/widgets/cloud_logistics_panels.dart` |
 | Dedicated Merchant & Shop Staff Cloud Suite (`GHST MERCHANT`, `workflowVersion: 20`) | `gps_delivery_app/database/migrations/20261114_merchant_cloud_suite.sql`, `gps_delivery_app/lib/presentation/widgets/merchant_cloud_panels.dart`, `marketplace_editor.dart`, `gps_delivery_app/lib/presentation/screens/marketplace_screen.dart`, `marketplace_view.dart` |
 | Original shared user login presentation | `gps_delivery_app/lib/presentation/widgets/studio_user_auth_frame.dart` |

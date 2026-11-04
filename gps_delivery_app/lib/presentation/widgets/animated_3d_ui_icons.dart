@@ -2,19 +2,15 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 
-/// Phân loại các mẫu Hoạt ảnh Biểu tượng 3D (Photorealistic 3D AI Model + 60 FPS Volumetric VFX)
 enum Icon3dStyle {
-  /// Xe máy giao hàng Hỏa tốc 3D Studio kèm chùm đèn pha Volumetric, xung năng lượng GPS & nghiêng ôm cua 3D
   scooterExpress(
     assetPath: 'assets/icons_3d/scooter_express_3d.png',
-    primaryColor: AppColors.accent,
-    secondaryColor: AppColors.primary,
+    primaryColor: AppColors.primary,
+    secondaryColor: AppColors.accent,
     glowColor: AppColors.routeRibbonFill,
-    fallbackIcon: Icons.delivery_dining,
+    fallbackIcon: Icons.delivery_dining_rounded,
     label: '3D Express',
   ),
-
-  /// Kiện hàng 3D Studio kèm màn tia Laser Volumetric quét mã vạch Barcode & hào quang Khiên Bảo Hiểm
   parcelBox(
     assetPath: 'assets/icons_3d/parcel_box_3d.png',
     primaryColor: AppColors.primary,
@@ -23,8 +19,6 @@ enum Icon3dStyle {
     fallbackIcon: Icons.inventory_2_rounded,
     label: '3D Parcel',
   ),
-
-  /// Ghim định vị GPS 3D Studio kèm sóng Radar Volumetric quét xoay 360 độ trên mặt phẳng bản đồ Isometric
   gpsPinRadar(
     assetPath: 'assets/icons_3d/gps_pin_radar_3d.png',
     primaryColor: AppColors.routeRibbonFill,
@@ -33,8 +27,6 @@ enum Icon3dStyle {
     fallbackIcon: Icons.radar_rounded,
     label: '3D GPS Radar',
   ),
-
-  /// Ví da ký quỹ & Khiên khóa vàng 3D Studio kèm hạt ánh kim lấp lánh và dải phản quang quét mặt khiên
   walletVault(
     assetPath: 'assets/icons_3d/wallet_vault_3d.png',
     primaryColor: AppColors.success,
@@ -42,6 +34,86 @@ enum Icon3dStyle {
     glowColor: AppColors.warning,
     fallbackIcon: Icons.account_balance_wallet_rounded,
     label: '3D Wallet',
+  ),
+  hub2hBatch(
+    assetPath: 'assets/icons_3d/hub_2h_batch_3d.png',
+    primaryColor: Color(0xFF06B6D4),
+    secondaryColor: AppColors.primary,
+    glowColor: Color(0xFF22D3EE),
+    fallbackIcon: Icons.hub_rounded,
+    label: '3D 2H Batch',
+  ),
+  cargoTruck(
+    assetPath: 'assets/icons_3d/cargo_truck_3d.png',
+    primaryColor: Color(0xFF4F46E5),
+    secondaryColor: Color(0xFFF97316),
+    glowColor: Color(0xFF38BDF8),
+    fallbackIcon: Icons.local_shipping_rounded,
+    label: '3D Cargo Truck',
+  ),
+  foodMarket(
+    assetPath: 'assets/icons_3d/food_market_3d.png',
+    primaryColor: Color(0xFFF97316),
+    secondaryColor: Color(0xFFF59E0B),
+    glowColor: Color(0xFFFB923C),
+    fallbackIcon: Icons.restaurant_menu_rounded,
+    label: '3D Food & Market',
+  ),
+  merchantStore(
+    assetPath: 'assets/icons_3d/merchant_store_3d.png',
+    primaryColor: Color(0xFFD97706),
+    secondaryColor: AppColors.success,
+    glowColor: Color(0xFFFBBF24),
+    fallbackIcon: Icons.storefront_rounded,
+    label: '3D Merchant Store',
+  ),
+  driverPartner(
+    assetPath: 'assets/icons_3d/driver_partner_3d.png',
+    primaryColor: Color(0xFF059669),
+    secondaryColor: AppColors.primary,
+    glowColor: Color(0xFF34D399),
+    fallbackIcon: Icons.sports_motorsports_rounded,
+    label: '3D Driver Partner',
+  ),
+  aiAssistant(
+    assetPath: 'assets/icons_3d/ai_assistant_3d.png',
+    primaryColor: Color(0xFF6366F1),
+    secondaryColor: Color(0xFF06B6D4),
+    glowColor: Color(0xFF38BDF8),
+    fallbackIcon: Icons.auto_awesome_rounded,
+    label: '3D AI Assistant',
+  ),
+  luckyWheel(
+    assetPath: 'assets/icons_3d/lucky_wheel_3d.png',
+    primaryColor: Color(0xFF7C3AED),
+    secondaryColor: Color(0xFFF59E0B),
+    glowColor: Color(0xFFFBBF24),
+    fallbackIcon: Icons.casino_rounded,
+    label: '3D Lucky Wheel',
+  ),
+  mysteryBox(
+    assetPath: 'assets/icons_3d/mystery_box_3d.png',
+    primaryColor: Color(0xFF6D28D9),
+    secondaryColor: Color(0xFFF59E0B),
+    glowColor: Color(0xFF22D3EE),
+    fallbackIcon: Icons.redeem_rounded,
+    label: '3D Mystery Box',
+  ),
+  voucherFlash(
+    assetPath: 'assets/icons_3d/voucher_flash_3d.png',
+    primaryColor: Color(0xFFF43F5E),
+    secondaryColor: Color(0xFFF59E0B),
+    glowColor: Color(0xFFFBBF24),
+    fallbackIcon: Icons.bolt_rounded,
+    label: '3D Flash Voucher',
+  ),
+  adminShieldOps(
+    assetPath: 'assets/icons_3d/admin_shield_ops_3d.png',
+    primaryColor: Color(0xFF087F5B),
+    secondaryColor: AppColors.primary,
+    glowColor: Color(0xFF34D399),
+    fallbackIcon: Icons.admin_panel_settings_rounded,
+    label: '3D Admin Shield',
   );
 
   final String assetPath;
@@ -61,7 +133,134 @@ enum Icon3dStyle {
   });
 }
 
-/// Widget kết hợp Mô hình 3D Studio chân thực (AI Render) với Chuyển động Vật lý 3D 60 FPS & Hiệu ứng Quang học Volumetric
+class GhstAiIcon extends StatelessWidget {
+  final Icon3dStyle style;
+  final double size;
+  final bool circular;
+  final double borderRadius;
+  final Color? borderColor;
+  final Color? glowColor;
+  final bool selected;
+  final bool dimmed;
+  final double imageScale;
+
+  const GhstAiIcon({
+    super.key,
+    required this.style,
+    this.size = 36,
+    this.circular = false,
+    this.borderRadius = 10,
+    this.borderColor,
+    this.glowColor,
+    this.selected = false,
+    this.dimmed = false,
+    this.imageScale = 1.15,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final effectiveSize = (!size.isFinite || size <= 0) ? 0.0 : size;
+    if (effectiveSize == 0.0) {
+      return const SizedBox.shrink();
+    }
+    final dpr = MediaQuery.devicePixelRatioOf(context).clamp(1.0, 3.0);
+    final cachePx = (effectiveSize * dpr * 2.2).round().clamp(64, 512);
+    final effectiveBorderColor =
+        borderColor ??
+        (selected
+            ? style.primaryColor.withValues(alpha: 0.85)
+            : style.primaryColor.withValues(alpha: 0.28));
+    final effectiveGlow = glowColor ?? style.primaryColor;
+    final radius = BorderRadius.circular(borderRadius);
+
+    final imageStack = Stack(
+      fit: StackFit.expand,
+      children: [
+        const ColoredBox(color: Color(0xFFF6FAFF)),
+        Transform.scale(
+          scale: imageScale,
+          filterQuality: FilterQuality.medium,
+          child: Image.asset(
+            style.assetPath,
+            fit: BoxFit.cover,
+            excludeFromSemantics: true,
+            cacheWidth: cachePx,
+            cacheHeight: cachePx,
+            filterQuality: FilterQuality.medium,
+            isAntiAlias: true,
+            errorBuilder: (_, _, _) => DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [style.primaryColor, style.secondaryColor],
+                ),
+              ),
+              child: Icon(
+                style.fallbackIcon,
+                color: Colors.white,
+                size: effectiveSize * 0.54,
+              ),
+            ),
+          ),
+        ),
+        IgnorePointer(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white.withValues(alpha: 0.34),
+                  Colors.white.withValues(alpha: 0.0),
+                ],
+                stops: const [0.0, 0.42],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+
+    Widget badge = Container(
+      width: effectiveSize,
+      height: effectiveSize,
+      decoration: BoxDecoration(
+        shape: circular ? BoxShape.circle : BoxShape.rectangle,
+        borderRadius: circular ? null : radius,
+        border: Border.all(
+          color: effectiveBorderColor,
+          width: selected ? 1.6 : 1.1,
+        ),
+        boxShadow: dimmed || effectiveSize < 24
+            ? null
+            : [
+                BoxShadow(
+                  color: effectiveGlow.withValues(
+                    alpha: selected ? 0.30 : 0.16,
+                  ),
+                  blurRadius: selected ? 10 : 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+      ),
+      child: circular
+          ? ClipOval(child: imageStack)
+          : ClipRRect(
+              borderRadius: BorderRadius.circular(
+                math.max(0.0, borderRadius - 1.0),
+              ),
+              child: imageStack,
+            ),
+    );
+
+    if (dimmed) {
+      badge = Opacity(opacity: 0.46, child: badge);
+    }
+    return ExcludeSemantics(child: RepaintBoundary(child: badge));
+  }
+}
+
 class Animated3dIconBadge extends StatefulWidget {
   final Icon3dStyle style;
   final double size;
@@ -95,7 +294,6 @@ class _Animated3dIconBadgeState extends State<Animated3dIconBadge>
   double _targetPointerTiltY = 0.09;
   double _tapImpulse = 0.0;
 
-  /// Phát hiện môi trường kiểm thử tự động để không làm treo lệnh pumpAndSettle
   bool get _isAutomatedTestBinding {
     final bindingType = WidgetsBinding.instance.runtimeType.toString();
     return bindingType.contains('TestWidgetsFlutterBinding') ||
@@ -220,188 +418,182 @@ class _Animated3dIconBadgeState extends State<Animated3dIconBadge>
           }
         },
         child: GestureDetector(
-        onPanUpdate: (details) =>
-            _updateTiltFromLocalOffset(details.localPosition),
-        onTap: _trigger3dPulseWave,
-        child: AnimatedBuilder(
-          animation: _controller,
-          builder: (context, _) {
-            final phase = _controller.value;
-            final fullAngle = phase * math.pi * 2.0;
+          onPanUpdate: (details) =>
+              _updateTiltFromLocalOffset(details.localPosition),
+          onTap: _trigger3dPulseWave,
+          child: AnimatedBuilder(
+            animation: _controller,
+            builder: (context, _) {
+              final phase = _controller.value;
+              final fullAngle = phase * math.pi * 2.0;
 
-            // Tính toán chuyển động vật lý 3D đặc trưng riêng cho từng mô hình 3D Studio
-            final motion = _computePhysical3dMotion(
-              style: widget.style,
-              fullAngle: fullAngle,
-              isSelected: widget.isSelected,
-              tapImpulse: _tapImpulse,
-            );
-
-            final dynamicTiltX = _pointerTiltX + motion.pitchX;
-            final dynamicTiltY = _pointerTiltY + motion.yawY;
-            final impulseScale = 1.0 + _tapImpulse * 0.11;
-
-            final transform3d = Matrix4.identity()
-              ..setEntry(3, 2, 0.0015)
-              ..translateByDouble(
-                motion.offsetX,
-                motion.offsetY - _tapImpulse * 4.0,
-                0.0,
-                1.0,
-              )
-              ..rotateX(dynamicTiltX)
-              ..rotateY(dynamicTiltY)
-              ..rotateZ(motion.rollZ)
-              ..scaleByDouble(
-                motion.scale * impulseScale,
-                motion.scale * impulseScale,
-                1.0,
-                1.0,
+              final motion = _computePhysical3dMotion(
+                style: widget.style,
+                fullAngle: fullAngle,
+                isSelected: widget.isSelected,
+                tapImpulse: _tapImpulse,
               );
 
-            final shadowScale = (1.0 - (motion.offsetY.abs() / 34.0)).clamp(
-              0.68,
-              1.05,
-            );
+              final dynamicTiltX = _pointerTiltX + motion.pitchX;
+              final dynamicTiltY = _pointerTiltY + motion.yawY;
+              final impulseScale = 1.0 + _tapImpulse * 0.11;
 
-            return SizedBox(
-              width: effectiveSize,
-              height: effectiveSize + 16,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Đế năng lượng 3D Holographic Pedestal & Vòng quỹ đạo Gyroscope 60 FPS
-                  Positioned.fill(
-                    child: CustomPaint(
-                      painter: _Holographic3dPedestalPainter(
-                        progress: phase,
-                        primaryColor: widget.style.primaryColor,
-                        glowColor: widget.style.glowColor,
-                        isSelected: widget.isSelected,
-                        showRadarPulse: widget.showRadarPulse,
-                        tiltX: dynamicTiltX,
-                        tiltY: dynamicTiltY,
+              final transform3d = Matrix4.identity()
+                ..setEntry(3, 2, 0.0015)
+                ..translateByDouble(
+                  motion.offsetX,
+                  motion.offsetY - _tapImpulse * 4.0,
+                  0.0,
+                  1.0,
+                )
+                ..rotateX(dynamicTiltX)
+                ..rotateY(dynamicTiltY)
+                ..rotateZ(motion.rollZ)
+                ..scaleByDouble(
+                  motion.scale * impulseScale,
+                  motion.scale * impulseScale,
+                  1.0,
+                  1.0,
+                );
+
+              final shadowScale = (1.0 - (motion.offsetY.abs() / 34.0)).clamp(
+                0.68,
+                1.05,
+              );
+
+              return SizedBox(
+                width: effectiveSize,
+                height: effectiveSize + 16,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Positioned.fill(
+                      child: CustomPaint(
+                        painter: _Holographic3dPedestalPainter(
+                          progress: phase,
+                          primaryColor: widget.style.primaryColor,
+                          glowColor: widget.style.glowColor,
+                          isSelected: widget.isSelected,
+                          showRadarPulse: widget.showRadarPulse,
+                          tiltX: dynamicTiltX,
+                          tiltY: dynamicTiltY,
+                        ),
                       ),
                     ),
-                  ),
-                  // Bóng đổ môi trường 3D (Ambient Occlusion Shadow) co giãn theo độ cao vật thể
-                  Positioned(
-                    bottom: 1,
-                    child: Transform.scale(
-                      scaleX: shadowScale,
-                      scaleY: shadowScale * 0.36,
+                    Positioned(
+                      bottom: 1,
+                      child: Transform.scale(
+                        scaleX: shadowScale,
+                        scaleY: shadowScale * 0.36,
+                        child: Container(
+                          width: effectiveSize * 0.74,
+                          height: 16,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: widget.style.secondaryColor.withValues(
+                                  alpha: 0.40 * shadowScale,
+                                ),
+                                blurRadius: 15,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    Transform(
+                      alignment: Alignment.center,
+                      filterQuality: FilterQuality.medium,
+                      transform: transform3d,
                       child: Container(
-                        width: effectiveSize * 0.74,
-                        height: 16,
+                        width: widget.size * 0.88,
+                        height: widget.size * 0.88,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
+                          color: Colors.white,
+                          border: Border.all(
+                            color: widget.isSelected
+                                ? widget.style.primaryColor
+                                : Colors.white.withValues(alpha: 0.95),
+                            width: widget.isSelected ? 2.4 : 1.7,
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: widget.style.secondaryColor.withValues(
-                                alpha: 0.40 * shadowScale,
+                              color: widget.style.primaryColor.withValues(
+                                alpha: widget.isSelected ? 0.50 : 0.30,
                               ),
-                              blurRadius: 15,
-                              spreadRadius: 2,
+                              blurRadius: widget.isSelected ? 18 : 12,
+                              offset: const Offset(0, 6),
+                            ),
+                            BoxShadow(
+                              color: widget.style.glowColor.withValues(
+                                alpha: widget.isSelected ? 0.36 : 0.16,
+                              ),
+                              blurRadius: 10,
+                              spreadRadius: 1,
                             ),
                           ],
                         ),
-                      ),
-                    ),
-                  ),
-                  // Khối Mô hình 3D Studio Chân thực + Lớp phủ Quang học Volumetric 60 FPS
-                  Transform(
-                    alignment: Alignment.center,
-                    filterQuality: FilterQuality.medium,
-                    transform: transform3d,
-                    child: Container(
-                      width: widget.size * 0.88,
-                      height: widget.size * 0.88,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white,
-                        border: Border.all(
-                          color: widget.isSelected
-                              ? widget.style.primaryColor
-                              : Colors.white.withValues(alpha: 0.95),
-                          width: widget.isSelected ? 2.4 : 1.7,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: widget.style.primaryColor.withValues(
-                              alpha: widget.isSelected ? 0.50 : 0.30,
-                            ),
-                            blurRadius: widget.isSelected ? 18 : 12,
-                            offset: const Offset(0, 6),
-                          ),
-                          BoxShadow(
-                            color: widget.style.glowColor.withValues(
-                              alpha: widget.isSelected ? 0.36 : 0.16,
-                            ),
-                            blurRadius: 10,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
-                      child: ClipOval(
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            // Lớp 1: Kết xuất Mô hình 3D Studio độ phân giải cao (Ray-traced Clay/Metallic AI Render)
-                            Transform.scale(
-                              scale: 1.09,
-                              filterQuality: FilterQuality.medium,
-                              child: Image.asset(
-                                widget.style.assetPath,
-                                fit: BoxFit.cover,
-                                cacheWidth: targetCachePx,
-                                cacheHeight: targetCachePx,
+                        child: ClipOval(
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              Transform.scale(
+                                scale: 1.07,
                                 filterQuality: FilterQuality.medium,
-                                isAntiAlias: true,
-                                errorBuilder: (_, _, _) {
-                                  return DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      gradient: RadialGradient(
-                                        colors: [
-                                          Colors.white,
-                                          widget.style.primaryColor,
-                                          widget.style.secondaryColor,
-                                        ],
+                                child: Image.asset(
+                                  widget.style.assetPath,
+                                  fit: BoxFit.cover,
+                                  excludeFromSemantics: true,
+                                  cacheWidth: targetCachePx,
+                                  cacheHeight: targetCachePx,
+                                  filterQuality: FilterQuality.medium,
+                                  isAntiAlias: true,
+                                  errorBuilder: (_, _, _) {
+                                    return DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        gradient: RadialGradient(
+                                          colors: [
+                                            Colors.white,
+                                            widget.style.primaryColor,
+                                            widget.style.secondaryColor,
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                    child: Icon(
-                                      widget.style.fallbackIcon,
-                                      color: Colors.white,
-                                      size: widget.size * 0.42,
-                                    ),
-                                  );
-                                },
+                                      child: Icon(
+                                        widget.style.fallbackIcon,
+                                        color: Colors.white,
+                                        size: widget.size * 0.42,
+                                      ),
+                                    );
+                                  },
+                                ),
                               ),
-                            ),
-                            // Lớp 2: Hiệu ứng Quang học & Chuyển động Volumetric 60 FPS khớp tọa độ từng mô hình 3D
-                            CustomPaint(
-                              painter: _Photorealistic3dVfxOverlayPainter(
-                                style: widget.style,
-                                phase: phase,
-                                tiltX: dynamicTiltX,
-                                tiltY: dynamicTiltY,
+                              CustomPaint(
+                                painter: _Photorealistic3dVfxOverlayPainter(
+                                  style: widget.style,
+                                  phase: phase,
+                                  tiltX: dynamicTiltX,
+                                  tiltY: dynamicTiltY,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            );
-          },
+                  ],
+                ),
+              );
+            },
+          ),
         ),
-      ),
       ),
     );
   }
 
-  /// Tính toán quỹ đạo chuyển động vật lý 3D riêng biệt cho từng loại biểu tượng
   _Physical3dMotion _computePhysical3dMotion({
     required Icon3dStyle style,
     required double fullAngle,
@@ -422,24 +614,27 @@ class _Animated3dIconBadgeState extends State<Animated3dIconBadge>
           scale: 1.0 + 0.024 * math.sin(fullAngle * 2.0),
         );
       case Icon3dStyle.parcelBox:
+      case Icon3dStyle.hub2hBatch:
         return _Physical3dMotion(
-          offsetX: 0.0,
-          offsetY: baseSelectLift - 3.4 * math.sin(fullAngle),
-          pitchX: 0.09 * math.cos(fullAngle),
-          yawY: 0.15 * math.sin(fullAngle),
-          rollZ: 0.025 * math.cos(fullAngle),
+          offsetX: math.sin(fullAngle) * 0.8,
+          offsetY: baseSelectLift - 3.2 * math.sin(fullAngle),
+          pitchX: 0.085 * math.cos(fullAngle),
+          yawY: 0.14 * math.sin(fullAngle),
+          rollZ: 0.024 * math.cos(fullAngle),
           scale: 1.0 + 0.022 * math.sin(fullAngle),
         );
       case Icon3dStyle.gpsPinRadar:
+      case Icon3dStyle.driverPartner:
         return _Physical3dMotion(
           offsetX: 0.0,
-          offsetY: baseSelectLift - 3.6 * smoothBounce1,
-          pitchX: 0.10 * math.sin(fullAngle),
+          offsetY: baseSelectLift - 3.5 * smoothBounce1,
+          pitchX: 0.095 * math.sin(fullAngle),
           yawY: 0.13 * math.cos(fullAngle),
-          rollZ: 0.0,
-          scale: 1.0 + 0.026 * smoothBounce1,
+          rollZ: 0.02 * math.sin(fullAngle),
+          scale: 1.0 + 0.025 * smoothBounce1,
         );
       case Icon3dStyle.walletVault:
+      case Icon3dStyle.voucherFlash:
         return _Physical3dMotion(
           offsetX: math.cos(fullAngle) * 1.0,
           offsetY: baseSelectLift - 3.0 * math.sin(fullAngle),
@@ -447,6 +642,53 @@ class _Animated3dIconBadgeState extends State<Animated3dIconBadge>
           yawY: 0.14 * math.cos(fullAngle),
           rollZ: 0.03 * math.sin(fullAngle),
           scale: 1.0 + 0.024 * math.cos(fullAngle),
+        );
+      case Icon3dStyle.cargoTruck:
+        return _Physical3dMotion(
+          offsetX: math.sin(fullAngle) * 1.6,
+          offsetY: baseSelectLift - 2.2 * smoothBounce2,
+          pitchX: 0.065 * math.sin(fullAngle * 2.0),
+          yawY: 0.12 * math.cos(fullAngle),
+          rollZ: 0.025 * math.sin(fullAngle),
+          scale: 1.0 + 0.020 * math.sin(fullAngle * 2.0),
+        );
+      case Icon3dStyle.foodMarket:
+      case Icon3dStyle.merchantStore:
+        return _Physical3dMotion(
+          offsetX: 0.0,
+          offsetY: baseSelectLift - 2.9 * smoothBounce1,
+          pitchX: 0.075 * math.cos(fullAngle),
+          yawY: 0.125 * math.sin(fullAngle),
+          rollZ: 0.02 * math.cos(fullAngle),
+          scale: 1.0 + 0.022 * smoothBounce1,
+        );
+      case Icon3dStyle.aiAssistant:
+        return _Physical3dMotion(
+          offsetX: math.sin(fullAngle) * 1.2,
+          offsetY: baseSelectLift - 3.8 * smoothBounce1,
+          pitchX: 0.09 * math.sin(fullAngle),
+          yawY: 0.15 * math.cos(fullAngle),
+          rollZ: 0.035 * math.sin(fullAngle),
+          scale: 1.0 + 0.028 * smoothBounce1,
+        );
+      case Icon3dStyle.luckyWheel:
+      case Icon3dStyle.mysteryBox:
+        return _Physical3dMotion(
+          offsetX: math.cos(fullAngle) * 0.9,
+          offsetY: baseSelectLift - 3.3 * smoothBounce1,
+          pitchX: 0.08 * math.sin(fullAngle),
+          yawY: 0.14 * math.cos(fullAngle),
+          rollZ: 0.035 * math.cos(fullAngle),
+          scale: 1.0 + 0.026 * smoothBounce1,
+        );
+      case Icon3dStyle.adminShieldOps:
+        return _Physical3dMotion(
+          offsetX: 0.0,
+          offsetY: baseSelectLift - 3.1 * smoothBounce1,
+          pitchX: 0.08 * math.cos(fullAngle),
+          yawY: 0.135 * math.sin(fullAngle),
+          rollZ: 0.018 * math.sin(fullAngle),
+          scale: 1.0 + 0.024 * smoothBounce1,
         );
     }
   }
@@ -470,7 +712,6 @@ class _Physical3dMotion {
   });
 }
 
-/// Đế năng lượng Holographic 3D & Vòng Quỹ đạo Con quay Hồi chuyển 60 FPS
 class _Holographic3dPedestalPainter extends CustomPainter {
   final double progress;
   final Color primaryColor;
@@ -502,7 +743,6 @@ class _Holographic3dPedestalPainter extends CustomPainter {
     final maxRadius = size.width * 0.50;
     final angle = progress * math.pi * 2.0;
 
-    // 1. Vòng sóng xung kích Radar 3D lan tỏa đồng tâm
     if (showRadarPulse) {
       for (int i = 0; i < 3; i++) {
         final waveProgress = (progress + i / 3.0) % 1.0;
@@ -520,7 +760,6 @@ class _Holographic3dPedestalPainter extends CustomPainter {
       }
     }
 
-    // 2. Vòng quỹ đạo Gyroscope 3D elip nghiêng xoay ngược chiều nhau quanh huy hiệu
     for (int ringIdx = 0; ringIdx < 2; ringIdx++) {
       final dir = ringIdx == 0 ? 1.0 : -1.0;
       final orbitTilt =
@@ -548,7 +787,6 @@ class _Holographic3dPedestalPainter extends CustomPainter {
           ..strokeWidth = isSelected ? 1.5 : 1.1,
       );
 
-      // Hạt vệ tinh Photon 3D bay dọc theo vành elip quỹ đạo
       final satAngle =
           angle * dir * (ringIdx == 0 ? 1.0 : 2.0) +
           (ringIdx == 1 ? math.pi * 0.5 : 0.0);
@@ -571,7 +809,6 @@ class _Holographic3dPedestalPainter extends CustomPainter {
       canvas.restore();
     }
 
-    // 3. Đĩa đế Holographic 3D bên dưới chân biểu tượng
     final baseCenter = Offset(size.width / 2, size.height - 7);
     final baseRect = Rect.fromCenter(
       center: baseCenter,
@@ -602,8 +839,6 @@ class _Holographic3dPedestalPainter extends CustomPainter {
   }
 }
 
-/// Lớp phủ Quang học Volumetric 60 FPS (Gaussian Bloom, Laser Beam, Radar Sweep, Glowing Particles)
-/// Được căn chỉnh chính xác theo tọa độ hình học của 4 mô hình 3D Studio trong assets/icons_3d/
 class _Photorealistic3dVfxOverlayPainter extends CustomPainter {
   final Icon3dStyle style;
   final double phase;
@@ -634,27 +869,62 @@ class _Photorealistic3dVfxOverlayPainter extends CustomPainter {
         _paintGpsRadarVolumetricVfx(canvas, size);
       case Icon3dStyle.walletVault:
         _paintWalletGoldVolumetricVfx(canvas, size);
+      case Icon3dStyle.hub2hBatch:
+        _paintHubBatchVolumetricVfx(canvas, size);
+      case Icon3dStyle.cargoTruck:
+        _paintCargoTruckVolumetricVfx(canvas, size);
+      case Icon3dStyle.foodMarket:
+        _paintSparkleShimmerVfx(
+          canvas,
+          size,
+          anchors: const [
+            Offset(0.50, 0.48),
+            Offset(0.34, 0.36),
+            Offset(0.62, 0.30),
+          ],
+          sparkleColor: const Color(0xFFFFD166),
+          shimmerCenter: const Offset(0.52, 0.46),
+        );
+      case Icon3dStyle.merchantStore:
+        _paintMerchantStoreVolumetricVfx(canvas, size);
+      case Icon3dStyle.driverPartner:
+        _paintDriverPartnerVolumetricVfx(canvas, size);
+      case Icon3dStyle.aiAssistant:
+        _paintAiAssistantVolumetricVfx(canvas, size);
+      case Icon3dStyle.luckyWheel:
+        _paintLuckyWheelVolumetricVfx(canvas, size);
+      case Icon3dStyle.mysteryBox:
+        _paintMysteryBoxVolumetricVfx(canvas, size);
+      case Icon3dStyle.voucherFlash:
+        _paintSparkleShimmerVfx(
+          canvas,
+          size,
+          anchors: const [
+            Offset(0.37, 0.30),
+            Offset(0.62, 0.41),
+            Offset(0.49, 0.48),
+            Offset(0.64, 0.68),
+          ],
+          sparkleColor: const Color(0xFFFFEA00),
+          shimmerCenter: const Offset(0.49, 0.48),
+        );
+      case Icon3dStyle.adminShieldOps:
+        _paintAdminShieldVolumetricVfx(canvas, size);
     }
     _paintAnisotropicGlassRimLight(canvas, size);
   }
 
-  /// 1. Hiệu ứng Quang học trên Mô hình 3D Xe máy Hỏa tốc (scooter_express_3d.png):
-  /// - Chùm sáng đèn pha Volumetric chiếu từ đèn pha tròn (0.39, 0.37) về phía trước-trái
-  /// - Vệt lửa Plasma phản lực đẩy sau đuôi xe & vệt gió khí động học 3D
-  /// - Xung ánh sáng Neon Cyan chạy dọc theo đúng đường dẫn GPS chữ S dưới mặt sàn
-  /// - Ánh kim quay tròn trên mâm bánh xe trước (0.33, 0.72) & bánh sau (0.70, 0.54)
   void _paintScooterVolumetricVfx(Canvas canvas, Size size) {
     final w = size.width;
     final h = size.height;
     final angle = phase * math.pi * 2.0;
 
-    // Chùm đèn pha Volumetric mềm mịn phát ra từ pha đèn (0.39, 0.37)
-    final headlightCenter = Offset(w * 0.39, h * 0.37);
-    final beamAlpha = 0.38 + 0.26 * math.sin(angle * 2.0);
+    final headlightCenter = Offset(w * 0.33, h * 0.50);
+    final beamAlpha = 0.36 + 0.24 * math.sin(angle * 2.0);
     final beamPath = Path()
       ..moveTo(headlightCenter.dx, headlightCenter.dy)
-      ..lineTo(w * 0.04, h * 0.44)
-      ..lineTo(w * 0.17, h * 0.66)
+      ..lineTo(w * 0.05, h * 0.58)
+      ..lineTo(w * 0.18, h * 0.78)
       ..close();
     canvas.drawPath(
       beamPath,
@@ -666,104 +936,78 @@ class _Photorealistic3dVfxOverlayPainter extends CustomPainter {
             const Color(0xFFFFF3B0).withValues(alpha: beamAlpha),
             const Color(0xFF00B4D8).withValues(alpha: 0.0),
           ],
-        ).createShader(Rect.fromLTWH(0, h * 0.28, w * 0.45, h * 0.40))
+        ).createShader(Rect.fromLTWH(0, h * 0.40, w * 0.42, h * 0.42))
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
     );
     canvas.drawCircle(
       headlightCenter,
-      w * 0.048,
+      w * 0.044,
       Paint()
-        ..color = Colors.white.withValues(alpha: 0.82)
+        ..color = Colors.white.withValues(alpha: 0.80)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
     );
 
-    // Luồng Plasma tăng tốc phía sau ống xả & thùng hàng (0.78, 0.52)
-    for (int i = 0; i < 3; i++) {
-      final jetP = (phase * 2.0 + i * 0.33) % 1.0;
-      final jetCenter = Offset(
-        w * (0.76 + 0.14 * jetP),
-        h * (0.50 - 0.07 * jetP),
-      );
-      canvas.drawCircle(
-        jetCenter,
-        w * (0.045 * (1.0 - jetP * 0.6)),
-        Paint()
-          ..color = const Color(0xFFFF6B00).withValues(alpha: (1.0 - jetP) * 0.72)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
-      );
-    }
-
-    // Vòng ánh kim quay tốc độ cao trên mâm bánh trước (0.33, 0.72) & bánh sau (0.70, 0.54)
     final wheelSpin = phase * math.pi * 8.0;
     for (final wheelPt in [
-      Offset(w * 0.33, h * 0.72),
-      Offset(w * 0.70, h * 0.54),
+      Offset(w * 0.30, h * 0.72),
+      Offset(w * 0.69, h * 0.56),
     ]) {
-      final wheelRect = Rect.fromCircle(center: wheelPt, radius: w * 0.064);
+      final wheelRect = Rect.fromCircle(center: wheelPt, radius: w * 0.062);
       canvas.drawArc(
         wheelRect,
         wheelSpin,
-        math.pi * 0.80,
+        math.pi * 0.78,
         false,
         Paint()
-          ..color = const Color(0xFF90E0EF).withValues(alpha: 0.80)
+          ..color = const Color(0xFF90E0EF).withValues(alpha: 0.76)
           ..style = PaintingStyle.stroke
-          ..strokeWidth = w * 0.022
+          ..strokeWidth = w * 0.020
           ..strokeCap = StrokeCap.round
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2),
       );
     }
 
-    // Các hạt xung năng lượng Neon Cyan chạy dọc tuyến đường chữ S trên mặt sàn
     final routeKeypoints = <Offset>[
-      Offset(w * 0.47, h * 0.80),
-      Offset(w * 0.66, h * 0.68),
-      Offset(w * 0.81, h * 0.59),
-      Offset(w * 0.84, h * 0.46),
-      Offset(w * 0.75, h * 0.38),
+      Offset(w * 0.76, h * 0.62),
+      Offset(w * 0.73, h * 0.69),
+      Offset(w * 0.53, h * 0.74),
+      Offset(w * 0.56, h * 0.81),
     ];
     for (int i = 0; i < 3; i++) {
       final p = (phase + i / 3.0) % 1.0;
       final orbPos = _samplePolyline(routeKeypoints, p);
       canvas.drawCircle(
         orbPos,
-        w * 0.044,
+        w * 0.038,
         Paint()
-          ..color = const Color(0xFF00F5D4).withValues(alpha: 0.88)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
+          ..color = const Color(0xFF00F5D4).withValues(alpha: 0.84)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4.5),
       );
       canvas.drawCircle(
         orbPos,
-        w * 0.018,
+        w * 0.015,
         Paint()..color = Colors.white,
       );
     }
 
-    // Xung sáng tia sét trên thùng hàng cam EXPRESS (0.77, 0.28)
-    final lightningPulse = (math.sin(angle * 3.0) + 1.0) * 0.5;
+    final boxPulse = (math.sin(angle * 2.0) + 1.0) * 0.5;
     canvas.drawCircle(
-      Offset(w * 0.77, h * 0.28),
-      w * (0.045 + 0.032 * lightningPulse),
+      Offset(w * 0.70, h * 0.26),
+      w * (0.042 + 0.026 * boxPulse),
       Paint()
-        ..color = const Color(0xFFFFD166).withValues(alpha: 0.62 * lightningPulse)
+        ..color = const Color(0xFFFFD166).withValues(alpha: 0.52 * boxPulse)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
     );
   }
 
-  /// 2. Hiệu ứng Quang học trên Mô hình 3D Kiện hàng (parcel_box_3d.png):
-  /// - Màn tia Laser Isometric 3D quét qua thùng hàng và làm sáng rực tem mã vạch (0.56, 0.59)
-  /// - Khung Wireframe Holographic 3D bảo vệ kiện hàng
-  /// - Vòng hào quang Ngọc lục bảo xoay quanh khối cầu dấu tích xanh 3D (0.69, 0.27)
   void _paintParcelLaserVolumetricVfx(Canvas canvas, Size size) {
     final w = size.width;
     final h = size.height;
     final angle = phase * math.pi * 2.0;
 
-    // Tia Laser Volumetric quét nghiêng theo góc Isometric của kiện hàng 3D
     final scanNorm = 0.5 - 0.5 * math.cos(angle * 2.0);
     final scanY = h * (0.32 + 0.44 * scanNorm);
 
-    // Màn sáng mờ phía sau tia Laser
     final curtainRect =
         Rect.fromLTWH(w * 0.18, scanY - h * 0.09, w * 0.64, h * 0.09);
     canvas.drawRect(
@@ -780,7 +1024,6 @@ class _Photorealistic3dVfxOverlayPainter extends CustomPainter {
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
     );
 
-    // Dải tia Laser lõi trắng viền đỏ/cam phát sáng mềm
     canvas.drawLine(
       Offset(w * 0.20, scanY),
       Offset(w * 0.80, scanY),
@@ -799,7 +1042,6 @@ class _Photorealistic3dVfxOverlayPainter extends CustomPainter {
         ..strokeCap = StrokeCap.round,
     );
 
-    // Phát sáng tem Barcode tại (0.56, 0.59) khi tia Laser quét gần qua
     final distToBarcode = (scanY - h * 0.59).abs();
     if (distToBarcode < h * 0.16) {
       final glowStrength = (1.0 - distToBarcode / (h * 0.16)).clamp(0.0, 1.0);
@@ -812,7 +1054,6 @@ class _Photorealistic3dVfxOverlayPainter extends CustomPainter {
       );
     }
 
-    // Vòng ánh sáng kép xoay quanh Huy hiệu Dấu tích Xanh 3D tại (0.69, 0.27)
     final checkCenter = Offset(w * 0.69, h * 0.27);
     final checkRect = Rect.fromCircle(center: checkCenter, radius: w * 0.148);
     canvas.drawArc(
@@ -829,16 +1070,11 @@ class _Photorealistic3dVfxOverlayPainter extends CustomPainter {
     );
   }
 
-  /// 3. Hiệu ứng Quang học trên Mô hình 3D Ghim Định vị GPS (gps_pin_radar_3d.png):
-  /// - Chùm tia Radar Volumetric quét xoay 360 độ nằm đúng trên mặt phẳng bản đồ Isometric (tâm 0.50, 0.56)
-  /// - Cột sóng vệ tinh Uplink chiếu thẳng từ đỉnh ghim GPS
-  /// - Tâm cầu cam của Ghim GPS tại (0.51, 0.34) phát xung sáng định vị
   void _paintGpsRadarVolumetricVfx(Canvas canvas, Size size) {
     final w = size.width;
     final h = size.height;
     final sweepAngle = phase * math.pi * 2.0;
 
-    // Chùm tia Radar quét 360 độ khớp mặt phẳng Isometric tại tâm (0.50, 0.56)
     final radarCenter = Offset(w * 0.50, h * 0.56);
     canvas.save();
     canvas.translate(radarCenter.dx, radarCenter.dy);
@@ -862,7 +1098,6 @@ class _Photorealistic3dVfxOverlayPainter extends CustomPainter {
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
     );
 
-    // 2 vòng sóng xung kích nở rộng trên mặt phẳng bản đồ
     for (int i = 0; i < 2; i++) {
       final p = (phase + i * 0.5) % 1.0;
       final ringRadius = radarRadius * (0.22 + 0.78 * p);
@@ -878,7 +1113,6 @@ class _Photorealistic3dVfxOverlayPainter extends CustomPainter {
     }
     canvas.restore();
 
-    // Lõi cầu cam ở tâm Ghim GPS (0.51, 0.34) phát xung năng lượng + tia Uplink vệ tinh
     final corePulse = (math.sin(sweepAngle * 2.0) + 1.0) * 0.5;
     final pinCore = Offset(w * 0.51, h * 0.34);
     canvas.drawLine(
@@ -899,59 +1133,336 @@ class _Photorealistic3dVfxOverlayPainter extends CustomPainter {
     );
   }
 
-  /// 4. Hiệu ứng Quang học trên Mô hình 3D Ví Ký Quỹ (wallet_vault_3d.png):
-  /// - Các ngôi sao kim cương 4 cánh và hạt ánh kim vàng lấp lánh bay lên từ 3 đồng xu vàng
-  /// - Dải ánh kim (Specular Shimmer) quét mượt qua Khiên bảo mật & ổ khóa vàng tại (0.67, 0.51)
   void _paintWalletGoldVolumetricVfx(Canvas canvas, Size size) {
     final w = size.width;
     final h = size.height;
     final angle = phase * math.pi * 2.0;
 
-    // Các hạt ánh kim vàng bay lên và lấp lánh quanh cụm đồng xu 3D
     final sparkleAnchors = <Offset>[
-      Offset(w * 0.45, h * 0.27),
-      Offset(w * 0.36, h * 0.32),
-      Offset(w * 0.53, h * 0.24),
-      Offset(w * 0.52, h * 0.35),
+      Offset(w * 0.48, h * 0.21),
+      Offset(w * 0.40, h * 0.34),
+      Offset(w * 0.55, h * 0.35),
+      Offset(w * 0.69, h * 0.64),
     ];
     for (int i = 0; i < sparkleAnchors.length; i++) {
       final localP = (phase * 2.0 + i * 0.25) % 1.0;
       final pos = sparkleAnchors[i].translate(
-        math.sin(angle + i) * w * 0.024,
-        -localP * h * 0.09,
+        math.sin(angle + i) * w * 0.022,
+        -localP * h * 0.08,
       );
       final alpha = math.sin(localP * math.pi).clamp(0.0, 1.0);
       canvas.drawCircle(
         pos,
-        w * 0.038,
+        w * 0.036,
         Paint()
           ..color = const Color(0xFFFFEA00).withValues(alpha: 0.85 * alpha)
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
       );
       canvas.drawCircle(
         pos,
-        w * 0.015,
+        w * 0.014,
         Paint()..color = Colors.white.withValues(alpha: alpha),
       );
     }
 
-    // Dải ánh kim quét qua Khiên xanh và Ổ khóa vàng tại (0.67, 0.51)
-    final shieldCenter = Offset(w * 0.67, h * 0.51);
-    final shimmerOffset = -w * 0.14 + w * 0.28 * phase;
-    final shimmerCenter =
-        shieldCenter.translate(shimmerOffset, shimmerOffset * 0.6);
+    final shieldCenter = Offset(w * 0.70, h * 0.66);
+    final shimmerOffset = -w * 0.12 + w * 0.24 * phase;
     canvas.drawCircle(
-      shimmerCenter,
-      w * 0.095,
+      shieldCenter.translate(shimmerOffset, shimmerOffset * 0.5),
+      w * 0.09,
       Paint()
         ..color = Colors.white.withValues(
-          alpha: 0.54 * math.sin(phase * math.pi),
+          alpha: 0.52 * math.sin(phase * math.pi),
         )
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
     );
   }
 
-  /// Lớp phản chiếu vòm kính 3D (Anisotropic Rim & Lens Highlight) dịch chuyển theo góc nghiêng
+  void _paintHubBatchVolumetricVfx(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final route = <Offset>[
+      Offset(w * 0.45, h * 0.36),
+      Offset(w * 0.57, h * 0.40),
+      Offset(w * 0.43, h * 0.56),
+      Offset(w * 0.58, h * 0.59),
+    ];
+    for (int i = 0; i < 3; i++) {
+      final p = (phase + i / 3.0) % 1.0;
+      final pt = _samplePolyline(route, p);
+      canvas.drawCircle(
+        pt,
+        w * 0.042,
+        Paint()
+          ..color = const Color(0xFF22D3EE).withValues(alpha: 0.85)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
+      );
+      canvas.drawCircle(
+        pt,
+        w * 0.016,
+        Paint()..color = Colors.white,
+      );
+    }
+  }
+
+  void _paintCargoTruckVolumetricVfx(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final angle = phase * math.pi * 2.0;
+    final pulse = 0.45 + 0.35 * math.sin(angle * 2.0);
+    for (final lamp in [
+      Offset(w * 0.23, h * 0.60),
+      Offset(w * 0.34, h * 0.66),
+    ]) {
+      canvas.drawCircle(
+        lamp,
+        w * 0.046,
+        Paint()
+          ..color = const Color(0xFFFFF3B0).withValues(alpha: pulse)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
+      );
+    }
+    final road = <Offset>[
+      Offset(w * 0.78, h * 0.65),
+      Offset(w * 0.61, h * 0.71),
+      Offset(w * 0.45, h * 0.81),
+    ];
+    for (int i = 0; i < 2; i++) {
+      final p = (phase + i * 0.5) % 1.0;
+      final pt = _samplePolyline(road, p);
+      canvas.drawCircle(
+        pt,
+        w * 0.036,
+        Paint()
+          ..color = const Color(0xFF38BDF8).withValues(alpha: 0.80)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+      );
+    }
+  }
+
+  void _paintMerchantStoreVolumetricVfx(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final angle = phase * math.pi * 2.0;
+    final warmGlow = 0.28 + 0.22 * math.sin(angle);
+    canvas.drawCircle(
+      Offset(w * 0.44, h * 0.57),
+      w * 0.13,
+      Paint()
+        ..color = const Color(0xFFFFD166).withValues(alpha: warmGlow)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
+    );
+    final checkRect = Rect.fromCircle(
+      center: Offset(w * 0.76, h * 0.27),
+      radius: w * 0.11,
+    );
+    canvas.drawArc(
+      checkRect,
+      angle,
+      math.pi * 0.9,
+      false,
+      Paint()
+        ..color = const Color(0xFF6EE7B7).withValues(alpha: 0.88)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = w * 0.022
+        ..strokeCap = StrokeCap.round
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
+    );
+  }
+
+  void _paintDriverPartnerVolumetricVfx(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final sweep = -w * 0.16 + w * 0.32 * phase;
+    canvas.drawCircle(
+      Offset(w * 0.42 + sweep, h * 0.50),
+      w * 0.085,
+      Paint()
+        ..color = Colors.white.withValues(
+          alpha: 0.48 * math.sin(phase * math.pi),
+        )
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
+    );
+    canvas.save();
+    canvas.translate(w * 0.49, h * 0.73);
+    canvas.scale(1.0, 0.42);
+    for (int i = 0; i < 2; i++) {
+      final p = (phase + i * 0.5) % 1.0;
+      canvas.drawCircle(
+        Offset.zero,
+        w * (0.10 + 0.18 * p),
+        Paint()
+          ..color = const Color(0xFF22D3EE).withValues(alpha: (1.0 - p) * 0.75)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = w * 0.020
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5),
+      );
+    }
+    canvas.restore();
+  }
+
+  void _paintAiAssistantVolumetricVfx(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final angle = phase * math.pi * 2.0;
+    final eyePulse = 0.55 + 0.35 * math.sin(angle * 2.0);
+    for (final eye in [
+      Offset(w * 0.53, h * 0.50),
+      Offset(w * 0.64, h * 0.48),
+    ]) {
+      canvas.drawCircle(
+        eye,
+        w * 0.036,
+        Paint()
+          ..color = const Color(0xFF67E8F9).withValues(alpha: eyePulse)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+      );
+    }
+    canvas.save();
+    canvas.translate(w * 0.47, h * 0.25);
+    canvas.rotate(-0.14);
+    final haloRect = Rect.fromCenter(
+      center: Offset.zero,
+      width: w * 0.26,
+      height: h * 0.075,
+    );
+    canvas.drawArc(
+      haloRect,
+      angle,
+      math.pi * 0.85,
+      false,
+      Paint()
+        ..color = const Color(0xFFFDE047).withValues(alpha: 0.82)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = w * 0.018
+        ..strokeCap = StrokeCap.round
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5),
+    );
+    canvas.restore();
+  }
+
+  void _paintLuckyWheelVolumetricVfx(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final angle = phase * math.pi * 2.0;
+    final rimRect = Rect.fromCircle(
+      center: Offset(w * 0.49, h * 0.48),
+      radius: w * 0.27,
+    );
+    canvas.drawArc(
+      rimRect,
+      angle,
+      math.pi * 0.65,
+      false,
+      Paint()
+        ..color = const Color(0xFFFDE047).withValues(alpha: 0.78)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = w * 0.022
+        ..strokeCap = StrokeCap.round
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
+    );
+  }
+
+  void _paintMysteryBoxVolumetricVfx(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final angle = phase * math.pi * 2.0;
+    final glowPulse = 0.42 + 0.30 * math.sin(angle * 2.0);
+    canvas.drawCircle(
+      Offset(w * 0.49, h * 0.50),
+      w * 0.12,
+      Paint()
+        ..color = const Color(0xFF22D3EE).withValues(alpha: glowPulse)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
+    );
+    _paintSparkleShimmerVfx(
+      canvas,
+      size,
+      anchors: const [
+        Offset(0.44, 0.48),
+        Offset(0.57, 0.47),
+        Offset(0.72, 0.40),
+      ],
+      sparkleColor: const Color(0xFFFDE047),
+      shimmerCenter: const Offset(0.47, 0.28),
+    );
+  }
+
+  void _paintAdminShieldVolumetricVfx(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final angle = phase * math.pi * 2.0;
+    final gemPulse = 0.48 + 0.36 * math.sin(angle * 2.0);
+    canvas.drawCircle(
+      Offset(w * 0.46, h * 0.50),
+      w * 0.075,
+      Paint()
+        ..color = const Color(0xFF34D399).withValues(alpha: gemPulse)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
+    );
+    canvas.save();
+    canvas.translate(w * 0.50, h * 0.49);
+    canvas.rotate(-0.42);
+    final rx = w * 0.30;
+    final ry = h * 0.13;
+    final satPos = Offset(rx * math.cos(angle), ry * math.sin(angle));
+    canvas.drawCircle(
+      satPos,
+      w * 0.038,
+      Paint()
+        ..color = const Color(0xFF22D3EE).withValues(alpha: 0.86)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+    );
+    canvas.drawCircle(
+      satPos,
+      w * 0.015,
+      Paint()..color = Colors.white,
+    );
+    canvas.restore();
+  }
+
+  void _paintSparkleShimmerVfx(
+    Canvas canvas,
+    Size size, {
+    required List<Offset> anchors,
+    required Color sparkleColor,
+    required Offset shimmerCenter,
+  }) {
+    final w = size.width;
+    final h = size.height;
+    final angle = phase * math.pi * 2.0;
+    for (int i = 0; i < anchors.length; i++) {
+      final localP = (phase * 2.0 + i * 0.28) % 1.0;
+      final pos = Offset(
+        w * anchors[i].dx + math.sin(angle + i) * w * 0.020,
+        h * anchors[i].dy - localP * h * 0.07,
+      );
+      final alpha = math.sin(localP * math.pi).clamp(0.0, 1.0);
+      canvas.drawCircle(
+        pos,
+        w * 0.034,
+        Paint()
+          ..color = sparkleColor.withValues(alpha: 0.82 * alpha)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+      );
+      canvas.drawCircle(
+        pos,
+        w * 0.013,
+        Paint()..color = Colors.white.withValues(alpha: alpha),
+      );
+    }
+    final shift = -w * 0.12 + w * 0.24 * phase;
+    canvas.drawCircle(
+      Offset(w * shimmerCenter.dx + shift, h * shimmerCenter.dy + shift * 0.4),
+      w * 0.085,
+      Paint()
+        ..color = Colors.white.withValues(
+          alpha: 0.46 * math.sin(phase * math.pi),
+        )
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 7),
+    );
+  }
+
   void _paintAnisotropicGlassRimLight(Canvas canvas, Size size) {
     final w = size.width;
     final h = size.height;

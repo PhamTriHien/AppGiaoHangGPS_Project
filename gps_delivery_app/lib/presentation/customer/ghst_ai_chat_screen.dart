@@ -7,6 +7,7 @@ import '../../core/integrations/cloud_session_lease.dart';
 import '../../core/network/public_json_api.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/ghst_theme_tokens.dart';
+import '../widgets/animated_3d_ui_icons.dart';
 import '../widgets/motion_3d_effects.dart';
 
 class GhstAiChatController extends ChangeNotifier {
@@ -260,19 +261,10 @@ class _GhstAiChatScreenState extends State<GhstAiChatScreen> {
     borderRadius: 16,
     child: Row(
       children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.16),
-            borderRadius: BorderRadius.circular(11),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
-          ),
-          child: const Icon(
-            Icons.auto_awesome_rounded,
-            color: Colors.white,
-            size: 20,
-          ),
+        const Animated3dIconBadge(
+          style: Icon3dStyle.aiAssistant,
+          size: 44,
+          showRadarPulse: false,
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -449,10 +441,11 @@ class _GhstAiFloatingBubbleState extends State<GhstAiFloatingBubble> {
                               child: Stack(
                                 alignment: Alignment.center,
                                 children: [
-                                  const Icon(
-                                    Icons.auto_awesome_rounded,
-                                    color: Colors.white,
-                                    size: 23,
+                                  const GhstAiIcon(
+                                    style: Icon3dStyle.aiAssistant,
+                                    size: 40,
+                                    borderRadius: 12,
+                                    selected: true,
                                   ),
                                   if (hasMessages)
                                     Positioned(
@@ -534,18 +527,11 @@ class _GhstAiFloatingBubbleState extends State<GhstAiFloatingBubble> {
                         ),
                       child: Row(
                         children: [
-                          Container(
-                            width: 28,
-                            height: 28,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(
-                              Icons.auto_awesome_rounded,
-                              color: Colors.white,
-                              size: 15,
-                            ),
+                          const GhstAiIcon(
+                            style: Icon3dStyle.aiAssistant,
+                            size: 30,
+                            borderRadius: 9,
+                            selected: true,
                           ),
                           const SizedBox(width: 9),
                           const Expanded(
@@ -773,14 +759,27 @@ class _GhstAiChatBodyState extends State<GhstAiChatBody> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Xin chào! Tôi có thể hỗ trợ bạn kiểm tra trạng thái đơn hàng, tính cước vận chuyển 5 chế độ, chính sách bảo hiểm, Voucher & Xu hoặc hậu mãi.',
-              style: TextStyle(
-                color: tokens.ink,
-                fontSize: widget.compact ? 12.5 : 13.5,
-                fontWeight: FontWeight.w500,
-                height: 1.45,
-              ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Animated3dIconBadge(
+                  style: Icon3dStyle.aiAssistant,
+                  size: widget.compact ? 42 : 52,
+                  showRadarPulse: false,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Xin chào! Tôi có thể hỗ trợ bạn kiểm tra trạng thái đơn hàng, tính cước vận chuyển 5 chế độ, chính sách bảo hiểm, Voucher & Xu hoặc hậu mãi.',
+                    style: TextStyle(
+                      color: tokens.ink,
+                      fontSize: widget.compact ? 12.5 : 13.5,
+                      fontWeight: FontWeight.w500,
+                      height: 1.45,
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 14),
             Text(

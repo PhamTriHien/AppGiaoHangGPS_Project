@@ -316,10 +316,10 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
           builder: (context, constraints) {
             final columns = constraints.maxWidth >= 520 ? 3 : 2;
             final width = (constraints.maxWidth - 10 * (columns - 1)) / columns;
-            final entries = <(String, IconData, TonePair, VoidCallback?)>[
+            final entries = <(String, Icon3dStyle, TonePair, VoidCallback?)>[
               (
                 'Giao nhanh',
-                Icons.bolt_rounded,
+                Icon3dStyle.scooterExpress,
                 tokens.rose,
                 widget.session.canCreateShippingOrder
                     ? () => widget.onCreateOrder({'service_type': 'express'})
@@ -327,7 +327,7 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
               ),
               (
                 'Ghép đơn 2H',
-                Icons.hub_outlined,
+                Icon3dStyle.hub2hBatch,
                 tokens.cyan,
                 widget.session.canCreateShippingOrder
                     ? () => widget.onCreateOrder({
@@ -337,7 +337,7 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
               ),
               (
                 'Tiêu chuẩn',
-                Icons.inventory_2_outlined,
+                Icon3dStyle.parcelBox,
                 tokens.sapphire,
                 widget.session.canCreateShippingOrder
                     ? () => widget.onCreateOrder({'service_type': 'standard'})
@@ -345,7 +345,7 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
               ),
               (
                 'Tiết kiệm 4h',
-                Icons.savings_outlined,
+                Icon3dStyle.walletVault,
                 tokens.emerald,
                 widget.session.canCreateShippingOrder
                     ? () => widget.onCreateOrder({'service_type': 'saving'})
@@ -353,7 +353,7 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
               ),
               (
                 'Xe tải nhẹ',
-                Icons.local_shipping_outlined,
+                Icon3dStyle.cargoTruck,
                 tokens.violet,
                 widget.session.canCreateShippingOrder
                     ? () => widget.onCreateOrder({'service_type': 'truck'})
@@ -361,7 +361,7 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
               ),
               (
                 'Ăn uống & Mua sắm',
-                Icons.restaurant_menu_rounded,
+                Icon3dStyle.foodMarket,
                 tokens.amber,
                 widget.onCatalog,
               ),
@@ -413,25 +413,17 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
                               ),
                               child: Row(
                                 children: [
-                                  Container(
-                                    width: 34,
-                                    height: 34,
-                                    decoration: BoxDecoration(
-                                      color: entry.$3.fill,
-                                      borderRadius: BorderRadius.circular(10),
-                                      border: Border.all(
-                                        color: entry.$3.border,
-                                      ),
-                                    ),
-                                    child: Icon(
-                                      entry.$2,
-                                      color: entry.$4 == null
-                                          ? tokens.inkMuted
-                                          : entry.$3.icon,
-                                      size: 19,
-                                    ),
+                                  GhstAiIcon(
+                                    style: entry.$2,
+                                    size: 38,
+                                    borderRadius: 11,
+                                    dimmed: entry.$4 == null,
+                                    borderColor: entry.$4 == null
+                                        ? tokens.border
+                                        : entry.$3.border,
+                                    glowColor: entry.$3.icon,
                                   ),
-                                  const SizedBox(width: 9),
+                                  const SizedBox(width: 10),
                                   Expanded(
                                     child: Text(
                                       entry.$1,
@@ -493,8 +485,10 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
                 fontWeight: FontWeight.w800,
               ),
             ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -506,16 +500,26 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
                     borderRadius: BorderRadius.circular(999),
                     border: Border.all(color: tokens.amber.border),
                   ),
-                  child: Text(
-                    '${widget.session.coinBalance} Xu',
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w800,
-                      color: tokens.amber.foreground,
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const GhstAiIcon(
+                        style: Icon3dStyle.walletVault,
+                        size: 18,
+                        circular: true,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        '${widget.session.coinBalance} Xu',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w800,
+                          color: tokens.amber.foreground,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 6),
                 TextButton(
                   key: const ValueKey('btn-home-promo-hub'),
                   onPressed: () => _openPromo(0),
@@ -530,32 +534,32 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
           builder: (context, constraints) {
             final cols = constraints.maxWidth >= 520 ? 4 : 2;
             final width = (constraints.maxWidth - 10 * (cols - 1)) / cols;
-            final items = <(String, String, IconData, TonePair, int)>[
+            final items = <(String, String, Icon3dStyle, TonePair, int)>[
               (
                 'Điểm danh & Sale',
                 'Nhận Xu mỗi ngày',
-                Icons.flash_on_rounded,
+                Icon3dStyle.voucherFlash,
                 tokens.rose,
                 0,
               ),
               (
                 'Vòng Xoay May Mắn',
                 'Săn Voucher 50K',
-                Icons.casino_outlined,
+                Icon3dStyle.luckyWheel,
                 tokens.violet,
                 1,
               ),
               (
                 'Hộp Mù Bí Ẩn',
                 'Khui quà R/SR/SSR',
-                Icons.card_giftcard,
+                Icon3dStyle.mysteryBox,
                 tokens.amber,
                 2,
               ),
               (
                 'Kho Voucher',
                 'Đổi Xu & Mã giảm',
-                Icons.confirmation_num_outlined,
+                Icon3dStyle.voucherFlash,
                 tokens.emerald,
                 3,
               ),
@@ -587,19 +591,13 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Container(
-                                width: 30,
-                                height: 30,
-                                alignment: Alignment.center,
-                                decoration: BoxDecoration(
-                                  color: item.$4.icon,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Icon(
-                                  item.$3,
-                                  size: 16,
-                                  color: Colors.white,
-                                ),
+                              GhstAiIcon(
+                                style: item.$3,
+                                size: 36,
+                                borderRadius: 10,
+                                selected: true,
+                                borderColor: item.$4.border,
+                                glowColor: item.$4.icon,
                               ),
                               const SizedBox(height: 8),
                               Text(

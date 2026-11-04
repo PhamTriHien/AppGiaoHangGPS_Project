@@ -15,6 +15,7 @@ import '../../core/utils/currency_formatter.dart';
 import '../../data/datasources/local/app_state_store.dart';
 import '../../domain/entities/geo_point.dart';
 import '../screens/cloud_address_book_screen.dart';
+import 'animated_3d_ui_icons.dart';
 import 'cloud_commerce_dialog.dart';
 import 'cloud_logistics_panels.dart';
 import 'cloud_order_labels.dart';
@@ -1039,33 +1040,33 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
         <
           String,
           ({
-            IconData icon,
+            Icon3dStyle style,
             String subtitle,
             String badge,
           })
         >{
           'standard': (
-            icon: Icons.two_wheeler_rounded,
+            style: Icon3dStyle.parcelBox,
             subtitle: 'Xe máy nội thành · Cân bằng cước phí',
             badge: 'Phổ biến',
           ),
           'express': (
-            icon: Icons.bolt_rounded,
+            style: Icon3dStyle.scooterExpress,
             subtitle: 'Ưu tiên điều phối · Giao thẳng siêu tốc',
             badge: 'Ưu tiên',
           ),
           'saving': (
-            icon: Icons.eco_rounded,
+            style: Icon3dStyle.walletVault,
             subtitle: 'Linh hoạt lộ trình · Tiết kiệm tối đa',
             badge: 'Tiết kiệm',
           ),
           'same_day_2h': (
-            icon: Icons.hub_rounded,
+            style: Icon3dStyle.hub2hBatch,
             subtitle: 'Ghép đơn cùng hướng · Cam kết 2 giờ',
             badge: '2 Giờ',
           ),
           'truck': (
-            icon: Icons.local_shipping_rounded,
+            style: Icon3dStyle.cargoTruck,
             subtitle: 'Hàng lớn cồng kềnh đến 500 kg',
             badge: '500 kg',
           ),
@@ -1161,24 +1162,15 @@ class _CloudOrderFormState extends State<CloudOrderForm> {
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Container(
-                                    width: 36,
-                                    height: 36,
-                                    decoration: BoxDecoration(
-                                      color: selected
-                                          ? tone.foreground.withValues(
-                                              alpha: 0.16,
-                                            )
-                                          : tokens.cardSubtle,
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Icon(
-                                      meta.icon,
-                                      size: 20,
-                                      color: selected
-                                          ? tone.foreground
-                                          : tokens.inkSecondary,
-                                    ),
+                                  GhstAiIcon(
+                                    style: meta.style,
+                                    size: 40,
+                                    borderRadius: 11,
+                                    selected: selected,
+                                    borderColor: selected
+                                        ? tone.foreground
+                                        : tokens.border,
+                                    glowColor: tone.icon,
                                   ),
                                   const SizedBox(width: 10),
                                   Expanded(

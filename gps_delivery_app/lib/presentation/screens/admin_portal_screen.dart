@@ -273,26 +273,26 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
   Widget _buildLoginShowcase() {
     const pillars = [
       (
-        Icons.verified_user_outlined,
+        Icon3dStyle.adminShieldOps,
         AdminStudioColors.acid,
         'Phân tách quyền Operator độc lập',
         'Xác thực phiên quản trị riêng biệt hoàn toàn với luồng ứng dụng người tiêu dùng.',
       ),
       (
-        Icons.account_balance_wallet_outlined,
+        Icon3dStyle.walletVault,
         AdminStudioColors.gold,
         'Sổ cái kế toán kép & Đối soát',
         'Giám sát thu hộ COD, thanh toán trả trước, quyết toán cửa hàng và hoàn tiền minh bạch.',
       ),
       (
-        Icons.storefront_outlined,
+        Icon3dStyle.merchantStore,
         AdminStudioColors.pink,
         'Kiểm duyệt đối tác & Gian hàng',
         'Xét duyệt hồ sơ tài xế, cửa hàng mới và xử lý báo cáo đánh giá vi phạm.',
       ),
       (
-        Icons.cloud_done_outlined,
-        Colors.white,
+        Icon3dStyle.aiAssistant,
+        AdminStudioColors.violet,
         'Cấu hình dịch vụ tập trung',
         'Quản lý khóa dịch vụ bảo mật phân quyền kèm nhật ký kiểm toán thay đổi.',
       ),
@@ -357,8 +357,8 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             const Animated3dIconBadge(
-                              style: Icon3dStyle.gpsPinRadar,
-                              size: 46,
+                              style: Icon3dStyle.adminShieldOps,
+                              size: 50,
                               showRadarPulse: true,
                             ),
                             const SizedBox(width: 12),
@@ -421,20 +421,13 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                                 child: Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Container(
-                                      width: 36,
-                                      height: 36,
-                                      decoration: BoxDecoration(
-                                        color: p.$2,
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      child: Icon(
-                                        p.$1,
-                                        size: 18,
-                                        color: p.$2.computeLuminance() < 0.45
-                                            ? Colors.white
-                                            : AdminStudioColors.ink,
-                                      ),
+                                    GhstAiIcon(
+                                      style: p.$1,
+                                      size: 38,
+                                      borderRadius: 10,
+                                      selected: true,
+                                      borderColor: p.$2.withValues(alpha: 0.72),
+                                      glowColor: p.$2,
                                     ),
                                     const SizedBox(width: 12),
                                     Expanded(
@@ -505,21 +498,14 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                 children: [
                   Row(
                     children: [
-                      Motion3dFloatingLayer(
+                      const Motion3dFloatingLayer(
                         floatAmplitude: 2.5,
                         tiltAmplitude: 0.04,
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: p.violetSoft,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: p.line),
-                          ),
-                          child: Icon(
-                            Icons.admin_panel_settings_outlined,
-                            color: p.violet,
-                          ),
+                        child: GhstAiIcon(
+                          style: Icon3dStyle.adminShieldOps,
+                          size: 46,
+                          borderRadius: 13,
+                          selected: true,
                         ),
                       ),
                       const SizedBox(width: 12),

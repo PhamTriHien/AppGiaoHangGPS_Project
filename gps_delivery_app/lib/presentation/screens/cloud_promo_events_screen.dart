@@ -11,6 +11,7 @@ import '../../core/network/public_json_api.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/ghst_theme_tokens.dart';
 import '../../core/utils/currency_formatter.dart';
+import '../widgets/animated_3d_ui_icons.dart';
 import '../widgets/cloud_order_labels.dart';
 import '../widgets/cloud_session_boundary.dart';
 import '../widgets/market_commercial_sheets.dart';
@@ -552,18 +553,18 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                 onTap: () =>
                     showCoinWalletDialog(context, session: widget.session),
                 child: _walletChip(
-                  icon: Icons.monetization_on_rounded,
+                  style: Icon3dStyle.walletVault,
                   tone: tokens.emerald,
                   label: 'Ví Xu: $_coinBalance Xu',
                 ),
               ),
               _walletChip(
-                icon: Icons.casino_outlined,
+                style: Icon3dStyle.luckyWheel,
                 tone: tokens.sapphire,
                 label: 'Vé Vòng Xoay: $_spinTickets',
               ),
               _walletChip(
-                icon: Icons.card_giftcard,
+                style: Icon3dStyle.mysteryBox,
                 tone: tokens.rose,
                 label: 'Vé Hộp Mù: $_boxTickets',
               ),
@@ -575,11 +576,11 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
   }
 
   Widget _walletChip({
-    required IconData icon,
+    required Icon3dStyle style,
     required TonePair tone,
     required String label,
   }) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
     decoration: BoxDecoration(
       color: tone.fill,
       borderRadius: BorderRadius.circular(999),
@@ -588,7 +589,12 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
     child: Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 15, color: tone.icon),
+        GhstAiIcon(
+          style: style,
+          size: 20,
+          circular: true,
+          borderColor: tone.border,
+        ),
         const SizedBox(width: 6),
         Text(
           label,
@@ -633,13 +639,27 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                         alignment: WrapAlignment.spaceBetween,
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
-                          Text(
-                            'Điểm danh 7 ngày nhận Xu & Vé quay · $streak/7',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                              color: tokens.ink,
-                            ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const GhstAiIcon(
+                                style: Icon3dStyle.voucherFlash,
+                                size: 32,
+                                borderRadius: 9,
+                                selected: true,
+                              ),
+                              const SizedBox(width: 10),
+                              Flexible(
+                                child: Text(
+                                  'Điểm danh 7 ngày nhận Xu & Vé quay · $streak/7',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w800,
+                                    color: tokens.ink,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                           Container(
                             padding: const EdgeInsets.symmetric(
@@ -1081,6 +1101,12 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                const Animated3dIconBadge(
+                  style: Icon3dStyle.luckyWheel,
+                  size: 52,
+                  showRadarPulse: false,
+                ),
+                const SizedBox(height: 6),
                 Text(
                   'VÒNG XOAY MAY MẮN',
                   textAlign: TextAlign.center,
@@ -1233,22 +1259,35 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                   alignment: WrapAlignment.spaceBetween,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          'HỘP MÙ BÍ ẨN',
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w900,
-                            color: tokens.ink,
-                          ),
+                        const Animated3dIconBadge(
+                          style: Icon3dStyle.mysteryBox,
+                          size: 46,
+                          showRadarPulse: false,
                         ),
-                        Text(
-                          'Còn $_boxTickets vé mở hộp • Đã khui ${_wallet['total_boxes_opened'] ?? 0} hộp',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: tokens.inkSecondary,
+                        const SizedBox(width: 10),
+                        Flexible(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'HỘP MÙ BÍ ẨN',
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w900,
+                                  color: tokens.ink,
+                                ),
+                              ),
+                              Text(
+                                'Còn $_boxTickets vé mở hộp • Đã khui ${_wallet['total_boxes_opened'] ?? 0} hộp',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: tokens.inkSecondary,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -1393,10 +1432,11 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                                               mainAxisAlignment:
                                                   MainAxisAlignment.center,
                                               children: [
-                                                const Icon(
-                                                  Icons.redeem_rounded,
-                                                  color: AppColors.acid,
-                                                  size: 32,
+                                                const GhstAiIcon(
+                                                  style: Icon3dStyle.mysteryBox,
+                                                  size: 44,
+                                                  borderRadius: 12,
+                                                  selected: true,
                                                 ),
                                                 const SizedBox(height: 8),
                                                 Text(
@@ -1665,9 +1705,24 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
         foregroundColor: tokens.ink,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
-          'Sự kiện & Vòng xoay',
-          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+        title: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            GhstAiIcon(
+              style: Icon3dStyle.luckyWheel,
+              size: 28,
+              borderRadius: 8,
+              selected: true,
+            ),
+            SizedBox(width: 10),
+            Flexible(
+              child: Text(
+                'Sự kiện & Vòng xoay',
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+              ),
+            ),
+          ],
         ),
         actions: [
           const Padding(

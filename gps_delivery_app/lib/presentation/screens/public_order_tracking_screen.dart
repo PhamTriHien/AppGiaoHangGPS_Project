@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../core/integrations/cloud_orders_service.dart';
 import '../../core/network/public_json_api.dart';
 import '../../core/theme/ghst_theme_tokens.dart';
+import '../widgets/animated_3d_ui_icons.dart';
 import '../widgets/cloud_order_labels.dart';
 import '../widgets/theme_mode_toggle.dart';
 
@@ -176,24 +177,19 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
           child: Divider(height: 1, color: tokens.border),
         ),
         title: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: tokens.sapphire.fill,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: tokens.sapphire.border),
-              ),
-              child: Icon(
-                Icons.radar_rounded,
-                size: 18,
-                color: tokens.sapphire.icon,
-              ),
+            const GhstAiIcon(
+              style: Icon3dStyle.gpsPinRadar,
+              size: 28,
+              borderRadius: 9,
+              selected: true,
             ),
             const SizedBox(width: 10),
-            Expanded(
+            Flexible(
               child: Text(
                 'Tra cứu & Theo dõi Hành trình Trực tiếp',
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: 15.5,
                   fontWeight: FontWeight.w800,
@@ -249,11 +245,17 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
                   padding: const EdgeInsets.all(20),
                   child: Row(
                     children: [
+                      const Animated3dIconBadge(
+                        style: Icon3dStyle.gpsPinRadar,
+                        size: 48,
+                        showRadarPulse: true,
+                      ),
+                      const SizedBox(width: 12),
                       const GhstPulseBeacon(
                         color: Color(0xFF6EE7B7),
                         size: 12,
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -382,6 +384,7 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
                     subtitle:
                         'Nhập mã vận đơn và 4 số cuối SĐT người nhận, hoặc mở liên kết chia sẻ từ người gửi để xem tiến độ giao hàng thời gian thực.',
                     icon: Icons.share_location_rounded,
+                    icon3d: Icon3dStyle.gpsPinRadar,
                     tone: tokens.sapphire,
                   ),
               ],
@@ -397,21 +400,32 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
     required String title,
     required String subtitle,
     required IconData icon,
+    Icon3dStyle? icon3d,
     required TonePair tone,
   }) => GhstLuminousCard(
     padding: const EdgeInsets.all(22),
     accentGlow: tone.glow,
     child: Row(
       children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: tone.fill,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: tone.border),
+        if (icon3d != null)
+          GhstAiIcon(
+            style: icon3d,
+            size: 50,
+            borderRadius: 13,
+            selected: true,
+            borderColor: tone.border,
+            glowColor: tone.icon,
+          )
+        else
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: tone.fill,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: tone.border),
+            ),
+            child: Icon(icon, size: 28, color: tone.icon),
           ),
-          child: Icon(icon, size: 28, color: tone.icon),
-        ),
         const SizedBox(width: 16),
         Expanded(
           child: Column(

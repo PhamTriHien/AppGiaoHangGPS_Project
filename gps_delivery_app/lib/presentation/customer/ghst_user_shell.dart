@@ -27,6 +27,13 @@ enum GhstRoleMode {
     GhstRoleMode.customer => Icons.person_outline_rounded,
   };
 
+  Icon3dStyle get icon3d => switch (this) {
+    GhstRoleMode.operator => Icon3dStyle.adminShieldOps,
+    GhstRoleMode.driver => Icon3dStyle.driverPartner,
+    GhstRoleMode.merchant => Icon3dStyle.merchantStore,
+    GhstRoleMode.customer => Icon3dStyle.scooterExpress,
+  };
+
   Color get accentColor => switch (this) {
     GhstRoleMode.operator => const Color(0xFF087F5B),
     GhstRoleMode.driver => const Color(0xFF059669),
@@ -117,13 +124,6 @@ class GhstUserShell extends StatelessWidget {
       merchantOwner ? 'ĐỐI TÁC CỬA HÀNG & B2B' : 'NHÂN SỰ GIAN HÀNG',
     GhstRoleMode.customer || GhstRoleMode.operator =>
       'SUPER-APP GIAO NHẬN & ẨM THỰC',
-  };
-
-  IconData get _brandIcon => switch (roleMode) {
-    GhstRoleMode.driver => Icons.delivery_dining_rounded,
-    GhstRoleMode.merchant => Icons.storefront_rounded,
-    GhstRoleMode.customer || GhstRoleMode.operator =>
-      Icons.local_shipping_outlined,
   };
 
   String get title => switch (section) {
@@ -369,12 +369,16 @@ class GhstUserShell extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                mode.icon,
-                size: 14,
-                color: active ? chipHighlight : AppColors.techMuted,
+              GhstAiIcon(
+                style: mode.icon3d,
+                size: 18,
+                circular: true,
+                selected: active,
+                borderColor: active
+                    ? chipHighlight.withValues(alpha: 0.85)
+                    : AppColors.techLine,
               ),
-              const SizedBox(width: 5),
+              const SizedBox(width: 6),
               Text(
                 mode.label,
                 maxLines: 1,
@@ -684,24 +688,13 @@ class GhstUserShell extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(20, 18, 16, 16),
               child: Row(
                 children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: _highlight,
-                      borderRadius: BorderRadius.circular(11),
-                      boxShadow: [
-                        BoxShadow(
-                          color: _highlight.withValues(alpha: 0.32),
-                          blurRadius: 12,
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      _brandIcon,
-                      color: tokens.onAccentInk,
-                      size: 22,
-                    ),
+                  GhstAiIcon(
+                    style: roleMode.icon3d,
+                    size: 42,
+                    borderRadius: 12,
+                    selected: true,
+                    borderColor: _highlight,
+                    glowColor: _highlight,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -823,32 +816,13 @@ class GhstUserShell extends StatelessWidget {
     ),
   );
 
-  Widget _roleHeaderBadge({double size = 38}) {
-    final badgeStyle = switch (roleMode) {
-      GhstRoleMode.customer => Icon3dStyle.scooterExpress,
-      GhstRoleMode.driver => Icon3dStyle.gpsPinRadar,
-      GhstRoleMode.merchant => Icon3dStyle.parcelBox,
-      GhstRoleMode.operator => null,
-    };
-    if (badgeStyle != null) {
-      return Animated3dIconBadge(
-        style: badgeStyle,
-        size: size,
-        showRadarPulse: false,
-        isSelected: true,
-        animateIdle: false,
-      );
-    }
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: _accent,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Icon(_brandIcon, color: Colors.white, size: size * 0.54),
-    );
-  }
+  Widget _roleHeaderBadge({double size = 38}) => Animated3dIconBadge(
+    style: roleMode.icon3d,
+    size: size,
+    showRadarPulse: false,
+    isSelected: true,
+    animateIdle: false,
+  );
 
   Widget _desktopHeader(GhstThemeTokens tokens) => LayoutBuilder(
     builder: (context, constraints) => Container(
@@ -880,9 +854,10 @@ class GhstUserShell extends StatelessWidget {
               section != GhstUserSection.food)
             TextButton.icon(
               onPressed: () => onNavigate(GhstUserSection.food),
-              icon: Icon(
-                Icons.restaurant_menu_rounded,
-                color: tokens.emerald.icon,
+              icon: const GhstAiIcon(
+                style: Icon3dStyle.foodMarket,
+                size: 22,
+                borderRadius: 6,
               ),
               label: const Text('Ăn uống'),
             ),
@@ -901,11 +876,11 @@ class GhstUserShell extends StatelessWidget {
             key: const ValueKey('ghst-header-ai'),
             tooltip: 'Trợ lý AI',
             onPressed: () => onNavigate(GhstUserSection.aiAssistant),
-            icon: Icon(
-              Icons.auto_awesome_outlined,
-              color: section == GhstUserSection.aiAssistant
-                  ? _accent
-                  : tokens.ink,
+            icon: GhstAiIcon(
+              style: Icon3dStyle.aiAssistant,
+              size: 26,
+              circular: true,
+              selected: section == GhstUserSection.aiAssistant,
             ),
           ),
           if (roleMode == GhstRoleMode.customer)
@@ -1047,12 +1022,11 @@ class GhstUserShell extends StatelessWidget {
             tooltip: 'Trợ lý AI',
             visualDensity: VisualDensity.compact,
             onPressed: () => onNavigate(GhstUserSection.aiAssistant),
-            icon: Icon(
-              Icons.auto_awesome_outlined,
-              color: section == GhstUserSection.aiAssistant
-                  ? _highlight
-                  : Colors.white,
-              size: 19,
+            icon: GhstAiIcon(
+              style: Icon3dStyle.aiAssistant,
+              size: 23,
+              circular: true,
+              selected: section == GhstUserSection.aiAssistant,
             ),
           ),
           if (roleMode == GhstRoleMode.customer)

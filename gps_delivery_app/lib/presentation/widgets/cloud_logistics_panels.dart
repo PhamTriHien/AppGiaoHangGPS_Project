@@ -11,6 +11,7 @@ import '../../core/theme/ghst_theme_tokens.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../data/datasources/local/app_state_store.dart';
 import '../../domain/entities/geo_point.dart';
+import 'animated_3d_ui_icons.dart';
 import 'cloud_order_labels.dart';
 import 'cloud_session_boundary.dart';
 import 'system_state_screens.dart';
@@ -1157,11 +1158,17 @@ class _DriverLiveCockpitPanelState extends State<DriverLiveCockpitPanel> {
                   accentOrbColor: const Color(0x5538BDF8),
                   child: Row(
                     children: [
+                      const Animated3dIconBadge(
+                        style: Icon3dStyle.driverPartner,
+                        size: 46,
+                        showRadarPulse: false,
+                      ),
+                      const SizedBox(width: 12),
                       const GhstPulseBeacon(
                         color: Color(0xFF34D399),
                         size: 10,
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,

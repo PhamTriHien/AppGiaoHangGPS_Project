@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/integrations/cloud_account_session.dart';
 import '../../core/integrations/cloud_session_lease.dart';
 import '../../core/theme/ghst_theme_tokens.dart';
+import '../widgets/animated_3d_ui_icons.dart';
 import '../widgets/cloud_logistics_panels.dart';
 import '../widgets/cloud_order_labels.dart';
 import '../widgets/cloud_session_boundary.dart';
@@ -207,13 +208,32 @@ class _CloudPickupScreenState extends State<CloudPickupScreen> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
-          'Đặt lịch xe thu gom số lượng lớn',
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'Hẹn xe đến kho trong sổ địa chỉ để lấy nhiều kiện cùng lúc theo khung giờ.',
+        const Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            GhstAiIcon(
+              style: Icon3dStyle.cargoTruck,
+              size: 42,
+              borderRadius: 12,
+              selected: true,
+            ),
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Đặt lịch xe thu gom số lượng lớn',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Hẹn xe đến kho trong sổ địa chỉ để lấy nhiều kiện cùng lúc theo khung giờ.',
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 12),
         if (_loaded && _addresses.isEmpty)

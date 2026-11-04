@@ -9,6 +9,7 @@ import '../../core/utils/market_options.dart';
 import '../screens/cloud_order_import_screen.dart';
 import '../screens/cloud_pickup_screen.dart';
 import '../screens/market_order_services_screen.dart';
+import 'animated_3d_ui_icons.dart';
 import 'cloud_logistics_panels.dart';
 import 'cloud_order_labels.dart';
 import 'cloud_session_boundary.dart';
@@ -734,21 +735,39 @@ class _MerchantWorkspacePanelState extends State<MerchantWorkspacePanel> {
                 ],
               ),
               const SizedBox(height: 10),
-              Text(
-                '${activeShop['name']}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 21,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '${activeShop['address']}',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.9),
-                  fontSize: 13.5,
-                ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const Animated3dIconBadge(
+                    style: Icon3dStyle.merchantStore,
+                    size: 48,
+                    showRadarPulse: false,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${activeShop['name']}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 21,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${activeShop['address']}',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            fontSize: 13.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
               if (radiusKm > 0) ...[
                 const SizedBox(height: 3),

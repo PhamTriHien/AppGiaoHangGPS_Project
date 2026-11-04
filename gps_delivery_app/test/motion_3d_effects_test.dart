@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'dart:ui' show PointerDeviceKind;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gps_delivery_app/presentation/widgets/animated_3d_ui_icons.dart';
 import 'package:gps_delivery_app/presentation/widgets/motion_3d_effects.dart';
 import 'package:gps_delivery_app/presentation/widgets/system_state_screens.dart';
 
@@ -225,6 +227,70 @@ void main() {
       final normSq = mid.tangentX * mid.tangentX + mid.tangentZ * mid.tangentZ;
       expect(normSq, closeTo(1.0, 1e-4));
       expect(mid.trailPoints.length, 9);
+    },
+  );
+
+  testWidgets(
+    'All 14 AI-generated Icon3dStyle assets exist (>100KB) and render in GhstAiIcon & Animated3dIconBadge without pumpAndSettle hang',
+    (tester) async {
+      expect(Icon3dStyle.values.length, 14);
+      for (final style in Icon3dStyle.values) {
+        final file = File(style.assetPath);
+        expect(file.existsSync(), isTrue, reason: 'Missing ${style.assetPath}');
+        expect(
+          file.lengthSync(),
+          greaterThan(100000),
+          reason: 'Asset too small: ${style.assetPath}',
+        );
+      }
+      for (final launcher in const [
+        'web/favicon.png',
+        'web/icons/Icon-192.png',
+        'web/icons/Icon-512.png',
+        'web/icons/Icon-maskable-192.png',
+        'web/icons/Icon-maskable-512.png',
+        'windows/runner/resources/app_icon.ico',
+      ]) {
+        final f = File(launcher);
+        expect(f.existsSync(), isTrue, reason: 'Missing $launcher');
+        expect(f.lengthSync(), greaterThan(4000));
+      }
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final style in Icon3dStyle.values) ...[
+                    GhstAiIcon(
+                      style: style,
+                      size: 36,
+                      selected: true,
+                    ),
+                    GhstAiIcon(
+                      style: style,
+                      size: 24,
+                      circular: true,
+                      dimmed: true,
+                    ),
+                    Animated3dIconBadge(
+                      style: style,
+                      size: 48,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(GhstAiIcon), findsNWidgets(28));
+      expect(find.byType(Animated3dIconBadge), findsNWidgets(14));
+      expect(tester.takeException(), isNull);
     },
   );
 }
