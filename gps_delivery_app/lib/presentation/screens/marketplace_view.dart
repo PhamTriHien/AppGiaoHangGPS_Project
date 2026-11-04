@@ -18,9 +18,11 @@ import '../widgets/market_catalog_fields.dart';
 import '../widgets/market_commercial_sheets.dart';
 import '../widgets/market_product_details.dart';
 import '../widgets/marketplace_editor.dart';
+import '../widgets/merchant_cloud_panels.dart';
 import '../widgets/vietqr_bank_payment_panel.dart';
 import 'cloud_address_book_screen.dart';
 import 'cloud_local_import_screen.dart';
+import 'cloud_order_details_screen.dart';
 import 'cloud_order_import_screen.dart';
 import 'cloud_orders_screen.dart';
 import 'cloud_pickup_screen.dart';
@@ -110,6 +112,8 @@ class MarketplaceView extends StatefulWidget {
     this.onNavigate,
     this.onOpenShipping,
     this.onOpenOperator,
+    this.onOpenDeliveryJourney,
+    this.onOpenOperations,
   });
   final CloudAccountSession session;
   final MarketView view;
@@ -119,6 +123,8 @@ class MarketplaceView extends StatefulWidget {
   final ValueChanged<MarketView>? onNavigate;
   final VoidCallback? onOpenShipping;
   final VoidCallback? onOpenOperator;
+  final ValueChanged<Map<String, dynamic>>? onOpenDeliveryJourney;
+  final VoidCallback? onOpenOperations;
   @override
   State<MarketplaceView> createState() => _MarketplaceViewState();
 }
@@ -140,6 +146,9 @@ class _MarketplaceViewState extends State<MarketplaceView> {
   int? _minPrice, _maxPrice;
   Map<String, dynamic> _data = {}, _cart = {};
   Map<String, dynamic>? _quote;
+  Map<String, dynamic>? _merchantDashboard;
+  String? _selectedShopId;
+  String _merchantOrderFilter = 'all', _merchantOrderSearch = '';
   List<Map<String, dynamic>> _addresses = [];
   String? _addressId, _error, _notice;
   Map<String, dynamic>? _next;
@@ -183,6 +192,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
         _data = {};
         _cart = {};
         _quote = null;
+        _merchantDashboard = null;
         _addresses = [];
         _notice = _error = null;
       });
@@ -229,21 +239,68 @@ class _MarketplaceViewState extends State<MarketplaceView> {
         MarketView.workspace || MarketView.moderation => 'workspace',
         MarketView.account => 'profile',
       };
-      final response = await _session.service.market(action, {
-        if (widget.view == MarketView.catalog && _search.text.trim().isNotEmpty)
-          'search': _search.text.trim(),
-        if (widget.view == MarketView.catalog) ...{
-          if (widget.shopId != null) 'shop_id': widget.shopId,
-          if (_category.isNotEmpty) 'category': _category,
-          if (_sort != 'default') 'sort': _sort,
-          if (_inStock) 'in_stock': true,
-          if (_minPrice != null) 'min_price': _minPrice,
-          if (_maxPrice != null) 'max_price': _maxPrice,
-        },
-        if (widget.view == MarketView.merchantOrders) 'workspace': 'merchant',
-        if (widget.view == MarketView.moderation) 'moderation': true,
-        if (more && _next != null) ..._next!,
-      });
+      Map<String, dynamic> response;
+      Map<String, dynamic>? nextMerchantDashboard = _merchantDashboard;
+      if (widget.view == MarketView.merchantOrders) {
+        try {
+          response = await _session.service.merchant('orders_list', {
+            'filter': _merchantOrderFilter,
+            if (_merchantOrderSearch.isNotEmpty) 'search': _merchantOrderSearch,
+            if (_selectedShopId != null && _selectedShopId!.isNotEmpty)
+              'shop_id': _selectedShopId,
+            if (more && _next != null) ..._next!,
+          });
+        } on StateError {
+          response = await _session.service.market('orders', {
+            'workspace': 'merchant',
+            if (more && _next != null) ..._next!,
+          });
+        }
+        if (!more) {
+          try {
+            nextMerchantDashboard = await _session.service.merchant(
+              'dashboard',
+              {
+                if (_selectedShopId != null && _selectedShopId!.isNotEmpty)
+                  'shop_id': _selectedShopId,
+              },
+            );
+          } catch (error) {
+            if (!_allowed || generation != _generation) return;
+            if (_lease.handleAccessFailure(error)) return;
+          }
+        }
+      } else {
+        response = await _session.service.market(action, {
+          if (widget.view == MarketView.catalog &&
+              _search.text.trim().isNotEmpty)
+            'search': _search.text.trim(),
+          if (widget.view == MarketView.catalog) ...{
+            if (widget.shopId != null) 'shop_id': widget.shopId,
+            if (_category.isNotEmpty) 'category': _category,
+            if (_sort != 'default') 'sort': _sort,
+            if (_inStock) 'in_stock': true,
+            if (_minPrice != null) 'min_price': _minPrice,
+            if (_maxPrice != null) 'max_price': _maxPrice,
+          },
+          if (widget.view == MarketView.moderation) 'moderation': true,
+          if (more && _next != null) ..._next!,
+        });
+        if (widget.view == MarketView.workspace && !more) {
+          try {
+            nextMerchantDashboard = await _session.service.merchant(
+              'dashboard',
+              {
+                if (_selectedShopId != null && _selectedShopId!.isNotEmpty)
+                  'shop_id': _selectedShopId,
+              },
+            );
+          } catch (error) {
+            if (!_allowed || generation != _generation) return;
+            if (_lease.handleAccessFailure(error)) return;
+          }
+        }
+      }
       List<Map<String, dynamic>> addresses = _addresses;
       String? addressError;
       if (widget.view == MarketView.cart) {
@@ -276,6 +333,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
           }.values.toList();
         }
         _data = response;
+        _merchantDashboard = nextMerchantDashboard;
         _loaded = true;
         _expanded = more;
         _next = response['next'] == null
@@ -1393,9 +1451,90 @@ class _MarketplaceViewState extends State<MarketplaceView> {
     );
   }
 
+  void _openDeliveryJourney(Map<String, dynamic> order) {
+    if (widget.onOpenDeliveryJourney != null) {
+      widget.onOpenDeliveryJourney!(order);
+      return;
+    }
+    unawaited(
+      Navigator.of(context)
+          .push<bool>(
+            MaterialPageRoute(
+              builder: (_) => CloudSessionBoundary(
+                session: _session,
+                builder: (_, lease) => CloudOrderDetailsScreen(
+                  lease: lease,
+                  order: order,
+                ),
+              ),
+            ),
+          )
+          .then((_) {
+            if (_allowed) _load();
+          }),
+    );
+  }
+
+  void _openOperationsCenter() {
+    if (widget.onOpenOperations != null) {
+      widget.onOpenOperations!();
+      return;
+    }
+    unawaited(
+      Navigator.of(context)
+          .push<void>(
+            MaterialPageRoute(
+              builder: (_) => CloudSessionBoundary(
+                session: _session,
+                roles: const {'merchant'},
+                builder: (_, lease) => Scaffold(
+                  appBar: AppBar(title: const Text('Kinh doanh & Hậu mãi')),
+                  body: MerchantOperationsCenter(
+                    session: _session,
+                    lease: lease,
+                    onOpenDeliveryJourney: _openDeliveryJourney,
+                  ),
+                ),
+              ),
+            ),
+          )
+          .then((_) {
+            if (_allowed) _load();
+          }),
+    );
+  }
+
   Widget _orders() {
     final orders = _rows(_data['orders']);
     final merchant = widget.view == MarketView.merchantOrders;
+    if (merchant) {
+      return MerchantOrdersPanel(
+        session: _session,
+        orders: orders,
+        loading: _loading,
+        loaded: _loaded,
+        busy: _busy,
+        activeFilter: _merchantOrderFilter,
+        activeSearch: _merchantOrderSearch,
+        shops: _rows(_merchantDashboard?['shops']),
+        selectedShopId: _selectedShopId,
+        onQueryChanged: ({filter, search, shopId}) {
+          setState(() {
+            if (filter != null) _merchantOrderFilter = filter;
+            if (search != null) _merchantOrderSearch = search;
+            if (shopId != null) {
+              _selectedShopId = shopId.isEmpty ? null : shopId;
+            }
+            _next = null;
+          });
+          _load();
+        },
+        onOrderAction: _action,
+        onOpenConversation: _conversation,
+        onReload: _load,
+        onOpenDeliveryJourney: _openDeliveryJourney,
+      );
+    }
     const states = {
       'pending': 'Chờ cửa hàng xác nhận',
       'accepted': 'Đang chuẩn bị',
@@ -1446,7 +1585,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                 if (_rows(o['shipments']).length > 1)
                   for (final s in _rows(o['shipments']))
                     SelectableText(
-                      'Kiện #${s['parcel_no']}: ${s['tracking_code']} · ${cloudStatuses[s['status']] ?? s['status']}',
+                      'Kiện #${s['parcel_index'] ?? s['parcel_no']}: ${s['tracking_code']} · ${cloudStatuses[s['status']] ?? s['status']}',
                     ),
                 if ((o['reason'] as String? ?? '').isNotEmpty)
                   Text('Lý do: ${o['reason']}'),
@@ -1561,6 +1700,31 @@ class _MarketplaceViewState extends State<MarketplaceView> {
   Widget _workspace() {
     final shops = _rows(_data['shops']), products = _rows(_data['products']);
     final moderation = widget.view == MarketView.moderation;
+    if (!moderation && shops.isNotEmpty) {
+      return MerchantWorkspacePanel(
+        session: _session,
+        lease: _lease,
+        shops: shops,
+        products: products,
+        staff: _rows(_data['staff']),
+        dashboard: _merchantDashboard,
+        selectedShopId: _selectedShopId,
+        onSelectShop: (shopId) {
+          setState(() => _selectedShopId = shopId);
+          _load();
+        },
+        onEdit: _edit,
+        onReload: _load,
+        onOpenMerchantOrders: widget.onNavigate != null
+            ? () => widget.onNavigate!(MarketView.merchantOrders)
+            : () => openMarketplaceView(
+                context,
+                _session,
+                MarketView.merchantOrders,
+              ),
+        onOpenOperations: _openOperationsCenter,
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -2054,6 +2218,13 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                   _session,
                   MarketView.merchantOrders,
                 ),
+        ),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.analytics_outlined),
+          title: const Text('Kinh doanh & Hậu mãi'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: _openOperationsCenter,
         ),
       ],
       if (_session.hasRole('driver'))

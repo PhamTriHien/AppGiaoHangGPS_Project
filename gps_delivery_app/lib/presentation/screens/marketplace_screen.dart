@@ -14,6 +14,7 @@ import '../widgets/cloud_logistics_panels.dart';
 import '../widgets/cloud_notification_center.dart';
 import '../widgets/cloud_profile_form.dart';
 import '../widgets/cloud_session_boundary.dart';
+import '../widgets/merchant_cloud_panels.dart';
 import '../widgets/studio_user_auth_frame.dart';
 import 'admin_portal_screen.dart';
 import 'cloud_address_book_screen.dart';
@@ -149,6 +150,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
         [
           GhstUserSection.workspace,
           GhstUserSection.merchantOrders,
+          GhstUserSection.merchantOperations,
           GhstUserSection.merchantCsvImport,
           GhstUserSection.merchantPickups,
         ].contains(_section)) {
@@ -330,6 +332,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
     if ([
           GhstUserSection.workspace,
           GhstUserSection.merchantOrders,
+          GhstUserSection.merchantOperations,
         ].contains(section) &&
         !_session.hasMerchantAccess) {
       return;
@@ -358,6 +361,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
       if ([
         GhstUserSection.workspace,
         GhstUserSection.merchantOrders,
+        GhstUserSection.merchantOperations,
         GhstUserSection.merchantCsvImport,
         GhstUserSection.merchantPickups,
       ].contains(section)) {
@@ -645,6 +649,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
       showHeading: false,
       onNavigate: _navigate,
       onOpenShipping: _openDriverTrips,
+      onOpenDeliveryJourney: _openShippingDetails,
+      onOpenOperations: () => _go(GhstUserSection.merchantOperations),
       onOpenOperator: _session.isOperator
           ? () => _selectRoleMode(GhstRoleMode.operator)
           : null,
@@ -683,6 +689,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
                     ButtonSegment(value: 0, label: Text('Đơn lẻ')),
                     ButtonSegment(value: 1, label: Text('Nhập CSV')),
                     ButtonSegment(value: 2, label: Text('Đã gửi')),
+                    ButtonSegment(value: 3, label: Text('Thu gom')),
                   ],
                   selected: {_merchantShipTab},
                   onSelectionChanged: (v) =>
@@ -702,6 +709,13 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
                     key: ValueKey('$scope:merchant-ship-mobile'),
                     session: _session,
                     embedded: true,
+                  ),
+                  3 => CloudSessionBoundary(
+                    key: ValueKey('$scope:merchant-pickups-mobile'),
+                    session: _session,
+                    roles: const {'merchant'},
+                    builder: (_, lease) =>
+                        CloudPickupScreen(session: _session, lease: lease),
                   ),
                   _ => GhstShippingScreen(
                     key: ValueKey('$scope:form:$_formRevision'),
@@ -791,6 +805,16 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
       ),
       GhstUserSection.workspace => market(MarketView.workspace),
       GhstUserSection.merchantOrders => market(MarketView.merchantOrders),
+      GhstUserSection.merchantOperations => CloudSessionBoundary(
+        key: ValueKey('$scope:merchant-ops'),
+        session: _session,
+        roles: const {'merchant'},
+        builder: (_, lease) => MerchantOperationsCenter(
+          session: _session,
+          lease: lease,
+          onOpenDeliveryJourney: _openShippingDetails,
+        ),
+      ),
       GhstUserSection.merchantCsvImport => CloudSessionBoundary(
         key: ValueKey('$scope:merchant-csv'),
         session: _session,

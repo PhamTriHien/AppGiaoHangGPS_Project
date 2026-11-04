@@ -162,6 +162,38 @@ class MarketFixture extends CloudOrdersService {
     if (path == 'logistics/service_eta') {
       return {'services': const []};
     }
+    if (path == 'marketplace/finance_request') {
+      return market('finance_request', body ?? const {});
+    }
+    if (path.startsWith('merchant/')) {
+      final action = path.substring('merchant/'.length);
+      if (action == 'orders_list') {
+        return market('orders', {'workspace': 'merchant', ...?body});
+      }
+      if (action == 'dashboard') {
+        return {
+          'shops': const [],
+          'selected_shop_id': null,
+          'my_role': 'owner',
+          'kpis': null,
+        };
+      }
+      if (action == 'aftersales_inbox') {
+        return {
+          'returns': const [],
+          'reviews': const [],
+          'finance': const [],
+          'summary': const {},
+        };
+      }
+      if (action == 'promotions') {
+        return {'vouchers': const [], 'flash_sales': const []};
+      }
+      if (action == 'stock_ledger') {
+        return {'entries': const [], 'next': null};
+      }
+      return {'ok': true};
+    }
     throw StateError('Unexpected request $path');
   }
 

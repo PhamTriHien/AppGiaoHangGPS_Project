@@ -75,6 +75,11 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
   bool get _isDriverRole => widget.lease.session.hasRole('driver');
   bool get _isMerchantOrOperator =>
       widget.lease.session.isOperator || _order['merchant_id'] == _userId;
+  bool get _isShopStaffViewer =>
+      !_isOwner &&
+      !_isAssignedDriver &&
+      !_isMerchantOrOperator &&
+      widget.lease.session.hasMerchantAccess;
 
   String get _effectiveStatus {
     final history = _history;
@@ -1582,7 +1587,10 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
 
   Widget _buildOrderLiveChatCard(BuildContext context) {
     final canChat =
-        _isOwner || _isAssignedDriver || _isMerchantOrOperator;
+        _isOwner ||
+        _isAssignedDriver ||
+        _isMerchantOrOperator ||
+        _isShopStaffViewer;
     if (!canChat) return const SizedBox.shrink();
     final tokens = GhstThemeTokens.of(context);
     final quickReplies = _isAssignedDriver

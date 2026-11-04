@@ -53,6 +53,7 @@ enum GhstUserSection {
   aiAssistant,
   workspace,
   merchantOrders,
+  merchantOperations,
   driverQueue,
   driverTrips,
   driverPickups,
@@ -143,6 +144,7 @@ class GhstUserShell extends StatelessWidget {
     GhstUserSection.aiAssistant => 'Trợ lý AI',
     GhstUserSection.workspace => 'Cửa hàng của tôi',
     GhstUserSection.merchantOrders => 'Đơn của cửa hàng',
+    GhstUserSection.merchantOperations => 'Kinh doanh & Hậu mãi',
     GhstUserSection.driverQueue => 'Sàn chuyến chờ nhận',
     GhstUserSection.driverTrips => 'Chuyến giao của tôi',
     GhstUserSection.driverPickups => 'Lịch xe thu gom',
@@ -171,12 +173,12 @@ class GhstUserShell extends StatelessWidget {
             'Đơn shop',
             GhstUserSection.merchantOrders,
           ),
-          (Icons.local_shipping_outlined, 'Gửi hàng', GhstUserSection.shipping),
           (
-            Icons.warehouse_outlined,
-            'Thu gom',
-            GhstUserSection.merchantPickups,
+            Icons.analytics_outlined,
+            'Kinh doanh',
+            GhstUserSection.merchantOperations,
           ),
+          (Icons.local_shipping_outlined, 'Gửi hàng', GhstUserSection.shipping),
           (Icons.person_outline_rounded, 'Hồ sơ', GhstUserSection.profile),
         ],
         GhstRoleMode.merchant => const [
@@ -187,14 +189,14 @@ class GhstUserShell extends StatelessWidget {
             GhstUserSection.merchantOrders,
           ),
           (
+            Icons.support_agent_rounded,
+            'Hậu mãi',
+            GhstUserSection.merchantOperations,
+          ),
+          (
             Icons.notifications_none_rounded,
             'Thông báo',
             GhstUserSection.notifications,
-          ),
-          (
-            Icons.auto_awesome_outlined,
-            'Trợ lý AI',
-            GhstUserSection.aiAssistant,
           ),
           (Icons.person_outline_rounded, 'Hồ sơ', GhstUserSection.profile),
         ],
@@ -219,18 +221,20 @@ class GhstUserShell extends StatelessWidget {
     GhstRoleMode.merchant when merchantOwner => switch (section) {
       GhstUserSection.workspace => 0,
       GhstUserSection.merchantOrders => 1,
+      GhstUserSection.merchantOperations => 2,
       GhstUserSection.shipping ||
       GhstUserSection.merchantCsvImport ||
-      GhstUserSection.orders => 2,
+      GhstUserSection.orders ||
       GhstUserSection.merchantPickups => 3,
-      GhstUserSection.aiAssistant => -1,
+      GhstUserSection.aiAssistant || GhstUserSection.notifications => -1,
       _ => 4,
     },
     GhstRoleMode.merchant => switch (section) {
       GhstUserSection.workspace => 0,
       GhstUserSection.merchantOrders => 1,
-      GhstUserSection.notifications => 2,
-      GhstUserSection.aiAssistant => 3,
+      GhstUserSection.merchantOperations => 2,
+      GhstUserSection.notifications => 3,
+      GhstUserSection.aiAssistant => -1,
       _ => 4,
     },
     GhstRoleMode.customer || GhstRoleMode.operator => switch (section) {
@@ -257,14 +261,19 @@ class GhstUserShell extends StatelessWidget {
           GhstUserSection.workspace,
         _ => null,
       },
-    GhstRoleMode.merchant => null,
+    GhstRoleMode.merchant =>
+      switch (section) {
+        GhstUserSection.aiAssistant => GhstUserSection.workspace,
+        _ => null,
+      },
     GhstRoleMode.customer || GhstRoleMode.operator =>
       switch (section) {
         GhstUserSection.notifications ||
         GhstUserSection.tracking ||
         GhstUserSection.aiAssistant ||
         GhstUserSection.workspace ||
-        GhstUserSection.merchantOrders => GhstUserSection.home,
+        GhstUserSection.merchantOrders ||
+        GhstUserSection.merchantOperations => GhstUserSection.home,
         _ => null,
       },
   };
@@ -523,6 +532,11 @@ class GhstUserShell extends StatelessWidget {
             'Đơn của cửa hàng',
             GhstUserSection.merchantOrders,
           ),
+          item(
+            Icons.analytics_outlined,
+            'Kinh doanh & Hậu mãi',
+            GhstUserSection.merchantOperations,
+          ),
         ]),
         if (merchantOwner)
           group('VẬN CHUYỂN B2B', [
@@ -628,6 +642,11 @@ class GhstUserShell extends StatelessWidget {
                 Icons.inventory_2_outlined,
                 'Đơn của cửa hàng',
                 GhstUserSection.merchantOrders,
+              ),
+              item(
+                Icons.analytics_outlined,
+                'Kinh doanh & Hậu mãi',
+                GhstUserSection.merchantOperations,
               ),
             ],
             if (driver)

@@ -216,6 +216,11 @@ class CloudOrdersService {
     Map<String, dynamic> payload = const {},
   ]) => request('order-live/$action', body: payload);
 
+  Future<Map<String, dynamic>> merchant(
+    String action, [
+    Map<String, dynamic> payload = const {},
+  ]) => request('merchant/$action', body: payload);
+
   Future<Map<String, dynamic>> fetchDriverReviews({String? driverId}) =>
       logistics('driver_reviews', {
         if (driverId != null && driverId.isNotEmpty) 'driver_id': driverId,

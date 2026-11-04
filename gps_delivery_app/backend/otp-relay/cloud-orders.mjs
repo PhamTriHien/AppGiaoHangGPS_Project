@@ -65,7 +65,7 @@ export function createCloudOrders({ env = process.env, authenticate, fetcher = f
     catch { throw new IntegrationError(502, 'Phản hồi cloud không hợp lệ.'); }
     if (!response.ok) {
       if (['PGRST202', '42P01', '42883'].includes(data.code)) throw new IntegrationError(503,
-        ['delivery_marketplace','delivery_market_operations','delivery_market_browse','delivery_market_media_reserve','delivery_market_attachment_reserve','delivery_cloud_order_otp','delivery_cloud_share_manage','delivery_cloud_logistics','delivery_cloud_admin_accounts','delivery_cloud_promo_events','delivery_cloud_notifications','delivery_cloud_preferences','delivery_cloud_ai_history','delivery_cloud_order_live'].includes(name)
+        ['delivery_marketplace','delivery_market_operations','delivery_market_browse','delivery_market_media_reserve','delivery_market_attachment_reserve','delivery_cloud_order_otp','delivery_cloud_share_manage','delivery_cloud_logistics','delivery_cloud_admin_accounts','delivery_cloud_promo_events','delivery_cloud_notifications','delivery_cloud_preferences','delivery_cloud_ai_history','delivery_cloud_order_live','delivery_merchant_suite'].includes(name)
           ? 'Dữ liệu mua hàng cần được cập nhật trong trang quản trị.'
           : name === 'delivery_cloud_addresses_manage'
           ? 'Chưa cài sổ địa chỉ cloud. Chạy migration 20261029_cloud_addresses.sql trên Supabase.'
@@ -115,6 +115,16 @@ export function createCloudOrders({ env = process.env, authenticate, fetcher = f
       : await rpc(req, operationActions.has(req.params.action) ? 'delivery_market_operations' : 'delivery_marketplace', { p_action: req.params.action, p_payload: req.body });
     if (req.params.action === 'tracking_share') attachShareUrl(result, env);
     res.json(result);
+  }));
+  const merchantActions = new Set([
+    'dashboard','shop_quick_pause','product_quick_update','stock_ledger','promotions','orders_list','aftersales_inbox',
+  ]);
+  router.post('/merchant/:action', route(async (req, res) => {
+    if (!merchantActions.has(req.params.action) || !req.body || Array.isArray(req.body) ||
+        typeof req.body !== 'object' || Buffer.byteLength(JSON.stringify(req.body)) > 16000) {
+      throw new IntegrationError(400, 'Yêu cầu vận hành cửa hàng không hợp lệ.');
+    }
+    res.json(await rpc(req, 'delivery_merchant_suite', { p_action: req.params.action, p_payload: req.body }));
   }));
   const logisticsActions = new Set([
     'pickup_list','pickup_create','pickup_assign','recipient_trust','recipient_flag','instruction_set','stats','service_eta','driver_reviews',

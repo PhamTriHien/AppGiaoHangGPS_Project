@@ -36,7 +36,7 @@ try{
     grant usage on schema storage to authenticated;grant select,insert on storage.objects to authenticated;create publication supabase_realtime;`);
   await check('P0 latest additive migrations and catalog privacy',async()=>{
     for(const file of ['20261027_delivery_integrations','20261028_cloud_orders','20261029_payments_ghn','20261029_cloud_addresses',
-      '20261030_marketplace','20261031_market_operations','20261101_partner_memberships','20261102_local_address_import','20261103_catalog_stock_versions','20261104_market_media','20261105_market_browse','20261106_catalog_configuration','20261107_cloud_commercial_suite','20261108_cloud_logistics','20261109_admin_account_management','20261110_cloud_promo_events','20261111_profile_push_shipping_coins','20261112_shipping_cash_settlement','20261113_cloud_sync_and_journey']) {
+      '20261030_marketplace','20261031_market_operations','20261101_partner_memberships','20261102_local_address_import','20261103_catalog_stock_versions','20261104_market_media','20261105_market_browse','20261106_catalog_configuration','20261107_cloud_commercial_suite','20261108_cloud_logistics','20261109_admin_account_management','20261110_cloud_promo_events','20261111_profile_push_shipping_coins','20261112_shipping_cash_settlement','20261113_cloud_sync_and_journey','20261114_merchant_cloud_suite']) {
       await db.query(await readFile(new URL(`../../../database/migrations/${file}.sql`,import.meta.url),'utf8'));
     }
     const schema=(await db.query(DEPLOYMENT_SCHEMA_SQL)).rows[0];
@@ -179,7 +179,7 @@ try{
   await testCommercialSuite({db,as,rpc,operator,merchant,driver,secondDriver,buyers,shop,check,authenticatedQuery});
   await testCloudLogistics({db,as,operator,merchant,driver,buyers,check});
   await check('P7 cloud preferences, AI history, enriched queue privacy, live GPS/chat/checkpoints and driver reviews',async()=>{
-    for(const file of ['20261109_admin_account_management','20261110_cloud_promo_events','20261111_profile_push_shipping_coins','20261112_shipping_cash_settlement','20261113_cloud_sync_and_journey']) {
+    for(const file of ['20261109_admin_account_management','20261110_cloud_promo_events','20261111_profile_push_shipping_coins','20261112_shipping_cash_settlement','20261113_cloud_sync_and_journey','20261114_merchant_cloud_suite']) {
       await db.query(await readFile(new URL(`../../../database/migrations/${file}.sql`,import.meta.url),'utf8'));
     }
     const schemaAfterReapply=(await db.query(DEPLOYMENT_SCHEMA_SQL)).rows[0];
@@ -268,6 +268,146 @@ try{
     const finalOrder=(await as(customer,'delivery_cloud_list',[false,null,null])).orders.find(o=>o.id===done.id);
     assert.equal(finalOrder.driver_review.rating,5);
     assert.equal(finalOrder.driver_review.reply,'Cam on anh chi rat nhieu!');
+  });
+  await check('P8 merchant cloud suite RBAC, quick storefront/catalog controls, stock ledger, promotions, settlement math and delegated staff live journey',async()=>{
+    const managerUser=randomUUID(),staffUser=randomUUID(),outsiderUser=randomUUID(),suiteDriver=randomUUID(),suiteBuyer=randomUUID();
+    for(const [uid,name,phone] of [
+      [managerUser,'Quan Ly Shop','0931112233'],
+      [staffUser,'Nhan Vien Shop','0934445566'],
+      [outsiderUser,'Nguoi Ngoai','0937778899'],
+      [suiteDriver,'Tai Xe Suite','0939998877'],
+      [suiteBuyer,'Nguoi Mua Suite','0912345678'],
+    ]){
+      await db.query('insert into auth.users values($1)',[uid]);
+      await as(uid,'delivery_cloud_profile',[{full_name:name,phone,requested_role:'customer'}]);
+    }
+    await as(suiteBuyer,'delivery_cloud_addresses_manage',[randomUUID(),{
+      label:'Nha Rieng',recipient_name:'Nguoi Mua Suite',recipient_phone:'0912345678',
+      full_address:'20 Le Loi TP HCM',latitude:10.78,longitude:106.71,is_default:true,
+    },false,null]);
+    await as(suiteDriver,'delivery_cloud_membership',['driver','request']);
+    await as(operator,'delivery_cloud_membership',['driver','approve',suiteDriver,1,'']);
+
+    await rpc(merchant,'staff_save',{shop_id:shop.id,phone:'0931112233',role:'manager',active:true});
+    await rpc(merchant,'staff_save',{shop_id:shop.id,phone:'0934445566',role:'staff',active:true});
+
+    await assert.rejects(as(outsiderUser,'delivery_merchant_suite',['dashboard',{}]),e=>e.code==='PT403');
+    const ownerDash=await as(merchant,'delivery_merchant_suite',['dashboard',{shop_id:shop.id}]);
+    assert.equal(ownerDash.my_role,'owner');
+    assert.ok(ownerDash.kpis.finance!==null);
+    const managerDash=await as(managerUser,'delivery_merchant_suite',['dashboard',{shop_id:shop.id}]);
+    assert.equal(managerDash.my_role,'manager');
+    assert.ok(managerDash.kpis.finance!==null);
+    const staffDash=await as(staffUser,'delivery_merchant_suite',['dashboard',{shop_id:shop.id}]);
+    assert.equal(staffDash.my_role,'staff');
+    assert.equal(staffDash.kpis.finance,null);
+
+    await assert.rejects(
+      as(staffUser,'delivery_merchant_suite',['shop_quick_pause',{shop_id:shop.id,paused:true,version:ownerDash.shops[0].version}]),
+      e=>e.code==='PT403'
+    );
+    const pausedShop=(await as(managerUser,'delivery_merchant_suite',['shop_quick_pause',{shop_id:shop.id,paused:true,version:ownerDash.shops[0].version}])).shop;
+    assert.equal(pausedShop.paused,true);
+    assert.equal(pausedShop.status,'active');
+    const resumedShop=(await as(managerUser,'delivery_merchant_suite',['shop_quick_pause',{shop_id:shop.id,paused:false,version:pausedShop.version}])).shop;
+    assert.equal(resumedShop.paused,false);
+    assert.equal(resumedShop.status,'active');
+
+    const suiteProd=(await rpc(managerUser,'product_save',{
+      id:randomUUID(),shop_id:shop.id,name:'Ca Phe Hat Rang Moc',description:'100% Arabica',
+      category:'Do uong',sku:'CF-SUITE-1',price:120000,stock:5,weight_kg:0.5,published:true,
+    })).product;
+    await assert.rejects(
+      as(staffUser,'delivery_merchant_suite',['product_quick_update',{product_id:suiteProd.id,version:suiteProd.version,stock:20}]),
+      e=>e.code==='PT403'
+    );
+    const updatedProd=(await as(managerUser,'delivery_merchant_suite',['product_quick_update',{product_id:suiteProd.id,version:suiteProd.version,stock:18,published:true}])).product;
+    assert.equal(updatedProd.stock,18);
+    const stockLedger=await as(managerUser,'delivery_merchant_suite',['stock_ledger',{shop_id:shop.id,product_id:suiteProd.id}]);
+    assert.ok(stockLedger.entries.some(e=>e.reason==='merchant_quick_adjust' && e.delta===13));
+    await assert.rejects(as(staffUser,'delivery_merchant_suite',['stock_ledger',{shop_id:shop.id}]),e=>e.code==='PT403');
+
+    const starts=new Date(Date.now()-60_000).toISOString();
+    const ends=new Date(Date.now()+86_400_000).toISOString();
+    const shopVoucher=(await rpc(managerUser,'voucher_save',{
+      shop_id:shop.id,code:'MERCHSUITE10',title:'Giam 10k tai shop',discount_kind:'fixed',
+      discount_value:10000,max_discount:10000,min_subtotal:50000,budget_total:500000,per_user_limit:2,
+      starts_at:starts,ends_at:ends,active:true,
+    })).voucher;
+    await db.query(
+      `insert into delivery_market_vouchers(id,code,shop_id,owner_user_id,title,discount_kind,discount_value,max_discount,min_subtotal,budget_total,per_user_limit,starts_at,ends_at,active,created_by)
+       values($1,'PERSONALONLY',$2,$3,'Voucher ca nhan','fixed',5000,5000,0,5000,1,$4,$5,true,$3)`,
+      [randomUUID(),shop.id,suiteBuyer,starts,ends]
+    );
+    const shopFlash=(await rpc(managerUser,'flash_sale_save',{
+      product_id:suiteProd.id,sale_price:99000,allocated_stock:5,per_user_limit:2,starts_at:starts,ends_at:ends,active:true,
+    })).flash_sale;
+    const promos=await as(managerUser,'delivery_merchant_suite',['promotions',{shop_id:shop.id}]);
+    assert.ok(promos.vouchers.some(v=>v.id===shopVoucher.id));
+    assert.equal(promos.vouchers.some(v=>v.code==='PERSONALONLY'),false);
+    assert.ok(promos.flash_sales.some(f=>f.id===shopFlash.id && f.product_name==='Ca Phe Hat Rang Moc'));
+
+    const cartSnap=await rpc(suiteBuyer,'cart');
+    await rpc(suiteBuyer,'cart_set',{product_id:suiteProd.id,quantity:1,version:cartSnap.version});
+    const addrList=(await as(suiteBuyer,'delivery_cloud_addresses_manage')).addresses;
+    const suiteQuote=(await rpc(suiteBuyer,'quote',{address_id:addrList[0].id})).quote;
+    const suiteCheckout=await rpc(suiteBuyer,'checkout',{quote_id:suiteQuote.id,request_key:randomUUID()});
+    assert.ok(suiteCheckout.purchase.id);
+
+    const staffOrders=await as(staffUser,'delivery_merchant_suite',['orders_list',{shop_id:shop.id,filter:'pending'}]);
+    const queuedOrder=staffOrders.orders.find(o=>o.purchase_id===suiteCheckout.purchase.id);
+    assert.ok(queuedOrder);
+    const suiteOrderId=queuedOrder.id;
+    assert.equal(queuedOrder.buyer_profile.phone,'0912345678');
+
+    const acceptedOrder=(await rpc(staffUser,'order_action',{order_id:suiteOrderId,action:'accept',version:queuedOrder.version})).order;
+    const readyOrder=(await rpc(staffUser,'order_action',{order_id:suiteOrderId,action:'ready',version:acceptedOrder.version})).order;
+    assert.ok(readyOrder.delivery_id);
+
+    const staffLiveSnap=await as(staffUser,'delivery_cloud_order_live',['snapshot',{order_id:readyOrder.delivery_id}]);
+    assert.equal(staffLiveSnap.order.id,readyOrder.delivery_id);
+    const staffHist=await as(staffUser,'delivery_cloud_history_read',[readyOrder.delivery_id]);
+    assert.ok(staffHist.history.length>=1);
+    const staffMsg=await as(staffUser,'delivery_cloud_order_live',['send_chat',{order_id:readyOrder.delivery_id,text:'Shop da dong goi xong kien hang'}]);
+    assert.equal(staffMsg.message.sender_role,'merchant');
+    await assert.rejects(
+      as(staffUser,'delivery_cloud_order_live',['push_gps',{order_id:readyOrder.delivery_id,latitude:10.77,longitude:106.7}]),
+      e=>e.code==='PT403'
+    );
+
+    let deliv=await as(suiteDriver,'delivery_cloud_transition',[readyOrder.delivery_id,'claim',1,randomUUID(),'']);
+    deliv=await as(suiteDriver,'delivery_cloud_transition',[deliv.id,'arrive',deliv.version,randomUUID(),'']);
+    deliv=await as(suiteDriver,'delivery_cloud_transition',[deliv.id,'pickup',deliv.version,randomUUID(),'']);
+    deliv=await as(suiteDriver,'delivery_cloud_transition',[deliv.id,'collect_cash',deliv.version,randomUUID(),'']);
+    deliv=await as(suiteDriver,'delivery_cloud_transition',[deliv.id,'deliver',deliv.version,randomUUID(),'Giao thanh cong']);
+
+    await as(suiteBuyer,'delivery_market_operations',['review_save',{order_id:suiteOrderId,product_id:suiteProd.id,rating:5,body:'Hat thom va dong goi ky'}]);
+    const staffReviews=await as(staffUser,'delivery_merchant_suite',['aftersales_inbox',{shop_id:shop.id,tab:'reviews',filter:'unreplied'}]);
+    const prodRev=staffReviews.reviews.find(r=>r.product_id===suiteProd.id);
+    assert.ok(prodRev);
+    await as(staffUser,'delivery_market_operations',['review_reply',{review_kind:'product',id:prodRev.id,reply:'Cam on quy khach da ung ho shop!'}]);
+    await assert.rejects(
+      as(staffUser,'delivery_merchant_suite',['aftersales_inbox',{shop_id:shop.id,tab:'finance'}]),
+      e=>e.code==='PT403'
+    );
+
+    const dueAmount=Number(readyOrder.snapshot.payable_subtotal??readyOrder.snapshot.subtotal)+Number(readyOrder.snapshot.shipping_fee);
+    const colReq=(await as(suiteDriver,'delivery_market_operations',['finance_request',{
+      order_id:suiteOrderId,kind:'collection',amount:dueAmount,reason:'Nop COD du',evidence:'COD-SUITE-1',request_key:randomUUID(),
+    }])).finance;
+    await as(operator,'delivery_market_operations',['finance_action',{id:colReq.id,action:'approve',version:colReq.version,reason:'Duyet thu COD'}]);
+    await as(operator,'delivery_market_operations',['finance_action',{id:colReq.id,action:'complete',version:colReq.version+1,evidence:'BANK-COD-1'}]);
+    await db.query("update delivery_market_shop_orders set delivered_at=now()-interval '8 days' where id=$1",[suiteOrderId]);
+
+    const settleDash=await as(managerUser,'delivery_merchant_suite',['dashboard',{shop_id:shop.id}]);
+    const eligibleRow=settleDash.kpis.finance.eligible_orders.find(e=>e.order_id===suiteOrderId);
+    assert.ok(eligibleRow && eligibleRow.eligible_amount>0);
+    const settleReq=(await as(managerUser,'delivery_market_operations',['finance_request',{
+      order_id:suiteOrderId,kind:'settlement',amount:eligibleRow.eligible_amount,reason:'De nghi quyet toan ky nay',evidence:'SETTLE-SUITE-1',request_key:randomUUID(),
+    }])).finance;
+    assert.equal(settleReq.amount,eligibleRow.eligible_amount);
+    const financeInbox=await as(managerUser,'delivery_merchant_suite',['aftersales_inbox',{shop_id:shop.id,tab:'finance',filter:'settlement'}]);
+    assert.ok(financeInbox.finance.some(f=>f.id===settleReq.id));
   });
   const output=path.resolve(import.meta.dirname,'../../../build/verification/postgres-acceptance.json');
   await mkdir(path.dirname(output),{recursive:true});

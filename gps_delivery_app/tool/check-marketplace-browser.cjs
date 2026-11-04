@@ -155,6 +155,18 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || path.join(process.
             const unread=rows.filter(r=>!readNotices.has(r.id)).length;
             return route.fulfill({...data,json:{ok:true,unread_count:unread,latest:rows.find(r=>!readNotices.has(r.id))||null,notifications:rows,next:null,preferences:prefs}});
           }
+          if(u.pathname.startsWith('/delivery/cloud/preferences/'))return route.fulfill({...data,json:{ui_preferences:body&&body.theme_mode?{theme_mode:body.theme_mode}:{},shipping_draft:body&&body.draft?body.draft:null}});
+          if(u.pathname.startsWith('/delivery/cloud/ai-history/'))return route.fulfill({...data,json:{messages:[],ok:true}});
+          if(u.pathname.startsWith('/delivery/cloud/merchant/')){
+            const mAct=u.pathname.split('/').pop();
+            const myRole=role==='operator'?'operator':role==='shop_staff'?'staff':'owner';
+            if(mAct==='dashboard')return route.fulfill({...data,json:{shops:[sh],selected_shop_id:sh.id,my_role:myRole,kpis:{orders:{pending:merchantState==='pending'?1:0,overdue_pending:0,accepted:merchantState==='accepted'?1:0,ready:merchantState==='ready'?1:0,in_transit:0,delivered:1},catalog:{products_total:1,published_count:1,low_stock_count:1,out_of_stock_count:0},aftersales:{open_returns:0,unreplied_reviews:0,active_vouchers:0,active_flash_sales:0},finance:myRole==='staff'?null:{gross_subtotal:55000,collected_total:55000,refunded_total:0,settled_total:0,pending_settlement_total:0,eligible_settlement_total:0,eligible_orders:[]}}}});
+            if(mAct==='orders_list')return route.fulfill({...data,json:{orders:[{id:moid,shop_id:sh.id,shop_name:p.shop_name,state:merchantState,delivery_status:merchantState==='ready'?'searching':null,version:merchantVersion,reason:'',payment_status:'UNPAID',snapshot:{shop_name:p.shop_name,items:[item],subtotal:55000,shipping_fee:25000}}],next:null}});
+            if(mAct==='stock_ledger')return route.fulfill({...data,json:{entries:[],next:null}});
+            if(mAct==='promotions')return route.fulfill({...data,json:{vouchers:[],flash_sales:[]}});
+            if(mAct==='aftersales_inbox')return route.fulfill({...data,json:{returns:[],reviews:[],finance:[],summary:{}}}});
+            return route.fulfill({...data,json:{ok:true}});
+          }
           if(u.pathname==='/delivery/cloud/logistics/stats')return route.fulfill({...data,json:{scope:'network',summary:{total:1,delivered:1,failed_or_returned:0,cancelled:0,active:0,avg_delivery_minutes:24,avg_transit_minutes:15,by_service:[{service_type:'standard',total:1,delivered:1,avg_delivery_minutes:24}]},pickups:{requested:0,assigned:0},drivers:{approved:1,on_trip:0}}});
           const action=u.pathname.split('/').pop();
           if(!u.pathname.startsWith('/delivery/cloud/marketplace/'))return route.fulfill({...data,status:403,json:{error:'Fixture denied'}});
