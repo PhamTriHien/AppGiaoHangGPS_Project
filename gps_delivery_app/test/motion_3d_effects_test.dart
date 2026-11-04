@@ -3,7 +3,10 @@ import 'dart:ui' show PointerDeviceKind;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gps_delivery_app/core/theme/admin_studio_theme.dart';
+import 'package:gps_delivery_app/core/theme/app_theme.dart';
 import 'package:gps_delivery_app/presentation/widgets/animated_3d_ui_icons.dart';
+import 'package:gps_delivery_app/presentation/widgets/ghst_button_icon.dart';
 import 'package:gps_delivery_app/presentation/widgets/motion_3d_effects.dart';
 import 'package:gps_delivery_app/presentation/widgets/system_state_screens.dart';
 
@@ -231,9 +234,9 @@ void main() {
   );
 
   testWidgets(
-    'All 14 AI-generated Icon3dStyle assets exist (>100KB) and render in GhstAiIcon & Animated3dIconBadge without pumpAndSettle hang',
+    'All 26 AI-generated Icon3dStyle assets exist (>100KB) and render in GhstAiIcon & Animated3dIconBadge without pumpAndSettle hang',
     (tester) async {
-      expect(Icon3dStyle.values.length, 14);
+      expect(Icon3dStyle.values.length, 26);
       for (final style in Icon3dStyle.values) {
         final file = File(style.assetPath);
         expect(file.existsSync(), isTrue, reason: 'Missing ${style.assetPath}');
@@ -288,9 +291,64 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.byType(GhstAiIcon), findsNWidgets(28));
-      expect(find.byType(Animated3dIconBadge), findsNWidgets(14));
+      expect(find.byType(GhstAiIcon), findsNWidgets(52));
+      expect(find.byType(Animated3dIconBadge), findsNWidgets(26));
+      expect(find.byType(Icon), findsNothing);
       expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'GhstButtonIcon and ActionIconThemeData render 100% bespoke studio icons with zero stock Icon widgets',
+    (tester) async {
+      for (final theme in [
+        AppTheme.lightTheme,
+        AppTheme.darkTheme,
+        AdminStudioTheme.themeData(),
+        AdminStudioTheme.themeData(brightness: Brightness.dark),
+      ]) {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: theme,
+            home: Scaffold(
+              appBar: AppBar(
+                leading: const BackButton(),
+                actions: const [
+                  CloseButton(),
+                  DrawerButton(),
+                  EndDrawerButton(),
+                ],
+              ),
+              body: Column(
+                children: [
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final kind in GhstActionKind.values)
+                        GhstButtonIcon.glyph(kind, size: 18),
+                      const GhstButtonIcon(Icons.send_rounded, size: 18),
+                      const GhstButtonIcon.ai(
+                        Icon3dStyle.scooterExpress,
+                        size: 22,
+                      ),
+                      GhstButtonIcon.forLabel('Tiếp tục với Google', size: 18),
+                      SizedBox(
+                        width: 40,
+                        height: 40,
+                        child: const GhstButtonIcon(Icons.qr_code_2, size: 18),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.byType(Icon), findsNothing);
+        expect(tester.takeException(), isNull);
+      }
     },
   );
 }

@@ -13,6 +13,7 @@ import '../../core/utils/geo_math.dart';
 import '../../data/datasources/local/app_state_store.dart';
 import '../../domain/entities/geo_point.dart';
 import 'animated_3d_ui_icons.dart';
+import 'ghst_button_icon.dart';
 
 class ScooterRouteSample3d {
   final double worldX;
@@ -763,7 +764,7 @@ class OnboardingStateScreen extends StatelessWidget {
                     const SizedBox(height: AppSpacing.lg),
                     SizedBox(
                       width: double.infinity,
-                      child: ElevatedButton(
+                      child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
@@ -772,7 +773,9 @@ class OnboardingStateScreen extends StatelessWidget {
                           ),
                         ),
                         onPressed: onGetStarted,
-                        child: const Text('Bắt đầu ngay ↗'),
+                        icon: const GhstButtonIcon.glyph(GhstActionKind.forward, size: 16),
+
+                        label: const Text('Bắt đầu ngay ↗'),
                       ),
                     ),
                   ],
@@ -826,7 +829,7 @@ class EmptyOrdersStateWidget extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               ),
               onPressed: onCreateOrder,
-              icon: const Icon(Icons.add_box_outlined),
+              icon: const GhstButtonIcon(Icons.add_box_outlined),
               label: const Text('Tạo đơn hàng ngay'),
             ),
           ],
@@ -889,13 +892,13 @@ class OfflineQueueBanner extends StatelessWidget {
                 const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
+                    GhstButtonIcon(
                       Icons.wifi_off_rounded,
                       size: 44,
                       color: AppColors.ink,
                     ),
                     SizedBox(width: 6),
-                    Icon(
+                    GhstButtonIcon(
                       Icons.add_location_alt_outlined,
                       size: 28,
                       color: AppColors.primary,
@@ -927,7 +930,7 @@ class OfflineQueueBanner extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   height: 44,
-                  child: ElevatedButton(
+                  child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
@@ -936,7 +939,9 @@ class OfflineQueueBanner extends StatelessWidget {
                       ),
                     ),
                     onPressed: () => store.toggleOfflineSimulation(false),
-                    child: const Text(
+                    icon: const GhstButtonIcon.glyph(GhstActionKind.refresh, size: 16),
+
+                    label: const Text(
                       'Thử kết nối lại ↗',
                       style: TextStyle(fontWeight: FontWeight.w800),
                     ),
@@ -1529,7 +1534,7 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
                       color: AppColors.ink,
                       child: Row(
                         children: [
-                          const Icon(
+                          const GhstButtonIcon(
                             Icons.map_rounded,
                             color: AppColors.acid,
                             size: 20,
@@ -1562,7 +1567,7 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
                               setModalState(() => modalIs3d = !modalIs3d);
                               setState(() => _local3dOverride = modalIs3d);
                             },
-                            icon: const Icon(Icons.layers_outlined, size: 15),
+                            icon: const GhstButtonIcon(Icons.layers_outlined, size: 15),
                             label: Text(
                               modalIs3d ? 'Chế độ 3D' : 'Chế độ 2D',
                               style: const TextStyle(
@@ -1575,7 +1580,7 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
                           IconButton(
                             tooltip: 'Đóng bản đồ toàn màn hình',
                             onPressed: () => Navigator.of(dialogCtx).pop(),
-                            icon: const Icon(
+                            icon: const GhstButtonIcon(
                               Icons.close_rounded,
                               color: Colors.white,
                             ),
@@ -1903,14 +1908,22 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
                           Wrap(
                             spacing: 6,
                             children: [
-                              ('m', 'Bản đồ'),
-                              ('m,traffic', 'Giao thông'),
-                              ('y', 'Vệ tinh'),
-                              ('p', 'Địa hình'),
+                              ('m', 'Bản đồ', GhstActionKind.layers),
+                              ('m,traffic', 'Giao thông', GhstActionKind.route),
+                              ('y', 'Vệ tinh', GhstActionKind.gps),
+                              ('p', 'Địa hình', GhstActionKind.mapPin),
                             ].map((item) {
                               final selected = modalLayer == item.$1;
                               return ChoiceChip(
                                 visualDensity: VisualDensity.compact,
+                                showCheckmark: false,
+                                avatar: GhstButtonIcon.glyph(
+                                  item.$3,
+                                  size: 13,
+                                  color: selected
+                                      ? Colors.white
+                                      : AppColors.ink,
+                                ),
                                 label: Text(
                                   item.$2,
                                   style: TextStyle(
@@ -1970,7 +1983,7 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
                                     });
                                   },
                                 ),
-                                icon: Icon(
+                                icon: GhstButtonIcon(
                                   Icons.my_location_rounded,
                                   color: AppStateStore
                                           .instance
@@ -2002,7 +2015,7 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
                                     _zoomLevel = autoZ;
                                   });
                                 },
-                                icon: const Icon(
+                                icon: const GhstButtonIcon(
                                   Icons.center_focus_strong_rounded,
                                   color: Colors.white,
                                 ),
@@ -2026,7 +2039,7 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
                                     _zoomLevel = modalZoom;
                                   });
                                 },
-                                icon: const Icon(
+                                icon: const GhstButtonIcon(
                                   Icons.zoom_in,
                                   color: Colors.white,
                                 ),
@@ -2050,7 +2063,7 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
                                     _zoomLevel = modalZoom;
                                   });
                                 },
-                                icon: const Icon(
+                                icon: const GhstButtonIcon(
                                   Icons.zoom_out,
                                   color: Colors.white,
                                 ),
@@ -2673,7 +2686,7 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(
+                                  GhstButtonIcon(
                                     _topBannerIcon(),
                                     color: AppColors.acid,
                                     size: 18,
@@ -2781,7 +2794,7 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(
+                                  const GhstButtonIcon(
                                     Icons.layers_outlined,
                                     size: 13,
                                     color: AppColors.acid,
@@ -2827,7 +2840,8 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
                             ),
                             const SizedBox(height: 5),
                             _buildMapControlBtn(
-                              label: '+',
+                              buttonKey: const ValueKey('btn_map_zoom_in'),
+                              icon: Icons.zoom_in_rounded,
                               tooltip: 'Phóng to bản đồ',
                               onTap: () {
                                 setState(() {
@@ -2840,7 +2854,8 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
                             ),
                             const SizedBox(height: 5),
                             _buildMapControlBtn(
-                              label: '−',
+                              buttonKey: const ValueKey('btn_map_zoom_out'),
+                              icon: Icons.zoom_out_rounded,
                               tooltip: 'Thu nhỏ bản đồ',
                               onTap: () {
                                 setState(() {
@@ -2870,32 +2885,51 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
                               },
                             ),
                             const SizedBox(height: 5),
-                            InkWell(
-                              onTap: _handleToggle3d,
-                              child: Container(
-                                width: 34,
-                                height: 34,
-                                alignment: Alignment.center,
-                                decoration: BoxDecoration(
-                                  color: _effective3d
-                                      ? AppColors.primary
-                                      : AppColors.surface,
-                                  shape: BoxShape.circle,
-                                  boxShadow: const [
-                                    BoxShadow(
-                                      color: Colors.black26,
-                                      blurRadius: 4,
-                                    ),
-                                  ],
-                                ),
-                                child: Text(
-                                  _effective3d ? '3D' : '2D',
-                                  style: TextStyle(
-                                    fontSize: 10.5,
-                                    fontWeight: FontWeight.w800,
+                            Tooltip(
+                              message: _effective3d
+                                  ? 'Chuyển sang bản đồ 2D'
+                                  : 'Chuyển sang bản đồ 3D',
+                              child: InkWell(
+                                onTap: _handleToggle3d,
+                                child: Container(
+                                  width: 34,
+                                  height: 34,
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
                                     color: _effective3d
-                                        ? Colors.white
-                                        : AppColors.primary,
+                                        ? AppColors.primary
+                                        : AppColors.surface,
+                                    shape: BoxShape.circle,
+                                    boxShadow: const [
+                                      BoxShadow(
+                                        color: Colors.black26,
+                                        blurRadius: 4,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      GhstButtonIcon.glyph(
+                                        GhstActionKind.layers,
+                                        size: 11,
+                                        color: _effective3d
+                                            ? Colors.white
+                                            : AppColors.primary,
+                                      ),
+                                      Text(
+                                        _effective3d ? '3D' : '2D',
+                                        style: TextStyle(
+                                          fontSize: 8.5,
+                                          height: 1.05,
+                                          fontWeight: FontWeight.w900,
+                                          color: _effective3d
+                                              ? Colors.white
+                                              : AppColors.primary,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
@@ -2946,18 +2980,38 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
 
   Widget _buildLayerChip(String layerCode, String title) {
     final active = _googleLayer == layerCode;
+    final kind = switch (layerCode) {
+      'm,traffic' => GhstActionKind.route,
+      'y' => GhstActionKind.gps,
+      'p' => GhstActionKind.mapPin,
+      _ => GhstActionKind.layers,
+    };
     return InkWell(
       onTap: () => setState(() => _googleLayer = layerCode),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-        color: active ? AppColors.primary : Colors.transparent,
-        child: Text(
-          title,
-          style: TextStyle(
-            fontSize: 9.5,
-            fontWeight: active ? FontWeight.w800 : FontWeight.w600,
-            color: active ? Colors.white : Colors.white70,
-          ),
+        decoration: BoxDecoration(
+          color: active ? AppColors.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            GhstButtonIcon.glyph(
+              kind,
+              size: 10.5,
+              color: active ? Colors.white : Colors.white70,
+            ),
+            const SizedBox(width: 3),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 9.5,
+                fontWeight: active ? FontWeight.w800 : FontWeight.w600,
+                color: active ? Colors.white : Colors.white70,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -2998,14 +3052,11 @@ class _Map3dPerspectiveWidgetState extends State<Map3dPerspectiveWidget>
             ],
           ),
           child: icon != null
-              ? Icon(icon, size: 16.5, color: fgColor)
-              : Text(
-                  label ?? '',
-                  style: TextStyle(
-                    fontSize: 16.0,
-                    fontWeight: FontWeight.w900,
-                    color: fgColor,
-                  ),
+              ? GhstButtonIcon(icon, size: 16.5, color: fgColor)
+              : GhstButtonIcon.forLabel(
+                  label ?? tooltip,
+                  size: 16.5,
+                  color: fgColor,
                 ),
         ),
       ),

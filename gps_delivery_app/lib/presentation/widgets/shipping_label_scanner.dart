@@ -2,6 +2,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/integrations/delivery_api_client.dart';
+import 'ghst_button_icon.dart';
 
 class ShippingLabelScanner extends StatefulWidget {
   const ShippingLabelScanner({super.key, required this.onApply, this.api});
@@ -83,13 +84,17 @@ class _ShippingLabelScannerState extends State<ShippingLabelScanner> {
             ),
           ),
           actions: [
-            TextButton(
+            TextButton.icon(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Hủy'),
+              icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+              label: const Text('Hủy'),
             ),
-            FilledButton(
+            FilledButton.icon(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Áp dụng'),
+              icon: const GhstButtonIcon.glyph(GhstActionKind.checkCircle, size: 16),
+
+              label: const Text('Áp dụng'),
             ),
           ],
         ),
@@ -129,7 +134,7 @@ class _ShippingLabelScannerState extends State<ShippingLabelScanner> {
                 height: 16,
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
-            : const Icon(Icons.document_scanner_outlined),
+            : const GhstButtonIcon(Icons.document_scanner_outlined),
         label: Text(_busy ? 'Đang đọc nhãn...' : 'Quét nhãn vận đơn'),
       ),
       if (_error != null)

@@ -6,18 +6,22 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/integrations/cloud_account_session.dart';
 import '../../core/integrations/delivery_api_client.dart';
 import '../../core/integrations/push_notification_service.dart';
+import '../../core/theme/theme_controller.dart';
 import '../customer/ghst_ai_chat_screen.dart';
 import '../customer/ghst_home_screen.dart';
 import '../customer/ghst_shipping_screen.dart';
 import '../customer/ghst_user_shell.dart';
+import '../widgets/animated_3d_ui_icons.dart';
 import '../widgets/cloud_logistics_panels.dart';
 import '../widgets/cloud_notification_center.dart';
 import '../widgets/cloud_profile_form.dart';
 import '../widgets/cloud_session_boundary.dart';
+import '../widgets/ghst_button_icon.dart';
 import '../widgets/merchant_cloud_panels.dart';
 import '../widgets/studio_user_auth_frame.dart';
 import 'admin_portal_screen.dart';
 import 'cloud_address_book_screen.dart';
+import 'cloud_app_settings_screen.dart';
 import 'cloud_auth_screen.dart';
 import 'cloud_order_details_screen.dart';
 import 'cloud_order_import_screen.dart';
@@ -544,14 +548,17 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
               const SizedBox(height: 12),
               FilledButton.icon(
                 onPressed: _refresh,
-                icon: const Icon(Icons.refresh),
+                icon: const GhstButtonIcon.glyph(
+                  GhstActionKind.refresh,
+                  size: 17,
+                ),
                 label: const Text('Thử lại'),
               ),
             ],
             const SizedBox(height: 8),
             TextButton.icon(
               onPressed: _session.service.signOut,
-              icon: const Icon(Icons.logout),
+              icon: const GhstButtonIcon.glyph(GhstActionKind.logout, size: 17),
               label: const Text('Đăng xuất'),
             ),
           ],
@@ -588,12 +595,16 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
               OutlinedButton.icon(
                 key: const ValueKey('blocked-return-operator'),
                 onPressed: () => _selectRoleMode(GhstRoleMode.operator),
-                icon: const Icon(Icons.admin_panel_settings_outlined),
+                icon: const GhstAiIcon(
+                  style: Icon3dStyle.adminShieldOps,
+                  size: 18,
+                  circular: true,
+                ),
                 label: const Text('Quay lại Cổng Quản trị'),
               ),
             TextButton.icon(
               onPressed: _session.service.signOut,
-              icon: const Icon(Icons.logout),
+              icon: const GhstButtonIcon.glyph(GhstActionKind.logout, size: 17),
               label: const Text('Đăng xuất'),
             ),
           ],
@@ -626,14 +637,18 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
               OutlinedButton.icon(
                 key: const ValueKey('incomplete-return-operator'),
                 onPressed: () => _selectRoleMode(GhstRoleMode.operator),
-                icon: const Icon(Icons.admin_panel_settings_outlined),
+                icon: const GhstAiIcon(
+                  style: Icon3dStyle.adminShieldOps,
+                  size: 18,
+                  circular: true,
+                ),
                 label: const Text('Quay lại Cổng Quản trị'),
               ),
             ],
             const SizedBox(height: 8),
             TextButton.icon(
               onPressed: _session.service.signOut,
-              icon: const Icon(Icons.logout),
+              icon: const GhstButtonIcon.glyph(GhstActionKind.logout, size: 17),
               label: const Text('Đăng xuất'),
             ),
           ],
@@ -651,6 +666,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
       onOpenShipping: _openDriverTrips,
       onOpenDeliveryJourney: _openShippingDetails,
       onOpenOperations: () => _go(GhstUserSection.merchantOperations),
+      onOpenSettings: () => _go(GhstUserSection.settings),
       onOpenOperator: _session.isOperator
           ? () => _selectRoleMode(GhstRoleMode.operator)
           : null,
@@ -685,11 +701,44 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
               Padding(
                 padding: const EdgeInsets.all(12),
                 child: SegmentedButton<int>(
+                  showSelectedIcon: false,
                   segments: const [
-                    ButtonSegment(value: 0, label: Text('Đơn lẻ')),
-                    ButtonSegment(value: 1, label: Text('Nhập CSV')),
-                    ButtonSegment(value: 2, label: Text('Đã gửi')),
-                    ButtonSegment(value: 3, label: Text('Thu gom')),
+                    ButtonSegment(
+                      value: 0,
+                      label: Text('Đơn lẻ'),
+                      icon: GhstAiIcon(
+                        style: Icon3dStyle.createPlus,
+                        size: 16,
+                        circular: true,
+                      ),
+                    ),
+                    ButtonSegment(
+                      value: 1,
+                      label: Text('Nhập CSV'),
+                      icon: GhstAiIcon(
+                        style: Icon3dStyle.csvImport,
+                        size: 16,
+                        circular: true,
+                      ),
+                    ),
+                    ButtonSegment(
+                      value: 2,
+                      label: Text('Đã gửi'),
+                      icon: GhstAiIcon(
+                        style: Icon3dStyle.orderReceipt,
+                        size: 16,
+                        circular: true,
+                      ),
+                    ),
+                    ButtonSegment(
+                      value: 3,
+                      label: Text('Thu gom'),
+                      icon: GhstAiIcon(
+                        style: Icon3dStyle.hub2hBatch,
+                        size: 16,
+                        circular: true,
+                      ),
+                    ),
                   ],
                   selected: {_merchantShipTab},
                   onSelectionChanged: (v) =>
@@ -756,6 +805,25 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
       GhstUserSection.shipping => shippingContent,
       GhstUserSection.food => market(MarketView.catalog),
       GhstUserSection.profile => market(MarketView.account),
+      GhstUserSection.settings => CloudSessionBoundary(
+        key: ValueKey('$scope:settings'),
+        session: _session,
+        builder: (_, lease) => CloudAppSettingsScreen(
+          session: _session,
+          lease: lease,
+          embedded: true,
+          roleMode: roleMode,
+          availableModes: _unlockedModes(),
+          onSelectRoleMode: _selectRoleMode,
+          aiController: aiController,
+          onOpenAddresses: _addresses,
+          onOpenNotifications: () => _go(GhstUserSection.notifications),
+          onOpenAiAssistant: () => _go(GhstUserSection.aiAssistant),
+          onOpenOperator: _session.isOperator
+              ? () => _selectRoleMode(GhstRoleMode.operator)
+              : null,
+        ),
+      ),
       GhstUserSection.notifications => CloudSessionBoundary(
         key: ValueKey('$scope:notifications'),
         session: _session,
@@ -891,12 +959,20 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
                         ButtonSegment(
                           value: false,
                           label: Text('Đơn giao hàng'),
-                          icon: Icon(Icons.local_shipping_outlined),
+                          icon: GhstAiIcon(
+                            style: Icon3dStyle.scooterExpress,
+                            size: 18,
+                            circular: true,
+                          ),
                         ),
                         ButtonSegment(
                           value: true,
                           label: Text('Đơn mua'),
-                          icon: Icon(Icons.shopping_bag_outlined),
+                          icon: GhstAiIcon(
+                            style: Icon3dStyle.shoppingCart,
+                            size: 18,
+                            circular: true,
+                          ),
                         ),
                       ],
                       selected: {_purchaseOrders},
@@ -917,6 +993,9 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
               ),
     };
 
+    final showAiBubble =
+        ThemeControllerScope.maybeOf(context)?.showAiFloatingBubble ?? true;
+
     return ListenableBuilder(
       listenable: PushNotificationService.instance,
       builder: (context, _) => GhstUserShell(
@@ -936,7 +1015,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen>
         onCreateOrder: () => _createOrder({}),
         onCart: () => openMarketplaceView(context, _session, MarketView.cart),
         onLogout: _session.service.signOut,
-        floatingOverlay: _section == GhstUserSection.aiAssistant
+        floatingOverlay:
+            _section == GhstUserSection.aiAssistant || !showAiBubble
             ? null
             : GhstAiFloatingBubble(
                 key: ValueKey('$scope:ai-bubble'),

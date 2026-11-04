@@ -9,6 +9,8 @@ import '../../data/datasources/local/app_state_store.dart';
 import '../../domain/enums/user_role.dart';
 import '../admin/admin_subsystem_views.dart';
 import '../bloc/system_architecture_cubit.dart';
+import '../widgets/animated_3d_ui_icons.dart';
+import '../widgets/ghst_button_icon.dart';
 import '../widgets/motion_3d_effects.dart';
 
 class LegacyAdminPortalScreen extends StatefulWidget {
@@ -360,7 +362,7 @@ class _LegacyAdminPortalScreenState extends State<LegacyAdminPortalScreen> {
                                           : 'Ẩn mật khẩu',
                                       onPressed: () =>
                                           setState(() => _obscure = !_obscure),
-                                      icon: Icon(
+                                      icon: GhstButtonIcon(
                                         _obscure
                                             ? Icons.visibility_outlined
                                             : Icons.visibility_off_outlined,
@@ -424,7 +426,7 @@ class _LegacyAdminPortalScreenState extends State<LegacyAdminPortalScreen> {
                                 maxTilt: 0.055,
                                 pressScale: 0.975,
                                 hoverLift: -1.5,
-                                child: FilledButton(
+                                child: FilledButton.icon(
                                   onPressed: _busy ? null : _submit,
                                   style: FilledButton.styleFrom(
                                     minimumSize: const Size(
@@ -432,22 +434,28 @@ class _LegacyAdminPortalScreenState extends State<LegacyAdminPortalScreen> {
                                       48,
                                     ),
                                   ),
-                                  child: _busy
+                                  icon: _busy
                                       ? const SizedBox(
-                                          width: 20,
-                                          height: 20,
+                                          width: 18,
+                                          height: 18,
                                           child: CircularProgressIndicator(
                                             strokeWidth: 2,
                                             color: Colors.white,
                                           ),
                                         )
-                                      : Text(
-                                          _pendingAdmin != null
-                                              ? 'Xác nhận OTP'
-                                              : _setup
-                                              ? 'Tạo quản trị viên'
-                                              : 'Đăng nhập',
+                                      : const GhstAiIcon(
+                                          style: Icon3dStyle.adminShieldOps,
+                                          size: 19,
+                                          circular: true,
+                                          selected: true,
                                         ),
+                                  label: Text(
+                                    _pendingAdmin != null
+                                        ? 'Xác nhận OTP'
+                                        : _setup
+                                        ? 'Tạo quản trị viên'
+                                        : 'Đăng nhập',
+                                  ),
                                 ),
                               ),
                               const SizedBox(height: 10),
@@ -457,22 +465,26 @@ class _LegacyAdminPortalScreenState extends State<LegacyAdminPortalScreen> {
                                     : () => Navigator.of(
                                         context,
                                       ).pushNamed('/admin'),
-                                icon: const Icon(Icons.cloud_outlined),
+                                icon: const GhstButtonIcon(Icons.cloud_outlined),
                                 label: const Text('Mở Cổng Quản trị'),
                               ),
                               if (_setup || _pendingAdmin != null)
-                                TextButton(
+                                TextButton.icon(
                                   onPressed: _busy ? null : () => _resetForm(),
-                                  child: const Text(
+                                  icon: const GhstButtonIcon.glyph(GhstActionKind.login, size: 16),
+
+                                  label: const Text(
                                     'Quay lại đăng nhập quản trị',
                                   ),
                                 )
                               else if (_canSetup)
-                                TextButton(
+                                TextButton.icon(
                                   onPressed: _busy
                                       ? null
                                       : () => _resetForm(setup: true),
-                                  child: const Text(
+                                  icon: const GhstButtonIcon.glyph(GhstActionKind.userPlus, size: 16),
+
+                                  label: const Text(
                                     'Thiết lập quản trị viên đầu tiên',
                                   ),
                                 ),

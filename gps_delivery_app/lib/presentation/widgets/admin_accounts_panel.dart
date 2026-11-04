@@ -10,6 +10,7 @@ import 'cloud_membership_panel.dart';
 import 'cloud_order_labels.dart';
 import 'cloud_profile_form.dart';
 import 'cloud_session_boundary.dart';
+import 'ghst_button_icon.dart';
 
 const adminAuditActionLabels = {
   'pricing': 'Cập nhật bảng giá cước',
@@ -409,7 +410,7 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                         color: p.line,
                       ),
                     ),
-                    child: Icon(icon, size: compact ? 16 : 18, color: accent),
+                    child: GhstButtonIcon(icon, size: compact ? 16 : 18, color: accent),
                   ),
                   SizedBox(width: compact ? 8 : 10),
                   Expanded(
@@ -471,7 +472,7 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (icon != null) ...[
-          Icon(icon, size: 13, color: fg),
+          GhstButtonIcon(icon, size: 13, color: fg),
           const SizedBox(width: 4),
         ],
         Flexible(
@@ -502,7 +503,7 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: accent ?? p.muted),
+          GhstButtonIcon(icon, size: 14, color: accent ?? p.muted),
           const SizedBox(width: 5),
           Flexible(
             child: Text(
@@ -605,7 +606,7 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  icon: const Icon(Icons.check_rounded, size: 16),
+                  icon: const GhstButtonIcon(Icons.check_rounded, size: 16),
                   label: Text('Duyệt $roleLabel'),
                 ),
                 OutlinedButton.icon(
@@ -624,7 +625,7 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                     ),
                     visualDensity: VisualDensity.compact,
                   ),
-                  icon: const Icon(Icons.close_rounded, size: 16),
+                  icon: const GhstButtonIcon(Icons.close_rounded, size: 16),
                   label: Text('Từ chối $roleLabel'),
                 ),
               ] else if (state == 'active')
@@ -644,7 +645,7 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                     ),
                     visualDensity: VisualDensity.compact,
                   ),
-                  icon: const Icon(Icons.person_remove_outlined, size: 16),
+                  icon: const GhstButtonIcon(Icons.person_remove_outlined, size: 16),
                   label: Text('Thu hồi $roleLabel'),
                 )
               else if (hasProfile && !blocked)
@@ -664,7 +665,7 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                     ),
                     visualDensity: VisualDensity.compact,
                   ),
-                  icon: const Icon(Icons.verified_outlined, size: 16),
+                  icon: const GhstButtonIcon(Icons.verified_outlined, size: 16),
                   label: Text('Cấp quyền $roleLabel'),
                 ),
             ],
@@ -833,7 +834,7 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(
+                              GhstButtonIcon(
                                 Icons.mail_outline_rounded,
                                 size: 14,
                                 color: p.muted,
@@ -855,7 +856,7 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                                 const SizedBox(width: 4),
                                 Tooltip(
                                   message: 'Email đã xác thực',
-                                  child: Icon(
+                                  child: GhstButtonIcon(
                                     Icons.verified_rounded,
                                     size: 14,
                                     color: p.violet,
@@ -867,7 +868,7 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
+                            GhstButtonIcon(
                               Icons.phone_outlined,
                               size: 14,
                               color: p.muted,
@@ -893,7 +894,7 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(
+                              GhstButtonIcon(
                                 Icons.cake_outlined,
                                 size: 14,
                                 color: p.muted,
@@ -913,7 +914,7 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(
+                              GhstButtonIcon(
                                 Icons.badge_outlined,
                                 size: 14,
                                 color: p.muted,
@@ -939,7 +940,7 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(
+                                GhstButtonIcon(
                                   Icons.fingerprint_rounded,
                                   size: 14,
                                   color: p.muted,
@@ -954,7 +955,7 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                                   ),
                                 ),
                                 const SizedBox(width: 3),
-                                Icon(
+                                GhstButtonIcon(
                                   Icons.copy_rounded,
                                   size: 12,
                                   color: p.muted,
@@ -1032,7 +1033,7 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                 children: [
                   OutlinedButton.icon(
                     onPressed: _busy ? null : () => _openDetail(a),
-                    icon: const Icon(
+                    icon: const GhstButtonIcon(
                       Icons.admin_panel_settings_outlined,
                       size: 17,
                     ),
@@ -1040,7 +1041,7 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                   ),
                   OutlinedButton.icon(
                     onPressed: _busy ? null : () => _editProfile(a),
-                    icon: const Icon(Icons.edit_outlined, size: 17),
+                    icon: const GhstButtonIcon(Icons.edit_outlined, size: 17),
                     label: Text(hasProfile ? 'Sửa hồ sơ' : 'Hoàn tất hồ sơ'),
                   ),
                   if (!isSelf || !isOp)
@@ -1048,7 +1049,7 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                       onPressed: _busy || (blocked && !isOp)
                           ? null
                           : () => _toggleOperator(a),
-                      icon: Icon(
+                      icon: GhstButtonIcon(
                         isOp
                             ? Icons.remove_moderator_outlined
                             : Icons.add_moderator_outlined,
@@ -1076,7 +1077,7 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                         width: 1.4,
                       ),
                     ),
-                    icon: Icon(
+                    icon: GhstButtonIcon(
                       blocked
                           ? Icons.lock_open_rounded
                           : Icons.lock_outline_rounded,
@@ -1233,7 +1234,7 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                                       onPressed: _busy
                                           ? null
                                           : () => _load(force: true),
-                                      icon: const Icon(Icons.refresh_rounded),
+                                      icon: const GhstButtonIcon(Icons.refresh_rounded),
                                     )
                                   else
                                     FilledButton.icon(
@@ -1244,7 +1245,7 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                                         backgroundColor: AdminStudioColors.acid,
                                         foregroundColor: p.onAccentInk,
                                       ),
-                                      icon: const Icon(
+                                      icon: const GhstButtonIcon(
                                         Icons.refresh_rounded,
                                         size: 18,
                                       ),
@@ -1298,7 +1299,7 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                         ),
                         child: Row(
                           children: [
-                            Icon(
+                            GhstButtonIcon(
                               Icons.check_circle_outline_rounded,
                               color: p.acidInk,
                               size: 18,
@@ -1415,14 +1416,14 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                               decoration: InputDecoration(
                                 labelText:
                                     'Tìm theo họ tên, email, số điện thoại hoặc UUID',
-                                prefixIcon: const Icon(Icons.search_rounded),
+                                prefixIcon: const GhstButtonIcon(Icons.search_rounded),
                                 suffixIcon: _search.text.isEmpty
                                     ? null
                                     : IconButton(
                                         tooltip: 'Xóa tìm kiếm',
                                         onPressed: () =>
                                             setState(_search.clear),
-                                        icon: const Icon(Icons.close_rounded),
+                                        icon: const GhstButtonIcon(Icons.close_rounded),
                                       ),
                               ),
                             ),
@@ -1432,12 +1433,7 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                               runSpacing: 8,
                               children: [
                                 for (final opt in filterOptions)
-                                  ChoiceChip(
-                                    label: Text(opt.$2),
-                                    selected: _filter == opt.$1,
-                                    selectedColor: p.acid,
-                                    backgroundColor: p.surfaceSubtle,
-                                    labelStyle: TextStyle(
+                                  ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel(opt.$2, size: 15, color: (_filter == opt.$1) ? p.onAccentInk : p.ink), label: Text(opt.$2), selected: _filter == opt.$1, selectedColor: p.acid, backgroundColor: p.surfaceSubtle, labelStyle: TextStyle(
                                       fontSize: 12.5,
                                       fontWeight: _filter == opt.$1
                                           ? FontWeight.w800
@@ -1445,10 +1441,8 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                                       color: _filter == opt.$1
                                           ? p.onAccentInk
                                           : p.ink,
-                                    ),
-                                    onSelected: (_) =>
-                                        setState(() => _filter = opt.$1),
-                                  ),
+                                    ), onSelected: (_) =>
+                                        setState(() => _filter = opt.$1),),
                               ],
                             ),
                             const SizedBox(height: 10),
@@ -1482,7 +1476,7 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                           padding: const EdgeInsets.all(28),
                           child: Column(
                             children: [
-                              Icon(
+                              GhstButtonIcon(
                                 Icons.person_search_outlined,
                                 size: 36,
                                 color: p.muted,
@@ -1497,12 +1491,14 @@ class _AdminAccountsPanelState extends State<AdminAccountsPanel> {
                                 ),
                               ),
                               const SizedBox(height: 10),
-                              TextButton(
+                              TextButton.icon(
                                 onPressed: () => setState(() {
                                   _filter = 'all';
                                   _search.clear();
                                 }),
-                                child: const Text('Đặt lại bộ lọc'),
+                                icon: const GhstButtonIcon.glyph(GhstActionKind.refresh, size: 16),
+
+                                label: const Text('Đặt lại bộ lọc'),
                               ),
                             ],
                           ),
@@ -1653,7 +1649,7 @@ class _EditAccountProfileDialogState extends State<_EditAccountProfileDialog> {
                     counterText: '',
                     suffixIcon: IconButton(
                       tooltip: 'Chọn ngày sinh',
-                      icon: const Icon(Icons.calendar_month_outlined),
+                      icon: const GhstButtonIcon(Icons.calendar_month_outlined),
                       onPressed: _pickBirthDate,
                     ),
                   ),
@@ -1700,11 +1696,13 @@ class _EditAccountProfileDialogState extends State<_EditAccountProfileDialog> {
         ),
       ),
       actions: [
-        TextButton(
+        TextButton.icon(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Quay lại'),
+          icon: const GhstButtonIcon.glyph(GhstActionKind.back, size: 16),
+
+          label: const Text('Quay lại'),
         ),
-        FilledButton(
+        FilledButton.icon(
           onPressed: () {
             if (_formKey.currentState!.validate()) {
               Navigator.pop(context, {
@@ -1716,7 +1714,9 @@ class _EditAccountProfileDialogState extends State<_EditAccountProfileDialog> {
               });
             }
           },
-          child: const Text('Lưu hồ sơ'),
+          icon: const GhstButtonIcon.glyph(GhstActionKind.save, size: 16),
+
+          label: const Text('Lưu hồ sơ'),
         ),
       ],
     );
@@ -1802,11 +1802,13 @@ class _BlockAccountDialogState extends State<_BlockAccountDialog> {
         ),
       ),
       actions: [
-        TextButton(
+        TextButton.icon(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Quay lại'),
+          icon: const GhstButtonIcon.glyph(GhstActionKind.back, size: 16),
+
+          label: const Text('Quay lại'),
         ),
-        FilledButton(
+        FilledButton.icon(
           style: widget.block
               ? FilledButton.styleFrom(
                   backgroundColor: p.danger,
@@ -1814,7 +1816,9 @@ class _BlockAccountDialogState extends State<_BlockAccountDialog> {
                 )
               : null,
           onPressed: () => Navigator.pop(context, _reason.text.trim()),
-          child: const Text('Xác nhận'),
+          icon: const GhstButtonIcon.glyph(GhstActionKind.checkCircle, size: 16),
+
+          label: const Text('Xác nhận'),
         ),
       ],
     );
@@ -2122,9 +2126,11 @@ class _AccountGovernanceDetailDialogState
         ),
       ),
       actions: [
-        TextButton(
+        TextButton.icon(
           onPressed: () => Navigator.pop(context, false),
-          child: const Text('Đóng'),
+          icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+          label: const Text('Đóng'),
         ),
       ],
     );

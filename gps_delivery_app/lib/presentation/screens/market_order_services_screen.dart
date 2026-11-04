@@ -9,6 +9,7 @@ import '../../core/utils/market_options.dart';
 import '../widgets/cloud_order_labels.dart';
 import '../widgets/cloud_session_boundary.dart';
 import '../widgets/market_commercial_sheets.dart';
+import '../widgets/ghst_button_icon.dart';
 
 List<Map<String, dynamic>> _rows(dynamic value) => (value as List? ?? [])
     .map((e) => Map<String, dynamic>.from(e as Map))
@@ -224,11 +225,13 @@ class _MarketOrderServicesScreenState extends State<MarketOrderServicesScreen> {
               ),
             ),
             actions: [
-              TextButton(
+              TextButton.icon(
                 onPressed: () => Navigator.pop(dialog),
-                child: const Text('Quay lại'),
+                icon: const GhstButtonIcon.glyph(GhstActionKind.back, size: 16),
+
+                label: const Text('Quay lại'),
               ),
-              FilledButton(
+              FilledButton.icon(
                 onPressed: () {
                   if (lease.valid && form.currentState!.validate()) {
                     Navigator.pop(dialog, {
@@ -237,7 +240,9 @@ class _MarketOrderServicesScreenState extends State<MarketOrderServicesScreen> {
                     });
                   }
                 },
-                child: const Text('Xác nhận'),
+                icon: const GhstButtonIcon.glyph(GhstActionKind.checkCircle, size: 16),
+
+                label: const Text('Xác nhận'),
               ),
             ],
           ),
@@ -352,7 +357,7 @@ class _MarketOrderServicesScreenState extends State<MarketOrderServicesScreen> {
                                       }
                                     }
                                   },
-                            icon: const Icon(Icons.attach_file),
+                            icon: const GhstButtonIcon(Icons.attach_file),
                             label: Text(
                               attachments.isEmpty
                                   ? 'Đính kèm ảnh minh chứng trả hàng'
@@ -365,11 +370,13 @@ class _MarketOrderServicesScreenState extends State<MarketOrderServicesScreen> {
                 ),
               ),
               actions: [
-                TextButton(
+                TextButton.icon(
                   onPressed: () => Navigator.pop(dialog),
-                  child: const Text('Quay lại'),
+                  icon: const GhstButtonIcon.glyph(GhstActionKind.back, size: 16),
+
+                  label: const Text('Quay lại'),
                 ),
-                FilledButton(
+                FilledButton.icon(
                   onPressed: uploading
                       ? null
                       : () {
@@ -380,7 +387,9 @@ class _MarketOrderServicesScreenState extends State<MarketOrderServicesScreen> {
                             });
                           }
                         },
-                  child: const Text('Xác nhận'),
+                  icon: const GhstButtonIcon.glyph(GhstActionKind.checkCircle, size: 16),
+
+                  label: const Text('Xác nhận'),
                 ),
               ],
             ),
@@ -437,7 +446,7 @@ class _MarketOrderServicesScreenState extends State<MarketOrderServicesScreen> {
                               ),
                               padding: EdgeInsets.zero,
                               onPressed: () => update(() => rating = i),
-                              icon: Icon(
+                              icon: GhstButtonIcon(
                                 i <= rating ? Icons.star : Icons.star_border,
                               ),
                             ),
@@ -455,17 +464,21 @@ class _MarketOrderServicesScreenState extends State<MarketOrderServicesScreen> {
               ),
             ),
             actions: [
-              TextButton(
+              TextButton.icon(
                 onPressed: () => Navigator.pop(dialog),
-                child: const Text('Quay lại'),
+                icon: const GhstButtonIcon.glyph(GhstActionKind.back, size: 16),
+
+                label: const Text('Quay lại'),
               ),
-              FilledButton(
+              FilledButton.icon(
                 onPressed: () {
                   if (lease.valid && body.text.trim().length >= 3) {
                     Navigator.pop(dialog, true);
                   }
                 },
-                child: const Text('Gửi đánh giá'),
+                icon: const GhstButtonIcon.glyph(GhstActionKind.send, size: 16),
+
+                label: const Text('Gửi đánh giá'),
               ),
             ],
           ),
@@ -534,13 +547,9 @@ class _MarketOrderServicesScreenState extends State<MarketOrderServicesScreen> {
                           ),
                         if (action == 'receive') ...[
                           const SizedBox(height: 12),
-                          DropdownButtonFormField<String>(
-                            initialValue: disposition,
-                            isExpanded: true,
-                            decoration: const InputDecoration(
+                          DropdownButtonFormField<String>(icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 18), initialValue: disposition, isExpanded: true, decoration: const InputDecoration(
                               labelText: 'Xử lý tồn kho hàng trả',
-                            ),
-                            items: const [
+                            ), items: const [
                               DropdownMenuItem(
                                 value: 'restock',
                                 child: Text('Nhập lại tồn kho bán tiếp'),
@@ -549,10 +558,8 @@ class _MarketOrderServicesScreenState extends State<MarketOrderServicesScreen> {
                                 value: 'writeoff',
                                 child: Text('Hàng hỏng / Không nhập lại kho'),
                               ),
-                            ],
-                            onChanged: (v) =>
-                                update(() => disposition = v ?? 'restock'),
-                          ),
+                            ], onChanged: (v) =>
+                                update(() => disposition = v ?? 'restock'),),
                         ],
                       ],
                     ),
@@ -560,11 +567,13 @@ class _MarketOrderServicesScreenState extends State<MarketOrderServicesScreen> {
                 ),
               ),
               actions: [
-                TextButton(
+                TextButton.icon(
                   onPressed: () => Navigator.pop(dialog),
-                  child: const Text('Quay lại'),
+                  icon: const GhstButtonIcon.glyph(GhstActionKind.back, size: 16),
+
+                  label: const Text('Quay lại'),
                 ),
-                FilledButton(
+                FilledButton.icon(
                   onPressed: () {
                     if (lease.valid && form.currentState!.validate()) {
                       Navigator.pop(dialog, {
@@ -575,7 +584,9 @@ class _MarketOrderServicesScreenState extends State<MarketOrderServicesScreen> {
                       });
                     }
                   },
-                  child: const Text('Xác nhận'),
+                  icon: const GhstButtonIcon.glyph(GhstActionKind.checkCircle, size: 16),
+
+                  label: const Text('Xác nhận'),
                 ),
               ],
             ),
@@ -681,7 +692,7 @@ class _MarketOrderServicesScreenState extends State<MarketOrderServicesScreen> {
                 } catch (_) {}
                 if (dialog.mounted && lease.valid) Navigator.pop(dialog);
               },
-              icon: const Icon(Icons.copy),
+              icon: const GhstButtonIcon(Icons.copy),
               label: const Text('Sao chép'),
             ),
           ],
@@ -737,30 +748,36 @@ class _MarketOrderServicesScreenState extends State<MarketOrderServicesScreen> {
                               orderId: f['order_id'] as String,
                               operator: true,
                             ),
-                      icon: const Icon(Icons.open_in_new),
+                      icon: const GhstButtonIcon(Icons.open_in_new),
                       label: const Text('Xem đơn'),
                     ),
                     if (f['proposer'] != widget.session.service.userId) ...[
                       if (f['state'] == 'requested')
-                        FilledButton(
+                        FilledButton.icon(
                           onPressed: _busy
                               ? null
                               : () => _financeAction(f, 'approve'),
-                          child: const Text('Duyệt'),
+                          icon: const GhstButtonIcon.glyph(GhstActionKind.checkCircle, size: 16),
+
+                          label: const Text('Duyệt'),
                         ),
                       if (f['state'] == 'approved')
-                        FilledButton(
+                        FilledButton.icon(
                           onPressed: _busy
                               ? null
                               : () => _financeAction(f, 'complete'),
-                          child: const Text('Xác nhận thu/chi'),
+                          icon: const GhstButtonIcon.glyph(GhstActionKind.wallet, size: 16),
+
+                          label: const Text('Xác nhận thu/chi'),
                         ),
                       if (['requested', 'approved'].contains(f['state']))
-                        TextButton(
+                        TextButton.icon(
                           onPressed: _busy
                               ? null
                               : () => _financeAction(f, 'reject'),
-                          child: const Text('Từ chối'),
+                          icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+                          label: const Text('Từ chối'),
                         ),
                     ],
                   ],
@@ -799,7 +816,7 @@ class _MarketOrderServicesScreenState extends State<MarketOrderServicesScreen> {
                   children: [
                     for (final att in (r['attachments'] as List))
                       ActionChip(
-                        avatar: const Icon(Icons.image_outlined, size: 16),
+                        avatar: const GhstButtonIcon(Icons.image_outlined, size: 16),
                         label: const Text('Xem ảnh minh chứng'),
                         onPressed: _busy
                             ? null
@@ -817,47 +834,57 @@ class _MarketOrderServicesScreenState extends State<MarketOrderServicesScreen> {
                 runSpacing: 8,
                 children: [
                   if (_buyer && r['state'] == 'rejected')
-                    OutlinedButton(
+                    OutlinedButton.icon(
                       onPressed: _busy
                           ? null
                           : () => _returnAction(r, 'escalate'),
-                      child: const Text('Yêu cầu giải quyết'),
+                      icon: const GhstButtonIcon.glyph(GhstActionKind.checkCircle, size: 16),
+
+                      label: const Text('Yêu cầu giải quyết'),
                     ),
                   if ((_merchant && r['state'] == 'requested') ||
                       widget.operator &&
                           ['requested', 'escalated'].contains(r['state'])) ...[
-                    FilledButton(
+                    FilledButton.icon(
                       onPressed: _busy
                           ? null
                           : () => _returnAction(r, 'approve'),
-                      child: const Text('Chấp nhận trả'),
+                      icon: const GhstButtonIcon.glyph(GhstActionKind.checkCircle, size: 16),
+
+                      label: const Text('Chấp nhận trả'),
                     ),
-                    TextButton(
+                    TextButton.icon(
                       onPressed: _busy
                           ? null
                           : () => _returnAction(r, 'reject'),
-                      child: const Text('Từ chối'),
+                      icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+                      label: const Text('Từ chối'),
                     ),
                   ],
                   if ((_merchant || widget.operator) &&
                       r['state'] == 'approved')
-                    OutlinedButton(
+                    OutlinedButton.icon(
                       onPressed: _busy
                           ? null
                           : () => _returnAction(r, 'receive'),
-                      child: const Text('Đã nhận hàng trả'),
+                      icon: const GhstButtonIcon.glyph(GhstActionKind.checkCircle, size: 16),
+
+                      label: const Text('Đã nhận hàng trả'),
                     ),
                   if ((_buyer || widget.operator) &&
                       r['state'] == 'received' &&
                       _orderId != null)
-                    OutlinedButton(
+                    OutlinedButton.icon(
                       onPressed: _busy
                           ? null
                           : () => _finance('refund', ret: r),
-                      child: const Text('Đề nghị hoàn tiền'),
+                      icon: const GhstButtonIcon.glyph(GhstActionKind.wallet, size: 16),
+
+                      label: const Text('Đề nghị hoàn tiền'),
                     ),
                   if (widget.operator && _orderId == null)
-                    TextButton(
+                    TextButton.icon(
                       onPressed: _busy
                           ? null
                           : () => openMarketOrderServices(
@@ -866,7 +893,9 @@ class _MarketOrderServicesScreenState extends State<MarketOrderServicesScreen> {
                               orderId: r['order_id'] as String,
                               operator: true,
                             ),
-                      child: const Text('Xem đơn'),
+                      icon: const GhstButtonIcon.glyph(GhstActionKind.forward, size: 16),
+
+                      label: const Text('Xem đơn'),
                     ),
                 ],
               ),
@@ -895,7 +924,7 @@ class _MarketOrderServicesScreenState extends State<MarketOrderServicesScreen> {
           IconButton(
             tooltip: 'Tải lại',
             onPressed: _busy ? null : _reload,
-            icon: const Icon(Icons.refresh),
+            icon: const GhstButtonIcon(Icons.refresh),
           ),
         ],
       ),
@@ -951,7 +980,7 @@ class _MarketOrderServicesScreenState extends State<MarketOrderServicesScreen> {
                                             );
                                           }
                                         },
-                                  icon: const Icon(Icons.search),
+                                  icon: const GhstButtonIcon(Icons.search),
                                 ),
                               ),
                             ),
@@ -969,7 +998,7 @@ class _MarketOrderServicesScreenState extends State<MarketOrderServicesScreen> {
                                       );
                                       await _load();
                                     }),
-                              icon: const Icon(Icons.play_arrow),
+                              icon: const GhstButtonIcon(Icons.play_arrow),
                               label: const Text('Xử lý đơn quá hạn'),
                             ),
                             for (final j in _rows(_data['failed_jobs']))
@@ -983,7 +1012,7 @@ class _MarketOrderServicesScreenState extends State<MarketOrderServicesScreen> {
                                 ),
                                 trailing: IconButton(
                                   tooltip: 'Thử lại tác vụ',
-                                  icon: const Icon(Icons.replay),
+                                  icon: const GhstButtonIcon(Icons.replay),
                                   onPressed: _busy
                                       ? null
                                       : () => _run(() async {
@@ -1026,13 +1055,13 @@ class _MarketOrderServicesScreenState extends State<MarketOrderServicesScreen> {
                                 if (_buyer)
                                   OutlinedButton.icon(
                                     onPressed: _busy ? null : _reorder,
-                                    icon: const Icon(Icons.add_shopping_cart),
+                                    icon: const GhstButtonIcon(Icons.add_shopping_cart),
                                     label: const Text('Mua lại'),
                                   ),
                                 if (_buyer)
                                   OutlinedButton.icon(
                                     onPressed: _busy ? null : _share,
-                                    icon: const Icon(Icons.share_outlined),
+                                    icon: const GhstButtonIcon(Icons.share_outlined),
                                     label: const Text('Chia sẻ theo dõi'),
                                   ),
                                 if (_buyer && delivered)
@@ -1051,7 +1080,7 @@ class _MarketOrderServicesScreenState extends State<MarketOrderServicesScreen> {
                                               await _reload();
                                             }
                                           },
-                                    icon: const Icon(Icons.storefront_outlined),
+                                    icon: const GhstButtonIcon(Icons.storefront_outlined),
                                     label: const Text('Đánh giá cửa hàng'),
                                   ),
                                 if (_buyer &&
@@ -1072,24 +1101,28 @@ class _MarketOrderServicesScreenState extends State<MarketOrderServicesScreen> {
                                               await _reload();
                                             }
                                           },
-                                    icon: const Icon(
+                                    icon: const GhstButtonIcon(
                                       Icons.delivery_dining_outlined,
                                     ),
                                     label: const Text('Đánh giá tài xế'),
                                   ),
                                 if (widget.operator && delivered)
-                                  OutlinedButton(
+                                  OutlinedButton.icon(
                                     onPressed: _busy
                                         ? null
                                         : () => _finance('collection'),
-                                    child: const Text('Đề nghị thu COD'),
+                                    icon: const GhstButtonIcon.glyph(GhstActionKind.wallet, size: 16),
+
+                                    label: const Text('Đề nghị thu COD'),
                                   ),
                                 if ((_merchant || widget.operator) && delivered)
-                                  OutlinedButton(
+                                  OutlinedButton.icon(
                                     onPressed: _busy
                                         ? null
                                         : () => _finance('settlement'),
-                                    child: const Text('Đề nghị trả tiền shop'),
+                                    icon: const GhstButtonIcon.glyph(GhstActionKind.wallet, size: 16),
+
+                                    label: const Text('Đề nghị trả tiền shop'),
                                   ),
                               ],
                             ),
@@ -1108,7 +1141,7 @@ class _MarketOrderServicesScreenState extends State<MarketOrderServicesScreen> {
                                   ),
                                   trailing: IconButton(
                                     tooltip: 'Thu hồi liên kết',
-                                    icon: const Icon(Icons.link_off),
+                                    icon: const GhstButtonIcon(Icons.link_off),
                                     onPressed: _busy
                                         ? null
                                         : () => _run(() async {
@@ -1142,7 +1175,7 @@ class _MarketOrderServicesScreenState extends State<MarketOrderServicesScreen> {
                                             onPressed: _busy
                                                 ? null
                                                 : () => _review(item),
-                                            icon: const Icon(
+                                            icon: const GhstButtonIcon(
                                               Icons.star_outline,
                                             ),
                                           ),
@@ -1151,7 +1184,7 @@ class _MarketOrderServicesScreenState extends State<MarketOrderServicesScreen> {
                                             onPressed: _busy
                                                 ? null
                                                 : () => _return(item),
-                                            icon: const Icon(
+                                            icon: const GhstButtonIcon(
                                               Icons.assignment_return_outlined,
                                             ),
                                           ),
@@ -1181,7 +1214,7 @@ class _MarketOrderServicesScreenState extends State<MarketOrderServicesScreen> {
                                           pr['target_kind'] == 'shop')
                                         IconButton(
                                           tooltip: 'Phản hồi đánh giá shop',
-                                          icon: const Icon(
+                                          icon: const GhstButtonIcon(
                                             Icons.reply_outlined,
                                             size: 18,
                                           ),
@@ -1203,7 +1236,7 @@ class _MarketOrderServicesScreenState extends State<MarketOrderServicesScreen> {
                                         ),
                                       IconButton(
                                         tooltip: 'Báo cáo đánh giá đối tác',
-                                        icon: const Icon(
+                                        icon: const GhstButtonIcon(
                                           Icons.flag_outlined,
                                           size: 18,
                                         ),
@@ -1234,7 +1267,7 @@ class _MarketOrderServicesScreenState extends State<MarketOrderServicesScreen> {
                                 children: [
                                   for (final att in attachments)
                                     ActionChip(
-                                      avatar: const Icon(
+                                      avatar: const GhstButtonIcon(
                                         Icons.lock_outline,
                                         size: 16,
                                       ),
@@ -1261,11 +1294,13 @@ class _MarketOrderServicesScreenState extends State<MarketOrderServicesScreen> {
                           ),
                           _returnList(),
                           if (_data['returns_next'] is Map)
-                            TextButton(
+                            TextButton.icon(
                               onPressed: _busy
                                   ? null
                                   : () => _run(() => _load(more: 'returns')),
-                              child: const Text('Yêu cầu trả hàng cũ hơn'),
+                              icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 16),
+
+                              label: const Text('Yêu cầu trả hàng cũ hơn'),
                             ),
                           const SizedBox(height: 20),
                           Text(
@@ -1274,11 +1309,13 @@ class _MarketOrderServicesScreenState extends State<MarketOrderServicesScreen> {
                           ),
                           _financeList(),
                           if (_data['next'] is Map)
-                            TextButton(
+                            TextButton.icon(
                               onPressed: _busy
                                   ? null
                                   : () => _run(() => _load(more: 'finance')),
-                              child: const Text('Giao dịch cũ hơn'),
+                              icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 16),
+
+                              label: const Text('Giao dịch cũ hơn'),
                             ),
                         ],
                       ),

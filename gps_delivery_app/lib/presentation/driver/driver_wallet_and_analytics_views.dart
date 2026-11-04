@@ -169,19 +169,13 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                     return Expanded(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: ChoiceChip(
-                          label: Center(child: Text(tab)),
-                          selected: selected,
-                          selectedColor: const Color(0xFF14B866),
-                          labelStyle: TextStyle(
+                        child: ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel(tab, size: 15, color: (selected) ? Colors.white : null), label: Center(child: Text(tab)), selected: selected, selectedColor: const Color(0xFF14B866), labelStyle: TextStyle(
                             color: selected
                                 ? Colors.white
                                 : const Color(0xFF0F172A),
                             fontWeight: FontWeight.w800,
-                          ),
-                          onSelected: (_) =>
-                              _rebuildDriverUi(() => _incomePeriod = tab),
-                        ),
+                          ), onSelected: (_) =>
+                              _rebuildDriverUi(() => _incomePeriod = tab),),
                       ),
                     );
                   }).toList(),
@@ -294,7 +288,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                             spacing: 8,
                             runSpacing: 8,
                             children: [
-                              ElevatedButton(
+                              ElevatedButton.icon(
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF0F172A),
                                   foregroundColor: Colors.white,
@@ -378,7 +372,9 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                                     ),
                                   );
                                 },
-                                child: const Text(
+                                icon: const GhstButtonIcon.glyph(GhstActionKind.wallet, size: 16),
+
+                                label: const Text(
                                   'Rút tiền',
                                   style: TextStyle(fontWeight: FontWeight.w800),
                                 ),
@@ -399,15 +395,10 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                               hintText: 'VD: 500000',
                             ),
                           );
-                          final bankField = DropdownButtonFormField<String>(
-                            key: ValueKey(effectiveBank),
-                            isExpanded: true,
-                            initialValue: effectiveBank,
-                            decoration: const InputDecoration(
+                          final bankField = DropdownButtonFormField<String>(icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 18), key: ValueKey(effectiveBank), isExpanded: true, initialValue: effectiveBank, decoration: const InputDecoration(
                               isDense: true,
                               labelText: 'Ngân hàng liên kết',
-                            ),
-                            items: bankOptions
+                            ), items: bankOptions
                                 .map(
                                   (b) => DropdownMenuItem(
                                     value: b,
@@ -418,13 +409,11 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                                     ),
                                   ),
                                 )
-                                .toList(),
-                            onChanged: (v) {
+                                .toList(), onChanged: (v) {
                               if (v != null) {
                                 _rebuildDriverUi(() => _selectedBank = v);
                               }
-                            },
-                          );
+                            },);
                           if (constraints.maxWidth < 480) {
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -533,7 +522,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                 const SizedBox(height: 12),
                 TextButton.icon(
                   onPressed: () => _rebuildDriverUi(() => _selectedScreenIndex = 9),
-                  icon: const Icon(Icons.history),
+                  icon: const GhstButtonIcon(Icons.history),
                   label: const Text('Lịch sử giao hàng'),
                 ),
               ],
@@ -564,7 +553,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
             color: const Color(0xFF14B866),
             child: const Row(
               children: [
-                Icon(Icons.history_rounded, color: Colors.white, size: 20),
+                GhstButtonIcon(Icons.history_rounded, color: Colors.white, size: 20),
                 SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -588,18 +577,12 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                   spacing: 8,
                   children: ['Hôm nay', 'Tuần này', 'Tháng này'].map((period) {
                     final selected = _driverHistoryPeriod == period;
-                    return ChoiceChip(
-                      label: Text(period),
-                      selected: selected,
-                      selectedColor: const Color(0xFF14B866),
-                      labelStyle: TextStyle(
+                    return ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel(period, size: 15, color: (selected) ? Colors.white : null), label: Text(period), selected: selected, selectedColor: const Color(0xFF14B866), labelStyle: TextStyle(
                         color:
                             selected ? Colors.white : const Color(0xFF0F172A),
                         fontWeight: FontWeight.w800,
-                      ),
-                      onSelected: (_) =>
-                          _rebuildDriverUi(() => _driverHistoryPeriod = period),
-                    );
+                      ), onSelected: (_) =>
+                          _rebuildDriverUi(() => _driverHistoryPeriod = period),);
                   }).toList(),
                 ),
                 const SizedBox(height: 12),
@@ -670,7 +653,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                             child: const Stack(
                               children: [
                                 Center(
-                                  child: Icon(
+                                  child: GhstButtonIcon(
                                     Icons.route_rounded,
                                     color: Color(0xFF14B866),
                                     size: 32,
@@ -679,7 +662,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                                 Positioned(
                                   top: 6,
                                   left: 6,
-                                  child: Icon(
+                                  child: GhstButtonIcon(
                                     Icons.circle,
                                     size: 8,
                                     color: Color(0xFF2563EB),
@@ -688,7 +671,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                                 Positioned(
                                   bottom: 6,
                                   right: 6,
-                                  child: Icon(
+                                  child: GhstButtonIcon(
                                     Icons.location_on,
                                     size: 14,
                                     color: Color(0xFFDC2626),
@@ -841,7 +824,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                 ),
                 onPressed: () =>
                     _rebuildDriverUi(() => _selectedScreenIndex = 2),
-                icon: const Icon(Icons.notifications_active_outlined, size: 18),
+                icon: const GhstButtonIcon(Icons.notifications_active_outlined, size: 18),
                 label: const Text('Mở Nhận đơn mới'),
               ),
             ],
@@ -866,7 +849,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
             color: const Color(0xFF14B866),
             child: Row(
               children: [
-                const Icon(
+                const GhstButtonIcon(
                   Icons.report_problem_outlined,
                   color: Colors.white,
                   size: 20,
@@ -901,22 +884,16 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                     runSpacing: 6,
                     children: _store.driverPersonalOrders.map((o) {
                       final isCur = o.trackingCode == activeOrder.trackingCode;
-                      return ChoiceChip(
-                        visualDensity: VisualDensity.compact,
-                        label: Text(
+                      return ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.glyph(GhstActionKind.receipt, size: 15, color: (isCur) ? Colors.white : null), visualDensity: VisualDensity.compact, label: Text(
                           '${o.trackingCode} (${o.status.displayName})',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             color: isCur ? Colors.white : const Color(0xFF0F172A),
                           ),
-                        ),
-                        selected: isCur,
-                        selectedColor: const Color(0xFF14B866),
-                        onSelected: (_) => _rebuildDriverUi(
+                        ), selected: isCur, selectedColor: const Color(0xFF14B866), onSelected: (_) => _rebuildDriverUi(
                           () => _store.selectDriverOrder(o.trackingCode),
-                        ),
-                      );
+                        ),);
                     }).toList(),
                   ),
                   const SizedBox(height: 12),
@@ -926,32 +903,25 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                   style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5),
                 ),
                 const SizedBox(height: 6),
-                DropdownButtonFormField<String>(
-                  key: ValueKey(
+                DropdownButtonFormField<String>(icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 18), key: ValueKey(
                     reasons.contains(_incidentType)
                         ? _incidentType
                         : reasons.first,
-                  ),
-                  isExpanded: true,
-                  initialValue: reasons.contains(_incidentType)
+                  ), isExpanded: true, initialValue: reasons.contains(_incidentType)
                       ? _incidentType
-                      : reasons.first,
-                  decoration: const InputDecoration(
+                      : reasons.first, decoration: const InputDecoration(
                     isDense: true,
-                    prefixIcon: Icon(Icons.report_problem_outlined),
-                  ),
-                  items: reasons
+                    prefixIcon: GhstButtonIcon(Icons.report_problem_outlined),
+                  ), items: reasons
                       .map(
                         (r) => DropdownMenuItem(
                           value: r,
                           child: Text(r, overflow: TextOverflow.ellipsis),
                         ),
                       )
-                      .toList(),
-                  onChanged: (v) {
+                      .toList(), onChanged: (v) {
                     if (v != null) _rebuildDriverUi(() => _incidentType = v);
-                  },
-                ),
+                  },),
                 const SizedBox(height: 12),
                 const Text(
                   'Mô tả sự cố',
@@ -1004,26 +974,22 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                           }
                         });
                       },
-                      icon: const Icon(Icons.upload_file_rounded, size: 18),
+                      icon: const GhstButtonIcon(Icons.upload_file_rounded, size: 18),
                       label: Text(
                         'Chọn tệp minh chứng (${_driverIncidentEvidenceFiles.length}/4)',
                         style: const TextStyle(fontWeight: FontWeight.w700),
                       ),
                     ),
                     ..._driverIncidentEvidenceFiles.map(
-                      (fileName) => InputChip(
-                        label: Text(
+                      (fileName) => InputChip(avatar: const GhstButtonIcon.glyph(GhstActionKind.link, size: 15), deleteIcon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 15), label: Text(
                           fileName,
                           style: const TextStyle(
                             fontSize: 11.5,
                             fontWeight: FontWeight.w700,
                           ),
-                        ),
-                        backgroundColor: const Color(0xFFDCFCE7),
-                        onDeleted: () => _rebuildDriverUi(() {
+                        ), backgroundColor: const Color(0xFFDCFCE7), onDeleted: () => _rebuildDriverUi(() {
                           _driverIncidentEvidenceFiles.remove(fileName);
-                        }),
-                      ),
+                        }),),
                     ),
                   ],
                 ),
@@ -1040,7 +1006,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                   ),
                   child: Row(
                     children: [
-                      const Icon(
+                      const GhstButtonIcon(
                         Icons.location_on_rounded,
                         color: Color(0xFF14B866),
                         size: 18,
@@ -1062,7 +1028,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                 const SizedBox(height: 14),
                 SizedBox(
                   height: 46,
-                  child: ElevatedButton(
+                  child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF14B866),
                       foregroundColor: Colors.white,
@@ -1106,7 +1072,13 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                               ),
                             );
                           },
-                    child: Text(
+                    icon: GhstButtonIcon.forLabel(activeOrder.status == OrderStatus.delivered ||
+                              activeOrder.status == OrderStatus.cancelled ||
+                              activeOrder.paymentStatus == 'RETURNED'
+                          ? 'Đơn đã hoàn tất / Đã hủy (Không thể báo sự cố)'
+                          : 'Gửi báo cáo', size: 16),
+
+                    label: Text(
                       activeOrder.status == OrderStatus.delivered ||
                               activeOrder.status == OrderStatus.cancelled ||
                               activeOrder.paymentStatus == 'RETURNED'
@@ -1285,20 +1257,14 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                 runSpacing: 6,
                 children: ['Hôm nay', 'Tuần này', 'Tháng này'].map((p) {
                   final selected = _statsPeriod == p;
-                  return ChoiceChip(
-                    visualDensity: VisualDensity.compact,
-                    label: Text(
+                  return ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel(p, size: 15, color: (selected) ? Colors.white : null), visualDensity: VisualDensity.compact, label: Text(
                       p,
                       style: TextStyle(
                         fontSize: 11,
                         color: selected ? Colors.white : const Color(0xFF0F172A),
                         fontWeight: FontWeight.w700,
                       ),
-                    ),
-                    selected: selected,
-                    selectedColor: const Color(0xFF14B866),
-                    onSelected: (_) => _rebuildDriverUi(() => _statsPeriod = p),
-                  );
+                    ), selected: selected, selectedColor: const Color(0xFF14B866), onSelected: (_) => _rebuildDriverUi(() => _statsPeriod = p),);
                 }).toList(),
               ),
             ],
@@ -1335,7 +1301,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Icon(
+                const GhstButtonIcon(
                   Icons.check_circle_outline_rounded,
                   color: Color(0xFF4ADE80),
                   size: 36,
@@ -1419,7 +1385,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                             ),
                           ),
                           const SizedBox(width: 6),
-                          const Icon(
+                          const GhstButtonIcon(
                             Icons.star_rounded,
                             color: Color(0xFFF59E0B),
                             size: 24,
@@ -1441,7 +1407,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
             ),
             child: Row(
               children: [
-                const Icon(
+                const GhstButtonIcon(
                   Icons.eco_rounded,
                   color: Color(0xFF4ADE80),
                   size: 26,
@@ -1620,7 +1586,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
               ),
               onPressed: () =>
                   _rebuildDriverUi(() => _selectedScreenIndex = 0),
-              icon: const Icon(Icons.badge_outlined, size: 18),
+              icon: const GhstButtonIcon(Icons.badge_outlined, size: 18),
               label: const Text(
                 'Cập nhật Hồ sơ & Pháp lý KYC',
                 style: TextStyle(fontWeight: FontWeight.w800),
@@ -1638,7 +1604,7 @@ extension _DriverWalletAndAnalyticsViews on _DriverSubsystemEntryState {
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
                 onPressed: widget.onLogout,
-                icon: const Icon(Icons.logout_rounded, size: 18),
+                icon: const GhstButtonIcon(Icons.logout_rounded, size: 18),
                 label: const Text(
                   'Đăng xuất tài khoản Tài xế',
                   style: TextStyle(fontWeight: FontWeight.w800),

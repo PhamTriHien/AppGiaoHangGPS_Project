@@ -7,6 +7,7 @@ import '../../core/integrations/cloud_account_session.dart';
 import '../../core/integrations/cloud_session_lease.dart';
 import '../../core/network/public_json_api.dart';
 import '../../data/datasources/local/app_state_store.dart';
+import '../widgets/ghst_button_icon.dart';
 
 typedef LegacyAddressReader = Future<Map<String, dynamic>> Function({
   required String identifier,
@@ -229,7 +230,7 @@ class _CloudLocalImportScreenState extends State<CloudLocalImportScreen> {
                   const SizedBox(height: 14),
                   FilledButton.icon(
                     onPressed: _busy ? null : _read,
-                    icon: const Icon(Icons.folder_open),
+                    icon: const GhstButtonIcon(Icons.folder_open),
                     label: const Text('Xác minh nguồn'),
                   ),
                 ] else ...[
@@ -271,7 +272,7 @@ class _CloudLocalImportScreenState extends State<CloudLocalImportScreen> {
                   if (_items.isNotEmpty)
                     OutlinedButton.icon(
                       onPressed: _busy || _selected.isEmpty ? null : _preview,
-                      icon: const Icon(Icons.preview_outlined),
+                      icon: const GhstButtonIcon(Icons.preview_outlined),
                       label: const Text('Kiểm tra bản ghi đã chọn'),
                     ),
                   for (final row in _report)
@@ -294,7 +295,7 @@ class _CloudLocalImportScreenState extends State<CloudLocalImportScreen> {
                     ),
                     FilledButton.icon(
                       onPressed: _busy || !_confirmed ? null : _commit,
-                      icon: const Icon(Icons.cloud_upload_outlined),
+                      icon: const GhstButtonIcon(Icons.cloud_upload_outlined),
                       label: const Text('Nhập địa chỉ'),
                     ),
                   ],
@@ -308,7 +309,7 @@ class _CloudLocalImportScreenState extends State<CloudLocalImportScreen> {
                             _selected.clear();
                             _confirmed = false;
                           }),
-                    icon: const Icon(Icons.swap_horiz),
+                    icon: const GhstButtonIcon(Icons.swap_horiz),
                     label: const Text('Đổi nguồn'),
                   ),
                 ],

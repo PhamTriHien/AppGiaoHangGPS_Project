@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/integrations/cloud_orders_service.dart';
 import '../../core/integrations/cloud_session_lease.dart';
 import '../../core/network/public_json_api.dart';
+import 'ghst_button_icon.dart';
 
 class CloudPricingDialog extends StatefulWidget {
   const CloudPricingDialog({
@@ -118,13 +119,15 @@ class _CloudPricingDialogState extends State<CloudPricingDialog> {
       ),
     ),
     actions: [
-      TextButton(
+      TextButton.icon(
         onPressed: _busy ? null : () => Navigator.pop(context),
-        child: const Text('Đóng'),
+        icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+        label: const Text('Đóng'),
       ),
       FilledButton.icon(
         onPressed: _busy ? null : _save,
-        icon: const Icon(Icons.save_outlined),
+        icon: const GhstButtonIcon(Icons.save_outlined),
         label: const Text('Lưu bảng giá'),
       ),
     ],

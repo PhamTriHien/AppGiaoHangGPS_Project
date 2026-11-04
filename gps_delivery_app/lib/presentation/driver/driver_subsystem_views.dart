@@ -16,6 +16,7 @@ import '../widgets/bank_directory_field.dart';
 import '../widgets/delivery_weather_strip.dart';
 import '../widgets/live_order_connection.dart';
 import '../widgets/system_state_screens.dart';
+import '../widgets/ghst_button_icon.dart';
 
 part 'driver_onboarding_and_dispatch_views.dart';
 part 'driver_wallet_and_analytics_views.dart';
@@ -513,7 +514,7 @@ class _DriverSubsystemEntryState extends State<DriverSubsystemEntry> {
                       color: AppColors.acid,
                       border: Border.all(color: AppColors.techBg),
                     ),
-                    child: Icon(
+                    child: GhstButtonIcon(
                       isEv
                           ? Icons.electric_moped_rounded
                           : Icons.two_wheeler_rounded,
@@ -564,7 +565,7 @@ class _DriverSubsystemEntryState extends State<DriverSubsystemEntry> {
                 ),
                 child: Row(
                   children: [
-                    Icon(
+                    GhstButtonIcon(
                       isEv ? Icons.battery_charging_full_rounded : Icons.verified_rounded,
                       size: 15,
                       color: isEv ? const Color(0xFF4ADE80) : AppColors.acid,
@@ -723,7 +724,7 @@ class _DriverSubsystemEntryState extends State<DriverSubsystemEntry> {
                               ),
                               child: Row(
                                 children: [
-                                  Icon(
+                                  GhstButtonIcon(
                                     item.$1,
                                     size: 19,
                                     color: selected
@@ -764,7 +765,7 @@ class _DriverSubsystemEntryState extends State<DriverSubsystemEntry> {
               ListTile(
                 dense: true,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-                leading: const Icon(
+                leading: const GhstButtonIcon(
                   Icons.logout_rounded,
                   color: AppColors.pink,
                   size: 19,
@@ -824,7 +825,7 @@ class _DriverSubsystemEntryState extends State<DriverSubsystemEntry> {
               IconButton(
                 tooltip: 'Đơn hàng trực tuyến',
                 onPressed: () => Navigator.of(context).pushNamed('/cloud'),
-                icon: const Icon(Icons.cloud_outlined),
+                icon: const GhstButtonIcon(Icons.cloud_outlined),
               ),
               if (showPlateBadge) ...[
                 Flexible(
@@ -858,7 +859,7 @@ class _DriverSubsystemEntryState extends State<DriverSubsystemEntry> {
                     visualDensity: VisualDensity.compact,
                     tooltip: 'Thông báo Đối tác Tài xế',
                     onPressed: () => _showDriverNotificationsDialog(context),
-                    icon: const Icon(
+                    icon: const GhstButtonIcon(
                       Icons.notifications_none_rounded,
                       color: AppColors.ink,
                       size: 22,
@@ -893,8 +894,8 @@ class _DriverSubsystemEntryState extends State<DriverSubsystemEntry> {
                     : 'Bật nhận chuyến',
                 isSelected: _store.isDriverOnline,
                 onPressed: () => _handleHeaderToggleDriverOnline(context),
-                icon: const Icon(Icons.power_settings_new_rounded),
-                selectedIcon: const Icon(
+                icon: const GhstButtonIcon(Icons.power_settings_new_rounded),
+                selectedIcon: const GhstButtonIcon(
                   Icons.sensors_rounded,
                   color: Color(0xFF14B866),
                 ),
@@ -958,7 +959,7 @@ class _DriverSubsystemEntryState extends State<DriverSubsystemEntry> {
             tooltip: 'Đơn hàng trực tuyến',
             color: Colors.white,
             onPressed: () => Navigator.of(context).pushNamed('/cloud'),
-            icon: const Icon(Icons.cloud_outlined),
+            icon: const GhstButtonIcon(Icons.cloud_outlined),
           ),
           const SizedBox(width: 4),
           InkWell(
@@ -968,7 +969,7 @@ class _DriverSubsystemEntryState extends State<DriverSubsystemEntry> {
               children: [
                 const Padding(
                   padding: EdgeInsets.all(6),
-                  child: Icon(
+                  child: GhstButtonIcon(
                     Icons.notifications_none_rounded,
                     color: Colors.white,
                     size: 20,
@@ -1004,11 +1005,11 @@ class _DriverSubsystemEntryState extends State<DriverSubsystemEntry> {
                 : 'Bật nhận chuyến',
             isSelected: _store.isDriverOnline,
             onPressed: () => _handleHeaderToggleDriverOnline(context),
-            icon: const Icon(
+            icon: const GhstButtonIcon(
               Icons.power_settings_new_rounded,
               color: Colors.white,
             ),
-            selectedIcon: const Icon(
+            selectedIcon: const GhstButtonIcon(
               Icons.sensors_rounded,
               color: Color(0xFF14B866),
             ),
@@ -1018,7 +1019,7 @@ class _DriverSubsystemEntryState extends State<DriverSubsystemEntry> {
             IconButton(
               tooltip: 'Đăng xuất',
               onPressed: widget.onLogout,
-              icon: const Icon(Icons.logout, color: Colors.white),
+              icon: const GhstButtonIcon(Icons.logout, color: Colors.white),
             ),
           ],
         ],
@@ -1062,7 +1063,7 @@ class _DriverSubsystemEntryState extends State<DriverSubsystemEntry> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(items[idx].$1, color: color, size: 22),
+                    GhstButtonIcon(items[idx].$1, color: color, size: 22),
                     const SizedBox(height: 3),
                     Text(
                       items[idx].$2,
@@ -1100,7 +1101,7 @@ class _DriverSubsystemEntryState extends State<DriverSubsystemEntry> {
         children: [
           TextButton.icon(
             onPressed: _navigateBackFromDriverSubScreen,
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 15),
+            icon: const GhstButtonIcon(Icons.arrow_back_ios_new_rounded, size: 15),
             label: const Text('Quay lại'),
           ),
           const SizedBox(width: 6),
@@ -1182,14 +1183,16 @@ class _DriverSubsystemEntryState extends State<DriverSubsystemEntry> {
                       color: AppColors.ink,
                     ),
                   ),
-                  TextButton(
+                  TextButton.icon(
                     onPressed: () {
                       _store.markAllNotificationsAsRead(
                         targetGroupScope: 'Tài xế',
                       );
                       setDialogState(() {});
                     },
-                    child: const Text(
+                    icon: const GhstButtonIcon.glyph(GhstActionKind.checkCircle, size: 16),
+
+                    label: const Text(
                       'Đánh dấu đã đọc',
                       style: TextStyle(
                         fontSize: 12,
@@ -1301,9 +1304,11 @@ class _DriverSubsystemEntryState extends State<DriverSubsystemEntry> {
                       ),
               ),
               actions: [
-                TextButton(
+                TextButton.icon(
                   onPressed: () => Navigator.of(dialogCtx).pop(),
-                  child: const Text('Đóng'),
+                  icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+                  label: const Text('Đóng'),
                 ),
               ],
             );

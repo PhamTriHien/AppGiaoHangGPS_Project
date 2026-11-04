@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'ghst_button_icon.dart';
 
 class CloudMembershipDecisionDialog extends StatefulWidget {
   const CloudMembershipDecisionDialog({
@@ -55,17 +56,21 @@ class _CloudMembershipDecisionDialogState
       ),
     ),
     actions: [
-      TextButton(
+      TextButton.icon(
         onPressed: () => Navigator.pop(context),
-        child: const Text('Quay lại'),
+        icon: const GhstButtonIcon.glyph(GhstActionKind.back, size: 16),
+
+        label: const Text('Quay lại'),
       ),
-      FilledButton(
+      FilledButton.icon(
         onPressed: () {
           if (_form.currentState!.validate()) {
             Navigator.pop(context, _reason.text.trim());
           }
         },
-        child: const Text('Xác nhận'),
+        icon: const GhstButtonIcon.glyph(GhstActionKind.checkCircle, size: 16),
+
+        label: const Text('Xác nhận'),
       ),
     ],
   );

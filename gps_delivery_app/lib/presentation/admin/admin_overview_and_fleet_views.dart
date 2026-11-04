@@ -228,7 +228,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                           alignment: PlaceholderAlignment.middle,
                           child: Padding(
                             padding: EdgeInsets.only(right: 6),
-                            child: Icon(
+                            child: GhstButtonIcon(
                               Icons.eco_rounded,
                               size: 16,
                               color: Color(0xFF16A34A),
@@ -284,7 +284,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                 padding: EdgeInsets.symmetric(vertical: 24),
                 child: Row(
                   children: [
-                    Icon(Icons.inbox_outlined, color: AppColors.textSecondary),
+                    GhstButtonIcon(Icons.inbox_outlined, color: AppColors.textSecondary),
                     SizedBox(width: 12),
                     Expanded(
                       child: Text(
@@ -608,7 +608,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                   color: badgeColor,
                   borderRadius: BorderRadius.all(Radius.circular(12)),
                 ),
-                child: Icon(icon, color: Colors.white, size: 22),
+                child: GhstButtonIcon(icon, color: Colors.white, size: 22),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -804,7 +804,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                 onPressed: canManageUsers
                     ? () => _showCreateUserAccountDialog(context)
                     : null,
-                icon: const Icon(Icons.person_add_alt_1, size: 16),
+                icon: const GhstButtonIcon(Icons.person_add_alt_1, size: 16),
                 label: const Text('+ Thêm tài khoản'),
               ),
             ],
@@ -821,12 +821,8 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                   ('MERCHANT', 'Cửa hàng B2B'),
                   ('ADMIN', 'Quản trị viên'),
                 ].map((item) {
-                  return ChoiceChip(
-                    label: Text(item.$2),
-                    selected: _userRoleFilter == item.$1,
-                    onSelected: (_) =>
-                        _rebuildAdminUi(() => _userRoleFilter = item.$1),
-                  );
+                  return ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel(item.$2, size: 15), label: Text(item.$2), selected: _userRoleFilter == item.$1, onSelected: (_) =>
+                        _rebuildAdminUi(() => _userRoleFilter = item.$1),);
                 }).toList(),
           ),
           const SizedBox(height: 12),
@@ -931,6 +927,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                               backgroundColor: u.status == 'ACTIVE'
                                   ? AppColors.success.withValues(alpha: 0.14)
                                   : AppColors.danger.withValues(alpha: 0.14),
+                              avatar: GhstButtonIcon.glyph(u.status == 'ACTIVE' ? GhstActionKind.checkCircle : GhstActionKind.lock, size: 14, color: u.status == 'ACTIVE' ? AppColors.success : AppColors.danger),
                               label: Text(
                                 u.status == 'ACTIVE' ? 'Hoạt động' : 'Đã khóa',
                                 style: TextStyle(
@@ -1013,12 +1010,9 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    DropdownButtonFormField<SubsystemRole>(
-                      initialValue: selectedRole,
-                      decoration: const InputDecoration(
+                    DropdownButtonFormField<SubsystemRole>(icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 18), initialValue: selectedRole, decoration: const InputDecoration(
                         labelText: 'Phân quyền vai trò',
-                      ),
-                      items: [
+                      ), items: [
                         const DropdownMenuItem(
                           value: SubsystemRole.customer,
                           child: Text('Khách hàng'),
@@ -1036,22 +1030,22 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                             value: SubsystemRole.admin,
                             child: Text('Quản trị viên'),
                           ),
-                      ],
-                      onChanged: (v) {
+                      ], onChanged: (v) {
                         if (v != null) {
                           setDialogState(() => selectedRole = v);
                         }
-                      },
-                    ),
+                      },),
                   ],
                 ),
               ),
               actions: [
-                TextButton(
+                TextButton.icon(
                   onPressed: () => Navigator.of(dialogCtx).pop(),
-                  child: const Text('Hủy'),
+                  icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+                  label: const Text('Hủy'),
                 ),
-                ElevatedButton(
+                ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF2563EB),
                   ),
@@ -1093,7 +1087,9 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                       ),
                     );
                   },
-                  child: const Text('Tạo tài khoản'),
+                  icon: const GhstButtonIcon.glyph(GhstActionKind.userPlus, size: 16),
+
+                  label: const Text('Tạo tài khoản'),
                 ),
               ],
             );
@@ -1237,7 +1233,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                             spacing: 8,
                             runSpacing: 8,
                             children: [
-                              ElevatedButton(
+                              ElevatedButton.icon(
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColors.success,
                                 ),
@@ -1263,13 +1259,17 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                                         );
                                       }
                                     : null,
-                                child: Text(
+                                icon: GhstButtonIcon.forLabel(drv.approvalStatus == 'Đã duyệt'
+                                      ? 'Đã duyệt'
+                                      : 'Duyệt hồ sơ', size: 16),
+
+                                label: Text(
                                   drv.approvalStatus == 'Đã duyệt'
                                       ? 'Đã duyệt'
                                       : 'Duyệt hồ sơ',
                                 ),
                               ),
-                              OutlinedButton(
+                              OutlinedButton.icon(
                                 onPressed:
                                     canApproveDriver &&
                                         drv.approvalStatus != 'Từ chối'
@@ -1292,7 +1292,9 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                                         );
                                       }
                                     : null,
-                                child: const Text(
+                                icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+                                label: const Text(
                                   'Từ chối',
                                   style: TextStyle(color: AppColors.danger),
                                 ),
@@ -1304,7 +1306,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                                         drv,
                                       )
                                     : null,
-                                icon: const Icon(
+                                icon: const GhstButtonIcon(
                                   Icons.edit_road_rounded,
                                   size: 15,
                                 ),
@@ -1332,7 +1334,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                                         );
                                       }
                                     : null,
-                                icon: Icon(
+                                icon: GhstButtonIcon(
                                   drv.approvalStatus == 'Đình chỉ'
                                       ? Icons.lock_open_rounded
                                       : Icons.pause_circle_outline_rounded,
@@ -1419,7 +1421,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                             spacing: 8,
                             runSpacing: 8,
                             children: [
-                              ElevatedButton(
+                              ElevatedButton.icon(
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColors.success,
                                 ),
@@ -1446,13 +1448,17 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                                         );
                                       }
                                     : null,
-                                child: Text(
+                                icon: GhstButtonIcon.forLabel(mer.approvalStatus == 'Đã duyệt'
+                                      ? 'Đã duyệt'
+                                      : 'Duyệt cửa hàng', size: 16),
+
+                                label: Text(
                                   mer.approvalStatus == 'Đã duyệt'
                                       ? 'Đã duyệt'
                                       : 'Duyệt cửa hàng',
                                 ),
                               ),
-                              OutlinedButton(
+                              OutlinedButton.icon(
                                 onPressed:
                                     canApproveDriver &&
                                         mer.approvalStatus != 'Từ chối'
@@ -1476,7 +1482,9 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                                         );
                                       }
                                     : null,
-                                child: const Text(
+                                icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+                                label: const Text(
                                   'Từ chối',
                                   style: TextStyle(color: AppColors.danger),
                                 ),
@@ -1537,7 +1545,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                             .map(
                               (doc) => ActionChip(
                                 visualDensity: VisualDensity.compact,
-                                avatar: const Icon(
+                                avatar: const GhstButtonIcon(
                                   Icons.insert_drive_file_outlined,
                                   size: 14,
                                 ),
@@ -1590,7 +1598,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                       runSpacing: 8,
                       children: [
                         ActionChip(
-                          avatar: const Icon(Icons.business_outlined, size: 16),
+                          avatar: const GhstButtonIcon(Icons.business_outlined, size: 16),
                           label: const Text('Giấy phép ĐKKD B2B'),
                           onPressed: () => _showKycDocumentInspectDialog(
                             context,
@@ -1610,7 +1618,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                           ),
                         ),
                         ActionChip(
-                          avatar: const Icon(
+                          avatar: const GhstButtonIcon(
                             Icons.receipt_long_outlined,
                             size: 16,
                           ),
@@ -1633,7 +1641,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                           ),
                         ),
                         ActionChip(
-                          avatar: const Icon(
+                          avatar: const GhstButtonIcon(
                             Icons.account_balance_outlined,
                             size: 16,
                           ),
@@ -1699,7 +1707,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                             .map(
                               (doc) => ActionChip(
                                 visualDensity: VisualDensity.compact,
-                                avatar: const Icon(
+                                avatar: const GhstButtonIcon(
                                   Icons.insert_drive_file_outlined,
                                   size: 14,
                                 ),
@@ -1752,7 +1760,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                       runSpacing: 8,
                       children: [
                         ActionChip(
-                          avatar: const Icon(Icons.badge_outlined, size: 16),
+                          avatar: const GhstButtonIcon(Icons.badge_outlined, size: 16),
                           label: const Text('CCCD Mặt trước & sau'),
                           onPressed: () => _showKycDocumentInspectDialog(
                             context,
@@ -1775,7 +1783,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                           ),
                         ),
                         ActionChip(
-                          avatar: const Icon(Icons.credit_card, size: 16),
+                          avatar: const GhstButtonIcon(Icons.credit_card, size: 16),
                           label: const Text('Bằng lái xe A1/B2'),
                           onPressed: () => _showKycDocumentInspectDialog(
                             context,
@@ -1794,7 +1802,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                           ),
                         ),
                         ActionChip(
-                          avatar: const Icon(Icons.two_wheeler, size: 16),
+                          avatar: const GhstButtonIcon(Icons.two_wheeler, size: 16),
                           label: const Text('Đăng ký xe (Cà vẹt)'),
                           onPressed: () => _showKycDocumentInspectDialog(
                             context,
@@ -1851,9 +1859,11 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
         ),
         content: Text(details, style: const TextStyle(height: 1.45)),
         actions: [
-          TextButton(
+          TextButton.icon(
             onPressed: () => Navigator.of(dialogCtx).pop(),
-            child: const Text('Đóng'),
+            icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+            label: const Text('Đóng'),
           ),
           if (onQuickApprove != null)
             ElevatedButton.icon(
@@ -1871,7 +1881,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                   ),
                 );
               },
-              icon: const Icon(Icons.verified_outlined, size: 16),
+              icon: const GhstButtonIcon(Icons.verified_outlined, size: 16),
               label: const Text('Xác thực & Duyệt ngay'),
             ),
         ],
@@ -2021,19 +2031,14 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                 children: _store.orders.map((ord) {
                   final isFocused =
                       ord.trackingCode == activeOrder?.trackingCode;
-                  return ChoiceChip(
-                    visualDensity: VisualDensity.compact,
-                    label: Text(
+                  return ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.glyph(GhstActionKind.receipt, size: 15, color: (isFocused) ? Colors.white : null), visualDensity: VisualDensity.compact, label: Text(
                       '${ord.trackingCode} (${ord.assignedDriverName ?? "Chưa có TX"} • ${ord.paymentStatus == "RETURNED" ? "Đã hoàn kho" : ord.status.displayName})',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: isFocused ? Colors.white : AppColors.ink,
                       ),
-                    ),
-                    selected: isFocused,
-                    selectedColor: AppColors.violet,
-                    onSelected: (_) {
+                    ), selected: isFocused, selectedColor: AppColors.violet, onSelected: (_) {
                       final matchedDrv = approvedDrivers
                           .where((d) => d.fullName == ord.assignedDriverName)
                           .firstOrNull;
@@ -2042,8 +2047,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                       });
                       _store.selectCustomerOrder(ord.trackingCode);
                       _store.selectDriverOrder(ord.trackingCode);
-                    },
-                  );
+                    },);
                 }).toList(),
               ),
             const SizedBox(height: AppSpacing.sm),
@@ -2092,22 +2096,16 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                   final stateText = !d.isOnline
                       ? 'Ngoại tuyến'
                       : (isBusy ? 'Đang giao' : 'Rảnh');
-                  return ChoiceChip(
-                    visualDensity: VisualDensity.compact,
-                    selected: isSelectedDrv,
-                    selectedColor: AppColors.violet.withValues(alpha: 0.16),
-                    avatar: Icon(
+                  return ChoiceChip(showCheckmark: false, visualDensity: VisualDensity.compact, selected: isSelectedDrv, selectedColor: AppColors.violet.withValues(alpha: 0.16), avatar: GhstButtonIcon(
                       d.isOnline
                           ? Icons.navigation_rounded
                           : Icons.portable_wifi_off_outlined,
                       size: 14,
                       color: stateColor,
-                    ),
-                    label: Text(
+                    ), label: Text(
                       '${d.fullName} (${d.licensePlate}) • (${d.location.latitude.toStringAsFixed(4)}, ${d.location.longitude.toStringAsFixed(4)}) • $stateText',
                       style: const TextStyle(fontSize: 11),
-                    ),
-                    onSelected: (_) {
+                    ), onSelected: (_) {
                       _rebuildAdminUi(() => _focusedFleetDriverId = d.id);
                       final drvActiveOrd = _store.orders
                           .where(
@@ -2123,8 +2121,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                         _store.selectCustomerOrder(drvActiveOrd.trackingCode);
                         _store.selectDriverOrder(drvActiveOrd.trackingCode);
                       }
-                    },
-                  );
+                    },);
                 }).toList(),
               ),
             ],
@@ -2140,7 +2137,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                     ScaffoldMessenger.of(context)
                         .showSnackBar(SnackBar(content: Text(msg)));
                   },
-                  icon: const Icon(Icons.alt_route_rounded, size: 16),
+                  icon: const GhstButtonIcon(Icons.alt_route_rounded, size: 16),
                   label: const Text('Đồng bộ lộ trình thực tế'),
                 ),
                 OutlinedButton.icon(
@@ -2150,7 +2147,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                     ScaffoldMessenger.of(context)
                         .showSnackBar(SnackBar(content: Text(msg)));
                   },
-                  icon: const Icon(Icons.my_location_rounded, size: 16),
+                  icon: const GhstButtonIcon(Icons.my_location_rounded, size: 16),
                   label: const Text('Cập nhật định vị thiết bị'),
                 ),
                 if (activeOrder != null)
@@ -2161,7 +2158,7 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                     onPressed: () {
                       _rebuildAdminUi(() => _selectedScreenIndex = 8);
                     },
-                    icon: const Icon(Icons.assignment_ind_outlined, size: 16),
+                    icon: const GhstButtonIcon(Icons.assignment_ind_outlined, size: 16),
                     label: Text('Điều phối đơn ${activeOrder.trackingCode}'),
                   ),
               ],
@@ -2205,12 +2202,8 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                   runSpacing: 6,
                   children: ['Xe Máy', 'Xe Tải 500kg']
                       .map(
-                        (vt) => ChoiceChip(
-                          label: Text(vt),
-                          selected: selectedType == vt,
-                          onSelected: (_) =>
-                              setDialogState(() => selectedType = vt),
-                        ),
+                        (vt) => ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel(vt, size: 15), label: Text(vt), selected: selectedType == vt, onSelected: (_) =>
+                              setDialogState(() => selectedType = vt),),
                       )
                       .toList(),
                 ),
@@ -2225,11 +2218,13 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
               ],
             ),
             actions: [
-              TextButton(
+              TextButton.icon(
                 onPressed: () => Navigator.of(dialogCtx).pop(),
-                child: const Text('Hủy'),
+                icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+                label: const Text('Hủy'),
               ),
-              ElevatedButton(
+              ElevatedButton.icon(
                 onPressed: () {
                   final plate = plateCtrl.text.trim();
                   if (plate.length < 5) {
@@ -2258,7 +2253,9 @@ extension _AdminOverviewAndFleetViews on _AdminSubsystemEntryState {
                     );
                   }
                 },
-                child: const Text('Lưu phương tiện'),
+                icon: const GhstButtonIcon.glyph(GhstActionKind.save, size: 16),
+
+                label: const Text('Lưu phương tiện'),
               ),
             ],
           ),

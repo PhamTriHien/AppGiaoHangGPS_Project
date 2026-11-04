@@ -20,6 +20,7 @@ import '../widgets/photon_address_lookup.dart';
 import '../widgets/shipping_label_scanner.dart';
 import '../widgets/live_order_connection.dart';
 import '../widgets/system_state_screens.dart';
+import '../widgets/ghst_button_icon.dart';
 
 part 'merchant_store_and_order_views.dart';
 part 'merchant_tracking_and_finance_views.dart';
@@ -536,7 +537,7 @@ class _MerchantSubsystemEntryState extends State<MerchantSubsystemEntry> {
                       color: AppColors.acid,
                       border: Border.all(color: AppColors.techBg),
                     ),
-                    child: const Icon(
+                    child: const GhstButtonIcon(
                       Icons.storefront_rounded,
                       color: AppColors.techBg,
                       size: 20,
@@ -635,7 +636,7 @@ class _MerchantSubsystemEntryState extends State<MerchantSubsystemEntry> {
                               ),
                               child: Row(
                                 children: [
-                                  Icon(
+                                  GhstButtonIcon(
                                     p.$1,
                                     color: selected
                                         ? AppColors.acid
@@ -692,7 +693,7 @@ class _MerchantSubsystemEntryState extends State<MerchantSubsystemEntry> {
               ListTile(
                 dense: true,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-                leading: const Icon(
+                leading: const GhstButtonIcon(
                   Icons.logout_rounded,
                   color: AppColors.pink,
                   size: 19,
@@ -766,7 +767,7 @@ class _MerchantSubsystemEntryState extends State<MerchantSubsystemEntry> {
                     minimumSize: Size.zero,
                   ),
                   onPressed: () => setState(() => _selectedScreenIndex = 11),
-                  icon: const Icon(Icons.restaurant_menu_rounded, size: 15),
+                  icon: const GhstButtonIcon(Icons.restaurant_menu_rounded, size: 15),
                   label: const Text(
                     'Thực đơn B2B',
                     style: TextStyle(
@@ -785,7 +786,7 @@ class _MerchantSubsystemEntryState extends State<MerchantSubsystemEntry> {
                       tooltip: 'Khiếu nại & Hỗ trợ Shop',
                       onPressed: () =>
                           setState(() => _selectedScreenIndex = 10),
-                      icon: const Icon(
+                      icon: const GhstButtonIcon(
                         Icons.chat_bubble_outline_rounded,
                         color: Colors.white,
                         size: 20,
@@ -822,7 +823,7 @@ class _MerchantSubsystemEntryState extends State<MerchantSubsystemEntry> {
                         : VisualDensity.standard,
                     tooltip: 'Thông báo Cửa hàng B2B',
                     onPressed: () => _showMerchantNotificationsDialog(context),
-                    icon: const Icon(
+                    icon: const GhstButtonIcon(
                       Icons.notifications_none_rounded,
                       color: Colors.white,
                       size: 21,
@@ -854,7 +855,7 @@ class _MerchantSubsystemEntryState extends State<MerchantSubsystemEntry> {
                 IconButton(
                   tooltip: 'Tra cứu & In vận đơn A6',
                   onPressed: () => setState(() => _selectedScreenIndex = 4),
-                  icon: const Icon(
+                  icon: const GhstButtonIcon(
                     Icons.search_rounded,
                     color: Colors.white,
                     size: 22,
@@ -876,7 +877,7 @@ class _MerchantSubsystemEntryState extends State<MerchantSubsystemEntry> {
                     minimumSize: Size.zero,
                   ),
                   onPressed: widget.onLogout,
-                  icon: const Icon(Icons.logout_rounded, size: 15),
+                  icon: const GhstButtonIcon(Icons.logout_rounded, size: 15),
                   label: Text(
                     isCompact ? 'Thoát' : 'Đăng xuất',
                     style: const TextStyle(
@@ -927,7 +928,7 @@ class _MerchantSubsystemEntryState extends State<MerchantSubsystemEntry> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
+                      GhstButtonIcon(
                         tab.$1,
                         size: 15,
                         color: selected ? AppColors.acid : AppColors.ink,
@@ -989,7 +990,7 @@ class _MerchantSubsystemEntryState extends State<MerchantSubsystemEntry> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(items[idx].$1, color: color, size: 19),
+                    GhstButtonIcon(items[idx].$1, color: color, size: 19),
                     const SizedBox(height: 2),
                     Text(
                       items[idx].$2,
@@ -1072,14 +1073,16 @@ class _MerchantSubsystemEntryState extends State<MerchantSubsystemEntry> {
                       color: AppColors.ink,
                     ),
                   ),
-                  TextButton(
+                  TextButton.icon(
                     onPressed: () {
                       _store.markAllNotificationsAsRead(
                         targetGroupScope: 'Cửa hàng B2B',
                       );
                       setDialogState(() {});
                     },
-                    child: const Text(
+                    icon: const GhstButtonIcon.glyph(GhstActionKind.checkCircle, size: 16),
+
+                    label: const Text(
                       'Đánh dấu đã đọc',
                       style: TextStyle(
                         fontSize: 12,
@@ -1191,9 +1194,11 @@ class _MerchantSubsystemEntryState extends State<MerchantSubsystemEntry> {
                       ),
               ),
               actions: [
-                TextButton(
+                TextButton.icon(
                   onPressed: () => Navigator.of(dialogCtx).pop(),
-                  child: const Text('Đóng'),
+                  icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+                  label: const Text('Đóng'),
                 ),
               ],
             );

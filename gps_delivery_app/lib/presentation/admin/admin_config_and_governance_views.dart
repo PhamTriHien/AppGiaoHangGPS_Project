@@ -106,7 +106,7 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                 ),
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton(
+                  child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.accent,
                     ),
@@ -146,7 +146,9 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                             );
                           }
                         : null,
-                    child: const Text('Lưu cấu hình Bảng giá'),
+                    icon: const GhstButtonIcon.glyph(GhstActionKind.save, size: 16),
+
+                    label: const Text('Lưu cấu hình Bảng giá'),
                   ),
                 ),
               ],
@@ -189,14 +191,14 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                                   );
                                 }
                               : null,
-                          icon: const Icon(Icons.bolt_rounded, size: 16),
+                          icon: const GhstButtonIcon(Icons.bolt_rounded, size: 16),
                           label: const Text('Gói Flash Sale (Shopee/Grab)'),
                         ),
                         OutlinedButton.icon(
                           onPressed: canEditSystem
                               ? () => _showCreateVoucherDialog(context)
                               : null,
-                          icon: const Icon(Icons.add_circle_outline, size: 16),
+                          icon: const GhstButtonIcon(Icons.add_circle_outline, size: 16),
                           label: const Text('Phát hành mã mới'),
                         ),
                       ],
@@ -236,7 +238,7 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                             children: [
                               const Padding(
                                 padding: EdgeInsets.only(top: 2),
-                                child: Icon(
+                                child: GhstButtonIcon(
                                   Icons.local_offer_outlined,
                                   color: AppColors.accent,
                                 ),
@@ -270,6 +272,7 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                             onPressed: canEditSystem
                                 ? () => _store.toggleVoucherStatus(v.code)
                                 : null,
+                            avatar: const GhstButtonIcon.glyph(GhstActionKind.voucher, size: 14),
                             label: Text(
                               v.isExpired ? '${v.status} (Hết hạn)' : v.status,
                               style: const TextStyle(fontSize: 11.5),
@@ -407,11 +410,13 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                 ),
               ),
               actions: [
-                TextButton(
+                TextButton.icon(
                   onPressed: () => Navigator.of(dialogCtx).pop(),
-                  child: const Text('Hủy'),
+                  icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+                  label: const Text('Hủy'),
                 ),
-                ElevatedButton(
+                ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.accent,
                   ),
@@ -482,7 +487,9 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                       ),
                     );
                   },
-                  child: const Text('Phát hành mã'),
+                  icon: const GhstButtonIcon.glyph(GhstActionKind.voucher, size: 16),
+
+                  label: const Text('Phát hành mã'),
                 ),
               ],
             );
@@ -669,7 +676,7 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                         ),
                       );
                     },
-                    icon: const Icon(Icons.table_view, size: 16),
+                    icon: const GhstButtonIcon(Icons.table_view, size: 16),
                     label: const Text('Xuất CSV'),
                   ),
                   ElevatedButton.icon(
@@ -703,7 +710,7 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                         ),
                       );
                     },
-                    icon: const Icon(Icons.description_outlined, size: 16),
+                    icon: const GhstButtonIcon(Icons.description_outlined, size: 16),
                     label: const Text('Xuất Báo cáo (.txt)'),
                   ),
                 ],
@@ -1064,12 +1071,8 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
               children: _store.complaints.asMap().entries.map((entry) {
                 final idx = entry.key;
                 final c = entry.value;
-                return ChoiceChip(
-                  label: Text('${c.ticketCode} (${c.orderId}) • ${c.status}'),
-                  selected: idx == safeIdx,
-                  onSelected: (_) =>
-                      _rebuildAdminUi(() => _selectedComplaintIndex = idx),
-                );
+                return ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel('${c.ticketCode} (${c.orderId}) • ${c.status}', size: 15), label: Text('${c.ticketCode} (${c.orderId}) • ${c.status}'), selected: idx == safeIdx, onSelected: (_) =>
+                      _rebuildAdminUi(() => _selectedComplaintIndex = idx),);
               }).toList(),
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -1104,7 +1107,7 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                           _store.selectDriverOrder(linkedOrd.trackingCode);
                           _rebuildAdminUi(() => _selectedScreenIndex = 8);
                         },
-                        icon: const Icon(
+                        icon: const GhstButtonIcon(
                           Icons.local_shipping_outlined,
                           size: 15,
                         ),
@@ -1132,7 +1135,7 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                   ...activeTicket.evidenceFiles.map(
                     (f) => Chip(
                       visualDensity: VisualDensity.compact,
-                      avatar: const Icon(Icons.attach_file, size: 14),
+                      avatar: const GhstButtonIcon(Icons.attach_file, size: 14),
                       label: Text(f, style: const TextStyle(fontSize: 11)),
                     ),
                   ),
@@ -1188,10 +1191,10 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                           );
                         }
                       : null,
-                  icon: const Icon(Icons.pending_actions_outlined, size: 16),
+                  icon: const GhstButtonIcon(Icons.pending_actions_outlined, size: 16),
                   label: const Text('Cập nhật: Đang xử lý'),
                 ),
-                ElevatedButton(
+                ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.success,
                   ),
@@ -1222,7 +1225,9 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                           );
                         }
                       : null,
-                  child: const Text('Phản hồi & Đóng khiếu nại'),
+                  icon: const GhstButtonIcon.glyph(GhstActionKind.reply, size: 16),
+
+                  label: const Text('Phản hồi & Đóng khiếu nại'),
                 ),
               ],
             ),
@@ -1309,25 +1314,25 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
               runSpacing: 8,
               children: [
                 Chip(
-                  avatar: const Icon(Icons.shield_outlined, size: 16),
+                  avatar: const GhstButtonIcon(Icons.shield_outlined, size: 16),
                   label: Text(
                     'Tổng ví ký quỹ Tài xế: ${CurrencyFormatter.formatVnd(totalDriverEscrow)}',
                   ),
                 ),
                 Chip(
-                  avatar: const Icon(Icons.storefront_outlined, size: 16),
+                  avatar: const GhstButtonIcon(Icons.storefront_outlined, size: 16),
                   label: Text(
                     'Tổng quỹ COD Cửa hàng: ${CurrencyFormatter.formatVnd(totalMerchantCodPool)}',
                   ),
                 ),
                 Chip(
-                  avatar: const Icon(Icons.hourglass_top_rounded, size: 16),
+                  avatar: const GhstButtonIcon(Icons.hourglass_top_rounded, size: 16),
                   label: Text(
                     'Chờ giải ngân: ${CurrencyFormatter.formatVnd(totalPendingPayout)}',
                   ),
                 ),
                 Chip(
-                  avatar: const Icon(Icons.check_circle_outline, size: 16),
+                  avatar: const GhstButtonIcon(Icons.check_circle_outline, size: 16),
                   label: Text(
                     'Đã giải ngân: ${CurrencyFormatter.formatVnd(totalApprovedPayout)}',
                   ),
@@ -1368,7 +1373,7 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                         spacing: 8,
                         runSpacing: 6,
                         children: [
-                          TextButton(
+                          TextButton.icon(
                             onPressed:
                                 canApprovePayout && req.status == 'Chờ duyệt'
                                 ? () {
@@ -1385,9 +1390,11 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                                     );
                                   }
                                 : null,
-                            child: const Text('Duyệt lệnh'),
+                            icon: const GhstButtonIcon.glyph(GhstActionKind.checkCircle, size: 16),
+
+                            label: const Text('Duyệt lệnh'),
                           ),
-                          TextButton(
+                          TextButton.icon(
                             onPressed:
                                 canApprovePayout && req.status == 'Chờ duyệt'
                                 ? () {
@@ -1404,7 +1411,9 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                                     );
                                   }
                                 : null,
-                            child: const Text(
+                            icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+                            label: const Text(
                               'Từ chối',
                               style: TextStyle(color: AppColors.danger),
                             ),
@@ -1488,7 +1497,7 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                   onPressed: canCreateOrder
                       ? () => _showAdminQuickCreateOrderDialog(context)
                       : null,
-                  icon: const Icon(Icons.add_box_outlined, size: 16),
+                  icon: const GhstButtonIcon(Icons.add_box_outlined, size: 16),
                   label: const Text(
                     'Tạo vận đơn điều phối',
                     style: TextStyle(fontSize: 12),
@@ -1563,7 +1572,7 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                                               ),
                                             );
                                           },
-                                    icon: const Icon(
+                                    icon: const GhstButtonIcon(
                                       Icons.local_shipping_outlined,
                                       size: 14,
                                     ),
@@ -1596,22 +1605,16 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                   final idx = entry.key;
                   final drv = entry.value;
                   final isSel = idx == safeDispDrvIdx;
-                  return ChoiceChip(
-                    visualDensity: VisualDensity.compact,
-                    label: Text(
+                  return ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.glyph(GhstActionKind.scooter, size: 15, color: (isSel) ? Colors.white : null), visualDensity: VisualDensity.compact, label: Text(
                       '${drv.fullName} (${drv.vehicleType} • ${drv.licensePlate} • ★${drv.rating.toStringAsFixed(1)})',
                       style: TextStyle(
                         fontSize: 11.5,
                         fontWeight: FontWeight.w700,
                         color: isSel ? Colors.white : AppColors.ink,
                       ),
-                    ),
-                    selected: isSel,
-                    selectedColor: AppColors.violet,
-                    onSelected: (_) => _rebuildAdminUi(
+                    ), selected: isSel, selectedColor: AppColors.violet, onSelected: (_) => _rebuildAdminUi(
                       () => _selectedDispatchDriverIndex = idx,
-                    ),
-                  );
+                    ),);
                 }).toList(),
               ),
               const SizedBox(height: 12),
@@ -1669,7 +1672,7 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                                   context,
                                   ord,
                                 ),
-                            icon: const Icon(Icons.timeline_rounded, size: 15),
+                            icon: const GhstButtonIcon(Icons.timeline_rounded, size: 15),
                             label: const Text(
                               'Chi tiết & POD',
                               style: TextStyle(fontSize: 12),
@@ -1704,7 +1707,7 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                                       );
                                     }
                                   : null,
-                              icon: const Icon(
+                              icon: const GhstButtonIcon(
                                 Icons.person_pin_circle_outlined,
                                 size: 16,
                               ),
@@ -1724,13 +1727,13 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                                       ord,
                                     )
                                   : null,
-                              icon: const Icon(Icons.cancel_outlined, size: 15),
+                              icon: const GhstButtonIcon(Icons.cancel_outlined, size: 15),
                               label: const Text(
                                 'Hủy đơn',
                                 style: TextStyle(fontSize: 12),
                               ),
                             ),
-                          ElevatedButton(
+                          ElevatedButton.icon(
                             onPressed:
                                 canEditOrder &&
                                     ord.status != OrderStatus.delivered &&
@@ -1798,7 +1801,25 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                                     );
                                   }
                                 : null,
-                            child: Text(
+                            icon: GhstButtonIcon.forLabel(ord.paymentStatus == 'RETURNED'
+                                  ? 'Đã hoàn kho'
+                                  : ord.status == OrderStatus.delivered
+                                  ? 'Đã hoàn tất'
+                                  : ord.status == OrderStatus.cancelled
+                                  ? 'Đã hủy'
+                                  : ord.status == OrderStatus.failed
+                                  ? 'Giao lại chuyến hàng'
+                                  : ord.status == OrderStatus.returning
+                                  ? 'Hoàn tất trả kho'
+                                  : ord.status == OrderStatus.inTransit
+                                  ? 'Đang giao (Chờ POD & OTP)'
+                                  : ord.status.canTransitionTo(
+                                      OrderStatus.accepted,
+                                    )
+                                  ? 'Gán tài xế ngay'
+                                  : 'Chuyển bước lấy hàng', size: 16),
+
+                            label: Text(
                               ord.paymentStatus == 'RETURNED'
                                   ? 'Đã hoàn kho'
                                   : ord.status == OrderStatus.delivered
@@ -1854,11 +1875,13 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
             ),
           ),
           actions: [
-            TextButton(
+            TextButton.icon(
               onPressed: () => Navigator.of(dialogCtx).pop(),
-              child: const Text('Đóng'),
+              icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+              label: const Text('Đóng'),
             ),
-            ElevatedButton(
+            ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.danger,
               ),
@@ -1887,7 +1910,9 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                   ),
                 );
               },
-              child: const Text('Xác nhận hủy đơn'),
+              icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+              label: const Text('Xác nhận hủy đơn'),
             ),
           ],
         );
@@ -1974,15 +1999,11 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                     runSpacing: 6,
                     children: DeliveryServiceType.values
                         .map(
-                          (st) => ChoiceChip(
-                            label: Text(
+                          (st) => ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel(st.displayName, size: 15), label: Text(
                               st.displayName,
                               style: const TextStyle(fontSize: 11.5),
-                            ),
-                            selected: selectedSvc == st,
-                            onSelected: (_) =>
-                                setDialogState(() => selectedSvc = st),
-                          ),
+                            ), selected: selectedSvc == st, onSelected: (_) =>
+                                setDialogState(() => selectedSvc = st),),
                         )
                         .toList(),
                   ),
@@ -1990,11 +2011,13 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
               ),
             ),
             actions: [
-              TextButton(
+              TextButton.icon(
                 onPressed: () => Navigator.of(dialogCtx).pop(),
-                child: const Text('Hủy'),
+                icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+                label: const Text('Hủy'),
               ),
-              ElevatedButton(
+              ElevatedButton.icon(
                 onPressed: () {
                   final pickup = pickupCtrl.text.trim();
                   final dropoff = dropoffCtrl.text.trim();
@@ -2076,7 +2099,9 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                     ),
                   );
                 },
-                child: const Text('Tạo đơn'),
+                icon: const GhstButtonIcon.glyph(GhstActionKind.plus, size: 16),
+
+                label: const Text('Tạo đơn'),
               ),
             ],
           ),
@@ -2175,9 +2200,11 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
           ),
         ),
         actions: [
-          TextButton(
+          TextButton.icon(
             onPressed: () => Navigator.of(dialogCtx).pop(),
-            child: const Text('Đóng'),
+            icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+            label: const Text('Đóng'),
           ),
         ],
       ),
@@ -2245,22 +2272,10 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                   'Chế độ tương tác bản đồ:',
                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
                 ),
-                ChoiceChip(
-                  visualDensity: VisualDensity.compact,
-                  avatar: const Icon(Icons.polyline_rounded, size: 15),
-                  label: const Text('Chấm đỉnh Polygon mới'),
-                  selected: !_geofenceTapTestMode,
-                  onSelected: (_) =>
-                      _rebuildAdminUi(() => _geofenceTapTestMode = false),
-                ),
-                ChoiceChip(
-                  visualDensity: VisualDensity.compact,
-                  avatar: const Icon(Icons.my_location_rounded, size: 15),
-                  label: const Text('Kiểm tra điểm trên bản đồ'),
-                  selected: _geofenceTapTestMode,
-                  onSelected: (_) =>
-                      _rebuildAdminUi(() => _geofenceTapTestMode = true),
-                ),
+                ChoiceChip(showCheckmark: false, visualDensity: VisualDensity.compact, avatar: const GhstButtonIcon(Icons.polyline_rounded, size: 15), label: const Text('Chấm đỉnh Polygon mới'), selected: !_geofenceTapTestMode, onSelected: (_) =>
+                      _rebuildAdminUi(() => _geofenceTapTestMode = false),),
+                ChoiceChip(showCheckmark: false, visualDensity: VisualDensity.compact, avatar: const GhstButtonIcon(Icons.my_location_rounded, size: 15), label: const Text('Kiểm tra điểm trên bản đồ'), selected: _geofenceTapTestMode, onSelected: (_) =>
+                      _rebuildAdminUi(() => _geofenceTapTestMode = true),),
               ],
             ),
             const SizedBox(height: AppSpacing.xs),
@@ -2309,18 +2324,20 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                         onPressed: () => _rebuildAdminUi(
                           () => _draftPolygonGeoPoints.removeLast(),
                         ),
-                        icon: const Icon(Icons.undo_rounded, size: 15),
+                        icon: const GhstButtonIcon(Icons.undo_rounded, size: 15),
                         label: const Text('Hoàn tác đỉnh'),
                       ),
-                    OutlinedButton(
+                    OutlinedButton.icon(
                       onPressed: _draftPolygonGeoPoints.isEmpty
                           ? null
                           : () => _rebuildAdminUi(
                               () => _draftPolygonGeoPoints.clear(),
                             ),
-                      child: const Text('Xóa đỉnh'),
+                      icon: const GhstButtonIcon.glyph(GhstActionKind.delete, size: 16),
+
+                      label: const Text('Xóa đỉnh'),
                     ),
-                    ElevatedButton(
+                    ElevatedButton.icon(
                       onPressed:
                           canEditGeofence && _draftPolygonGeoPoints.length >= 3
                           ? () {
@@ -2363,7 +2380,9 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                               );
                             }
                           : null,
-                      child: const Text('Lưu vùng mới'),
+                      icon: const GhstButtonIcon.glyph(GhstActionKind.save, size: 16),
+
+                      label: const Text('Lưu vùng mới'),
                     ),
                   ],
                 );
@@ -2398,19 +2417,14 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                   ('RESTRICTED_ZONE', 'Vùng hạn chế / Cấm tải'),
                 ].map((zt) {
                   final sel = _newZoneType == zt.$1;
-                  return ChoiceChip(
-                    visualDensity: VisualDensity.compact,
-                    label: Text(zt.$2, style: const TextStyle(fontSize: 11)),
-                    selected: sel,
-                    onSelected: (_) => _rebuildAdminUi(() {
+                  return ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel(zt.$2, size: 15), visualDensity: VisualDensity.compact, label: Text(zt.$2, style: const TextStyle(fontSize: 11)), selected: sel, onSelected: (_) => _rebuildAdminUi(() {
                       _newZoneType = zt.$1;
                       if (_newZoneType != 'SURCHARGE_ZONE') {
                         _newZoneSurcharge = 0;
                       } else if (_newZoneSurcharge <= 0) {
                         _newZoneSurcharge = 20000;
                       }
-                    }),
-                  );
+                    }),);
                 }),
               ],
             ),
@@ -2427,16 +2441,11 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                   ),
                   ...[10000.0, 15000.0, 20000.0, 25000.0, 30000.0].map((fee) {
                     final selected = _newZoneSurcharge == fee;
-                    return ChoiceChip(
-                      visualDensity: VisualDensity.compact,
-                      label: Text(
+                    return ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel('+${CurrencyFormatter.formatVnd(fee)}', size: 15), visualDensity: VisualDensity.compact, label: Text(
                         '+${CurrencyFormatter.formatVnd(fee)}',
                         style: const TextStyle(fontSize: 11),
-                      ),
-                      selected: selected,
-                      onSelected: (_) =>
-                          _rebuildAdminUi(() => _newZoneSurcharge = fee),
-                    );
+                      ), selected: selected, onSelected: (_) =>
+                          _rebuildAdminUi(() => _newZoneSurcharge = fee),);
                   }),
                 ],
               ),
@@ -2493,7 +2502,7 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                     hintText: 'VD: 106.6980',
                   ),
                 );
-                final checkBtn = ElevatedButton(
+                final checkBtn = ElevatedButton.icon(
                   onPressed: () {
                     final lat = double.tryParse(_testLatCtrl.text.trim());
                     final lng = double.tryParse(_testLngCtrl.text.trim());
@@ -2516,7 +2525,9 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                       GeoPoint(latitude: lat, longitude: lng),
                     );
                   },
-                  child: const Text('Kiểm tra tọa độ'),
+                  icon: const GhstButtonIcon.glyph(GhstActionKind.gps, size: 16),
+
+                  label: const Text('Kiểm tra tọa độ'),
                 );
                 if (constraints.maxWidth < 560) {
                   return Column(
@@ -2590,12 +2601,8 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                     'Tài xế',
                     'Cửa hàng B2B',
                   ].map((g) {
-                    return ChoiceChip(
-                      label: Text(g),
-                      selected: _broadcastTarget == g,
-                      onSelected: (_) =>
-                          _rebuildAdminUi(() => _broadcastTarget = g),
-                    );
+                    return ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel(g, size: 15), label: Text(g), selected: _broadcastTarget == g, onSelected: (_) =>
+                          _rebuildAdminUi(() => _broadcastTarget = g),);
                   }).toList(),
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -2639,7 +2646,7 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                         );
                       }
                     : null,
-                icon: const Icon(Icons.campaign_outlined),
+                icon: const GhstButtonIcon(Icons.campaign_outlined),
                 label: const Text('Phát thông báo ngay'),
               ),
             ),
@@ -2660,7 +2667,7 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                 if (_store.notifications.any((n) => !n.isRead))
                   TextButton.icon(
                     onPressed: () => _store.markAllNotificationsAsRead(),
-                    icon: const Icon(Icons.done_all_rounded, size: 16),
+                    icon: const GhstButtonIcon(Icons.done_all_rounded, size: 16),
                     label: const Text(
                       'Đánh dấu đã đọc tất cả',
                       style: TextStyle(
@@ -2699,7 +2706,7 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                     ),
                     child: Row(
                       children: [
-                        Icon(
+                        GhstButtonIcon(
                           n.isRead
                               ? Icons.notifications_none_outlined
                               : Icons.notifications_active_outlined,
@@ -2783,7 +2790,7 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Chip(
-                  avatar: const Icon(Icons.verified_user_outlined, size: 15),
+                  avatar: const GhstButtonIcon(Icons.verified_user_outlined, size: 15),
                   label: Text(
                     'Phiên điều hành hiện tại: ${_store.currentAdminRoleName}',
                     style: const TextStyle(
@@ -2805,7 +2812,7 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                         ),
                       );
                     },
-                    icon: const Icon(Icons.switch_account_outlined, size: 15),
+                    icon: const GhstButtonIcon(Icons.switch_account_outlined, size: 15),
                     label: Text(
                       'Chuyển phiên sang "${activeRole.roleName}"',
                       style: const TextStyle(fontSize: 12),
@@ -2831,7 +2838,7 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                       }
                       _showRestoreSuperAdminPasswordDialog(context);
                     },
-                    icon: const Icon(
+                    icon: const GhstButtonIcon(
                       Icons.admin_panel_settings_outlined,
                       size: 15,
                     ),
@@ -2861,13 +2868,9 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
               runSpacing: 6,
               children: List.generate(_store.rbacRoles.length, (index) {
                 final r = _store.rbacRoles[index];
-                return ChoiceChip(
-                  label: Text(r.roleName),
-                  selected: safeRoleIdx == index,
-                  onSelected: (_) {
+                return ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel(r.roleName, size: 15), label: Text(r.roleName), selected: safeRoleIdx == index, onSelected: (_) {
                     _rebuildAdminUi(() => _selectedRbacRoleIndex = index);
-                  },
-                );
+                  },);
               }),
             ),
             const Divider(),
@@ -2878,17 +2881,13 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                 final isLockedSuperSecurity =
                     activeRole.roleName == 'Super Admin' &&
                     entry.key == 'Hệ thống: Bảo mật';
-                return FilterChip(
-                  label: Text(entry.key),
-                  selected: entry.value,
-                  onSelected: canManageSecurity && !isLockedSuperSecurity
+                return FilterChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel(entry.key, size: 15), label: Text(entry.key), selected: entry.value, onSelected: canManageSecurity && !isLockedSuperSecurity
                       ? (v) => _store.toggleRbacPermission(
                           activeRole.roleName,
                           entry.key,
                           v,
                         )
-                      : null,
-                );
+                      : null,);
               }).toList(),
             ),
             const Divider(height: 24),
@@ -2906,7 +2905,7 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
               decoration: const InputDecoration(
                 labelText: 'SUPABASE_URL (Project URL)',
                 hintText: 'https://<project-ref>.supabase.co',
-                prefixIcon: Icon(Icons.cloud_outlined),
+                prefixIcon: GhstButtonIcon(Icons.cloud_outlined),
               ),
             ),
             const SizedBox(height: 8),
@@ -2915,7 +2914,7 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
               enabled: canManageSecurity,
               decoration: const InputDecoration(
                 labelText: 'SUPABASE_ANON_KEY (Public API Key)',
-                prefixIcon: Icon(Icons.vpn_key_outlined),
+                prefixIcon: GhstButtonIcon(Icons.vpn_key_outlined),
               ),
             ),
             const SizedBox(height: 8),
@@ -2945,7 +2944,7 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                           messenger.showSnackBar(SnackBar(content: Text(msg)));
                         }
                       : null,
-                  icon: const Icon(Icons.sync, size: 16),
+                  icon: const GhstButtonIcon(Icons.sync, size: 16),
                   label: const Text('Kết nối & Đồng bộ dữ liệu'),
                 ),
               ],
@@ -2957,7 +2956,7 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                 child: TextButton.icon(
                   onPressed: () =>
                       _rebuildAdminUi(() => _selectedScreenIndex = 13),
-                  icon: const Icon(Icons.hub_outlined),
+                  icon: const GhstButtonIcon(Icons.hub_outlined),
                   label: const Text('API & Dịch vụ'),
                 ),
               ),
@@ -3067,7 +3066,7 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                             ),
                           );
                         },
-                  icon: const Icon(Icons.sync_rounded, size: 17),
+                  icon: const GhstButtonIcon(Icons.sync_rounded, size: 17),
                   label: const Text('Chạy retry webhook'),
                 ),
               ],
@@ -3127,7 +3126,7 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                         return ListTile(
                           dense: true,
                           contentPadding: EdgeInsets.zero,
-                          leading: const Icon(
+                          leading: const GhstButtonIcon(
                             Icons.sync_problem_outlined,
                             color: AppColors.pink,
                           ),
@@ -3158,7 +3157,7 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                         return ListTile(
                           dense: true,
                           contentPadding: EdgeInsets.zero,
-                          leading: const Icon(Icons.history_rounded),
+                          leading: const GhstButtonIcon(Icons.history_rounded),
                           title: Text(
                             '${row['action']} • ${row['entity_type']}',
                           ),
@@ -3184,7 +3183,7 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
       ),
       child: Row(
         children: [
-          Icon(icon, color: AppColors.violet),
+          GhstButtonIcon(icon, color: AppColors.violet),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -3231,7 +3230,7 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
         children: [
           Row(
             children: [
-              Icon(icon, size: 18),
+              GhstButtonIcon(icon, size: 18),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -3265,15 +3264,17 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
             obscureText: true,
             decoration: const InputDecoration(
               labelText: 'Mật khẩu tài khoản Quản trị tối cao',
-              prefixIcon: Icon(Icons.lock_outline_rounded),
+              prefixIcon: GhstButtonIcon(Icons.lock_outline_rounded),
             ),
           ),
           actions: [
-            TextButton(
+            TextButton.icon(
               onPressed: () => Navigator.of(dialogCtx).pop(),
-              child: const Text('Hủy'),
+              icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+              label: const Text('Hủy'),
             ),
-            ElevatedButton(
+            ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.violet,
               ),
@@ -3303,7 +3304,9 @@ extension _AdminConfigAndGovernanceViews on _AdminSubsystemEntryState {
                   ),
                 );
               },
-              child: const Text('Xác nhận'),
+              icon: const GhstButtonIcon.glyph(GhstActionKind.checkCircle, size: 16),
+
+              label: const Text('Xác nhận'),
             ),
           ],
         );

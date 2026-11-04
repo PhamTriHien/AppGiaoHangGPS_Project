@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../presentation/widgets/ghst_button_icon.dart';
 import '../../presentation/widgets/motion_3d_effects.dart';
 import 'ghst_theme_tokens.dart';
 
@@ -199,6 +200,19 @@ class AdminStudioTheme {
       colorScheme: scheme,
       scaffoldBackgroundColor: p.paper,
       extensions: [tokens],
+      actionIconTheme: ActionIconThemeData(
+        backButtonIconBuilder: (_) =>
+            const GhstButtonIcon.glyph(GhstActionKind.back, size: 20),
+        closeButtonIconBuilder: (_) =>
+            const GhstButtonIcon.glyph(GhstActionKind.close, size: 20),
+        drawerButtonIconBuilder: (_) =>
+            const GhstButtonIcon.glyph(GhstActionKind.grid, size: 20),
+        endDrawerButtonIconBuilder: (_) =>
+            const GhstButtonIcon.glyph(GhstActionKind.tune, size: 20),
+      ),
+      segmentedButtonTheme: const SegmentedButtonThemeData(
+        selectedIcon: GhstButtonIcon.glyph(GhstActionKind.check, size: 15),
+      ),
       cardTheme: CardThemeData(
         elevation: 0,
         color: p.surface,
@@ -227,8 +241,9 @@ class AdminStudioTheme {
       chipTheme: ChipThemeData(
         backgroundColor: p.surfaceSubtle,
         selectedColor: p.violetSoft,
-        secondarySelectedColor: p.violet,
+        secondarySelectedColor: p.violetSoft,
         checkmarkColor: p.violetInk,
+        iconTheme: IconThemeData(color: p.violetInk, size: 15),
         disabledColor: p.paperWarm,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         shape: RoundedRectangleBorder(
@@ -240,10 +255,10 @@ class AdminStudioTheme {
           fontWeight: FontWeight.w600,
           color: p.ink,
         ),
-        secondaryLabelStyle: const TextStyle(
+        secondaryLabelStyle: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w700,
-          color: Colors.white,
+          color: p.violetInk,
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(

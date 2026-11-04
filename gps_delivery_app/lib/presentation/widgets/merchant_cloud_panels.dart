@@ -13,6 +13,7 @@ import 'animated_3d_ui_icons.dart';
 import 'cloud_logistics_panels.dart';
 import 'cloud_order_labels.dart';
 import 'cloud_session_boundary.dart';
+import 'ghst_button_icon.dart';
 import 'market_commercial_sheets.dart';
 
 String _vnd(dynamic value) =>
@@ -65,7 +66,7 @@ Widget _toneBadge(
         GhstPulseBeacon(color: tone.icon, size: 7, active: true),
         const SizedBox(width: 6),
       ] else if (icon != null) ...[
-        Icon(icon, size: 14, color: tone.icon),
+        GhstButtonIcon(icon, size: 14, color: tone.icon),
         const SizedBox(width: 5),
       ],
       Flexible(
@@ -268,9 +269,11 @@ class _StockLedgerDialogState extends State<_StockLedgerDialog> {
               if (_next != null)
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: TextButton(
+                  child: TextButton.icon(
                     onPressed: _loading ? null : () => _load(more: true),
-                    child: const Text('Tải thêm'),
+                    icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 16),
+
+                    label: const Text('Tải thêm'),
                   ),
                 ),
             ],
@@ -278,9 +281,11 @@ class _StockLedgerDialogState extends State<_StockLedgerDialog> {
         ),
       ),
       actions: [
-        TextButton(
+        TextButton.icon(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Đóng'),
+          icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+          label: const Text('Đóng'),
         ),
       ],
     );
@@ -416,10 +421,12 @@ class _QuickStockDialogState extends State<_QuickStockDialog> {
                 children: [
                   for (final step in [-5, -1, 1, 5, 10])
                     ActionChip(
+                      avatar: GhstButtonIcon.glyph(step > 0 ? GhstActionKind.plus : GhstActionKind.minus, size: 13),
                       label: Text('${step > 0 ? '+' : ''}$step'),
                       onPressed: _busy ? null : () => _adjust(step),
                     ),
                   ActionChip(
+                    avatar: const GhstButtonIcon.glyph(GhstActionKind.warning, size: 14),
                     label: const Text('Hết hàng (0)'),
                     onPressed: _busy ? null : () => _adjust(0, exact: 0),
                   ),
@@ -437,14 +444,18 @@ class _QuickStockDialogState extends State<_QuickStockDialog> {
         ),
       ),
       actions: [
-        TextButton(
+        TextButton.icon(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Hủy'),
+          icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+          label: const Text('Hủy'),
         ),
-        FilledButton(
+        FilledButton.icon(
           key: const ValueKey('merchant-quick-stock-save'),
           onPressed: _busy ? null : _save,
-          child: const Text('Lưu tồn kho'),
+          icon: const GhstButtonIcon.glyph(GhstActionKind.save, size: 16),
+
+          label: const Text('Lưu tồn kho'),
         ),
       ],
     );
@@ -618,18 +629,13 @@ class _MerchantWorkspacePanelState extends State<MerchantWorkspacePanel> {
             runSpacing: 8,
             children: [
               for (final sh in mergedShops)
-                ChoiceChip(
-                  key: ValueKey('merchant-shop-chip-${sh['id']}'),
-                  label: Text(
+                ChoiceChip(showCheckmark: false, avatar: const GhstButtonIcon.glyph(GhstActionKind.store, size: 15), key: ValueKey('merchant-shop-chip-${sh['id']}'), label: Text(
                     '${sh['name']} · ${_roleLabel('${sh['my_role'] ?? ''}')}',
-                  ),
-                  selected: '${sh['id']}' == shopId,
-                  onSelected: _actionBusy
+                  ), selected: '${sh['id']}' == shopId, onSelected: _actionBusy
                       ? null
                       : (sel) {
                           if (sel) widget.onSelectShop('${sh['id']}');
-                        },
-                ),
+                        },),
             ],
           ),
           const SizedBox(height: 12),
@@ -795,7 +801,7 @@ class _MerchantWorkspacePanelState extends State<MerchantWorkspacePanel> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(
+                      const GhstButtonIcon(
                         Icons.storefront_outlined,
                         color: Colors.white,
                         size: 18,
@@ -935,7 +941,11 @@ class _MerchantWorkspacePanelState extends State<MerchantWorkspacePanel> {
               onPressed: _actionBusy || !canManage
                   ? null
                   : () => widget.onEdit(shop: activeShop, editShop: true),
-              icon: const Icon(Icons.edit_outlined),
+              icon: const GhstAiIcon(
+                style: Icon3dStyle.settingsGear,
+                size: 18,
+                circular: true,
+              ),
               label: const Text('Sửa cửa hàng'),
             ),
             FilledButton.icon(
@@ -943,7 +953,11 @@ class _MerchantWorkspacePanelState extends State<MerchantWorkspacePanel> {
                   _actionBusy || !canManage || activeShop['status'] == 'suspended'
                   ? null
                   : () => widget.onEdit(shop: activeShop),
-              icon: const Icon(Icons.add),
+              icon: const GhstAiIcon(
+                style: Icon3dStyle.createPlus,
+                size: 18,
+                circular: true,
+              ),
               label: const Text('Thêm sản phẩm'),
             ),
             if (canManage)
@@ -956,7 +970,11 @@ class _MerchantWorkspacePanelState extends State<MerchantWorkspacePanel> {
                         session: widget.session,
                         shop: activeShop,
                       ),
-                icon: const Icon(Icons.history_edu_outlined),
+                icon: const GhstAiIcon(
+                  style: Icon3dStyle.parcelBox,
+                  size: 18,
+                  circular: true,
+                ),
                 label: const Text('Sổ tồn kho'),
               ),
             if (canManage)
@@ -973,7 +991,11 @@ class _MerchantWorkspacePanelState extends State<MerchantWorkspacePanel> {
                           await widget.onReload();
                         }
                       },
-                icon: const Icon(Icons.confirmation_num_outlined),
+                icon: const GhstAiIcon(
+                  style: Icon3dStyle.voucherFlash,
+                  size: 18,
+                  circular: true,
+                ),
                 label: const Text('Voucher shop'),
               ),
             if (canManage && shopProducts.isNotEmpty)
@@ -990,14 +1012,22 @@ class _MerchantWorkspacePanelState extends State<MerchantWorkspacePanel> {
                           await widget.onReload();
                         }
                       },
-                icon: const Icon(Icons.flash_on_outlined),
+                icon: const GhstAiIcon(
+                  style: Icon3dStyle.luckyWheel,
+                  size: 18,
+                  circular: true,
+                ),
                 label: const Text('Flash Sale'),
               ),
             if (widget.onOpenOperations != null)
               OutlinedButton.icon(
                 key: const ValueKey('merchant-open-operations-btn'),
                 onPressed: _actionBusy ? null : widget.onOpenOperations,
-                icon: const Icon(Icons.analytics_outlined),
+                icon: const GhstAiIcon(
+                  style: Icon3dStyle.analyticsChart,
+                  size: 18,
+                  circular: true,
+                ),
                 label: Text(
                   canManage ? 'Khuyến mãi & Đối soát' : 'Đổi trả & Đánh giá',
                 ),
@@ -1015,7 +1045,11 @@ class _MerchantWorkspacePanelState extends State<MerchantWorkspacePanel> {
                         );
                         if (widget.lease.valid) await widget.onReload();
                       },
-                icon: const Icon(Icons.group_outlined),
+                icon: const GhstAiIcon(
+                  style: Icon3dStyle.userProfile,
+                  size: 18,
+                  circular: true,
+                ),
                 label: const Text('Nhân sự'),
               ),
             if (isDirectOwner && widget.session.hasRole('merchant'))
@@ -1023,7 +1057,11 @@ class _MerchantWorkspacePanelState extends State<MerchantWorkspacePanel> {
                 onPressed: _actionBusy
                     ? null
                     : () => widget.onEdit(editShop: true),
-                icon: const Icon(Icons.add_business_outlined),
+                icon: const GhstAiIcon(
+                  style: Icon3dStyle.merchantStore,
+                  size: 18,
+                  circular: true,
+                ),
                 label: const Text('Mở thêm chi nhánh'),
               ),
           ],
@@ -1053,13 +1091,13 @@ class _MerchantWorkspacePanelState extends State<MerchantWorkspacePanel> {
                 onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
                   hintText: 'Tìm theo tên sản phẩm, mã SKU hoặc danh mục...',
-                  prefixIcon: const Icon(Icons.search),
+                  prefixIcon: const GhstButtonIcon(Icons.search),
                   suffixIcon: _catalogSearch.text.isEmpty
                       ? null
                       : IconButton(
                           tooltip: 'Xóa tìm kiếm',
                           onPressed: () => setState(_catalogSearch.clear),
-                          icon: const Icon(Icons.close),
+                          icon: const GhstButtonIcon(Icons.close),
                         ),
                 ),
               ),
@@ -1075,12 +1113,8 @@ class _MerchantWorkspacePanelState extends State<MerchantWorkspacePanel> {
                     ('out_of_stock', 'Hết hàng'),
                     ('hidden', 'Đã ẩn'),
                   ])
-                    ChoiceChip(
-                      label: Text(item.$2),
-                      selected: _catalogFilter == item.$1,
-                      onSelected: (_) =>
-                          setState(() => _catalogFilter = item.$1),
-                    ),
+                    ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel(item.$2, size: 15), label: Text(item.$2), selected: _catalogFilter == item.$1, onSelected: (_) =>
+                          setState(() => _catalogFilter = item.$1),),
                 ],
               ),
               const SizedBox(height: 12),
@@ -1124,14 +1158,14 @@ class _MerchantWorkspacePanelState extends State<MerchantWorkspacePanel> {
                 onPressed: _actionBusy
                     ? null
                     : () => openCloudPickups(context, widget.session),
-                icon: const Icon(Icons.local_shipping_outlined),
+                icon: const GhstButtonIcon(Icons.local_shipping_outlined),
                 label: const Text('Lịch xe thu gom'),
               ),
               OutlinedButton.icon(
                 onPressed: _actionBusy
                     ? null
                     : () => openCloudOrderImport(context, widget.session),
-                icon: const Icon(Icons.upload_file_outlined),
+                icon: const GhstButtonIcon(Icons.upload_file_outlined),
                 label: const Text('Nhập đơn từ CSV'),
               ),
             ],
@@ -1174,7 +1208,7 @@ class _MerchantWorkspacePanelState extends State<MerchantWorkspacePanel> {
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: tone.border),
                 ),
-                child: Icon(icon, size: 16, color: tone.icon),
+                child: GhstButtonIcon(icon, size: 16, color: tone.icon),
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -1240,7 +1274,7 @@ class _MerchantWorkspacePanelState extends State<MerchantWorkspacePanel> {
                 child: imgUrl.isEmpty
                     ? ColoredBox(
                         color: tokens.cardSubtle,
-                        child: Icon(
+                        child: GhstButtonIcon(
                           Icons.inventory_2_outlined,
                           color: tokens.inkMuted,
                         ),
@@ -1250,7 +1284,7 @@ class _MerchantWorkspacePanelState extends State<MerchantWorkspacePanel> {
                         fit: BoxFit.cover,
                         errorBuilder: (_, _, _) => ColoredBox(
                           color: tokens.cardSubtle,
-                          child: Icon(
+                          child: GhstButtonIcon(
                             Icons.inventory_2_outlined,
                             color: tokens.inkMuted,
                           ),
@@ -1337,7 +1371,7 @@ class _MerchantWorkspacePanelState extends State<MerchantWorkspacePanel> {
             if (canManage)
               ActionChip(
                 key: ValueKey('merchant-product-stock-${product['id']}'),
-                avatar: const Icon(Icons.exposure_outlined, size: 16),
+                avatar: const GhstButtonIcon(Icons.exposure_outlined, size: 16),
                 label: const Text('Chỉnh tồn kho'),
                 onPressed: _actionBusy
                     ? null
@@ -1364,7 +1398,7 @@ class _MerchantWorkspacePanelState extends State<MerchantWorkspacePanel> {
                       );
                       if (widget.lease.valid) await widget.onReload();
                     },
-              icon: const Icon(Icons.layers_outlined),
+              icon: const GhstButtonIcon(Icons.layers_outlined),
             ),
             if (canManage)
               IconButton(
@@ -1378,14 +1412,14 @@ class _MerchantWorkspacePanelState extends State<MerchantWorkspacePanel> {
                         productId: '${product['id']}',
                         productName: '${product['name']}',
                       ),
-                icon: const Icon(Icons.history_outlined),
+                icon: const GhstButtonIcon(Icons.history_outlined),
               ),
             IconButton(
               tooltip: 'Sửa sản phẩm',
               onPressed: _actionBusy || !canManage
                   ? null
                   : () => widget.onEdit(shop: shop, product: product),
-              icon: const Icon(Icons.edit_outlined),
+              icon: const GhstButtonIcon(Icons.edit_outlined),
             ),
           ],
         ),
@@ -1397,6 +1431,7 @@ class _MerchantWorkspacePanelState extends State<MerchantWorkspacePanel> {
             children: [
               for (final v in variants)
                 ActionChip(
+                  avatar: const GhstButtonIcon.glyph(GhstActionKind.box, size: 14),
                   label: Text(
                     '${v['title']} (${v['sku']}): ${_vnd(v['price'])} · Tồn ${v['stock']}',
                     style: const TextStyle(fontSize: 12),
@@ -1527,9 +1562,9 @@ class _MerchantOrdersPanelState extends State<MerchantOrdersPanel> {
               children: [
                 for (final t in targets)
                   ListTile(
-                    leading: const Icon(Icons.local_shipping_outlined),
+                    leading: const GhstButtonIcon(Icons.local_shipping_outlined),
                     title: Text(t.$1),
-                    trailing: const Icon(Icons.chevron_right),
+                    trailing: const GhstButtonIcon(Icons.chevron_right),
                     onTap: () => Navigator.pop(dialog, t.$2),
                   ),
               ],
@@ -1537,9 +1572,11 @@ class _MerchantOrdersPanelState extends State<MerchantOrdersPanel> {
           ),
         ),
         actions: [
-          TextButton(
+          TextButton.icon(
             onPressed: () => Navigator.pop(dialog),
-            child: const Text('Đóng'),
+            icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+            label: const Text('Đóng'),
           ),
         ],
       ),
@@ -1565,21 +1602,13 @@ class _MerchantOrdersPanelState extends State<MerchantOrdersPanel> {
             spacing: 8,
             runSpacing: 8,
             children: [
-              ChoiceChip(
-                label: const Text('Tất cả cửa hàng'),
-                selected: widget.selectedShopId == null,
-                onSelected: widget.busy
+              ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel('Tất cả cửa hàng', size: 15), label: const Text('Tất cả cửa hàng'), selected: widget.selectedShopId == null, onSelected: widget.busy
                     ? null
-                    : (_) => widget.onQueryChanged(shopId: ''),
-              ),
+                    : (_) => widget.onQueryChanged(shopId: ''),),
               for (final sh in widget.shops)
-                ChoiceChip(
-                  label: Text('${sh['name']}'),
-                  selected: widget.selectedShopId == '${sh['id']}',
-                  onSelected: widget.busy
+                ChoiceChip(showCheckmark: false, avatar: const GhstButtonIcon.glyph(GhstActionKind.store, size: 15), label: Text('${sh['name']}'), selected: widget.selectedShopId == '${sh['id']}', onSelected: widget.busy
                       ? null
-                      : (_) => widget.onQueryChanged(shopId: '${sh['id']}'),
-                ),
+                      : (_) => widget.onQueryChanged(shopId: '${sh['id']}'),),
             ],
           ),
           const SizedBox(height: 10),
@@ -1594,7 +1623,7 @@ class _MerchantOrdersPanelState extends State<MerchantOrdersPanel> {
                 onSubmitted: (v) => widget.onQueryChanged(search: v.trim()),
                 decoration: InputDecoration(
                   hintText: 'Tìm mã đơn, mã vận đơn, tên hoặc SĐT người nhận...',
-                  prefixIcon: const Icon(Icons.search),
+                  prefixIcon: const GhstButtonIcon(Icons.search),
                   suffixIcon: _search.text.isEmpty && widget.activeSearch.isEmpty
                       ? null
                       : IconButton(
@@ -1603,17 +1632,19 @@ class _MerchantOrdersPanelState extends State<MerchantOrdersPanel> {
                             _search.clear();
                             widget.onQueryChanged(search: '');
                           },
-                          icon: const Icon(Icons.close),
+                          icon: const GhstButtonIcon(Icons.close),
                         ),
                 ),
               ),
             ),
             const SizedBox(width: 8),
-            FilledButton.tonal(
+            FilledButton.tonalIcon(
               onPressed: widget.busy
                   ? null
                   : () => widget.onQueryChanged(search: _search.text.trim()),
-              child: const Text('Tìm'),
+              icon: const GhstButtonIcon.glyph(GhstActionKind.search, size: 16),
+
+              label: const Text('Tìm'),
             ),
           ],
         ),
@@ -1632,14 +1663,9 @@ class _MerchantOrdersPanelState extends State<MerchantOrdersPanel> {
               ('returns', 'Đổi trả mở'),
               ('cancelled', 'Đã hủy'),
             ])
-              ChoiceChip(
-                key: ValueKey('merchant-order-filter-${f.$1}'),
-                label: Text(f.$2),
-                selected: widget.activeFilter == f.$1,
-                onSelected: widget.busy
+              ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel(f.$2, size: 15), key: ValueKey('merchant-order-filter-${f.$1}'), label: Text(f.$2), selected: widget.activeFilter == f.$1, onSelected: widget.busy
                     ? null
-                    : (_) => widget.onQueryChanged(filter: f.$1),
-              ),
+                    : (_) => widget.onQueryChanged(filter: f.$1),),
           ],
         ),
         const SizedBox(height: 14),
@@ -1813,7 +1839,7 @@ class _MerchantOrdersPanelState extends State<MerchantOrdersPanel> {
                               onPressed: widget.busy
                                   ? null
                                   : () => widget.onOrderAction(o, 'accept'),
-                              icon: const Icon(Icons.check_circle_outline),
+                              icon: const GhstButtonIcon(Icons.check_circle_outline),
                               label: const Text('Xác nhận đơn'),
                             ),
                           if (state == 'accepted') ...[
@@ -1821,7 +1847,7 @@ class _MerchantOrdersPanelState extends State<MerchantOrdersPanel> {
                               onPressed: widget.busy
                                   ? null
                                   : () => widget.onOrderAction(o, 'ready'),
-                              icon: const Icon(Icons.local_shipping_outlined),
+                              icon: const GhstButtonIcon(Icons.local_shipping_outlined),
                               label: const Text('Sẵn sàng giao'),
                             ),
                             if (widget.session.canManageShop(
@@ -1841,7 +1867,7 @@ class _MerchantOrdersPanelState extends State<MerchantOrdersPanel> {
                                           await widget.onReload();
                                         }
                                       },
-                                icon: const Icon(Icons.call_split),
+                                icon: const GhstButtonIcon(Icons.call_split),
                                 label: const Text('Tách kiện giao'),
                               ),
                           ],
@@ -1857,7 +1883,7 @@ class _MerchantOrdersPanelState extends State<MerchantOrdersPanel> {
                                       context,
                                       journeyTargets,
                                     ),
-                              icon: const Icon(Icons.route_outlined),
+                              icon: const GhstButtonIcon(Icons.route_outlined),
                               label: Text(
                                 journeyTargets.length > 1
                                     ? 'Theo dõi hành trình (${journeyTargets.length} kiện)'
@@ -1870,7 +1896,7 @@ class _MerchantOrdersPanelState extends State<MerchantOrdersPanel> {
                                 : () => widget.onOpenConversation(
                                     '${o['id']}',
                                   ),
-                            icon: const Icon(Icons.chat_bubble_outline),
+                            icon: const GhstButtonIcon(Icons.chat_bubble_outline),
                             label: Text(
                               messageCount > 0
                                   ? 'Trao đổi ($messageCount)'
@@ -1888,15 +1914,17 @@ class _MerchantOrdersPanelState extends State<MerchantOrdersPanel> {
                                     );
                                     await widget.onReload();
                                   },
-                            icon: const Icon(Icons.receipt_long_outlined),
+                            icon: const GhstButtonIcon(Icons.receipt_long_outlined),
                             label: const Text('Chi tiết và hậu mãi'),
                           ),
                           if (state == 'pending' || state == 'accepted')
-                            OutlinedButton(
+                            OutlinedButton.icon(
                               onPressed: widget.busy
                                   ? null
                                   : () => widget.onOrderAction(o, 'cancel'),
-                              child: const Text('Hủy đơn'),
+                              icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+                              label: const Text('Hủy đơn'),
                             ),
                         ],
                       ),
@@ -2176,11 +2204,13 @@ class _MerchantOperationsCenterState extends State<MerchantOperationsCenter> {
               ),
             ),
             actions: [
-              TextButton(
+              TextButton.icon(
                 onPressed: () => Navigator.pop(dialog),
-                child: const Text('Hủy'),
+                icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+                label: const Text('Hủy'),
               ),
-              FilledButton(
+              FilledButton.icon(
                 key: const ValueKey('merchant-settlement-submit'),
                 onPressed: () {
                   if (lease.valid && form.currentState!.validate()) {
@@ -2191,7 +2221,9 @@ class _MerchantOperationsCenterState extends State<MerchantOperationsCenter> {
                     });
                   }
                 },
-                child: const Text('Gửi đề nghị'),
+                icon: const GhstButtonIcon.glyph(GhstActionKind.send, size: 16),
+
+                label: const Text('Gửi đề nghị'),
               ),
             ],
           ),
@@ -2272,13 +2304,9 @@ class _MerchantOperationsCenterState extends State<MerchantOperationsCenter> {
                           ),
                         if (action == 'receive') ...[
                           const SizedBox(height: 10),
-                          DropdownButtonFormField<String>(
-                            initialValue: disposition,
-                            isExpanded: true,
-                            decoration: const InputDecoration(
+                          DropdownButtonFormField<String>(icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 18), initialValue: disposition, isExpanded: true, decoration: const InputDecoration(
                               labelText: 'Kiểm định hàng hoàn về kho',
-                            ),
-                            items: const [
+                            ), items: const [
                               DropdownMenuItem(
                                 value: 'restock',
                                 child: Text('Nhập lại tồn kho bán tiếp'),
@@ -2287,10 +2315,8 @@ class _MerchantOperationsCenterState extends State<MerchantOperationsCenter> {
                                 value: 'writeoff',
                                 child: Text('Hàng hỏng / Không nhập kho'),
                               ),
-                            ],
-                            onChanged: (v) =>
-                                update(() => disposition = v ?? 'restock'),
-                          ),
+                            ], onChanged: (v) =>
+                                update(() => disposition = v ?? 'restock'),),
                         ],
                       ],
                     ),
@@ -2298,11 +2324,13 @@ class _MerchantOperationsCenterState extends State<MerchantOperationsCenter> {
                 ),
               ),
               actions: [
-                TextButton(
+                TextButton.icon(
                   onPressed: () => Navigator.pop(dialog),
-                  child: const Text('Quay lại'),
+                  icon: const GhstButtonIcon.glyph(GhstActionKind.back, size: 16),
+
+                  label: const Text('Quay lại'),
                 ),
-                FilledButton(
+                FilledButton.icon(
                   key: const ValueKey('merchant-return-confirm'),
                   onPressed: () {
                     if (lease.valid && form.currentState!.validate()) {
@@ -2314,7 +2342,9 @@ class _MerchantOperationsCenterState extends State<MerchantOperationsCenter> {
                       });
                     }
                   },
-                  child: const Text('Xác nhận'),
+                  icon: const GhstButtonIcon.glyph(GhstActionKind.checkCircle, size: 16),
+
+                  label: const Text('Xác nhận'),
                 ),
               ],
             ),
@@ -2377,7 +2407,7 @@ class _MerchantOperationsCenterState extends State<MerchantOperationsCenter> {
                     IconButton(
                       tooltip: 'Tải lại',
                       onPressed: _busy || _loading ? null : _load,
-                      icon: const Icon(Icons.refresh),
+                      icon: const GhstButtonIcon(Icons.refresh),
                     ),
                   ],
                 ),
@@ -2416,10 +2446,7 @@ class _MerchantOperationsCenterState extends State<MerchantOperationsCenter> {
                       runSpacing: 8,
                       children: [
                         for (final sh in shops)
-                          ChoiceChip(
-                            label: Text('${sh['name']}'),
-                            selected: '${sh['id']}' == _selectedShopId,
-                            onSelected: _busy
+                          ChoiceChip(showCheckmark: false, avatar: const GhstButtonIcon.glyph(GhstActionKind.store, size: 15), label: Text('${sh['name']}'), selected: '${sh['id']}' == _selectedShopId, onSelected: _busy
                                 ? null
                                 : (sel) {
                                     if (sel) {
@@ -2428,8 +2455,7 @@ class _MerchantOperationsCenterState extends State<MerchantOperationsCenter> {
                                       );
                                       _load();
                                     }
-                                  },
-                          ),
+                                  },),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -2439,20 +2465,14 @@ class _MerchantOperationsCenterState extends State<MerchantOperationsCenter> {
                     runSpacing: 8,
                     children: [
                       for (final t in tabs)
-                        ChoiceChip(
-                          key: ValueKey('merchant-ops-tab-${t.$1}'),
-                          avatar: Icon(t.$3, size: 16),
-                          label: Text(t.$2),
-                          selected: _tab == t.$1,
-                          onSelected: _busy
+                        ChoiceChip(showCheckmark: false, key: ValueKey('merchant-ops-tab-${t.$1}'), avatar: GhstButtonIcon(t.$3, size: 16), label: Text(t.$2), selected: _tab == t.$1, onSelected: _busy
                               ? null
                               : (sel) {
                                   if (sel && _tab != t.$1) {
                                     setState(() => _tab = t.$1);
                                     _load();
                                   }
-                                },
-                        ),
+                                },),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -2630,7 +2650,7 @@ class _MerchantOperationsCenterState extends State<MerchantOperationsCenter> {
                             'merchant-propose-settlement-${el['order_id']}',
                           ),
                           onPressed: _busy ? null : () => _requestSettlement(el),
-                          icon: const Icon(Icons.payments_outlined),
+                          icon: const GhstButtonIcon(Icons.payments_outlined),
                           label: const Text('Đề nghị quyết toán'),
                         ),
                       ],
@@ -2664,16 +2684,12 @@ class _MerchantOperationsCenterState extends State<MerchantOperationsCenter> {
                     ('refund', 'Hoàn tiền'),
                     ('pending', 'Chờ duyệt'),
                   ])
-                    ChoiceChip(
-                      label: Text(f.$2),
-                      selected: _financeFilter == f.$1,
-                      onSelected: _busy
+                    ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel(f.$2, size: 15), label: Text(f.$2), selected: _financeFilter == f.$1, onSelected: _busy
                           ? null
                           : (_) {
                               setState(() => _financeFilter = f.$1);
                               _load();
-                            },
-                    ),
+                            },),
                 ],
               ),
               const SizedBox(height: 12),
@@ -2691,7 +2707,7 @@ class _MerchantOperationsCenterState extends State<MerchantOperationsCenter> {
                   ),
                   trailing: IconButton(
                     tooltip: 'Mở chi tiết đơn',
-                    icon: const Icon(Icons.open_in_new),
+                    icon: const GhstButtonIcon(Icons.open_in_new),
                     onPressed: () async {
                       await openMarketOrderServices(
                         context,
@@ -2727,7 +2743,7 @@ class _MerchantOperationsCenterState extends State<MerchantOperationsCenter> {
                     );
                     if (ok == true && _valid) await _load();
                   },
-            icon: const Icon(Icons.confirmation_num_outlined),
+            icon: const GhstButtonIcon(Icons.confirmation_num_outlined),
             label: const Text('Tạo Voucher shop'),
           ),
           OutlinedButton.icon(
@@ -2741,7 +2757,7 @@ class _MerchantOperationsCenterState extends State<MerchantOperationsCenter> {
                     );
                     if (ok == true && _valid) await _load();
                   },
-            icon: const Icon(Icons.flash_on_outlined),
+            icon: const GhstButtonIcon(Icons.flash_on_outlined),
             label: const Text('Tạo Flash Sale'),
           ),
         ],
@@ -2835,7 +2851,7 @@ class _MerchantOperationsCenterState extends State<MerchantOperationsCenter> {
                                             );
                                         if (ok == true && _valid) await _load();
                                       },
-                                icon: const Icon(Icons.edit_outlined),
+                                icon: const GhstButtonIcon(Icons.edit_outlined),
                               ),
                             ],
                           ),
@@ -2954,7 +2970,7 @@ class _MerchantOperationsCenterState extends State<MerchantOperationsCenter> {
                                     );
                                     if (ok == true && _valid) await _load();
                                   },
-                            icon: const Icon(Icons.edit_outlined),
+                            icon: const GhstButtonIcon(Icons.edit_outlined),
                           ),
                         ],
                       ),
@@ -2993,16 +3009,12 @@ class _MerchantOperationsCenterState extends State<MerchantOperationsCenter> {
                 ('approved', 'Đang hoàn về'),
                 ('received', 'Đã nhận hoàn'),
               ])
-                ChoiceChip(
-                  label: Text(f.$2),
-                  selected: _returnFilter == f.$1,
-                  onSelected: _busy
+                ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel(f.$2, size: 15), label: Text(f.$2), selected: _returnFilter == f.$1, onSelected: _busy
                       ? null
                       : (_) {
                           setState(() => _returnFilter = f.$1);
                           _load();
-                        },
-                ),
+                        },),
             ],
           ),
           const SizedBox(height: 12),
@@ -3079,7 +3091,7 @@ class _MerchantOperationsCenterState extends State<MerchantOperationsCenter> {
                             children: [
                               for (var i = 0; i < attachments.length; i++)
                                 ActionChip(
-                                  avatar: const Icon(
+                                  avatar: const GhstButtonIcon(
                                     Icons.image_outlined,
                                     size: 16,
                                   ),
@@ -3099,20 +3111,24 @@ class _MerchantOperationsCenterState extends State<MerchantOperationsCenter> {
                           runSpacing: 8,
                           children: [
                             if (state == 'requested') ...[
-                              FilledButton(
+                              FilledButton.icon(
                                 key: ValueKey(
                                   'merchant-return-approve-${ret['id']}',
                                 ),
                                 onPressed: _busy
                                     ? null
                                     : () => _handleReturn(ret, 'approve'),
-                                child: const Text('Duyệt trả hàng'),
+                                icon: const GhstButtonIcon.glyph(GhstActionKind.checkCircle, size: 16),
+
+                                label: const Text('Duyệt trả hàng'),
                               ),
-                              OutlinedButton(
+                              OutlinedButton.icon(
                                 onPressed: _busy
                                     ? null
                                     : () => _handleReturn(ret, 'reject'),
-                                child: const Text('Từ chối'),
+                                icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+                                label: const Text('Từ chối'),
                               ),
                             ],
                             if (state == 'approved')
@@ -3123,7 +3139,7 @@ class _MerchantOperationsCenterState extends State<MerchantOperationsCenter> {
                                 onPressed: _busy
                                     ? null
                                     : () => _handleReturn(ret, 'receive'),
-                                icon: const Icon(Icons.inventory_outlined),
+                                icon: const GhstButtonIcon(Icons.inventory_outlined),
                                 label: const Text('Đã nhận hàng trả'),
                               ),
                             if (returnDelivery != null &&
@@ -3134,7 +3150,7 @@ class _MerchantOperationsCenterState extends State<MerchantOperationsCenter> {
                                     : () => widget.onOpenDeliveryJourney!(
                                         returnDelivery,
                                       ),
-                                icon: const Icon(Icons.route_outlined),
+                                icon: const GhstButtonIcon(Icons.route_outlined),
                                 label: const Text('Theo dõi vận đơn hoàn'),
                               ),
                             OutlinedButton.icon(
@@ -3146,7 +3162,7 @@ class _MerchantOperationsCenterState extends State<MerchantOperationsCenter> {
                                 );
                                 if (_valid) await _load();
                               },
-                              icon: const Icon(Icons.open_in_new),
+                              icon: const GhstButtonIcon(Icons.open_in_new),
                               label: const Text('Mở đơn gốc'),
                             ),
                           ],
@@ -3203,16 +3219,12 @@ class _MerchantOperationsCenterState extends State<MerchantOperationsCenter> {
                   ('shop', 'Đánh giá shop'),
                   ('product', 'Đánh giá món'),
                 ])
-                  ChoiceChip(
-                    label: Text(f.$2),
-                    selected: _reviewFilter == f.$1,
-                    onSelected: _busy
+                  ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel(f.$2, size: 15), label: Text(f.$2), selected: _reviewFilter == f.$1, onSelected: _busy
                         ? null
                         : (_) {
                             setState(() => _reviewFilter = f.$1);
                             _load();
-                          },
-                  ),
+                          },),
               ],
             ),
             const SizedBox(height: 12),
@@ -3293,7 +3305,7 @@ class _MerchantOperationsCenterState extends State<MerchantOperationsCenter> {
                                         );
                                     if (ok == true && _valid) await _load();
                                   },
-                            icon: const Icon(Icons.reply_outlined, size: 18),
+                            icon: const GhstButtonIcon(Icons.reply_outlined, size: 18),
                             label: Text(
                               '${r['reply'] ?? ''}'.trim().isEmpty
                                   ? 'Phản hồi'
@@ -3314,7 +3326,7 @@ class _MerchantOperationsCenterState extends State<MerchantOperationsCenter> {
                                         );
                                     if (ok == true && _valid) await _load();
                                   },
-                            icon: const Icon(Icons.flag_outlined, size: 18),
+                            icon: const GhstButtonIcon(Icons.flag_outlined, size: 18),
                             label: const Text('Báo cáo'),
                           ),
                         ],

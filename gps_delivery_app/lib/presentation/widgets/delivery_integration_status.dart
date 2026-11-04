@@ -4,6 +4,7 @@ import '../../core/integrations/delivery_api_client.dart';
 import '../../core/integrations/live_delivery_service.dart';
 import 'live_order_connection.dart';
 import 'backend_integration_settings.dart';
+import 'ghst_button_icon.dart';
 
 class DeliveryIntegrationStatus extends StatefulWidget {
   const DeliveryIntegrationStatus({super.key});
@@ -82,7 +83,7 @@ class _DeliveryIntegrationStatusState extends State<DeliveryIntegrationStatus> {
         children: [
           TextButton.icon(
             onPressed: _busy ? null : _check,
-            icon: const Icon(Icons.refresh),
+            icon: const GhstButtonIcon(Icons.refresh),
             label: const Text('Kiểm tra kết nối'),
           ),
           TextButton.icon(
@@ -90,7 +91,7 @@ class _DeliveryIntegrationStatusState extends State<DeliveryIntegrationStatus> {
               await showCloudSignIn(context);
               if (mounted) setState(() {});
             },
-            icon: const Icon(Icons.cloud_outlined),
+            icon: const GhstButtonIcon(Icons.cloud_outlined),
             label: Text(
               _cloud.signedIn ? 'Đổi tài khoản' : 'Đăng nhập tài khoản',
             ),
@@ -103,7 +104,7 @@ class _DeliveryIntegrationStatusState extends State<DeliveryIntegrationStatus> {
                       await _cloud.signOut();
                       if (mounted) setState(() {});
                     },
-              icon: const Icon(Icons.logout),
+              icon: const GhstButtonIcon(Icons.logout),
               label: const Text('Đăng xuất'),
             ),
         ],
@@ -122,7 +123,7 @@ class _DeliveryIntegrationStatusState extends State<DeliveryIntegrationStatus> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
+            GhstButtonIcon(
               _cloud.isOperator
                   ? Icons.verified_user_outlined
                   : _cloud.signedIn
@@ -176,7 +177,7 @@ class _DeliveryIntegrationStatusState extends State<DeliveryIntegrationStatus> {
             padding: const EdgeInsets.symmetric(vertical: 4),
             child: Row(
               children: [
-                Icon(
+                GhstButtonIcon(
                   _status![item.key] == true
                       ? Icons.check_circle_outline
                       : Icons.pending_outlined,
@@ -212,20 +213,15 @@ class _DeliveryIntegrationStatusState extends State<DeliveryIntegrationStatus> {
           controller: _user,
           decoration: const InputDecoration(labelText: 'Supabase Auth User ID'),
         ),
-        DropdownButtonFormField<String>(
-          initialValue: _role,
-          items: const [
+        DropdownButtonFormField<String>(icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 18), initialValue: _role, items: const [
             DropdownMenuItem(value: 'customer', child: Text('Khách hàng')),
             DropdownMenuItem(value: 'merchant', child: Text('Cửa hàng')),
             DropdownMenuItem(value: 'driver', child: Text('Tài xế')),
-          ],
-          onChanged: (value) => setState(() => _role = value!),
-          decoration: const InputDecoration(labelText: 'Vai trò trong đơn'),
-        ),
+          ], onChanged: (value) => setState(() => _role = value!), decoration: const InputDecoration(labelText: 'Vai trò trong đơn'),),
         Align(
           alignment: Alignment.centerLeft,
           child: TextButton.icon(
-            icon: const Icon(Icons.person_add_alt),
+            icon: const GhstButtonIcon(Icons.person_add_alt),
             label: const Text('Cấp quyền'),
             onPressed: _busy
                 ? null

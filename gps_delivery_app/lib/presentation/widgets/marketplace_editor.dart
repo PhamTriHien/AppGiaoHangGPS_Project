@@ -20,6 +20,7 @@ import 'cloud_session_boundary.dart';
 import 'market_catalog_fields.dart';
 import 'photon_address_lookup.dart';
 import 'system_state_screens.dart';
+import 'ghst_button_icon.dart';
 
 class MarketplaceEditor extends StatefulWidget {
   const MarketplaceEditor({
@@ -514,7 +515,7 @@ class _MarketplaceEditorState extends State<MarketplaceEditor> {
         children: [
           Row(
             children: [
-              Icon(
+              GhstButtonIcon(
                 pinned ? Icons.where_to_vote_rounded : Icons.pin_drop_outlined,
                 size: 19,
                 color: pinned ? tokens.emerald.icon : tokens.sapphire.icon,
@@ -541,13 +542,13 @@ class _MarketplaceEditorState extends State<MarketplaceEditor> {
             children: [
               ActionChip(
                 key: const ValueKey('shop-editor-current-gps'),
-                avatar: const Icon(Icons.my_location_outlined, size: 16),
+                avatar: const GhstButtonIcon(Icons.my_location_outlined, size: 16),
                 label: const Text('Vị trí hiện tại'),
                 onPressed: _busy ? null : _useCurrentDeviceGps,
               ),
               ActionChip(
                 key: const ValueKey('shop-editor-address-book'),
-                avatar: const Icon(Icons.bookmarks_outlined, size: 16),
+                avatar: const GhstButtonIcon(Icons.bookmarks_outlined, size: 16),
                 label: const Text('Sổ địa chỉ'),
                 onPressed: _busy ? null : _pickSavedAddress,
               ),
@@ -687,7 +688,7 @@ class _MarketplaceEditorState extends State<MarketplaceEditor> {
                         padding: const EdgeInsets.only(bottom: 16),
                         child: OutlinedButton.icon(
                           onPressed: _busy ? null : () => _upload(banner: true),
-                          icon: const Icon(Icons.panorama_outlined),
+                          icon: const GhstButtonIcon(Icons.panorama_outlined),
                           label: Text(
                             _pendingBannerBytes != null
                                 ? 'Đổi ảnh bìa đã chọn'
@@ -706,7 +707,7 @@ class _MarketplaceEditorState extends State<MarketplaceEditor> {
                           _text('image_url'),
                           fit: BoxFit.contain,
                           errorBuilder: (_, _, _) =>
-                              const Icon(Icons.broken_image_outlined),
+                              const GhstButtonIcon(Icons.broken_image_outlined),
                         ),
                       ),
                     Row(
@@ -715,7 +716,7 @@ class _MarketplaceEditorState extends State<MarketplaceEditor> {
                           onPressed: _busy || _images.length >= 8
                               ? null
                               : _upload,
-                          icon: const Icon(Icons.add_photo_alternate_outlined),
+                          icon: const GhstButtonIcon(Icons.add_photo_alternate_outlined),
                           label: const Text('Chọn ảnh'),
                         ),
                         if (_text('image_url').isNotEmpty)
@@ -729,7 +730,7 @@ class _MarketplaceEditorState extends State<MarketplaceEditor> {
                                         ? ''
                                         : _images.first;
                                   }),
-                            icon: const Icon(Icons.delete_outline),
+                            icon: const GhstButtonIcon(Icons.delete_outline),
                           ),
                       ],
                     ),
@@ -756,7 +757,7 @@ class _MarketplaceEditorState extends State<MarketplaceEditor> {
                                   _images[index],
                                   fit: BoxFit.contain,
                                   errorBuilder: (_, _, _) =>
-                                      const Icon(Icons.broken_image_outlined),
+                                      const GhstButtonIcon(Icons.broken_image_outlined),
                                 ),
                               ),
                             ),
@@ -847,7 +848,7 @@ class _MarketplaceEditorState extends State<MarketplaceEditor> {
                   if (_busy) const LinearProgressIndicator(),
                   FilledButton.icon(
                     onPressed: _busy ? null : _save,
-                    icon: const Icon(Icons.save_outlined),
+                    icon: const GhstButtonIcon(Icons.save_outlined),
                     label: const Text('Lưu'),
                   ),
                 ],

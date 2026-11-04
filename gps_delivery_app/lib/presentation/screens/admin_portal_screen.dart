@@ -19,6 +19,7 @@ import '../widgets/cloud_notification_center.dart';
 import '../widgets/cloud_order_labels.dart';
 import '../widgets/cloud_pricing_dialog.dart';
 import '../widgets/cloud_session_boundary.dart';
+import '../widgets/ghst_button_icon.dart';
 import '../widgets/market_commercial_sheets.dart';
 import '../widgets/motion_3d_effects.dart';
 import '../widgets/theme_mode_toggle.dart';
@@ -64,43 +65,37 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
 
   static const _destinations = [
     (
-      Icons.space_dashboard_outlined,
-      Icons.space_dashboard_rounded,
+      Icon3dStyle.analyticsChart,
       'Tổng quan',
       'Giám sát vận đơn, thương mại điện tử và sổ cái thời gian thực',
       'Tổng quan',
     ),
     (
-      Icons.manage_accounts_outlined,
-      Icons.manage_accounts_rounded,
+      Icon3dStyle.userProfile,
       'Tài khoản',
       'Quản trị danh tính, phân quyền Điều hành viên/Đối tác và bảo mật tài khoản',
       'Tài khoản',
     ),
     (
-      Icons.local_shipping_outlined,
-      Icons.local_shipping_rounded,
+      Icon3dStyle.cargoTruck,
       'Vận đơn',
       'Điều phối chuyến giao, lịch thu gom và hãng vận chuyển GHN',
       'Vận đơn',
     ),
     (
-      Icons.storefront_outlined,
-      Icons.storefront_rounded,
+      Icon3dStyle.merchantStore,
       'Cửa hàng & Đánh giá',
       'Phê duyệt gian hàng đối tác và xử lý báo cáo vi phạm đánh giá',
       'Cửa hàng',
     ),
     (
-      Icons.account_balance_outlined,
-      Icons.account_balance_rounded,
+      Icon3dStyle.walletVault,
       'Khuyến mãi & Đối soát',
       'Ngân sách voucher toàn sàn, sự kiện vòng xoay và đối soát kế toán kép',
       'Đối soát',
     ),
     (
-      Icons.hub_outlined,
-      Icons.hub_rounded,
+      Icon3dStyle.settingsGear,
       'Tích hợp',
       'Quản lý khóa dịch vụ, kiểm tra kết nối và cấu trúc dữ liệu',
       'Tích hợp',
@@ -555,7 +550,13 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                     textInputAction: TextInputAction.next,
                     decoration: const InputDecoration(
                       labelText: 'Email quản trị',
-                      prefixIcon: Icon(Icons.alternate_email_rounded, size: 20),
+                      prefixIcon: Padding(
+                        padding: EdgeInsets.all(13),
+                        child: GhstButtonIcon.glyph(
+                          GhstActionKind.mail,
+                          size: 19,
+                        ),
+                      ),
                     ),
                     validator: (v) => v == null || !v.trim().contains('@')
                         ? 'Nhập email quản trị hợp lệ'
@@ -569,17 +570,19 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                     onFieldSubmitted: (_) => _signIn(),
                     decoration: InputDecoration(
                       labelText: 'Mật khẩu',
-                      prefixIcon: const Icon(
-                        Icons.lock_outline_rounded,
-                        size: 20,
+                      prefixIcon: const Padding(
+                        padding: EdgeInsets.all(13),
+                        child: GhstButtonIcon.glyph(
+                          GhstActionKind.lock,
+                          size: 19,
+                        ),
                       ),
                       suffixIcon: IconButton(
                         tooltip: _obscure ? 'Hiện mật khẩu' : 'Ẩn mật khẩu',
                         onPressed: () => setState(() => _obscure = !_obscure),
-                        icon: Icon(
-                          _obscure
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
+                        icon: GhstButtonIcon.glyph(
+                          _obscure ? GhstActionKind.eye : GhstActionKind.eyeOff,
+                          size: 19,
                         ),
                       ),
                     ),
@@ -601,8 +604,8 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(
-                            Icons.error_outline_rounded,
+                          GhstButtonIcon.glyph(
+                            GhstActionKind.warning,
                             size: 18,
                             color: p.danger,
                           ),
@@ -627,7 +630,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                     maxTilt: 0.055,
                     pressScale: 0.975,
                     hoverLift: -1.5,
-                    child: FilledButton(
+                    child: FilledButton.icon(
                       onPressed: _busy ? null : _signIn,
                       style: FilledButton.styleFrom(
                         backgroundColor: p.violet,
@@ -637,22 +640,28 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: _busy
+                      icon: _busy
                           ? const SizedBox(
-                              width: 20,
-                              height: 20,
+                              width: 18,
+                              height: 18,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
                                 color: Colors.white,
                               ),
                             )
-                          : const Text(
-                              'Đăng nhập',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                              ),
+                          : const GhstAiIcon(
+                              style: Icon3dStyle.adminShieldOps,
+                              size: 20,
+                              circular: true,
+                              selected: true,
                             ),
+                      label: const Text(
+                        'Đăng nhập',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -755,9 +764,12 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                                     ),
                                   ),
                                 ),
-                                child: Icon(
-                                  Icons.cloud_off_outlined,
-                                  color: p.danger,
+                                child: Center(
+                                  child: GhstButtonIcon.glyph(
+                                    GhstActionKind.cloudOff,
+                                    size: 24,
+                                    color: p.danger,
+                                  ),
                                 ),
                               ),
                               const SizedBox(height: 14),
@@ -775,14 +787,20 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                                 onPressed: () => unawaited(
                                   _session.refresh().catchError((Object _) {}),
                                 ),
-                                icon: const Icon(Icons.refresh),
+                                icon: const GhstButtonIcon.glyph(
+                                  GhstActionKind.refresh,
+                                  size: 17,
+                                ),
                                 label: const Text('Thử lại'),
                               ),
                             ],
                             const SizedBox(height: 12),
                             TextButton.icon(
                               onPressed: _signOut,
-                              icon: const Icon(Icons.logout),
+                              icon: const GhstButtonIcon.glyph(
+                                GhstActionKind.logout,
+                                size: 17,
+                              ),
                               label: const Text('Đăng xuất'),
                             ),
                           ],
@@ -834,10 +852,12 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                                   ),
                                 ),
                               ),
-                              child: Icon(
-                                Icons.gpp_bad_outlined,
-                                size: 32,
-                                color: p.danger,
+                              child: Center(
+                                child: GhstButtonIcon.glyph(
+                                  GhstActionKind.shield,
+                                  size: 28,
+                                  color: p.danger,
+                                ),
                               ),
                             ),
                             const SizedBox(height: 16),
@@ -863,7 +883,10 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                             const SizedBox(height: 20),
                             FilledButton.icon(
                               onPressed: _signOut,
-                              icon: const Icon(Icons.logout),
+                              icon: const GhstButtonIcon.glyph(
+                                GhstActionKind.logout,
+                                size: 17,
+                              ),
                               label: const Text('Đăng xuất'),
                             ),
                           ],
@@ -950,9 +973,13 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                 ),
               ),
               actions: [
-                TextButton(
+                TextButton.icon(
                   onPressed: () => Navigator.pop(dialog),
-                  child: const Text('Đóng'),
+                  icon: const GhstButtonIcon.glyph(
+                    GhstActionKind.close,
+                    size: 16,
+                  ),
+                  label: const Text('Đóng'),
                 ),
               ],
             );
@@ -1070,17 +1097,22 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                           ),
                           child: Row(
                             children: [
-                              Icon(
-                                selected ? d.$2 : d.$1,
-                                size: 19,
-                                color: selected
-                                    ? AdminStudioColors.acid
-                                    : AdminStudioColors.mutedOnDark,
+                              GhstAiIcon(
+                                style: d.$1,
+                                size: 24,
+                                borderRadius: 7,
+                                selected: selected,
+                                borderColor: selected
+                                    ? AdminStudioColors.acid.withValues(
+                                        alpha: 0.72,
+                                      )
+                                    : AdminStudioColors.shellLine,
+                                glowColor: AdminStudioColors.acid,
                               ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  d.$3,
+                                  d.$2,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
@@ -1126,7 +1158,12 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                         vertical: 11,
                       ),
                     ),
-                    icon: const Icon(Icons.swap_horiz_rounded, size: 18),
+                    icon: const GhstAiIcon(
+                      style: Icon3dStyle.scooterExpress,
+                      size: 20,
+                      circular: true,
+                      selected: true,
+                    ),
                     label: const Text(
                       'Giao diện Khách hàng',
                       maxLines: 1,
@@ -1149,18 +1186,11 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
               ),
               child: Row(
                 children: [
-                  Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: AdminStudioColors.violet,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.verified_user_rounded,
-                      size: 16,
-                      color: Colors.white,
-                    ),
+                  const GhstAiIcon(
+                    style: Icon3dStyle.adminShieldOps,
+                    size: 28,
+                    borderRadius: 8,
+                    selected: true,
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -1219,24 +1249,18 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                 final compactActions = bar.maxWidth < 740;
                 return Row(
                   children: [
-                    Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        color: p.violetSoft,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: p.line),
-                      ),
-                      child: Icon(
-                        active.$2,
-                        size: 20,
-                        color: p.violet,
-                      ),
+                    GhstAiIcon(
+                      style: active.$1,
+                      size: 38,
+                      borderRadius: 10,
+                      selected: true,
+                      borderColor: p.line,
+                      glowColor: p.violet,
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        active.$4,
+                        active.$3,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -1251,24 +1275,40 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                       IconButton(
                         tooltip: 'Bảng giá cước',
                         onPressed: _openPricing,
-                        icon: const Icon(Icons.price_change_outlined, size: 19),
+                        icon: const GhstAiIcon(
+                          style: Icon3dStyle.walletVault,
+                          size: 22,
+                          circular: true,
+                        ),
                       ),
                       const SizedBox(width: 4),
                       IconButton(
                         tooltip: 'Nhật ký điều hành',
                         onPressed: _openAudit,
-                        icon: const Icon(Icons.history_rounded, size: 19),
+                        icon: const GhstAiIcon(
+                          style: Icon3dStyle.orderReceipt,
+                          size: 22,
+                          circular: true,
+                        ),
                       ),
                     ] else ...[
                       OutlinedButton.icon(
                         onPressed: _openPricing,
-                        icon: const Icon(Icons.price_change_outlined, size: 18),
+                        icon: const GhstAiIcon(
+                          style: Icon3dStyle.walletVault,
+                          size: 19,
+                          circular: true,
+                        ),
                         label: const Text('Bảng giá cước'),
                       ),
                       const SizedBox(width: 8),
                       OutlinedButton.icon(
                         onPressed: _openAudit,
-                        icon: const Icon(Icons.history_rounded, size: 18),
+                        icon: const GhstAiIcon(
+                          style: Icon3dStyle.orderReceipt,
+                          size: 19,
+                          circular: true,
+                        ),
                         label: const Text('Nhật ký điều hành'),
                       ),
                     ],
@@ -1306,9 +1346,11 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                           icon: Badge.count(
                             count: unread,
                             isLabelVisible: unread > 0,
-                            child: const Icon(
-                              Icons.notifications_none_rounded,
-                              size: 19,
+                            child: GhstAiIcon(
+                              style: Icon3dStyle.notificationBell,
+                              size: 22,
+                              circular: true,
+                              selected: unread > 0,
                             ),
                           ),
                         );
@@ -1326,7 +1368,10 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
-                      icon: const Icon(Icons.logout_rounded, size: 19),
+                      icon: const GhstButtonIcon.glyph(
+                        GhstActionKind.logout,
+                        size: 18,
+                      ),
                     ),
                   ],
                 );
@@ -1431,9 +1476,11 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                           icon: Badge.count(
                             count: unread,
                             isLabelVisible: unread > 0,
-                            child: const Icon(
-                              Icons.notifications_none_rounded,
-                              color: Colors.white,
+                            child: GhstAiIcon(
+                              style: Icon3dStyle.notificationBell,
+                              size: 20,
+                              circular: true,
+                              selected: unread > 0,
                             ),
                           ),
                         );
@@ -1443,26 +1490,29 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                       visualDensity: VisualDensity.compact,
                       tooltip: 'Bảng giá cước',
                       onPressed: _openPricing,
-                      icon: const Icon(
-                        Icons.price_change_outlined,
-                        color: Colors.white,
+                      icon: const GhstAiIcon(
+                        style: Icon3dStyle.walletVault,
+                        size: 20,
+                        circular: true,
                       ),
                     ),
                     IconButton(
                       visualDensity: VisualDensity.compact,
                       tooltip: 'Nhật ký điều hành',
                       onPressed: _openAudit,
-                      icon: const Icon(
-                        Icons.history_rounded,
-                        color: Colors.white,
+                      icon: const GhstAiIcon(
+                        style: Icon3dStyle.orderReceipt,
+                        size: 20,
+                        circular: true,
                       ),
                     ),
                     IconButton(
                       visualDensity: VisualDensity.compact,
                       tooltip: 'Đăng xuất',
                       onPressed: _signOut,
-                      icon: const Icon(
-                        Icons.logout_rounded,
+                      icon: const GhstButtonIcon.glyph(
+                        GhstActionKind.logout,
+                        size: 18,
                         color: Colors.white,
                       ),
                     ),
@@ -1483,10 +1533,11 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                     ),
                     child: Row(
                       children: [
-                        const Icon(
-                          Icons.admin_panel_settings_outlined,
-                          size: 15,
-                          color: AdminStudioColors.acid,
+                        const GhstAiIcon(
+                          style: Icon3dStyle.adminShieldOps,
+                          size: 17,
+                          circular: true,
+                          selected: true,
                         ),
                         const SizedBox(width: 6),
                         const Expanded(
@@ -1530,12 +1581,12 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                                 child: const Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(
-                                      Icons.swap_horiz_rounded,
-                                      size: 14,
-                                      color: AdminStudioColors.ink,
+                                    GhstAiIcon(
+                                      style: Icon3dStyle.scooterExpress,
+                                      size: 16,
+                                      circular: true,
                                     ),
-                                    SizedBox(width: 4),
+                                    SizedBox(width: 5),
                                     Text(
                                       'Giao diện Khách hàng',
                                       style: TextStyle(
@@ -1578,7 +1629,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                             child: Semantics(
                               button: true,
                               selected: _tab == i,
-                              label: _destinations[i].$3,
+                              label: _destinations[i].$2,
                               excludeSemantics: true,
                               child: InkWell(
                                 onTap: () => setState(() {
@@ -1594,30 +1645,19 @@ class _AdminPortalScreenState extends State<AdminPortalScreen>
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 3,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: _tab == i
-                                              ? p.violetSoft
-                                              : Colors.transparent,
-                                          borderRadius: BorderRadius.circular(
-                                            999,
-                                          ),
-                                        ),
-                                        child: Icon(
-                                          _tab == i
-                                              ? _destinations[i].$2
-                                              : _destinations[i].$1,
-                                          size: 19,
-                                          color: _tab == i ? p.violet : p.muted,
-                                        ),
+                                      GhstAiIcon(
+                                        style: _destinations[i].$1,
+                                        size: 24,
+                                        borderRadius: 8,
+                                        selected: _tab == i,
+                                        borderColor: _tab == i
+                                            ? p.violet
+                                            : p.line,
+                                        glowColor: p.violet,
                                       ),
                                       const SizedBox(height: 3),
                                       Text(
-                                        _destinations[i].$5,
+                                        _destinations[i].$4,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                         style: TextStyle(
@@ -1730,7 +1770,13 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: p.line),
                 ),
-                child: Icon(icon, size: compact ? 16 : 19, color: accent),
+                child: Center(
+                  child: GhstButtonIcon(
+                    icon,
+                    size: compact ? 16 : 19,
+                    color: accent,
+                  ),
+                ),
               ),
               SizedBox(width: compact ? 8 : 10),
               Expanded(
@@ -1801,7 +1847,9 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: p.line),
                 ),
-                child: Icon(icon, size: 19, color: accent),
+                child: Center(
+                  child: GhstButtonIcon(icon, size: 19, color: accent),
+                ),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -1975,7 +2023,11 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
                                       ),
                                     ),
                                     onPressed: _busy ? null : _load,
-                                    icon: const Icon(Icons.refresh_rounded),
+                                    icon: const GhstButtonIcon.glyph(
+                                      GhstActionKind.refresh,
+                                      size: 18,
+                                      color: Colors.white,
+                                    ),
                                   )
                                 else
                                   FilledButton.icon(
@@ -1984,9 +2036,10 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
                                       backgroundColor: AdminStudioColors.acid,
                                       foregroundColor: p.onAccentInk,
                                     ),
-                                    icon: const Icon(
-                                      Icons.refresh_rounded,
-                                      size: 18,
+                                    icon: GhstButtonIcon.glyph(
+                                      GhstActionKind.refresh,
+                                      size: 17,
+                                      color: p.onAccentInk,
                                     ),
                                     label: const Text('Làm mới'),
                                   ),
@@ -2100,8 +2153,8 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
                                 fontWeight: FontWeight.w800,
                                 color: p.onAccentInk,
                               ),
-                              avatar: Icon(
-                                Icons.badge_outlined,
+                              avatar: GhstButtonIcon.glyph(
+                                GhstActionKind.users,
                                 size: 16,
                                 color: p.onAccentInk,
                               ),
@@ -2120,8 +2173,8 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
                                 fontWeight: FontWeight.w800,
                                 color: p.onAccentInk,
                               ),
-                              avatar: Icon(
-                                Icons.fact_check_outlined,
+                              avatar: GhstButtonIcon.glyph(
+                                GhstActionKind.checkCircle,
                                 size: 16,
                                 color: p.onAccentInk,
                               ),
@@ -2137,8 +2190,8 @@ class _AdminAnalyticsPanelState extends State<_AdminAnalyticsPanel> {
                                 fontWeight: FontWeight.w800,
                                 color: p.violetInk,
                               ),
-                              avatar: Icon(
-                                Icons.receipt_long_outlined,
+                              avatar: GhstButtonIcon.glyph(
+                                GhstActionKind.receipt,
                                 size: 16,
                                 color: p.violet,
                               ),
@@ -2335,13 +2388,21 @@ class _AdminModerationPanelState extends State<_AdminModerationPanel> {
               decoration: const InputDecoration(labelText: 'Lý do kiểm duyệt'),
             ),
             actions: [
-              TextButton(
+              TextButton.icon(
                 onPressed: () => Navigator.pop(dialog),
-                child: const Text('Hủy'),
+                icon: const GhstButtonIcon.glyph(
+                  GhstActionKind.close,
+                  size: 16,
+                ),
+                label: const Text('Hủy'),
               ),
-              FilledButton(
+              FilledButton.icon(
                 onPressed: () => Navigator.pop(dialog, ctrl.text.trim()),
-                child: const Text('Xác nhận'),
+                icon: const GhstButtonIcon.glyph(
+                  GhstActionKind.check,
+                  size: 16,
+                ),
+                label: const Text('Xác nhận'),
               ),
             ],
           ),
@@ -2393,12 +2454,16 @@ class _AdminModerationPanelState extends State<_AdminModerationPanel> {
                 segments: const [
                   ButtonSegment(
                     value: false,
-                    icon: Icon(Icons.storefront_outlined, size: 18),
+                    icon: GhstAiIcon(
+                      style: Icon3dStyle.merchantStore,
+                      size: 18,
+                      circular: true,
+                    ),
                     label: Text('Duyệt cửa hàng'),
                   ),
                   ButtonSegment(
                     value: true,
-                    icon: Icon(Icons.flag_outlined, size: 18),
+                    icon: GhstButtonIcon.glyph(GhstActionKind.flag, size: 17),
                     label: Text('Đánh giá bị báo cáo'),
                   ),
                 ],
@@ -2461,9 +2526,12 @@ class _AdminModerationPanelState extends State<_AdminModerationPanel> {
                                           color: p.line,
                                         ),
                                       ),
-                                      child: Icon(
-                                        Icons.verified_outlined,
-                                        color: p.onAccentInk,
+                                      child: Center(
+                                        child: GhstButtonIcon.glyph(
+                                          GhstActionKind.shield,
+                                          size: 22,
+                                          color: p.onAccentInk,
+                                        ),
                                       ),
                                     ),
                                     const SizedBox(height: 12),
@@ -2494,10 +2562,12 @@ class _AdminModerationPanelState extends State<_AdminModerationPanel> {
                                           color: p.line,
                                         ),
                                       ),
-                                      child: Icon(
-                                        Icons.report_problem_outlined,
-                                        color: p.danger,
-                                        size: 20,
+                                      child: Center(
+                                        child: GhstButtonIcon.glyph(
+                                          GhstActionKind.warning,
+                                          color: p.danger,
+                                          size: 20,
+                                        ),
                                       ),
                                     ),
                                     const SizedBox(width: 12),
@@ -2525,14 +2595,20 @@ class _AdminModerationPanelState extends State<_AdminModerationPanel> {
                                       ),
                                     ),
                                     const SizedBox(width: 12),
-                                    OutlinedButton(
+                                    OutlinedButton.icon(
                                       onPressed: _busy
                                           ? null
                                           : () => _moderate(
                                               r,
                                               r['hidden'] != true,
                                             ),
-                                      child: Text(
+                                      icon: GhstButtonIcon.glyph(
+                                        r['hidden'] == true
+                                            ? GhstActionKind.eye
+                                            : GhstActionKind.eyeOff,
+                                        size: 16,
+                                      ),
+                                      label: Text(
                                         r['hidden'] == true ? 'Hiện lại' : 'Ẩn',
                                       ),
                                     ),
@@ -2663,9 +2739,10 @@ class _AdminFinancePromoPanelState extends State<_AdminFinancePromoPanel> {
                           session: widget.session,
                           operator: true,
                         ),
-                        icon: const Icon(
-                          Icons.confirmation_num_outlined,
+                        icon: const GhstAiIcon(
+                          style: Icon3dStyle.voucherFlash,
                           size: 18,
+                          circular: true,
                         ),
                         label: const Text('Tạo voucher toàn sàn'),
                       ),
@@ -2705,10 +2782,10 @@ class _AdminFinancePromoPanelState extends State<_AdminFinancePromoPanel> {
                             onPressed: _busy
                                 ? null
                                 : () => _togglePromoEnabled(!enabled),
-                            icon: Icon(
+                            icon: GhstButtonIcon.glyph(
                               enabled
-                                  ? Icons.pause_circle_outline
-                                  : Icons.play_circle_outline,
+                                  ? GhstActionKind.pause
+                                  : GhstActionKind.play,
                               size: 16,
                             ),
                             label: Text(

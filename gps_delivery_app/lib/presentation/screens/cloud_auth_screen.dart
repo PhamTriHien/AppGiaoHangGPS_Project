@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/integrations/cloud_orders_service.dart';
 import '../../core/theme/ghst_theme_tokens.dart';
+import '../widgets/ghst_button_icon.dart';
 import '../widgets/studio_user_auth_frame.dart';
 
 enum _AuthMode { login, register, reset, recover, password }
@@ -292,7 +293,10 @@ class _CloudAuthScreenState extends State<CloudAuthScreen>
                 autofillHints: const [AutofillHints.email],
                 decoration: const InputDecoration(
                   labelText: 'Email',
-                  prefixIcon: Icon(Icons.alternate_email),
+                  prefixIcon: Padding(
+                    padding: EdgeInsets.all(14),
+                    child: GhstButtonIcon.glyph(GhstActionKind.mail, size: 18),
+                  ),
                 ),
                 validator: (v) =>
                     RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
@@ -310,7 +314,13 @@ class _CloudAuthScreenState extends State<CloudAuthScreen>
                 autofillHints: const [AutofillHints.oneTimeCode],
                 decoration: const InputDecoration(
                   labelText: 'Mã xác nhận email',
-                  prefixIcon: Icon(Icons.pin_outlined),
+                  prefixIcon: Padding(
+                    padding: EdgeInsets.all(14),
+                    child: GhstButtonIcon.glyph(
+                      GhstActionKind.pinCode,
+                      size: 18,
+                    ),
+                  ),
                 ),
                 validator: (v) =>
                     (v?.trim().length ?? 0) >= 6 ? null : 'Nhập mã xác nhận.',
@@ -332,14 +342,16 @@ class _CloudAuthScreenState extends State<CloudAuthScreen>
                   labelText: _mode == _AuthMode.login
                       ? 'Mật khẩu'
                       : 'Mật khẩu mới',
-                  prefixIcon: const Icon(Icons.lock_outline),
+                  prefixIcon: const Padding(
+                    padding: EdgeInsets.all(14),
+                    child: GhstButtonIcon.glyph(GhstActionKind.lock, size: 18),
+                  ),
                   suffixIcon: IconButton(
                     tooltip: _obscure ? 'Hiện mật khẩu' : 'Ẩn mật khẩu',
                     onPressed: () => setState(() => _obscure = !_obscure),
-                    icon: Icon(
-                      _obscure
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
+                    icon: GhstButtonIcon.glyph(
+                      _obscure ? GhstActionKind.eye : GhstActionKind.eyeOff,
+                      size: 18,
                     ),
                   ),
                 ),
@@ -410,7 +422,7 @@ class _CloudAuthScreenState extends State<CloudAuthScreen>
                         ),
                       ],
               ),
-              child: FilledButton(
+              child: FilledButton.icon(
                 style: FilledButton.styleFrom(
                   backgroundColor: tokens.primary,
                   foregroundColor: Colors.white,
@@ -425,30 +437,45 @@ class _CloudAuthScreenState extends State<CloudAuthScreen>
                   ),
                 ),
                 onPressed: _busy ? null : _submit,
-                child: Text(
+                icon: GhstButtonIcon.glyph(
+                  switch (_mode) {
+                    _AuthMode.login => GhstActionKind.login,
+                    _AuthMode.register => GhstActionKind.userPlus,
+                    _AuthMode.reset => GhstActionKind.mail,
+                    _AuthMode.recover || _AuthMode.password =>
+                      GhstActionKind.key,
+                  },
+                  size: 18,
+                ),
+                label: Text(
                   _mode == _AuthMode.reset ? 'Gửi email khôi phục' : title,
                 ),
               ),
             ),
             if (_mode == _AuthMode.login) ...[
               const SizedBox(height: 6),
-              TextButton(
+              TextButton.icon(
                 onPressed: _busy ? null : () => _switch(_AuthMode.reset),
-                child: const Text('Quên mật khẩu?'),
+                icon: const GhstButtonIcon.glyph(GhstActionKind.key, size: 16),
+                label: const Text('Quên mật khẩu?'),
               ),
               if (_googleAvailable) ...[
                 const SizedBox(height: 4),
                 OutlinedButton.icon(
                   onPressed: _busy ? null : () => _submit(google: true),
-                  icon: const Icon(Icons.account_circle_outlined),
+                  icon: const GhstButtonIcon.glyph(
+                    GhstActionKind.google,
+                    size: 20,
+                  ),
                   label: const Text('Tiếp tục với Google'),
                 ),
               ],
             ] else if (_mode == _AuthMode.password) ...[
               const SizedBox(height: 6),
-              TextButton(
+              TextButton.icon(
                 onPressed: _busy ? null : _cancelRecovery,
-                child: const Text('Trở về đăng nhập'),
+                icon: const GhstButtonIcon.glyph(GhstActionKind.back, size: 16),
+                label: const Text('Trở về đăng nhập'),
               ),
             ] else ...[
               if (_mode == _AuthMode.register && _googleAvailable)
@@ -456,18 +483,26 @@ class _CloudAuthScreenState extends State<CloudAuthScreen>
                   padding: const EdgeInsets.only(top: 10),
                   child: OutlinedButton.icon(
                     onPressed: _busy ? null : () => _submit(google: true),
-                    icon: const Icon(Icons.account_circle_outlined),
+                    icon: const GhstButtonIcon.glyph(
+                      GhstActionKind.google,
+                      size: 20,
+                    ),
                     label: const Text('Tiếp tục với Google'),
                   ),
                 ),
               if (_mode == _AuthMode.recover)
-                TextButton(
+                TextButton.icon(
                   onPressed: _busy ? null : _resendCode,
-                  child: const Text('Gửi lại mã xác nhận'),
+                  icon: const GhstButtonIcon.glyph(
+                    GhstActionKind.refresh,
+                    size: 16,
+                  ),
+                  label: const Text('Gửi lại mã xác nhận'),
                 ),
-              TextButton(
+              TextButton.icon(
                 onPressed: _busy ? null : () => _switch(_AuthMode.login),
-                child: const Text('Trở về đăng nhập'),
+                icon: const GhstButtonIcon.glyph(GhstActionKind.back, size: 16),
+                label: const Text('Trở về đăng nhập'),
               ),
             ],
           ],

@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/integrations/live_delivery_service.dart';
 import '../../core/integrations/push_notification_service.dart';
 import '../../data/datasources/local/app_state_store.dart';
+import 'ghst_button_icon.dart';
 
 class LiveOrderConnection extends StatefulWidget {
   const LiveOrderConnection({super.key, required this.room});
@@ -116,7 +117,7 @@ class _LiveOrderConnectionState extends State<LiveOrderConnection> {
           spacing: 8,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            Icon(
+            GhstButtonIcon(
               _store.isRoomConnected(widget.room)
                   ? Icons.cloud_done_outlined
                   : Icons.cloud_off_outlined,
@@ -135,12 +136,12 @@ class _LiveOrderConnectionState extends State<LiveOrderConnection> {
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Icon(Icons.sync),
+                  : const GhstButtonIcon(Icons.sync),
             ),
             if (_service.signedIn && PushNotificationService.supported)
               IconButton(
                 tooltip: 'Bật thông báo đơn hàng',
-                icon: const Icon(Icons.notifications_active_outlined),
+                icon: const GhstButtonIcon(Icons.notifications_active_outlined),
                 onPressed: () async {
                   try {
                     await PushNotificationService.instance.enable((text) {
@@ -168,12 +169,12 @@ class _LiveOrderConnectionState extends State<LiveOrderConnection> {
               IconButton(
                 tooltip: 'Tải ảnh giao hàng',
                 onPressed: _busy ? null : _upload,
-                icon: const Icon(Icons.add_a_photo_outlined),
+                icon: const GhstButtonIcon(Icons.add_a_photo_outlined),
               ),
             if (_store.liveEvidencePaths[widget.room] != null)
               IconButton(
                 tooltip: 'Xem ảnh giao hàng',
-                icon: const Icon(Icons.photo_outlined),
+                icon: const GhstButtonIcon(Icons.photo_outlined),
                 onPressed: () async {
                   try {
                     final url = await _service.evidenceUrl(
@@ -282,13 +283,17 @@ class _CloudSignInDialogState extends State<_CloudSignInDialog> {
       ),
     ),
     actions: [
-      TextButton(
+      TextButton.icon(
         onPressed: _busy ? null : () => Navigator.pop(context, false),
-        child: const Text('Hủy'),
+        icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+        label: const Text('Hủy'),
       ),
-      FilledButton(
+      FilledButton.icon(
         onPressed: _busy ? null : _signIn,
-        child: Text(_busy ? 'Đang kết nối...' : 'Đăng nhập'),
+        icon: GhstButtonIcon.forLabel(_busy ? 'Đang kết nối...' : 'Đăng nhập', size: 16),
+
+        label: Text(_busy ? 'Đang kết nối...' : 'Đăng nhập'),
       ),
     ],
   );

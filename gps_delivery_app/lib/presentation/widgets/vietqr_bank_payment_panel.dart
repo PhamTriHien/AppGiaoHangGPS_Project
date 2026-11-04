@@ -8,6 +8,7 @@ import '../../core/integrations/bank_directory_service.dart';
 import '../../core/theme/ghst_theme_tokens.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/utils/security_and_barcode_utils.dart';
+import 'ghst_button_icon.dart';
 
 class VietQrBankPaymentPanel extends StatefulWidget {
   const VietQrBankPaymentPanel({
@@ -237,16 +238,11 @@ class _VietQrBankPaymentPanelState extends State<VietQrBankPaymentPanel> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        DropdownButtonFormField<String>(
-          key: ValueKey('vietqr-bank-$effectiveBin-${_banks.length}'),
-          initialValue: effectiveBin,
-          isExpanded: true,
-          decoration: const InputDecoration(
+        DropdownButtonFormField<String>(icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 18), key: ValueKey('vietqr-bank-$effectiveBin-${_banks.length}'), initialValue: effectiveBin, isExpanded: true, decoration: const InputDecoration(
             isDense: true,
             labelText: 'Ngân hàng thanh toán của bạn',
             border: OutlineInputBorder(),
-          ),
-          items: _banks
+          ), items: _banks
               .map(
                 (b) => DropdownMenuItem<String>(
                   value: b.bin,
@@ -256,8 +252,7 @@ class _VietQrBankPaymentPanelState extends State<VietQrBankPaymentPanel> {
                   ),
                 ),
               )
-              .toList(),
-          onChanged: (val) {
+              .toList(), onChanged: (val) {
             if (val == null) return;
             final picked = _banks.firstWhere(
               (b) => b.bin == val,
@@ -265,8 +260,7 @@ class _VietQrBankPaymentPanelState extends State<VietQrBankPaymentPanel> {
             );
             setState(() => _payerBin = val);
             widget.onPayerBankChanged?.call(picked);
-          },
-        ),
+          },),
         const SizedBox(height: 8),
         Text(
           'Quét mã bằng ứng dụng ${selectedBank.shortName} hoặc chuyển khoản nhanh 24/7:',
@@ -337,7 +331,7 @@ class _VietQrBankPaymentPanelState extends State<VietQrBankPaymentPanel> {
         children: [
           Row(
             children: [
-              Icon(
+              GhstButtonIcon(
                 Icons.qr_code_2_rounded,
                 size: 20,
                 color: tokens.primary,
@@ -434,7 +428,7 @@ class _VietQrBankPaymentPanelState extends State<VietQrBankPaymentPanel> {
               padding: EdgeInsets.zero,
               tooltip: copyTooltip,
               onPressed: onCopy,
-              icon: Icon(
+              icon: GhstButtonIcon(
                 Icons.copy_outlined,
                 size: 16,
                 color: tokens.primary,

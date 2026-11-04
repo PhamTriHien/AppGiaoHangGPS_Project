@@ -9,6 +9,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/ghst_theme_tokens.dart';
 import '../widgets/animated_3d_ui_icons.dart';
 import '../widgets/motion_3d_effects.dart';
+import '../widgets/ghst_button_icon.dart';
 
 class GhstAiChatController extends ChangeNotifier {
   GhstAiChatController({required this.session})
@@ -296,7 +297,7 @@ class _GhstAiChatScreenState extends State<GhstAiChatScreen> {
           IconButton(
             tooltip: 'Làm mới hội thoại',
             onPressed: _controller.busy ? null : _controller.reset,
-            icon: const Icon(
+            icon: const GhstButtonIcon(
               Icons.refresh_rounded,
               color: Colors.white,
               size: 20,
@@ -569,7 +570,7 @@ class _GhstAiFloatingBubbleState extends State<GhstAiFloatingBubble> {
                               onPressed: widget.controller.busy
                                   ? null
                                   : widget.controller.reset,
-                              icon: const Icon(
+                              icon: const GhstButtonIcon(
                                 Icons.refresh_rounded,
                                 color: Colors.white,
                                 size: 18,
@@ -584,7 +585,7 @@ class _GhstAiFloatingBubbleState extends State<GhstAiFloatingBubble> {
                                 setState(() => _open = false);
                                 widget.onExpandFullScreen!();
                               },
-                              icon: const Icon(
+                              icon: const GhstButtonIcon(
                                 Icons.open_in_full_rounded,
                                 color: Colors.white,
                                 size: 17,
@@ -595,7 +596,7 @@ class _GhstAiFloatingBubbleState extends State<GhstAiFloatingBubble> {
                             visualDensity: VisualDensity.compact,
                             tooltip: 'Thu gọn bong bóng chat',
                             onPressed: () => setState(() => _open = false),
-                            icon: const Icon(
+                            icon: const GhstButtonIcon(
                               Icons.keyboard_arrow_down_rounded,
                               color: Colors.white,
                               size: 22,
@@ -728,7 +729,7 @@ class _GhstAiChatBodyState extends State<GhstAiChatBody> {
         ),
         child: Row(
           children: [
-            Icon(
+            GhstButtonIcon(
               Icons.error_outline_rounded,
               color: tokens.rose.icon,
               size: 17,
@@ -745,9 +746,11 @@ class _GhstAiChatBodyState extends State<GhstAiChatBody> {
               ),
             ),
             if (c.retryPrompt != null && !c.busy)
-              TextButton(
+              TextButton.icon(
                 onPressed: () => unawaited(c.send(c.retryPrompt!)),
-                child: const Text('Gửi lại'),
+                icon: const GhstButtonIcon.glyph(GhstActionKind.refresh, size: 16),
+
+                label: const Text('Gửi lại'),
               ),
           ],
         ),
@@ -796,7 +799,7 @@ class _GhstAiChatBodyState extends State<GhstAiChatBody> {
               runSpacing: 8,
               children: [
                 for (final suggestion in GhstAiChatController.suggestions)
-                  OutlinedButton(
+                  OutlinedButton.icon(
                     onPressed: c.busy
                         ? null
                         : () => unawaited(c.send(suggestion)),
@@ -812,7 +815,9 @@ class _GhstAiChatBodyState extends State<GhstAiChatBody> {
                         vertical: widget.compact ? 7 : 9,
                       ),
                     ),
-                    child: Text(
+                    icon: GhstButtonIcon.forLabel(suggestion, size: 16),
+
+                    label: Text(
                       suggestion,
                       style: TextStyle(
                         color: tokens.ink,
@@ -952,7 +957,7 @@ class _GhstAiChatBodyState extends State<GhstAiChatBody> {
         FilledButton.icon(
           key: widget.sendKey,
           onPressed: c.busy ? null : _submit,
-          icon: const Icon(Icons.send_rounded, size: 16),
+          icon: const GhstButtonIcon(Icons.send_rounded, size: 16),
           label: const Text('Gửi'),
         ),
       ],

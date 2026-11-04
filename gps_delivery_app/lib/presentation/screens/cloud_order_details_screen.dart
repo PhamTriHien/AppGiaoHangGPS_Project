@@ -19,6 +19,7 @@ import '../widgets/cloud_order_labels.dart';
 import '../widgets/cloud_session_boundary.dart';
 import '../widgets/market_commercial_sheets.dart';
 import '../widgets/system_state_screens.dart';
+import '../widgets/ghst_button_icon.dart';
 
 class CloudOrderDetailsScreen extends StatefulWidget {
   const CloudOrderDetailsScreen({
@@ -600,13 +601,17 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
             ),
           ),
           actions: [
-            TextButton(
+            TextButton.icon(
               onPressed: () => Navigator.pop(dialog),
-              child: const Text('Quay lại'),
+              icon: const GhstButtonIcon.glyph(GhstActionKind.back, size: 16),
+
+              label: const Text('Quay lại'),
             ),
-            FilledButton(
+            FilledButton.icon(
               onPressed: () => Navigator.pop(dialog, ctrl.text.trim()),
-              child: const Text('Xác nhận'),
+              icon: const GhstButtonIcon.glyph(GhstActionKind.checkCircle, size: 16),
+
+              label: const Text('Xác nhận'),
             ),
           ],
         ),
@@ -648,13 +653,17 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
             ],
           ),
           actions: [
-            TextButton(
+            TextButton.icon(
               onPressed: () => Navigator.pop(dialog, false),
-              child: const Text('Quay lại'),
+              icon: const GhstButtonIcon.glyph(GhstActionKind.back, size: 16),
+
+              label: const Text('Quay lại'),
             ),
-            FilledButton(
+            FilledButton.icon(
               onPressed: () => Navigator.pop(dialog, true),
-              child: const Text('Xác nhận đã thu'),
+              icon: const GhstButtonIcon.glyph(GhstActionKind.wallet, size: 16),
+
+              label: const Text('Xác nhận đã thu'),
             ),
           ],
         ),
@@ -775,7 +784,7 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
                                       }
                                     }
                                   },
-                            icon: Icon(
+                            icon: GhstButtonIcon(
                               podReady
                                   ? Icons.check_circle_outline
                                   : Icons.camera_alt_outlined,
@@ -813,11 +822,13 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
                   ),
                 ),
                 actions: [
-                  TextButton(
+                  TextButton.icon(
                     onPressed: () => Navigator.pop(dialog),
-                    child: const Text('Quay lại'),
+                    icon: const GhstButtonIcon.glyph(GhstActionKind.back, size: 16),
+
+                    label: const Text('Quay lại'),
                   ),
-                  FilledButton(
+                  FilledButton.icon(
                     onPressed: uploading
                         ? null
                         : () {
@@ -849,7 +860,9 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
                               collectCash: needCash,
                             ));
                           },
-                    child: const Text('Xác nhận đã giao'),
+                    icon: const GhstButtonIcon.glyph(GhstActionKind.scooter, size: 16),
+
+                    label: const Text('Xác nhận đã giao'),
                   ),
                 ],
               ),
@@ -942,12 +955,14 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
                     Clipboard.setData(ClipboardData(text: otp)).ignore();
                     Navigator.pop(dialog);
                   },
-                  icon: const Icon(Icons.copy),
+                  icon: const GhstButtonIcon(Icons.copy),
                   label: const Text('Sao chép'),
                 ),
-              TextButton(
+              TextButton.icon(
                 onPressed: () => Navigator.pop(dialog),
-                child: const Text('Đóng'),
+                icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+                label: const Text('Đóng'),
               ),
             ],
           ),
@@ -993,9 +1008,11 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
               ),
             ),
             actions: [
-              TextButton(
+              TextButton.icon(
                 onPressed: () => Navigator.pop(dialog),
-                child: const Text('Đóng'),
+                icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+                label: const Text('Đóng'),
               ),
             ],
           ),
@@ -1073,7 +1090,7 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
                           });
                         }
                       },
-                      icon: const Icon(Icons.add_link),
+                      icon: const GhstButtonIcon(Icons.add_link),
                       label: const Text('Tạo & sao chép liên kết mới'),
                     ),
                     const SizedBox(height: 12),
@@ -1092,7 +1109,7 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
                             ? null
                             : IconButton(
                                 tooltip: 'Thu hồi liên kết',
-                                icon: const Icon(Icons.link_off),
+                                icon: const GhstButtonIcon(Icons.link_off),
                                 onPressed: () async {
                                   await widget.lease.session.service
                                       .orderShares(
@@ -1126,9 +1143,11 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
               ),
             ),
             actions: [
-              TextButton(
+              TextButton.icon(
                 onPressed: () => Navigator.pop(dialog),
-                child: const Text('Đóng'),
+                icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+                label: const Text('Đóng'),
               ),
             ],
           ),
@@ -1224,7 +1243,7 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
+                    GhstButtonIcon(
                       stageIndex > i
                           ? Icons.check_circle_rounded
                           : (stageIndex == i
@@ -1336,7 +1355,7 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
+                  GhstButtonIcon(
                     Icons.explore_outlined,
                     size: 18,
                     color: tokens.sapphire.icon,
@@ -1359,7 +1378,7 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
                   visualDensity: VisualDensity.compact,
                 ),
                 onPressed: _openGoogleMapsDirections,
-                icon: const Icon(Icons.directions_outlined, size: 16),
+                icon: const GhstButtonIcon(Icons.directions_outlined, size: 16),
                 label: const Text('Chỉ đường Google Maps'),
               ),
             ],
@@ -1427,7 +1446,7 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
                   CircleAvatar(
                     backgroundColor: tokens.emerald.fill,
                     foregroundColor: tokens.emerald.foreground,
-                    child: const Icon(Icons.two_wheeler_rounded),
+                    child: const GhstButtonIcon(Icons.two_wheeler_rounded),
                   ),
                   const SizedBox(width: 10),
                   Flexible(
@@ -1460,7 +1479,7 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
               if (phone.isNotEmpty)
                 FilledButton.tonalIcon(
                   onPressed: () => _launchPhoneCall(phone),
-                  icon: const Icon(Icons.call_outlined, size: 17),
+                  icon: const GhstButtonIcon(Icons.call_outlined, size: 17),
                   label: const Text('Gọi tài xế'),
                 ),
             ],
@@ -1502,13 +1521,13 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
                     if (senderPhone.isNotEmpty)
                       OutlinedButton.icon(
                         onPressed: () => _launchPhoneCall(senderPhone),
-                        icon: const Icon(Icons.call_outlined, size: 16),
+                        icon: const GhstButtonIcon(Icons.call_outlined, size: 16),
                         label: const Text('Gọi người gửi'),
                       ),
                     if (recipientPhone.isNotEmpty)
                       FilledButton.tonalIcon(
                         onPressed: () => _launchPhoneCall(recipientPhone),
-                        icon: const Icon(Icons.phone_forwarded_outlined, size: 16),
+                        icon: const GhstButtonIcon(Icons.phone_forwarded_outlined, size: 16),
                         label: const Text('Gọi người nhận'),
                       ),
                   ],
@@ -1536,7 +1555,7 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.stars_rounded, color: tokens.amber.icon, size: 19),
+                  GhstButtonIcon(Icons.stars_rounded, color: tokens.amber.icon, size: 19),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
@@ -1615,7 +1634,7 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
         children: [
           Row(
             children: [
-              Icon(
+              GhstButtonIcon(
                 Icons.forum_outlined,
                 size: 18,
                 color: tokens.violet.icon,
@@ -1635,7 +1654,7 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
                 visualDensity: VisualDensity.compact,
                 tooltip: 'Làm mới tin nhắn chuyến giao',
                 onPressed: _chatBusy ? null : _refreshLiveSnapshot,
-                icon: const Icon(Icons.sync, size: 18),
+                icon: const GhstButtonIcon(Icons.sync, size: 18),
               ),
             ],
           ),
@@ -1721,6 +1740,7 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
                 for (final chip in quickReplies)
                   ActionChip(
                     visualDensity: VisualDensity.compact,
+                    avatar: const GhstButtonIcon.glyph(GhstActionKind.chat, size: 14),
                     label: Text(chip, style: const TextStyle(fontSize: 11.5)),
                     onPressed: _chatBusy ? null : () => _sendOrderChat(chip),
                   ),
@@ -1748,7 +1768,7 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
                 FilledButton.icon(
                   key: const ValueKey('order-live-chat-send'),
                   onPressed: _chatBusy ? null : _sendOrderChat,
-                  icon: const Icon(Icons.send_rounded, size: 16),
+                  icon: const GhstButtonIcon(Icons.send_rounded, size: 16),
                   label: const Text('Gửi'),
                 ),
               ],
@@ -1780,7 +1800,7 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
         FilledButton.icon(
           key: const ValueKey('details-action-claim'),
           onPressed: _busy ? null : () => _executeTransition('claim'),
-          icon: const Icon(Icons.electric_moped_rounded),
+          icon: const GhstButtonIcon(Icons.electric_moped_rounded),
           label: const Text('Nhận chuyến giao'),
         ),
       if (!carrier &&
@@ -1789,7 +1809,7 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
           _isMerchantOrOperator)
         FilledButton.tonalIcon(
           onPressed: _busy ? null : () => _executeTransition('ready'),
-          icon: const Icon(Icons.storefront_outlined),
+          icon: const GhstButtonIcon(Icons.storefront_outlined),
           label: const Text('Sẵn sàng lấy hàng'),
         ),
       if (canOperateDriver) ...[
@@ -1797,14 +1817,14 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
           FilledButton.icon(
             key: const ValueKey('details-action-arrive'),
             onPressed: _busy ? null : () => _executeTransition('arrive'),
-            icon: const Icon(Icons.place_outlined),
+            icon: const GhstButtonIcon(Icons.place_outlined),
             label: const Text('Báo đã đến điểm lấy'),
           ),
         if (status == 'arrivingPickup')
           FilledButton.icon(
             key: const ValueKey('details-action-pickup'),
             onPressed: _busy ? null : () => _executeTransition('pickup'),
-            icon: const Icon(Icons.inventory_2_outlined),
+            icon: const GhstButtonIcon(Icons.inventory_2_outlined),
             label: const Text('Xác nhận đã lấy hàng'),
           ),
         if (const {'accepted', 'arrivingPickup', 'inTransit', 'returning'}
@@ -1812,7 +1832,7 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
           OutlinedButton.icon(
             key: const ValueKey('details-action-push-gps'),
             onPressed: _busy ? null : _broadcastRealDriverGps,
-            icon: const Icon(Icons.my_location_rounded),
+            icon: const GhstButtonIcon(Icons.my_location_rounded),
             label: const Text('Phát định vị GPS'),
           ),
         if (const {'inTransit', 'returning'}.contains(status)) ...[
@@ -1820,7 +1840,7 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
             (_completedCheckpoints.contains('stop:$i') ||
                     _completedCheckpoints.contains('stop_${i + 1}'))
                 ? Chip(
-                    avatar: const Icon(Icons.check_circle, size: 16),
+                    avatar: const GhstButtonIcon(Icons.check_circle, size: 16),
                     label: Text('Đã qua điểm #${i + 1}'),
                   )
                 : OutlinedButton.icon(
@@ -1831,14 +1851,14 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
                             'stop:$i',
                             'Đã hoàn tất điểm dừng #${i + 1}',
                           ),
-                    icon: const Icon(Icons.flag_outlined),
+                    icon: const GhstButtonIcon(Icons.flag_outlined),
                     label: Text('Hoàn tất điểm dừng #${i + 1}'),
                   ),
           if (isRoundTrip)
             (_completedCheckpoints.contains('return_leg') ||
                     _completedCheckpoints.contains('return_origin'))
                 ? const Chip(
-                    avatar: Icon(Icons.check_circle, size: 16),
+                    avatar: GhstButtonIcon(Icons.check_circle, size: 16),
                     label: Text('Đã quay về điểm lấy'),
                   )
                 : OutlinedButton.icon(
@@ -1849,7 +1869,7 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
                             'return_leg',
                             'Đã quay lại điểm lấy khứ hồi',
                           ),
-                    icon: const Icon(Icons.sync_alt_rounded),
+                    icon: const GhstButtonIcon(Icons.sync_alt_rounded),
                     label: const Text('Xác nhận quay về điểm lấy'),
                   ),
         ],
@@ -1857,31 +1877,31 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
           OutlinedButton.icon(
             key: const ValueKey('details-action-collect-cash'),
             onPressed: _busy ? null : () => _executeTransition('collect_cash'),
-            icon: const Icon(Icons.payments_outlined),
+            icon: const GhstButtonIcon(Icons.payments_outlined),
             label: const Text('Thu tiền mặt'),
           ),
         if (status == 'inTransit') ...[
           FilledButton.icon(
             key: const ValueKey('details-action-deliver'),
             onPressed: _busy ? null : () => _executeTransition('deliver'),
-            icon: const Icon(Icons.task_alt_rounded),
+            icon: const GhstButtonIcon(Icons.task_alt_rounded),
             label: const Text('Hoàn tất giao hàng'),
           ),
           OutlinedButton.icon(
             onPressed: _busy ? null : () => _executeTransition('fail'),
-            icon: const Icon(Icons.report_problem_outlined),
+            icon: const GhstButtonIcon(Icons.report_problem_outlined),
             label: const Text('Báo giao thất bại'),
           ),
         ],
         if (status == 'failed') ...[
           FilledButton.tonalIcon(
             onPressed: _busy ? null : () => _executeTransition('retry'),
-            icon: const Icon(Icons.refresh_rounded),
+            icon: const GhstButtonIcon(Icons.refresh_rounded),
             label: const Text('Thử giao lại'),
           ),
           OutlinedButton.icon(
             onPressed: _busy ? null : () => _executeTransition('return'),
-            icon: const Icon(Icons.keyboard_return_rounded),
+            icon: const GhstButtonIcon(Icons.keyboard_return_rounded),
             label: const Text('Chuyển hoàn hàng'),
           ),
         ],
@@ -1890,7 +1910,7 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
             onPressed: _busy
                 ? null
                 : () => _executeTransition('complete_return'),
-            icon: const Icon(Icons.assignment_returned_outlined),
+            icon: const GhstButtonIcon(Icons.assignment_returned_outlined),
             label: const Text('Đã trả hàng cho người gửi'),
           ),
       ],
@@ -1900,7 +1920,7 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
         OutlinedButton.icon(
           key: const ValueKey('details-action-cancel'),
           onPressed: _busy ? null : () => _executeTransition('cancel'),
-          icon: const Icon(Icons.cancel_outlined),
+          icon: const GhstButtonIcon(Icons.cancel_outlined),
           label: const Text('Hủy đơn giao'),
         ),
       if (!carrier &&
@@ -1954,12 +1974,12 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
           IconButton(
             tooltip: 'Tải lại lịch sử',
             onPressed: _busy || !_allowed ? null : _load,
-            icon: const Icon(Icons.refresh),
+            icon: const GhstButtonIcon(Icons.refresh),
           ),
           IconButton(
             tooltip: 'Sao chép thông tin đơn',
             onPressed: visible ? () => _copy(receipt: true) : null,
-            icon: const Icon(Icons.content_copy_outlined),
+            icon: const GhstButtonIcon(Icons.content_copy_outlined),
           ),
         ],
       ),
@@ -1989,7 +2009,7 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
                       alignment: Alignment.centerLeft,
                       child: OutlinedButton.icon(
                         onPressed: _busy ? null : _load,
-                        icon: const Icon(Icons.refresh),
+                        icon: const GhstButtonIcon(Icons.refresh),
                         label: const Text('Thử lại'),
                       ),
                     ),
@@ -2021,7 +2041,7 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
                               IconButton(
                                 tooltip: 'Sao chép mã vận đơn',
                                 onPressed: _copy,
-                                icon: const Icon(Icons.copy_outlined, size: 20),
+                                icon: const GhstButtonIcon(Icons.copy_outlined, size: 20),
                               ),
                             ],
                           ),
@@ -2044,7 +2064,7 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
                           if (_canRepeat)
                             FilledButton.icon(
                               onPressed: _repeat,
-                              icon: const Icon(Icons.replay),
+                              icon: const GhstButtonIcon(Icons.replay),
                               label: const Text('Gửi lại đơn'),
                             ),
                           if ((_isOwner || widget.lease.session.isOperator) &&
@@ -2078,26 +2098,26 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
                                       );
                                       if (mounted && _allowed) await _load();
                                     },
-                              icon: const Icon(Icons.qr_code_2_rounded),
+                              icon: const GhstButtonIcon(Icons.qr_code_2_rounded),
                               label: const Text('Thanh toán Ngân hàng · Mã QR'),
                             ),
                           if ((_isOwner || _isMerchantOrOperator) &&
                               _details['require_otp'] == true)
                             OutlinedButton.icon(
                               onPressed: _busy ? null : _showOtp,
-                              icon: const Icon(Icons.pin_outlined),
+                              icon: const GhstButtonIcon(Icons.pin_outlined),
                               label: const Text('Mã OTP người nhận'),
                             ),
                           if (_isOwner || _isMerchantOrOperator)
                             OutlinedButton.icon(
                               onPressed: _busy ? null : _manageShares,
-                              icon: const Icon(Icons.share_outlined),
+                              icon: const GhstButtonIcon(Icons.share_outlined),
                               label: const Text('Chia sẻ hành trình'),
                             ),
                           if (hasPod)
                             OutlinedButton.icon(
                               onPressed: _busy ? null : _viewPod,
-                              icon: const Icon(Icons.photo_camera_outlined),
+                              icon: const GhstButtonIcon(Icons.photo_camera_outlined),
                               label: const Text('Xem ảnh POD'),
                             ),
                           if (_isOwner &&
@@ -2118,7 +2138,7 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
                                         await _refreshLiveSnapshot();
                                       }
                                     },
-                              icon: const Icon(Icons.star_outline),
+                              icon: const GhstButtonIcon(Icons.star_outline),
                               label: const Text('Đánh giá tài xế'),
                             ),
                         ],
@@ -2227,7 +2247,7 @@ class _CloudOrderDetailsScreenState extends State<CloudOrderDetailsScreen> {
                           children: [
                             Padding(
                               padding: const EdgeInsets.only(top: 3),
-                              child: Icon(
+                              child: GhstButtonIcon(
                                 Icons.check_circle_outline,
                                 size: 18,
                                 color: tokens.emerald.icon,

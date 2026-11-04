@@ -10,6 +10,7 @@ import '../../core/integrations/cloud_session_lease.dart';
 import '../../core/network/public_json_api.dart';
 import '../../core/utils/currency_formatter.dart';
 import 'vietqr_bank_payment_panel.dart';
+import 'ghst_button_icon.dart';
 
 class CloudCommerceDialog extends StatefulWidget {
   const CloudCommerceDialog({
@@ -152,13 +153,17 @@ class _CloudCommerceDialogState extends State<CloudCommerceDialog>
           title: Text(title),
           content: Text(content),
           actions: [
-            TextButton(
+            TextButton.icon(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Quay lại'),
+              icon: const GhstButtonIcon.glyph(GhstActionKind.back, size: 16),
+
+              label: const Text('Quay lại'),
             ),
-            FilledButton(
+            FilledButton.icon(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Xác nhận'),
+              icon: const GhstButtonIcon.glyph(GhstActionKind.checkCircle, size: 16),
+
+              label: const Text('Xác nhận'),
             ),
           ],
         ),
@@ -291,7 +296,7 @@ class _CloudCommerceDialogState extends State<CloudCommerceDialog>
             if (canCreate)
               FilledButton.icon(
                 onPressed: _busy ? null : () => _request(_path, body: const {}),
-                icon: const Icon(Icons.payment),
+                icon: const GhstButtonIcon(Icons.payment),
                 label: Text(
                   status == 'CREATING'
                       ? 'Kiểm tra lại liên kết'
@@ -327,12 +332,12 @@ class _CloudCommerceDialogState extends State<CloudCommerceDialog>
                           }
                         }
                       },
-                icon: const Icon(Icons.open_in_new),
+                icon: const GhstButtonIcon(Icons.open_in_new),
                 label: const Text('Mở thanh toán'),
               ),
               OutlinedButton.icon(
                 onPressed: _busy || !_sameAccount ? null : _refresh,
-                icon: const Icon(Icons.verified_outlined),
+                icon: const GhstButtonIcon(Icons.verified_outlined),
                 label: const Text('Kiểm tra thanh toán'),
               ),
               IconButton(
@@ -342,7 +347,7 @@ class _CloudCommerceDialogState extends State<CloudCommerceDialog>
                     : () => Clipboard.setData(
                         ClipboardData(text: '${_record!['checkout_url']}'),
                       ),
-                icon: const Icon(Icons.copy),
+                icon: const GhstButtonIcon(Icons.copy),
               ),
             ],
             if (['CREATING', 'PENDING'].contains(status) &&
@@ -361,7 +366,7 @@ class _CloudCommerceDialogState extends State<CloudCommerceDialog>
                         }
                         await _request('$_path/cancel', body: const {});
                       },
-                icon: const Icon(Icons.cancel_outlined),
+                icon: const GhstButtonIcon(Icons.cancel_outlined),
                 label: const Text('Hủy liên kết'),
               ),
           ],
@@ -393,7 +398,7 @@ class _CloudCommerceDialogState extends State<CloudCommerceDialog>
               onPressed: _busy || !_sameAccount
                   ? null
                   : () => _request('$_path/refresh', body: const {}),
-              icon: const Icon(Icons.sync),
+              icon: const GhstButtonIcon(Icons.sync),
               label: const Text('Đồng bộ GHN'),
             ),
             if (widget.operator && _record!['ghn_order_code'] == null)
@@ -401,7 +406,7 @@ class _CloudCommerceDialogState extends State<CloudCommerceDialog>
                 onPressed: _busy || !_sameAccount
                     ? null
                     : () => _request(_path, body: const {}),
-                icon: const Icon(Icons.refresh),
+                icon: const GhstButtonIcon(Icons.refresh),
                 label: const Text('Thử lại vận đơn'),
               ),
             if (widget.operator &&
@@ -425,7 +430,7 @@ class _CloudCommerceDialogState extends State<CloudCommerceDialog>
                         }
                         await _request('$_path/cancel', body: const {});
                       },
-                icon: const Icon(Icons.cancel_outlined),
+                icon: const GhstButtonIcon(Icons.cancel_outlined),
                 label: const Text('Yêu cầu hủy GHN'),
               ),
           ],
@@ -441,11 +446,7 @@ class _CloudCommerceDialogState extends State<CloudCommerceDialog>
         _field('length', 'Chiều dài', number: true, suffixText: 'cm'),
         _field('width', 'Chiều rộng', number: true, suffixText: 'cm'),
         _field('height', 'Chiều cao', number: true, suffixText: 'cm'),
-        DropdownButtonFormField<String>(
-          initialValue: _requiredNote,
-          isExpanded: true,
-          decoration: const InputDecoration(labelText: 'Quy định xem hàng'),
-          items: const [
+        DropdownButtonFormField<String>(icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 18), initialValue: _requiredNote, isExpanded: true, decoration: const InputDecoration(labelText: 'Quy định xem hàng'), items: const [
             DropdownMenuItem(
               value: 'KHONGCHOXEMHANG',
               child: Text('Không cho xem hàng'),
@@ -458,18 +459,16 @@ class _CloudCommerceDialogState extends State<CloudCommerceDialog>
               value: 'CHOTHUHANG',
               child: Text('Cho xem và thử'),
             ),
-          ],
-          onChanged: _busy || !_sameAccount
+          ], onChanged: _busy || !_sameAccount
               ? null
               : (v) => setState(() {
                   _requiredNote = v!;
                   _quote = null;
-                }),
-        ),
+                }),),
         const SizedBox(height: 12),
         OutlinedButton.icon(
           onPressed: _busy || !_sameAccount ? null : _preview,
-          icon: const Icon(Icons.calculate_outlined),
+          icon: const GhstButtonIcon(Icons.calculate_outlined),
           label: const Text('Xem phí GHN'),
         ),
         if (_quote != null) ...[
@@ -493,7 +492,7 @@ class _CloudCommerceDialogState extends State<CloudCommerceDialog>
                       body: {'quote_id': quote['quote_id']},
                     );
                   },
-            icon: const Icon(Icons.local_shipping_outlined),
+            icon: const GhstButtonIcon(Icons.local_shipping_outlined),
             label: const Text('Tạo vận đơn GHN'),
           ),
         ],
@@ -536,11 +535,13 @@ class _CloudCommerceDialogState extends State<CloudCommerceDialog>
       IconButton(
         tooltip: 'Tải lại',
         onPressed: _busy || !_sameAccount ? null : _refresh,
-        icon: const Icon(Icons.refresh),
+        icon: const GhstButtonIcon(Icons.refresh),
       ),
-      TextButton(
+      TextButton.icon(
         onPressed: () => Navigator.pop(context),
-        child: const Text('Đóng'),
+        icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+        label: const Text('Đóng'),
       ),
     ],
   );

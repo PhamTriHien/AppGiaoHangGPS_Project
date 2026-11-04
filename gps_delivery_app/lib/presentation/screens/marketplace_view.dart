@@ -28,6 +28,9 @@ import 'cloud_orders_screen.dart';
 import 'cloud_pickup_screen.dart';
 import 'cloud_promo_events_screen.dart';
 import 'market_order_services_screen.dart';
+import '../widgets/animated_3d_ui_icons.dart';
+import '../widgets/ghst_button_icon.dart';
+import 'cloud_app_settings_screen.dart';
 
 enum MarketView {
   catalog,
@@ -114,6 +117,7 @@ class MarketplaceView extends StatefulWidget {
     this.onOpenOperator,
     this.onOpenDeliveryJourney,
     this.onOpenOperations,
+    this.onOpenSettings,
   });
   final CloudAccountSession session;
   final MarketView view;
@@ -125,6 +129,7 @@ class MarketplaceView extends StatefulWidget {
   final VoidCallback? onOpenOperator;
   final ValueChanged<Map<String, dynamic>>? onOpenDeliveryJourney;
   final VoidCallback? onOpenOperations;
+  final VoidCallback? onOpenSettings;
   @override
   State<MarketplaceView> createState() => _MarketplaceViewState();
 }
@@ -617,9 +622,11 @@ class _MarketplaceViewState extends State<MarketplaceView> {
             ),
           ),
           actions: [
-            TextButton(
+            TextButton.icon(
               onPressed: () => Navigator.pop(dialog),
-              child: const Text('Đóng'),
+              icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+              label: const Text('Đóng'),
             ),
           ],
         ),
@@ -644,13 +651,17 @@ class _MarketplaceViewState extends State<MarketplaceView> {
               decoration: const InputDecoration(labelText: 'Lý do'),
             ),
             actions: [
-              TextButton(
+              TextButton.icon(
                 onPressed: () => Navigator.pop(dialog),
-                child: const Text('Quay lại'),
+                icon: const GhstButtonIcon.glyph(GhstActionKind.back, size: 16),
+
+                label: const Text('Quay lại'),
               ),
-              FilledButton(
+              FilledButton.icon(
                 onPressed: () => Navigator.pop(dialog, controller.text.trim()),
-                child: const Text('Hủy đơn'),
+                icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+                label: const Text('Hủy đơn'),
               ),
             ],
           ),
@@ -679,7 +690,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
     final url = product['image_url'] as String? ?? '';
     final placeholder = ColoredBox(
       color: Theme.of(context).colorScheme.surfaceContainerLow,
-      child: const Center(child: Icon(Icons.inventory_2_outlined, size: 40)),
+      child: const Center(child: GhstButtonIcon(Icons.inventory_2_outlined, size: 40)),
     );
     return SizedBox(
       height: height,
@@ -782,15 +793,19 @@ class _MarketplaceViewState extends State<MarketplaceView> {
             ),
           ),
           actions: [
-            TextButton(
+            TextButton.icon(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Hủy'),
+              icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+              label: const Text('Hủy'),
             ),
-            TextButton(
+            TextButton.icon(
               onPressed: () => Navigator.pop(dialogContext, <int?>[null, null]),
-              child: const Text('Xóa lọc'),
+              icon: const GhstButtonIcon.glyph(GhstActionKind.delete, size: 16),
+
+              label: const Text('Xóa lọc'),
             ),
-            FilledButton(
+            FilledButton.icon(
               onPressed: () {
                 if (_allowed && form.currentState!.validate()) {
                   Navigator.pop(dialogContext, [
@@ -799,7 +814,9 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                   ]);
                 }
               },
-              child: const Text('Áp dụng'),
+              icon: const GhstButtonIcon.glyph(GhstActionKind.checkCircle, size: 16),
+
+              label: const Text('Áp dụng'),
             ),
           ],
         ),
@@ -846,7 +863,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
             Text('${shop['description']}'),
           ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.location_on_outlined),
+            leading: const GhstButtonIcon(Icons.location_on_outlined),
             title: Text('${shop['address']}'),
             subtitle: (shop['service_radius_km'] as num? ?? 0) > 0
                 ? Text('Phạm vi giao hàng: ${shop['service_radius_km']} km')
@@ -868,7 +885,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                 runSpacing: 8,
                 children: [
                   ActionChip(
-                    avatar: Icon(
+                    avatar: GhstButtonIcon(
                       shop['following'] == true
                           ? Icons.bookmark_added
                           : Icons.bookmark_add_outlined,
@@ -890,7 +907,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                           }),
                   ),
                   ActionChip(
-                    avatar: const Icon(Icons.star_outline, size: 16),
+                    avatar: const GhstButtonIcon(Icons.star_outline, size: 16),
                     label: const Text('Đánh giá cửa hàng'),
                     onPressed: _busy
                         ? null
@@ -907,11 +924,11 @@ class _MarketplaceViewState extends State<MarketplaceView> {
           onSubmitted: (_) => _load(),
           decoration: InputDecoration(
             labelText: 'Tìm sản phẩm, cửa hàng',
-            prefixIcon: const Icon(Icons.search),
+            prefixIcon: const GhstButtonIcon(Icons.search),
             suffixIcon: IconButton(
               tooltip: 'Tìm kiếm',
               onPressed: _busy ? null : _load,
-              icon: const Icon(Icons.arrow_forward),
+              icon: const GhstButtonIcon(Icons.arrow_forward),
             ),
           ),
         ),
@@ -924,12 +941,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
             children: [
               SizedBox(
                 width: 200,
-                child: DropdownButtonFormField<String>(
-                  key: ValueKey('category-$_category'),
-                  initialValue: _category,
-                  isExpanded: true,
-                  decoration: const InputDecoration(labelText: 'Danh mục'),
-                  items: categories
+                child: DropdownButtonFormField<String>(icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 18), key: ValueKey('category-$_category'), initialValue: _category, isExpanded: true, decoration: const InputDecoration(labelText: 'Danh mục'), items: categories
                       .map(
                         (c) => DropdownMenuItem(
                           value: c,
@@ -940,22 +952,16 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                           ),
                         ),
                       )
-                      .toList(),
-                  onChanged: _busy
+                      .toList(), onChanged: _busy
                       ? null
                       : (v) {
                           setState(() => _category = v ?? '');
                           _load();
-                        },
-                ),
+                        },),
               ),
               SizedBox(
                 width: 200,
-                child: DropdownButtonFormField<String>(
-                  initialValue: _sort,
-                  isExpanded: true,
-                  decoration: const InputDecoration(labelText: 'Sắp xếp'),
-                  items: const [
+                child: DropdownButtonFormField<String>(icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 18), initialValue: _sort, isExpanded: true, decoration: const InputDecoration(labelText: 'Sắp xếp'), items: const [
                     DropdownMenuItem(value: 'default', child: Text('Mặc định')),
                     DropdownMenuItem(
                       value: 'price_asc',
@@ -969,32 +975,26 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                       value: 'newest',
                       child: Text('Mới cập nhật'),
                     ),
-                  ],
-                  onChanged: _busy
+                  ], onChanged: _busy
                       ? null
                       : (v) {
                           setState(() => _sort = v ?? 'default');
                           _load();
-                        },
-                ),
+                        },),
               ),
-              FilterChip(
-                label: const Text('Còn hàng'),
-                selected: _inStock,
-                onSelected: _busy
+              FilterChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel('Còn hàng', size: 15), label: const Text('Còn hàng'), selected: _inStock, onSelected: _busy
                     ? null
                     : (v) {
                         setState(() => _inStock = v);
                         _load();
-                      },
-              ),
+                      },),
               IconButton(
                 tooltip: 'Khoảng giá',
                 onPressed: _busy ? null : _priceFilter,
                 color: _minPrice != null || _maxPrice != null
                     ? Theme.of(context).colorScheme.primary
                     : null,
-                icon: const Icon(Icons.price_change_outlined),
+                icon: const GhstButtonIcon(Icons.price_change_outlined),
               ),
             ],
           ),
@@ -1054,7 +1054,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                             onPressed: p['shop_id'] == null
                                 ? null
                                 : () => _openShop(p),
-                            icon: const Icon(
+                            icon: const GhstButtonIcon(
                               Icons.storefront_outlined,
                               size: 16,
                             ),
@@ -1099,7 +1099,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                                             !hasVariants
                                         ? _add(p)
                                         : _details(p),
-                              icon: const Icon(Icons.add_shopping_cart),
+                              icon: const GhstButtonIcon(Icons.add_shopping_cart),
                             ),
                           ],
                         ),
@@ -1150,7 +1150,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                       onPressed: _busy || _loading
                           ? null
                           : () => _quantity(p, (p['quantity'] as int) - 1),
-                      icon: const Icon(Icons.remove),
+                      icon: const GhstButtonIcon(Icons.remove),
                     ),
                     SizedBox(
                       width: 36,
@@ -1164,7 +1164,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                       onPressed: _busy || _loading || p['quantity'] == 99
                           ? null
                           : () => _quantity(p, (p['quantity'] as int) + 1),
-                      icon: const Icon(Icons.add),
+                      icon: const GhstButtonIcon(Icons.add),
                     ),
                     const Spacer(),
                     IconButton(
@@ -1172,7 +1172,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                       onPressed: _busy || _loading
                           ? null
                           : () => _quantity(p, 0),
-                      icon: const Icon(Icons.delete_outline),
+                      icon: const GhstButtonIcon(Icons.delete_outline),
                     ),
                   ],
                 ),
@@ -1191,12 +1191,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
         if (items.isNotEmpty) ...[
           if (_addressError != null) Text(_addressError!),
           if (_addresses.isNotEmpty)
-            DropdownButtonFormField<String>(
-              key: ValueKey(_addressId),
-              initialValue: _addressId,
-              isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Địa chỉ nhận hàng'),
-              items: _addresses
+            DropdownButtonFormField<String>(icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 18), key: ValueKey(_addressId), initialValue: _addressId, isExpanded: true, decoration: const InputDecoration(labelText: 'Địa chỉ nhận hàng'), items: _addresses
                   .map(
                     (a) => DropdownMenuItem(
                       value: a['id'] as String,
@@ -1207,17 +1202,15 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                       ),
                     ),
                   )
-                  .toList(),
-              onChanged: _busy || _loading
+                  .toList(), onChanged: _busy || _loading
                   ? null
                   : (value) => setState(() {
                       _addressId = value;
                       _quote = null;
-                    }),
-            ),
+                    }),),
           TextButton.icon(
             onPressed: _busy ? null : _addressesPage,
-            icon: const Icon(Icons.location_on_outlined),
+            icon: const GhstButtonIcon(Icons.location_on_outlined),
             label: Text(
               _addresses.isEmpty ? 'Thêm địa chỉ nhận hàng' : 'Sổ địa chỉ',
             ),
@@ -1226,52 +1219,36 @@ class _MarketplaceViewState extends State<MarketplaceView> {
             spacing: 8,
             runSpacing: 8,
             children: [
-              ChoiceChip(
-                label: const Text('Thanh toán khi nhận hàng'),
-                selected: _paymentMethod == 'cod',
-                onSelected: _busy || _loading
+              ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel('Thanh toán khi nhận hàng', size: 15), label: const Text('Thanh toán khi nhận hàng'), selected: _paymentMethod == 'cod', onSelected: _busy || _loading
                     ? null
                     : (_) => setState(() {
                         _paymentMethod = 'cod';
                         _preferBankQr = false;
                         _quote = null;
-                      }),
-              ),
-              ChoiceChip(
-                label: const Text('Chuyển khoản ngân hàng · Mã QR'),
-                selected: _paymentMethod == 'prepaid' && _preferBankQr,
-                onSelected: _busy || _loading
+                      }),),
+              ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel('Chuyển khoản ngân hàng · Mã QR', size: 15), label: const Text('Chuyển khoản ngân hàng · Mã QR'), selected: _paymentMethod == 'prepaid' && _preferBankQr, onSelected: _busy || _loading
                     ? null
                     : (_) => setState(() {
                         _paymentMethod = 'prepaid';
                         _preferBankQr = true;
                         _quote = null;
-                      }),
-              ),
-              ChoiceChip(
-                label: const Text('Trả trước trực tuyến payOS'),
-                selected: _paymentMethod == 'prepaid' && !_preferBankQr,
-                onSelected: _busy || _loading
+                      }),),
+              ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel('Trả trước trực tuyến payOS', size: 15), label: const Text('Trả trước trực tuyến payOS'), selected: _paymentMethod == 'prepaid' && !_preferBankQr, onSelected: _busy || _loading
                     ? null
                     : (_) => setState(() {
                         _paymentMethod = 'prepaid';
                         _preferBankQr = false;
                         _quote = null;
-                      }),
-              ),
+                      }),),
             ],
           ),
           ExpansionTile(
             tilePadding: EdgeInsets.zero,
             title: const Text('Vận chuyển, Voucher & Xu thưởng'),
             children: [
-              DropdownButtonFormField<String>(
-                initialValue: _shippingMode,
-                isExpanded: true,
-                decoration: const InputDecoration(
+              DropdownButtonFormField<String>(icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 18), initialValue: _shippingMode, isExpanded: true, decoration: const InputDecoration(
                   labelText: 'Phương thức giao hàng',
-                ),
-                items: const [
+                ), items: const [
                   DropdownMenuItem(
                     value: 'standard',
                     child: Text('Tiêu chuẩn'),
@@ -1285,14 +1262,12 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                     value: 'same_day_2h',
                     child: Text('Ghép đơn 2H'),
                   ),
-                ],
-                onChanged: _busy || _loading
+                ], onChanged: _busy || _loading
                     ? null
                     : (v) => setState(() {
                         _shippingMode = v ?? 'standard';
                         _quote = null;
-                      }),
-              ),
+                      }),),
               const SizedBox(height: 10),
               Row(
                 children: [
@@ -1322,7 +1297,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                               });
                             }
                           },
-                    icon: const Icon(Icons.confirmation_num_outlined),
+                    icon: const GhstButtonIcon(Icons.confirmation_num_outlined),
                     label: const Text('Chọn mã'),
                   ),
                 ],
@@ -1389,7 +1364,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
             onPressed: _busy || _loading || _addressId == null
                 ? null
                 : _getQuote,
-            icon: const Icon(Icons.calculate_outlined),
+            icon: const GhstButtonIcon(Icons.calculate_outlined),
             label: const Text('Cập nhật báo giá'),
           ),
           if (quoteSnapshot != null) ...[
@@ -1442,7 +1417,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
             const SizedBox(height: 12),
             FilledButton.icon(
               onPressed: _busy || _loading ? null : _checkout,
-              icon: const Icon(Icons.shopping_bag_outlined),
+              icon: const GhstButtonIcon(Icons.shopping_bag_outlined),
               label: const Text('Đặt mua'),
             ),
           ],
@@ -1604,7 +1579,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                               );
                               if (_allowed) await _load();
                             },
-                      icon: const Icon(Icons.receipt_long_outlined),
+                      icon: const GhstButtonIcon(Icons.receipt_long_outlined),
                       label: const Text('Chi tiết và hậu mãi'),
                     ),
                     if (!merchant &&
@@ -1642,18 +1617,22 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                                 );
                                 if (_allowed) await _load();
                               },
-                        icon: const Icon(Icons.qr_code_2_rounded),
+                        icon: const GhstButtonIcon(Icons.qr_code_2_rounded),
                         label: const Text('Thanh toán trả trước'),
                       ),
                     if (merchant && o['state'] == 'pending')
-                      FilledButton(
+                      FilledButton.icon(
                         onPressed: _busy ? null : () => _action(o, 'accept'),
-                        child: const Text('Xác nhận đơn'),
+                        icon: const GhstButtonIcon.glyph(GhstActionKind.checkCircle, size: 16),
+
+                        label: const Text('Xác nhận đơn'),
                       ),
                     if (merchant && o['state'] == 'accepted') ...[
-                      FilledButton(
+                      FilledButton.icon(
                         onPressed: _busy ? null : () => _action(o, 'ready'),
-                        child: const Text('Sẵn sàng giao'),
+                        icon: const GhstButtonIcon.glyph(GhstActionKind.scooter, size: 16),
+
+                        label: const Text('Sẵn sàng giao'),
                       ),
                       if (_session.canManageShop(o['shop_id'] as String?))
                         OutlinedButton.icon(
@@ -1670,21 +1649,23 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                                     await _load();
                                   }
                                 },
-                          icon: const Icon(Icons.call_split),
+                          icon: const GhstButtonIcon(Icons.call_split),
                           label: const Text('Tách kiện giao'),
                         ),
                     ],
                     if (o['state'] == 'pending' ||
                         merchant && o['state'] == 'accepted')
-                      OutlinedButton(
+                      OutlinedButton.icon(
                         onPressed: _busy ? null : () => _action(o, 'cancel'),
-                        child: const Text('Hủy đơn'),
+                        icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+                        label: const Text('Hủy đơn'),
                       ),
                     OutlinedButton.icon(
                       onPressed: _busy
                           ? null
                           : () => _conversation(o['id'] as String),
-                      icon: const Icon(Icons.chat_bubble_outline),
+                      icon: const GhstButtonIcon(Icons.chat_bubble_outline),
                       label: const Text('Trao đổi'),
                     ),
                   ],
@@ -1734,7 +1715,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
               : _session.hasRole('merchant')
               ? FilledButton.icon(
                   onPressed: _busy ? null : () => _edit(editShop: true),
-                  icon: const Icon(Icons.add_business),
+                  icon: const GhstButtonIcon(Icons.add_business),
                   label: const Text('Tạo cửa hàng'),
                 )
               : const Text('Chưa có cửa hàng được phân quyền.'),
@@ -1766,7 +1747,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                 children: [
                   if (moderation)
                     for (final status in ['active', 'suspended'])
-                      OutlinedButton(
+                      OutlinedButton.icon(
                         onPressed: _busy
                             ? null
                             : () => _run(() async {
@@ -1777,7 +1758,9 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                                 });
                                 if (_allowed) await _load();
                               }),
-                        child: Text(
+                        icon: GhstButtonIcon.forLabel(status == 'active' ? 'Duyệt hoạt động' : 'Tạm khóa', size: 16),
+
+                        label: Text(
                           status == 'active' ? 'Duyệt hoạt động' : 'Tạm khóa',
                         ),
                       )
@@ -1786,7 +1769,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                       onPressed: _busy || !canManage
                           ? null
                           : () => _edit(shop: sh, editShop: true),
-                      icon: const Icon(Icons.edit_outlined),
+                      icon: const GhstButtonIcon(Icons.edit_outlined),
                       label: const Text('Sửa cửa hàng'),
                     ),
                     FilledButton.icon(
@@ -1794,7 +1777,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                           _busy || !canManage || sh['status'] == 'suspended'
                           ? null
                           : () => _edit(shop: sh),
-                      icon: const Icon(Icons.add),
+                      icon: const GhstButtonIcon(Icons.add),
                       label: const Text('Thêm sản phẩm'),
                     ),
                     if (canManage)
@@ -1809,7 +1792,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                                 );
                                 if (ok == true && _allowed) await _load();
                               },
-                        icon: const Icon(Icons.confirmation_num_outlined),
+                        icon: const GhstButtonIcon(Icons.confirmation_num_outlined),
                         label: const Text('Voucher shop'),
                       ),
                     if (canManage && shopProducts.isNotEmpty)
@@ -1824,7 +1807,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                                 );
                                 if (ok == true && _allowed) await _load();
                               },
-                        icon: const Icon(Icons.flash_on_outlined),
+                        icon: const GhstButtonIcon(Icons.flash_on_outlined),
                         label: const Text('Flash Sale'),
                       ),
                     if (isDirectOwner)
@@ -1840,7 +1823,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                                 );
                                 if (_allowed) await _load();
                               },
-                        icon: const Icon(Icons.group_outlined),
+                        icon: const GhstButtonIcon(Icons.group_outlined),
                         label: const Text('Nhân sự'),
                       ),
                   ],
@@ -1872,7 +1855,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                               );
                               if (_allowed) await _load();
                             },
-                      icon: const Icon(Icons.layers_outlined),
+                      icon: const GhstButtonIcon(Icons.layers_outlined),
                     ),
                     IconButton(
                       tooltip: 'Sửa sản phẩm',
@@ -1880,7 +1863,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                           _busy || !_session.canManageShop(sh['id'] as String?)
                           ? null
                           : () => _edit(shop: sh, product: p),
-                      icon: const Icon(Icons.edit_outlined),
+                      icon: const GhstButtonIcon(Icons.edit_outlined),
                     ),
                   ],
                 ),
@@ -1901,14 +1884,14 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                 onPressed: _busy
                     ? null
                     : () => openCloudPickups(context, _session),
-                icon: const Icon(Icons.local_shipping_outlined),
+                icon: const GhstButtonIcon(Icons.local_shipping_outlined),
                 label: const Text('Lịch xe thu gom'),
               ),
               OutlinedButton.icon(
                 onPressed: _busy
                     ? null
                     : () => openCloudOrderImport(context, _session),
-                icon: const Icon(Icons.upload_file_outlined),
+                icon: const GhstButtonIcon(Icons.upload_file_outlined),
                 label: const Text('Nhập đơn từ CSV'),
               ),
             ],
@@ -1937,7 +1920,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
         for (final n in notices)
           ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: Icon(
+            leading: GhstButtonIcon(
               n['read_at'] == null
                   ? Icons.notifications_active_outlined
                   : Icons.notifications_none,
@@ -2038,20 +2021,20 @@ class _MarketplaceViewState extends State<MarketplaceView> {
             dense: true,
             visualDensity: VisualDensity.compact,
             contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.admin_panel_settings_outlined),
+            leading: const GhstButtonIcon(Icons.admin_panel_settings_outlined),
             title: const Text('Cổng Quản trị'),
-            trailing: const Icon(Icons.chevron_right),
+            trailing: const GhstButtonIcon(Icons.chevron_right),
             onTap: widget.onOpenOperator,
           ),
         ListTile(
           dense: true,
           visualDensity: VisualDensity.compact,
           contentPadding: EdgeInsets.zero,
-          leading: Icon(
+          leading: GhstButtonIcon(
             verifiedKyc ? Icons.verified_user_outlined : Icons.person_outline,
           ),
           title: const Text('Hồ sơ cá nhân'),
-          trailing: const Icon(Icons.chevron_right),
+          trailing: const GhstButtonIcon(Icons.chevron_right),
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute<void>(
               builder: (_) => CloudSessionBoundary(
@@ -2074,6 +2057,25 @@ class _MarketplaceViewState extends State<MarketplaceView> {
             ),
           ),
         ),
+        ListTile(
+          key: const ValueKey('account-open-settings'),
+          dense: true,
+          visualDensity: VisualDensity.compact,
+          contentPadding: EdgeInsets.zero,
+          leading: const GhstAiIcon(
+            style: Icon3dStyle.settingsGear,
+            size: 24,
+            circular: true,
+          ),
+          title: const Text('Cài đặt ứng dụng'),
+          subtitle: const Text(
+            'Giao diện Sáng/Tối, thông báo, mật khẩu & dữ liệu',
+          ),
+          trailing: const GhstButtonIcon(Icons.chevron_right),
+          onTap:
+              widget.onOpenSettings ??
+              () => openCloudAppSettings(context, _session),
+        ),
         ListenableBuilder(
           listenable: PushNotificationService.instance,
           builder: (context, _) {
@@ -2085,7 +2087,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
               leading: Badge.count(
                 count: unread,
                 isLabelVisible: unread > 0,
-                child: const Icon(Icons.notifications_none_rounded),
+                child: const GhstButtonIcon(Icons.notifications_none_rounded),
               ),
               title: const Text('Trung tâm thông báo'),
               subtitle: Text(
@@ -2093,7 +2095,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                     ? '$unread thông báo chưa đọc'
                     : 'Lịch sử & tùy chỉnh cảnh báo',
               ),
-              trailing: const Icon(Icons.chevron_right),
+              trailing: const GhstButtonIcon(Icons.chevron_right),
               onTap: () => widget.onNavigate != null
                   ? widget.onNavigate!(MarketView.notifications)
                   : openCloudNotificationCenter(context, _session),
@@ -2104,18 +2106,18 @@ class _MarketplaceViewState extends State<MarketplaceView> {
           dense: true,
           visualDensity: VisualDensity.compact,
           contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.contact_mail_outlined),
+          leading: const GhstButtonIcon(Icons.contact_mail_outlined),
           title: const Text('Sổ địa chỉ'),
-          trailing: const Icon(Icons.chevron_right),
+          trailing: const GhstButtonIcon(Icons.chevron_right),
           onTap: _addressesPage,
         ),
         ListTile(
           dense: true,
           visualDensity: VisualDensity.compact,
           contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.favorite_outline),
+          leading: const GhstButtonIcon(Icons.favorite_outline),
           title: const Text('Sản phẩm yêu thích'),
-          trailing: const Icon(Icons.chevron_right),
+          trailing: const GhstButtonIcon(Icons.chevron_right),
           onTap: () =>
               openMarketplaceView(context, _session, MarketView.favorites),
         ),
@@ -2123,10 +2125,10 @@ class _MarketplaceViewState extends State<MarketplaceView> {
           dense: true,
           visualDensity: VisualDensity.compact,
           contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.casino_outlined),
+          leading: const GhstButtonIcon(Icons.casino_outlined),
           title: const Text('Sự kiện & Vòng xoay may mắn'),
           subtitle: const Text('Điểm danh, Vòng xoay, Hộp mù & Đổi Xu'),
-          trailing: const Icon(Icons.chevron_right),
+          trailing: const GhstButtonIcon(Icons.chevron_right),
           onTap: () => openCloudPromoEvents(
             context,
             _session,
@@ -2139,19 +2141,19 @@ class _MarketplaceViewState extends State<MarketplaceView> {
           dense: true,
           visualDensity: VisualDensity.compact,
           contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.monetization_on_outlined),
+          leading: const GhstButtonIcon(Icons.monetization_on_outlined),
           title: const Text('Ví Xu thưởng'),
           subtitle: Text('${_session.coinBalance} Xu khả dụng'),
-          trailing: const Icon(Icons.chevron_right),
+          trailing: const GhstButtonIcon(Icons.chevron_right),
           onTap: () => showCoinWalletDialog(context, session: _session),
         ),
         ListTile(
           dense: true,
           visualDensity: VisualDensity.compact,
           contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.confirmation_num_outlined),
+          leading: const GhstButtonIcon(Icons.confirmation_num_outlined),
           title: const Text('Kho mã giảm giá'),
-          trailing: const Icon(Icons.chevron_right),
+          trailing: const GhstButtonIcon(Icons.chevron_right),
           onTap: () => showVoucherBrowserDialog(context, session: _session),
         ),
         if (PushNotificationService.supported)
@@ -2161,7 +2163,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
               dense: true,
               visualDensity: VisualDensity.compact,
               contentPadding: EdgeInsets.zero,
-              secondary: const Icon(Icons.notifications_active_outlined),
+              secondary: const GhstButtonIcon(Icons.notifications_active_outlined),
               title: const Text('Thông báo đẩy thời gian thực'),
               value: PushNotificationService.instance.enabled,
               onChanged: _busy
@@ -2183,9 +2185,9 @@ class _MarketplaceViewState extends State<MarketplaceView> {
       if (_session.schemaVersion >= 3)
         ListTile(
           contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.move_to_inbox_outlined),
+          leading: const GhstButtonIcon(Icons.move_to_inbox_outlined),
           title: const Text('Nhập địa chỉ từ thiết bị'),
-          trailing: const Icon(Icons.chevron_right),
+          trailing: const GhstButtonIcon(Icons.chevron_right),
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute<void>(
               builder: (_) => CloudSessionBoundary(
@@ -2199,18 +2201,18 @@ class _MarketplaceViewState extends State<MarketplaceView> {
       if (_session.hasMerchantAccess) ...[
         ListTile(
           contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.storefront_outlined),
+          leading: const GhstButtonIcon(Icons.storefront_outlined),
           title: const Text('Cửa hàng của tôi'),
-          trailing: const Icon(Icons.chevron_right),
+          trailing: const GhstButtonIcon(Icons.chevron_right),
           onTap: () => widget.onNavigate != null
               ? widget.onNavigate!(MarketView.workspace)
               : openMarketplaceView(context, _session, MarketView.workspace),
         ),
         ListTile(
           contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.receipt_long_outlined),
+          leading: const GhstButtonIcon(Icons.receipt_long_outlined),
           title: const Text('Đơn của cửa hàng'),
-          trailing: const Icon(Icons.chevron_right),
+          trailing: const GhstButtonIcon(Icons.chevron_right),
           onTap: () => widget.onNavigate != null
               ? widget.onNavigate!(MarketView.merchantOrders)
               : openMarketplaceView(
@@ -2221,18 +2223,18 @@ class _MarketplaceViewState extends State<MarketplaceView> {
         ),
         ListTile(
           contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.analytics_outlined),
+          leading: const GhstButtonIcon(Icons.analytics_outlined),
           title: const Text('Kinh doanh & Hậu mãi'),
-          trailing: const Icon(Icons.chevron_right),
+          trailing: const GhstButtonIcon(Icons.chevron_right),
           onTap: _openOperationsCenter,
         ),
       ],
       if (_session.hasRole('driver'))
         ListTile(
           contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.delivery_dining),
+          leading: const GhstButtonIcon(Icons.delivery_dining),
           title: const Text('Chuyến giao của tôi'),
-          trailing: const Icon(Icons.chevron_right),
+          trailing: const GhstButtonIcon(Icons.chevron_right),
           onTap:
               widget.onOpenShipping ??
               () => Navigator.of(context).push(
@@ -2248,7 +2250,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
       const Divider(),
       TextButton.icon(
         onPressed: () => _run(_session.service.signOut),
-        icon: const Icon(Icons.logout),
+        icon: const GhstButtonIcon(Icons.logout),
         label: const Text('Đăng xuất'),
       ),
     ],
@@ -2302,7 +2304,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                       IconButton(
                         tooltip: 'Tải lại',
                         onPressed: _busy || _loading ? null : _load,
-                        icon: const Icon(Icons.refresh),
+                        icon: const GhstButtonIcon(Icons.refresh),
                       ),
                   ],
                 ),
@@ -2332,11 +2334,13 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                   MarketView.workspace || MarketView.moderation => _workspace(),
                 },
                 if (_next != null)
-                  TextButton(
+                  TextButton.icon(
                     onPressed: _busy || _loading
                         ? null
                         : () => _load(more: true),
-                    child: const Text('Tải thêm'),
+                    icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 16),
+
+                    label: const Text('Tải thêm'),
                   ),
               ],
             ),
@@ -2495,7 +2499,7 @@ class _OrderConversationState extends State<_OrderConversation> {
         IconButton(
           tooltip: 'Tải lại tin nhắn',
           onPressed: _busy ? null : _load,
-          icon: const Icon(Icons.refresh),
+          icon: const GhstButtonIcon(Icons.refresh),
         ),
       ],
     ),
@@ -2510,9 +2514,11 @@ class _OrderConversationState extends State<_OrderConversation> {
               padding: const EdgeInsets.all(16),
               children: [
                 if (_next != null)
-                  TextButton(
+                  TextButton.icon(
                     onPressed: _busy ? null : () => _load(more: true),
-                    child: const Text('Tin nhắn cũ hơn'),
+                    icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 16),
+
+                    label: const Text('Tin nhắn cũ hơn'),
                   ),
                 if (_messages.isEmpty && !_busy && _loaded)
                   const Text('Chưa có tin nhắn.'),
@@ -2536,7 +2542,7 @@ class _OrderConversationState extends State<_OrderConversation> {
                           children: [
                             for (final att in (msg['attachments'] as List))
                               ActionChip(
-                                avatar: const Icon(
+                                avatar: const GhstButtonIcon(
                                   Icons.image_outlined,
                                   size: 16,
                                 ),
@@ -2575,7 +2581,7 @@ class _OrderConversationState extends State<_OrderConversation> {
                 IconButton(
                   tooltip: 'Đính kèm ảnh',
                   onPressed: _busy || _attachments.length >= 4 ? null : _attach,
-                  icon: const Icon(Icons.attach_file),
+                  icon: const GhstButtonIcon(Icons.attach_file),
                 ),
                 Expanded(
                   child: TextField(
@@ -2596,7 +2602,7 @@ class _OrderConversationState extends State<_OrderConversation> {
                             _load(send: true);
                           }
                         },
-                  icon: const Icon(Icons.send),
+                  icon: const GhstButtonIcon(Icons.send),
                 ),
               ],
             ),

@@ -14,6 +14,7 @@ import '../../domain/entities/geo_point.dart';
 import 'animated_3d_ui_icons.dart';
 import 'cloud_order_labels.dart';
 import 'cloud_session_boundary.dart';
+import 'ghst_button_icon.dart';
 import 'system_state_screens.dart';
 
 String cloudLogisticsMessage(Object error, String fallback) =>
@@ -195,7 +196,7 @@ class _CloudRecipientTrustState extends State<CloudRecipientTrust> {
               onPressed: _busy || !widget.enabled
                   ? null
                   : () => _load('${trust['phone']}', flagged: !flagged),
-              icon: Icon(flagged ? Icons.flag_outlined : Icons.flag, size: 18),
+              icon: GhstButtonIcon(flagged ? Icons.flag_outlined : Icons.flag, size: 18),
               label: Text(flagged ? 'Gỡ cảnh báo' : 'Cảnh báo bom hàng'),
             ),
           ),
@@ -277,20 +278,39 @@ class _CloudDeliveryInstructionButtonState
       onSelected: _set,
       itemBuilder: (_) => [
         for (final note in cloudQuickInstructions)
-          CheckedPopupMenuItem(
+          PopupMenuItem(
             value: note,
-            checked: current == note,
-            child: Text(note),
+            child: Row(
+              children: [
+                GhstButtonIcon.glyph(
+                  current == note
+                      ? GhstActionKind.checkCircle
+                      : GhstActionKind.chat,
+                  size: 16,
+                ),
+                const SizedBox(width: 8),
+                Expanded(child: Text(note)),
+              ],
+            ),
           ),
         if (current.isNotEmpty)
-          const PopupMenuItem(value: '', child: Text('Xóa chỉ dẫn')),
+          const PopupMenuItem(
+            value: '',
+            child: Row(
+              children: [
+                GhstButtonIcon.glyph(GhstActionKind.delete, size: 16),
+                SizedBox(width: 8),
+                Text('Xóa chỉ dẫn'),
+              ],
+            ),
+          ),
       ],
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.edit_note_outlined, size: 18),
+            const GhstButtonIcon(Icons.edit_note_outlined, size: 18),
             const SizedBox(width: 6),
             Text(_busy ? 'Đang lưu...' : 'Chỉ dẫn giao'),
           ],
@@ -453,7 +473,7 @@ class _CloudDeliveryStatsCardState extends State<CloudDeliveryStatsCard> {
               IconButton(
                 tooltip: 'Tải lại thống kê',
                 onPressed: _busy ? null : _load,
-                icon: const Icon(Icons.refresh),
+                icon: const GhstButtonIcon(Icons.refresh),
               ),
             ],
           ),
@@ -651,7 +671,7 @@ class _DriverReviewsPanelState extends State<DriverReviewsPanel> {
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: tokens.amber.border),
                 ),
-                child: Icon(
+                child: GhstButtonIcon(
                   Icons.star_rounded,
                   color: tokens.amber.icon,
                   size: 20,
@@ -686,7 +706,7 @@ class _DriverReviewsPanelState extends State<DriverReviewsPanel> {
               IconButton(
                 tooltip: 'Tải lại đánh giá',
                 onPressed: _busy ? null : _load,
-                icon: const Icon(Icons.refresh),
+                icon: const GhstButtonIcon(Icons.refresh),
               ),
             ],
           ),
@@ -751,7 +771,7 @@ class _DriverReviewsPanelState extends State<DriverReviewsPanel> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   for (var i = 0; i < 5; i++)
-                    Icon(
+                    GhstButtonIcon(
                       i < stars
                           ? Icons.star_rounded
                           : Icons.star_border_rounded,
@@ -806,12 +826,14 @@ class _DriverReviewsPanelState extends State<DriverReviewsPanel> {
                           ),
                         ),
                       ),
-                      TextButton(
+                      TextButton.icon(
                         onPressed: () {
                           ctrl.text = existingReply;
                           setState(() => _editingIds.add(id));
                         },
-                        child: const Text('Sửa phản hồi'),
+                        icon: const GhstButtonIcon.glyph(GhstActionKind.reply, size: 16),
+
+                        label: const Text('Sửa phản hồi'),
                       ),
                     ],
                   ),
@@ -846,16 +868,18 @@ class _DriverReviewsPanelState extends State<DriverReviewsPanel> {
                   alignment: WrapAlignment.end,
                   children: [
                     if (existingReply.isNotEmpty)
-                      TextButton(
+                      TextButton.icon(
                         onPressed: isSubmitting
                             ? null
                             : () => setState(() => _editingIds.remove(id)),
-                        child: const Text('Hủy'),
+                        icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+                        label: const Text('Hủy'),
                       ),
                     FilledButton.tonalIcon(
                       key: ValueKey('driver-review-reply-submit-$id'),
                       onPressed: isSubmitting ? null : () => _submitReply(id),
-                      icon: const Icon(Icons.reply_rounded, size: 18),
+                      icon: const GhstButtonIcon(Icons.reply_rounded, size: 18),
                       label: Text(
                         isSubmitting ? 'Đang gửi...' : 'Gửi phản hồi',
                       ),
@@ -1198,7 +1222,7 @@ class _DriverLiveCockpitPanelState extends State<DriverLiveCockpitPanel> {
                       IconButton(
                         tooltip: 'Làm mới hành trình',
                         onPressed: _busy ? null : _load,
-                        icon: const Icon(Icons.refresh, color: Colors.white),
+                        icon: const GhstButtonIcon(Icons.refresh, color: Colors.white),
                       ),
                     ],
                   ),
@@ -1254,7 +1278,7 @@ class _DriverLiveCockpitPanelState extends State<DriverLiveCockpitPanel> {
                             child: FilledButton.icon(
                               key: const ValueKey('driver-cockpit-open-queue'),
                               onPressed: widget.onOpenQueue,
-                              icon: const Icon(Icons.bolt_rounded),
+                              icon: const GhstButtonIcon(Icons.bolt_rounded),
                               label: const Text('Mở sàn chuyến chờ nhận'),
                             ),
                           ),
@@ -1343,16 +1367,12 @@ class _DriverLiveCockpitPanelState extends State<DriverLiveCockpitPanel> {
                 for (final item in _activeTrips)
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      label: Text(
+                    child: ChoiceChip(showCheckmark: false, avatar: const GhstButtonIcon.glyph(GhstActionKind.receipt, size: 15), label: Text(
                         '${item['tracking_code']} · ${cloudStatuses[item['status']] ?? item['status']}',
-                      ),
-                      selected: '${item['id']}' == '${trip['id']}',
-                      onSelected: (_) => setState(() {
+                      ), selected: '${item['id']}' == '${trip['id']}', onSelected: (_) => setState(() {
                         _selectedOrderId = '${item['id']}';
                         _pushedGps = null;
-                      }),
-                    ),
+                      }),),
                   ),
               ],
             ),
@@ -1409,7 +1429,7 @@ class _DriverLiveCockpitPanelState extends State<DriverLiveCockpitPanel> {
                     OutlinedButton.icon(
                       key: const ValueKey('driver-cockpit-open-details'),
                       onPressed: () => widget.onOpenOrderDetails!(trip),
-                      icon: const Icon(Icons.open_in_new_rounded, size: 17),
+                      icon: const GhstButtonIcon(Icons.open_in_new_rounded, size: 17),
                       label: const Text('Mở chi tiết chuyến'),
                     ),
                 ],
@@ -1515,7 +1535,7 @@ class _DriverLiveCockpitPanelState extends State<DriverLiveCockpitPanel> {
                       onPressed: _acting
                           ? null
                           : () => _quickTransition(trip, 'arrive'),
-                      icon: const Icon(Icons.storefront_outlined, size: 18),
+                      icon: const GhstButtonIcon(Icons.storefront_outlined, size: 18),
                       label: const Text('Báo đã đến điểm lấy'),
                     ),
                   if (status == 'arrivingPickup')
@@ -1523,7 +1543,7 @@ class _DriverLiveCockpitPanelState extends State<DriverLiveCockpitPanel> {
                       onPressed: _acting
                           ? null
                           : () => _quickTransition(trip, 'pickup'),
-                      icon: const Icon(Icons.inventory_2_outlined, size: 18),
+                      icon: const GhstButtonIcon(Icons.inventory_2_outlined, size: 18),
                       label: const Text('Xác nhận đã lấy hàng'),
                     ),
                   if (status == 'inTransit' &&
@@ -1532,19 +1552,19 @@ class _DriverLiveCockpitPanelState extends State<DriverLiveCockpitPanel> {
                       onPressed: _acting
                           ? null
                           : () => widget.onOpenOrderDetails!(trip),
-                      icon: const Icon(Icons.task_alt_rounded, size: 18),
+                      icon: const GhstButtonIcon(Icons.task_alt_rounded, size: 18),
                       label: const Text('Xác nhận giao & đối soát'),
                     ),
                   FilledButton.tonalIcon(
                     key: const ValueKey('driver-cockpit-push-gps'),
                     onPressed: _acting ? null : () => _broadcastRealGps(trip),
-                    icon: const Icon(Icons.my_location_rounded, size: 18),
+                    icon: const GhstButtonIcon(Icons.my_location_rounded, size: 18),
                     label: const Text('Phát định vị GPS'),
                   ),
                   if (waypoints.length >= 2)
                     OutlinedButton.icon(
                       onPressed: () => _openGoogleDirections(waypoints),
-                      icon: const Icon(Icons.directions_outlined, size: 18),
+                      icon: const GhstButtonIcon(Icons.directions_outlined, size: 18),
                       label: const Text('Chỉ đường Google Maps'),
                     ),
                   if (recipientPhone.isNotEmpty)
@@ -1552,7 +1572,7 @@ class _DriverLiveCockpitPanelState extends State<DriverLiveCockpitPanel> {
                       onPressed: () => launchUrl(
                         Uri(scheme: 'tel', path: recipientPhone),
                       ),
-                      icon: const Icon(Icons.call_outlined, size: 18),
+                      icon: const GhstButtonIcon(Icons.call_outlined, size: 18),
                       label: const Text('Gọi người nhận'),
                     ),
                   if (const {'inTransit', 'returning'}.contains(status)) ...[
@@ -1560,7 +1580,7 @@ class _DriverLiveCockpitPanelState extends State<DriverLiveCockpitPanel> {
                       if (!completedCheckpoints.contains('stop:$i'))
                         ActionChip(
                           key: ValueKey('driver-cockpit-checkpoint-$i'),
-                          avatar: const Icon(Icons.place_outlined, size: 16),
+                          avatar: const GhstButtonIcon(Icons.place_outlined, size: 16),
                           label: Text('Đã qua điểm dừng ${i + 1}'),
                           onPressed: _acting
                               ? null
@@ -1574,7 +1594,7 @@ class _DriverLiveCockpitPanelState extends State<DriverLiveCockpitPanel> {
                         !completedCheckpoints.contains('return_leg'))
                       ActionChip(
                         key: const ValueKey('driver-cockpit-checkpoint-return'),
-                        avatar: const Icon(Icons.sync_alt, size: 16),
+                        avatar: const GhstButtonIcon(Icons.sync_alt, size: 16),
                         label: const Text('Hoàn tất khứ hồi'),
                         onPressed: _acting
                             ? null

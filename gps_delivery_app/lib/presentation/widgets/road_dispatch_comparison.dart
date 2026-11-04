@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/gps/osrm_dispatch_service.dart';
 import '../../core/utils/geo_math.dart';
 import '../../domain/entities/geo_point.dart';
+import 'ghst_button_icon.dart';
 
 class RoadDispatchComparison extends StatefulWidget {
   const RoadDispatchComparison({
@@ -100,7 +101,7 @@ class _RoadDispatchComparisonState extends State<RoadDispatchComparison> {
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Icon(Icons.compare_arrows),
+                  : const GhstButtonIcon(Icons.compare_arrows),
             ),
           ],
         ),
@@ -148,14 +149,16 @@ class _RoadDispatchComparisonState extends State<RoadDispatchComparison> {
             'Ước tính đường ô tô, chưa gồm giao thông trực tiếp.',
             style: TextStyle(fontSize: 11),
           ),
-          TextButton(
+          TextButton.icon(
             style: TextButton.styleFrom(
               alignment: Alignment.centerLeft,
               padding: EdgeInsets.zero,
             ),
             onPressed: () =>
                 launchUrl(Uri.parse('https://www.openstreetmap.org/copyright')),
-            child: const Text(
+            icon: const GhstButtonIcon.glyph(GhstActionKind.route, size: 16),
+
+            label: const Text(
               'OSRM · © OpenStreetMap contributors',
               style: TextStyle(fontSize: 10),
             ),

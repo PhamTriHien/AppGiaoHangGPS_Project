@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/integrations/cloud_account_session.dart';
 import '../../core/integrations/cloud_session_lease.dart';
 import '../../core/network/public_json_api.dart';
+import 'ghst_button_icon.dart';
 
 const partnerRoleNames = {'merchant': 'Cửa hàng', 'driver': 'Tài xế'};
 const partnerStateNames = {
@@ -101,7 +102,7 @@ class _CloudMembershipPanelState extends State<CloudMembershipPanel> {
                       runSpacing: 4,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        Icon(
+                        GhstButtonIcon(
                           role == 'merchant'
                               ? Icons.storefront_outlined
                               : Icons.delivery_dining,
@@ -112,7 +113,7 @@ class _CloudMembershipPanelState extends State<CloudMembershipPanel> {
                           TextButton.icon(
                             key: ValueKey('request-$role'),
                             onPressed: _busy ? null : () => _request(role),
-                            icon: const Icon(Icons.person_add_alt_1),
+                            icon: const GhstButtonIcon(Icons.person_add_alt_1),
                             label: Text(
                               state == null ? 'Đăng ký' : 'Gửi lại yêu cầu',
                             ),

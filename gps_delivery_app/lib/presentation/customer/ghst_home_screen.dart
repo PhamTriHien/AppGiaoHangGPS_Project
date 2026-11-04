@@ -12,6 +12,7 @@ import '../screens/cloud_promo_events_screen.dart';
 import '../widgets/animated_3d_ui_icons.dart';
 import '../widgets/cloud_order_labels.dart';
 import '../widgets/cloud_session_boundary.dart';
+import '../widgets/ghst_button_icon.dart';
 import '../widgets/motion_3d_effects.dart';
 import '../widgets/system_state_screens.dart';
 
@@ -282,8 +283,9 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
           ),
           TextButton.icon(
             onPressed: _load,
-            icon: Icon(
-              Icons.refresh,
+            icon: GhstButtonIcon.glyph(
+              GhstActionKind.refresh,
+              size: 16,
               color: onDark ? Colors.white : tokens.primary,
             ),
             label: Text(
@@ -520,10 +522,15 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
                     ],
                   ),
                 ),
-                TextButton(
+                TextButton.icon(
                   key: const ValueKey('btn-home-promo-hub'),
                   onPressed: () => _openPromo(0),
-                  child: const Text('Mở trung tâm'),
+                  icon: const GhstAiIcon(
+                    style: Icon3dStyle.luckyWheel,
+                    size: 17,
+                    circular: true,
+                  ),
+                  label: const Text('Mở trung tâm'),
                 ),
               ],
             ),
@@ -688,10 +695,10 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
                 side: BorderSide(color: Colors.white.withValues(alpha: 0.28)),
               ),
               onPressed: widget.onAddresses,
-              icon: const Icon(
-                Icons.bookmarks_outlined,
-                size: 15,
-                color: Colors.white,
+              icon: const GhstAiIcon(
+                style: Icon3dStyle.addressBook,
+                size: 18,
+                circular: true,
               ),
               label: const Text('Sổ địa chỉ'),
             ),
@@ -702,10 +709,10 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
                 side: BorderSide(color: Colors.white.withValues(alpha: 0.28)),
               ),
               onPressed: widget.onOrders,
-              icon: const Icon(
-                Icons.receipt_long_outlined,
-                size: 15,
-                color: Colors.white,
+              icon: const GhstAiIcon(
+                style: Icon3dStyle.orderReceipt,
+                size: 18,
+                circular: true,
               ),
               label: const Text('Đơn hàng của tôi'),
             ),
@@ -717,10 +724,10 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
                   side: BorderSide(color: Colors.white.withValues(alpha: 0.28)),
                 ),
                 onPressed: widget.onAiAssistant,
-                icon: const Icon(
-                  Icons.auto_awesome_outlined,
-                  size: 15,
-                  color: Colors.white,
+                icon: const GhstAiIcon(
+                  style: Icon3dStyle.aiAssistant,
+                  size: 18,
+                  circular: true,
                 ),
                 label: const Text('Hỏi Trợ lý AI'),
               ),
@@ -731,10 +738,10 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
                   foregroundColor: tokens.onAccentInk,
                 ),
                 onPressed: () => widget.onCreateOrder({}),
-                icon: Icon(
-                  Icons.arrow_forward_rounded,
-                  size: 15,
-                  color: tokens.onAccentInk,
+                icon: const GhstAiIcon(
+                  style: Icon3dStyle.createPlus,
+                  size: 18,
+                  circular: true,
                 ),
                 label: const Text('Đặt đơn'),
               ),
@@ -803,13 +810,24 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
               borderRadius: BorderRadius.circular(999),
               border: Border.all(color: tokens.emerald.border),
             ),
-            child: Text(
-              'Hành trình',
-              style: TextStyle(
-                fontSize: 11.5,
-                fontWeight: FontWeight.w800,
-                color: tokens.emerald.foreground,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GhstButtonIcon.glyph(
+                  GhstActionKind.route,
+                  size: 13.5,
+                  color: tokens.emerald.foreground,
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  'Hành trình',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w800,
+                    color: tokens.emerald.foreground,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -836,16 +854,11 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
             (row) => _route(row).length >= 2,
           )) ...[
             const SizedBox(height: 8),
-            DropdownButtonFormField<String>(
-              key: ValueKey(routePts.length >= 2 ? _trackedOrder!['id'] : ''),
-              isExpanded: true,
-              initialValue: routePts.length >= 2
+            DropdownButtonFormField<String>(icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 18), key: ValueKey(routePts.length >= 2 ? _trackedOrder!['id'] : ''), isExpanded: true, initialValue: routePts.length >= 2
                   ? '${_trackedOrder!['id']}'
-                  : '',
-              decoration: const InputDecoration(
+                  : '', decoration: const InputDecoration(
                 labelText: 'Hành trình đơn hàng',
-              ),
-              items: [
+              ), items: [
                 const DropdownMenuItem(
                   value: '',
                   child: Text('Địa chỉ đã lưu'),
@@ -856,9 +869,7 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
                       value: '${order['id']}',
                       child: Text('${order['tracking_code'] ?? order['id']}'),
                     ),
-              ],
-              onChanged: (id) => setState(() => _trackedId = id),
-            ),
+              ], onChanged: (id) => setState(() => _trackedId = id),),
           ],
           const SizedBox(height: 10),
           ClipRRect(
@@ -902,9 +913,10 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
           _heading(
             tokens,
             'Đơn gần đây',
-            action: TextButton(
+            action: TextButton.icon(
               onPressed: widget.onOrders,
-              child: const Text('Xem tất cả'),
+              icon: const GhstButtonIcon.glyph(GhstActionKind.forward, size: 15),
+              label: const Text('Xem tất cả'),
             ),
           ),
           if (_loading.contains('orders') ||
@@ -915,19 +927,12 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
             for (final order in orders.take(widget.trackingOnly ? 10 : 3))
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: tokens.sapphire.fill,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: tokens.sapphire.border),
-                  ),
-                  child: Icon(
-                    Icons.local_shipping_outlined,
-                    color: tokens.sapphire.icon,
-                    size: 19,
-                  ),
+                leading: GhstAiIcon(
+                  style: Icon3dStyle.scooterExpress,
+                  size: 38,
+                  borderRadius: 10,
+                  borderColor: tokens.sapphire.border,
+                  glowColor: tokens.sapphire.icon,
                 ),
                 title: Text(
                   '${order['tracking_code'] ?? order['id']}',
@@ -940,7 +945,11 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
                   '${cloudStatuses[order['status']] ?? order['status'] ?? ''}',
                   style: TextStyle(color: tokens.inkSecondary),
                 ),
-                trailing: Icon(Icons.chevron_right, color: tokens.inkMuted),
+                trailing: GhstButtonIcon.glyph(
+                  GhstActionKind.forward,
+                  size: 18,
+                  color: tokens.inkMuted,
+                ),
                 onTap: () => _details(order),
               ),
         ],
@@ -959,9 +968,10 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
           _heading(
             tokens,
             'Khám phá cửa hàng',
-            action: TextButton(
+            action: TextButton.icon(
               onPressed: widget.onCatalog,
-              child: const Text('Xem tất cả'),
+              icon: const GhstButtonIcon.glyph(GhstActionKind.forward, size: 15),
+              label: const Text('Xem tất cả'),
             ),
           ),
           if (_loading.contains('catalog') ||
@@ -978,18 +988,22 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
                     width: 48,
                     height: 48,
                     child: (product['image_url'] as String? ?? '').isEmpty
-                        ? ColoredBox(
-                            color: tokens.sapphire.fill,
-                            child: Icon(
-                              Icons.storefront_outlined,
-                              color: tokens.sapphire.icon,
-                            ),
+                        ? GhstAiIcon(
+                            style: Icon3dStyle.merchantStore,
+                            size: 48,
+                            borderRadius: 10,
+                            borderColor: tokens.sapphire.border,
                           )
                         : Image.network(
                             '${product['image_url']}',
                             fit: BoxFit.cover,
-                            errorBuilder: (_, _, _) =>
-                                const Icon(Icons.image_not_supported_outlined),
+                            errorBuilder: (_, _, _) => Center(
+                              child: GhstButtonIcon.glyph(
+                                GhstActionKind.image,
+                                size: 20,
+                                color: tokens.inkMuted,
+                              ),
+                            ),
                           ),
                   ),
                 ),
@@ -1039,7 +1053,10 @@ class _GhstHomeScreenState extends State<GhstHomeScreen> {
               child: IconButton(
                 tooltip: 'Tải lại trang chủ',
                 onPressed: _loading.isEmpty ? _load : null,
-                icon: const Icon(Icons.refresh),
+                icon: const GhstButtonIcon.glyph(
+                  GhstActionKind.refresh,
+                  size: 18,
+                ),
               ),
             ),
             if (!widget.trackingOnly) ...[

@@ -2654,12 +2654,12 @@ void main() {
         );
         await tester.pump(const Duration(milliseconds: 80));
 
-        // Mặc định không có route -> zoom = 15; bấm '+' 3 lần liên tiếp lên zoom = 18
-        await tester.tap(find.text('+'));
+        // Mặc định không có route -> zoom = 15; bấm 'Phóng to bản đồ' 3 lần liên tiếp lên zoom = 18
+        await tester.tap(find.byTooltip('Phóng to bản đồ'));
         await tester.pump();
-        await tester.tap(find.text('+'));
+        await tester.tap(find.byTooltip('Phóng to bản đồ'));
         await tester.pump();
-        await tester.tap(find.text('+'));
+        await tester.tap(find.byTooltip('Phóng to bản đồ'));
         await tester.pump();
 
         // Bấm nút Định vị hiện tại: phải căn tâm về realBienHoaFix nhưng GIỮ NGUYÊN zoom = 18 (không reset thu nhỏ về 16)
@@ -2677,9 +2677,9 @@ void main() {
             (tappedGeo!.longitude - realBienHoaFix.longitude).abs();
         expect(lonDeltaAtZoom18, closeTo(360.0 / (2 * (1 << 18)), 1e-4));
 
-        // Khi thu nhỏ về zoom = 14 (bấm '−' 4 lần) rồi bấm lại Định vị hiện tại: vẫn giữ nguyên zoom = 14
+        // Khi thu nhỏ về zoom = 14 (bấm 'Thu nhỏ bản đồ' 4 lần) rồi bấm lại Định vị hiện tại: vẫn giữ nguyên zoom = 14
         for (var i = 0; i < 4; i++) {
-          await tester.tap(find.text('−'));
+          await tester.tap(find.byTooltip('Thu nhỏ bản đồ'));
           await tester.pump();
         }
         await tester.tap(find.byKey(const ValueKey('btn_map_my_real_gps')));

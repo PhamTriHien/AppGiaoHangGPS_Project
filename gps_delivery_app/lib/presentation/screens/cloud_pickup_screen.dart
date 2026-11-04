@@ -7,6 +7,7 @@ import '../widgets/animated_3d_ui_icons.dart';
 import '../widgets/cloud_logistics_panels.dart';
 import '../widgets/cloud_order_labels.dart';
 import '../widgets/cloud_session_boundary.dart';
+import '../widgets/ghst_button_icon.dart';
 
 Future<void> openCloudPickups(
   BuildContext context,
@@ -239,14 +240,10 @@ class _CloudPickupScreenState extends State<CloudPickupScreen> {
         if (_loaded && _addresses.isEmpty)
           const Text('Thêm địa chỉ kho vào sổ địa chỉ trước khi đặt lịch.')
         else
-          DropdownButtonFormField<String>(
-            initialValue: _addressId,
-            isExpanded: true,
-            decoration: const InputDecoration(
+          DropdownButtonFormField<String>(icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 18), initialValue: _addressId, isExpanded: true, decoration: const InputDecoration(
               labelText: 'Kho lấy hàng',
               border: OutlineInputBorder(),
-            ),
-            items: [
+            ), items: [
               for (final a in _addresses)
                 DropdownMenuItem(
                   value: '${a['id']}',
@@ -255,46 +252,32 @@ class _CloudPickupScreenState extends State<CloudPickupScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-            ],
-            onChanged: _busy ? null : (v) => setState(() => _addressId = v),
-          ),
+            ], onChanged: _busy ? null : (v) => setState(() => _addressId = v),),
         const SizedBox(height: 12),
-        DropdownButtonFormField<String>(
-          initialValue: _vehicle,
-          isExpanded: true,
-          decoration: const InputDecoration(
+        DropdownButtonFormField<String>(icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 18), initialValue: _vehicle, isExpanded: true, decoration: const InputDecoration(
             labelText: 'Loại xe thu gom',
             border: OutlineInputBorder(),
-          ),
-          items: [
+          ), items: [
             for (final v in cloudPickupVehicles.entries)
               DropdownMenuItem(value: v.key, child: Text(v.value)),
-          ],
-          onChanged: _busy
+          ], onChanged: _busy
               ? null
               : (v) => setState(() {
                   _vehicle = v!;
                   _form.currentState?.validate();
-                }),
-        ),
+                }),),
         const SizedBox(height: 12),
-        DropdownButtonFormField<String>(
-          initialValue: _slot,
-          isExpanded: true,
-          decoration: const InputDecoration(
+        DropdownButtonFormField<String>(icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 18), initialValue: _slot, isExpanded: true, decoration: const InputDecoration(
             labelText: 'Khung giờ hẹn lấy',
             border: OutlineInputBorder(),
-          ),
-          items: [
+          ), items: [
             for (final s in cloudPickupSlots.entries)
               DropdownMenuItem(value: s.key, child: Text(s.value)),
-          ],
-          onChanged: _busy ? null : (v) => setState(() => _slot = v!),
-        ),
+          ], onChanged: _busy ? null : (v) => setState(() => _slot = v!),),
         const SizedBox(height: 12),
         OutlinedButton.icon(
           onPressed: _busy ? null : _pickDate,
-          icon: const Icon(Icons.event_outlined),
+          icon: const GhstButtonIcon(Icons.event_outlined),
           label: Text(
             _date == null
                 ? 'Chọn ngày thu gom'
@@ -362,7 +345,7 @@ class _CloudPickupScreenState extends State<CloudPickupScreen> {
         ),
         FilledButton.icon(
           onPressed: _busy || _addresses.isEmpty ? null : _create,
-          icon: const Icon(Icons.local_shipping_outlined),
+          icon: const GhstButtonIcon(Icons.local_shipping_outlined),
           label: const Text('Đặt lịch xe thu gom'),
         ),
       ],
@@ -414,15 +397,11 @@ class _CloudPickupScreenState extends State<CloudPickupScreen> {
               children: [
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 320),
-                  child: DropdownButtonFormField<String>(
-                    initialValue: _selectedDriver[id],
-                    isExpanded: true,
-                    decoration: const InputDecoration(
+                  child: DropdownButtonFormField<String>(icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 18), initialValue: _selectedDriver[id], isExpanded: true, decoration: const InputDecoration(
                       labelText: 'Tài xế đã duyệt',
                       border: OutlineInputBorder(),
                       isDense: true,
-                    ),
-                    items: [
+                    ), items: [
                       for (final d in _drivers)
                         DropdownMenuItem(
                           value: '${d['user_id']}',
@@ -431,11 +410,9 @@ class _CloudPickupScreenState extends State<CloudPickupScreen> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                    ],
-                    onChanged: _busy
+                    ], onChanged: _busy
                         ? null
-                        : (v) => setState(() => _selectedDriver[id] = v!),
-                  ),
+                        : (v) => setState(() => _selectedDriver[id] = v!),),
                 ),
                 FilledButton.icon(
                   onPressed: _busy || _selectedDriver[id] == null
@@ -451,7 +428,7 @@ class _CloudPickupScreenState extends State<CloudPickupScreen> {
                           ),
                           'Đã điều tài xế nhận phiếu thu gom.',
                         ),
-                  icon: const Icon(Icons.local_shipping_outlined),
+                  icon: const GhstButtonIcon(Icons.local_shipping_outlined),
                   label: const Text('Điều xe thu gom'),
                 ),
               ],
@@ -491,7 +468,7 @@ class _CloudPickupScreenState extends State<CloudPickupScreen> {
                     IconButton(
                       tooltip: 'Tải lại',
                       onPressed: _busy ? null : _load,
-                      icon: const Icon(Icons.refresh),
+                      icon: const GhstButtonIcon(Icons.refresh),
                     ),
                   ],
                 ),

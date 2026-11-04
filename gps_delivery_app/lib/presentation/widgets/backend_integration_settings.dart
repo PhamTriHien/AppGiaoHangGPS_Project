@@ -7,6 +7,7 @@ import '../../core/integrations/delivery_api_client.dart';
 import '../../core/network/public_json_api.dart';
 import '../../core/theme/admin_studio_theme.dart';
 import 'backend_readiness_dialog.dart';
+import 'ghst_button_icon.dart';
 
 class BackendIntegrationSettings extends StatefulWidget {
   const BackendIntegrationSettings({super.key, this.api});
@@ -245,19 +246,13 @@ class _BackendIntegrationSettingsState
       final options = (field['options'] as List).cast<String>();
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
-        child: DropdownButtonFormField<String>(
-          initialValue: options.contains(value) ? value : null,
-          isExpanded: true,
-          decoration: InputDecoration(labelText: field['label'].toString()),
-          items: options
+        child: DropdownButtonFormField<String>(icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 18), initialValue: options.contains(value) ? value : null, isExpanded: true, decoration: InputDecoration(labelText: field['label'].toString()), items: options
               .map(
                 (value) => DropdownMenuItem(value: value, child: Text(value)),
               )
-              .toList(),
-          onChanged: enabled
+              .toList(), onChanged: enabled
               ? (value) => setState(() => _controllers[key]!.text = value ?? '')
-              : null,
-        ),
+              : null,),
       );
     }
     if (field['type'] == 'boolean') {
@@ -324,7 +319,7 @@ class _BackendIntegrationSettingsState
                   tooltip: _clear.contains(key)
                       ? 'Giữ giá trị hiện tại'
                       : 'Xóa giá trị đã lưu',
-                  icon: Icon(
+                  icon: GhstButtonIcon(
                     _clear.contains(key) ? Icons.undo : Icons.delete_outline,
                   ),
                   onPressed: () => setState(() {
@@ -419,7 +414,7 @@ class _BackendIntegrationSettingsState
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: p.line),
               ),
-              child: Icon(
+              child: GhstButtonIcon(
                 _providerIcon(id),
                 size: 19,
                 color: active ? p.acidInk : p.ink,
@@ -450,7 +445,7 @@ class _BackendIntegrationSettingsState
                     children: [
                       Row(
                         children: [
-                          Icon(
+                          GhstButtonIcon(
                             Icons.webhook_outlined,
                             size: 17,
                             color: p.ink,
@@ -480,7 +475,7 @@ class _BackendIntegrationSettingsState
                                 });
                               }
                             },
-                            icon: Icon(
+                            icon: GhstButtonIcon(
                               Icons.copy_rounded,
                               size: 17,
                               color: p.ink,
@@ -529,7 +524,7 @@ class _BackendIntegrationSettingsState
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
+                      GhstButtonIcon(
                         check['verified'] == true
                             ? Icons.check_circle_outline
                             : Icons.info_outline,
@@ -579,7 +574,7 @@ class _BackendIntegrationSettingsState
                       FilledButton.icon(
                         key: ValueKey('save-integration-$id'),
                         onPressed: _busy ? null : () => _save(id, provider),
-                        icon: const Icon(Icons.save_outlined, size: 18),
+                        icon: const GhstButtonIcon(Icons.save_outlined, size: 18),
                         label: const Text('Lưu'),
                       ),
                       OutlinedButton.icon(
@@ -590,7 +585,7 @@ class _BackendIntegrationSettingsState
                             : id == 'backend'
                             ? _readiness
                             : () => _test(id),
-                        icon: const Icon(
+                        icon: const GhstButtonIcon(
                           Icons.network_check_outlined,
                           size: 18,
                         ),
@@ -678,7 +673,7 @@ class _BackendIntegrationSettingsState
                               color: AdminStudioColors.shellLine,
                             ),
                           ),
-                          child: const Icon(
+                          child: const GhstButtonIcon(
                             Icons.hub_outlined,
                             size: 20,
                             color: AdminStudioColors.acid,
@@ -723,7 +718,7 @@ class _BackendIntegrationSettingsState
                             backgroundColor: AdminStudioColors.acid,
                             foregroundColor: p.onAccentInk,
                           ),
-                          icon: const Icon(Icons.settings_outlined, size: 18),
+                          icon: const GhstButtonIcon(Icons.settings_outlined, size: 18),
                           label: Text(
                             _providers == null
                                 ? 'Quản lý API backend'
@@ -746,7 +741,7 @@ class _BackendIntegrationSettingsState
                               ),
                             ),
                             onPressed: _busy ? null : _readiness,
-                            icon: const Icon(Icons.fact_check_outlined),
+                            icon: const GhstButtonIcon(Icons.fact_check_outlined),
                           ),
                         if (_providers != null)
                           IconButton(
@@ -772,7 +767,7 @@ class _BackendIntegrationSettingsState
                                       setState(() => _usage = response);
                                     }
                                   }),
-                            icon: const Icon(Icons.monitor_heart_outlined),
+                            icon: const GhstButtonIcon(Icons.monitor_heart_outlined),
                           ),
                         if (_providers != null)
                           IconButton(
@@ -801,7 +796,7 @@ class _BackendIntegrationSettingsState
                                     );
                                   }
                                 }),
-                          icon: const Icon(Icons.history),
+                          icon: const GhstButtonIcon(Icons.history),
                         ),
                       ],
                     ),
@@ -839,7 +834,7 @@ class _BackendIntegrationSettingsState
                       color: p.line,
                     ),
                   ),
-                  child: Icon(
+                  child: GhstButtonIcon(
                     _loopback ? Icons.computer_outlined : Icons.cloud_outlined,
                     size: 18,
                     color: p.violet,

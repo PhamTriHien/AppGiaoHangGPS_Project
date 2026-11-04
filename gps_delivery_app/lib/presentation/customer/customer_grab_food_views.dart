@@ -191,7 +191,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                       color: const Color(0xFF00B14F),
                       border: Border.all(color: AppColors.ink, width: 1.2),
                     ),
-                    child: const Icon(
+                    child: const GhstButtonIcon(
                       Icons.restaurant_menu_rounded,
                       color: Colors.white,
                       size: 18,
@@ -239,7 +239,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                 ),
                 onPressed: () =>
                     _rebuildCustomerUi(() => _selectedScreenIndex = 13),
-                icon: const Icon(Icons.shopping_bag_outlined, size: 15),
+                icon: const GhstButtonIcon(Icons.shopping_bag_outlined, size: 15),
                 label: Text(
                   cartTotalItems > 0
                       ? 'Thực đơn & Giỏ ($cartTotalItems)'
@@ -260,12 +260,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                 final selected = _selectedFoodMealSlot == slot;
                 return Padding(
                   padding: const EdgeInsets.only(right: 6),
-                  child: ChoiceChip(
-                    visualDensity: VisualDensity.compact,
-                    selected: selected,
-                    selectedColor: AppColors.acid,
-                    backgroundColor: AppColors.paper,
-                    label: Text(
+                  child: ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel(slot.displayName, size: 15, color: AppColors.ink), visualDensity: VisualDensity.compact, selected: selected, selectedColor: AppColors.acid, backgroundColor: AppColors.paper, label: Text(
                       slot.displayName,
                       style: TextStyle(
                         fontSize: 11,
@@ -274,10 +269,8 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                             : FontWeight.w700,
                         color: AppColors.ink,
                       ),
-                    ),
-                    onSelected: (_) =>
-                        _rebuildCustomerUi(() => _selectedFoodMealSlot = slot),
-                  ),
+                    ), onSelected: (_) =>
+                        _rebuildCustomerUi(() => _selectedFoodMealSlot = slot),),
                 );
               }).toList(),
             ),
@@ -422,7 +415,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                                     heroDish,
                                     openDedicatedScreen: true,
                                   ),
-                                  icon: const Icon(Icons.add, size: 14),
+                                  icon: const GhstButtonIcon(Icons.add, size: 14),
                                   label: const Text(
                                     'Chọn món',
                                     style: TextStyle(
@@ -450,7 +443,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                                         priceVnd: heroDish.priceVnd,
                                         isColdItem: heroDish.isColdItem,
                                       ),
-                                  icon: const Icon(
+                                  icon: const GhstButtonIcon(
                                     Icons.edit_location_alt_outlined,
                                     size: 13,
                                   ),
@@ -593,7 +586,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                     isDense: true,
                     labelText: 'Địa chỉ nhận đồ ăn của bạn',
                     hintText: 'Nhập số nhà, tòa nhà hoặc bấm định vị GPS...',
-                    prefixIcon: const Icon(
+                    prefixIcon: const GhstButtonIcon(
                       Icons.place_rounded,
                       color: AppColors.pink,
                       size: 19,
@@ -623,7 +616,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                           _foodDropoffCtrl.text = addr;
                         });
                       },
-                      icon: const Icon(
+                      icon: const GhstButtonIcon(
                         Icons.my_location_rounded,
                         color: Color(0xFF0284C7),
                         size: 18,
@@ -641,7 +634,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                     return ActionChip(
                       visualDensity: VisualDensity.compact,
                       backgroundColor: Colors.white,
-                      avatar: const Icon(
+                      avatar: const GhstButtonIcon(
                         Icons.bookmark_rounded,
                         size: 13,
                         color: AppColors.violet,
@@ -682,14 +675,14 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                   isDense: true,
                   hintText:
                       'Tìm quán ăn, phở, cơm tấm, bánh mì, trà sữa, healthy...',
-                  prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                  prefixIcon: const GhstButtonIcon(Icons.search_rounded, size: 20),
                   suffixIcon: _foodSearchCtrl.text.isNotEmpty
                       ? IconButton(
                           tooltip: 'Xóa từ khóa',
                           onPressed: () => _rebuildCustomerUi(() {
                             _foodSearchCtrl.clear();
                           }),
-                          icon: const Icon(Icons.clear_rounded, size: 18),
+                          icon: const GhstButtonIcon(Icons.clear_rounded, size: 18),
                         )
                       : null,
                 ),
@@ -709,12 +702,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                 runSpacing: 6,
                 children: MealTimeSlot.values.map((slot) {
                   final selected = _selectedFoodMealSlot == slot;
-                  return ChoiceChip(
-                    visualDensity: VisualDensity.compact,
-                    selected: selected,
-                    selectedColor: AppColors.acid,
-                    backgroundColor: AppColors.paper,
-                    label: Text(
+                  return ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel(slot.displayName, size: 15, color: AppColors.ink), visualDensity: VisualDensity.compact, selected: selected, selectedColor: AppColors.acid, backgroundColor: AppColors.paper, label: Text(
                       slot.displayName,
                       style: TextStyle(
                         fontSize: 11.5,
@@ -723,10 +711,8 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                             : FontWeight.w700,
                         color: AppColors.ink,
                       ),
-                    ),
-                    onSelected: (_) =>
-                        _rebuildCustomerUi(() => _selectedFoodMealSlot = slot),
-                  );
+                    ), onSelected: (_) =>
+                        _rebuildCustomerUi(() => _selectedFoodMealSlot = slot),);
                 }).toList(),
               ),
               const SizedBox(height: 10),
@@ -744,13 +730,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                 runSpacing: 6,
                 children: GrabFoodQuickFilter.values.map((flt) {
                   final selected = _selectedFoodQuickFilter == flt;
-                  return FilterChip(
-                    visualDensity: VisualDensity.compact,
-                    selected: selected,
-                    selectedColor: const Color(0xFFDCFCE7),
-                    backgroundColor: AppColors.paper,
-                    checkmarkColor: const Color(0xFF166534),
-                    label: Text(
+                  return FilterChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel(flt.label, size: 15, color: (selected) ? const Color(0xFF166534) : AppColors.ink), visualDensity: VisualDensity.compact, selected: selected, selectedColor: const Color(0xFFDCFCE7), backgroundColor: AppColors.paper, label: Text(
                       flt.label,
                       style: TextStyle(
                         fontSize: 11.5,
@@ -759,10 +739,8 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                             : FontWeight.w700,
                         color: AppColors.ink,
                       ),
-                    ),
-                    onSelected: (_) =>
-                        _rebuildCustomerUi(() => _selectedFoodQuickFilter = flt),
-                  );
+                    ), onSelected: (_) =>
+                        _rebuildCustomerUi(() => _selectedFoodQuickFilter = flt),);
                 }).toList(),
               ),
             ],
@@ -781,7 +759,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
               children: [
                 const Row(
                   children: [
-                    Icon(
+                    GhstButtonIcon(
                       Icons.history_edu_rounded,
                       size: 18,
                       color: Color(0xFFB45309),
@@ -872,7 +850,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                                       ),
                                     );
                                   },
-                                  icon: const Icon(Icons.replay_rounded, size: 13),
+                                  icon: const GhstButtonIcon(Icons.replay_rounded, size: 13),
                                   label: const Text(
                                     'Đặt lại vào giỏ',
                                     style: TextStyle(
@@ -881,7 +859,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                                     ),
                                   ),
                                 ),
-                              OutlinedButton(
+                              OutlinedButton.icon(
                                 style: OutlinedButton.styleFrom(
                                   visualDensity: VisualDensity.compact,
                                   padding: const EdgeInsets.symmetric(
@@ -899,7 +877,9 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                                       dishName: fav.dishSummary,
                                       priceVnd: fav.lastFoodSubtotalVnd,
                                     ),
-                                child: const Text(
+                                icon: const GhstButtonIcon.glyph(GhstActionKind.edit, size: 16),
+
+                                label: const Text(
                                   'Điền Tạo đơn',
                                   style: TextStyle(fontSize: 11),
                                 ),
@@ -968,7 +948,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
         ),
         child: Column(
           children: [
-            const Icon(
+            const GhstButtonIcon(
               Icons.no_meals_outlined,
               size: 40,
               color: AppColors.textSecondary,
@@ -996,7 +976,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                 _selectedFoodMealSlot = MealTimeSlot.auto;
                 _selectedFoodQuickFilter = GrabFoodQuickFilter.all;
               }),
-              icon: const Icon(Icons.filter_alt_off_outlined, size: 16),
+              icon: const GhstButtonIcon(Icons.filter_alt_off_outlined, size: 16),
               label: const Text('Đặt lại bộ lọc'),
             ),
           ],
@@ -1124,7 +1104,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                       priceVnd: firstDish.priceVnd,
                       isColdItem: firstDish.isColdItem,
                     ),
-                    icon: const Icon(
+                    icon: const GhstButtonIcon(
                       Icons.edit_location_alt_outlined,
                       size: 14,
                     ),
@@ -1315,7 +1295,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                               ),
                               onPressed: () =>
                                   _addGrabFoodItemToCart(context, dish),
-                              icon: const Icon(Icons.add, size: 15),
+                              icon: const GhstButtonIcon(Icons.add, size: 15),
                               label: const Text(
                                 'Chọn',
                                 style: TextStyle(
@@ -1333,7 +1313,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                                   tooltip: 'Giảm số lượng',
                                   onPressed: () =>
                                       _decrementGrabFoodItemInCart(dish.id),
-                                  icon: const Icon(
+                                  icon: const GhstButtonIcon(
                                     Icons.remove_circle_outline,
                                     color: AppColors.danger,
                                     size: 20,
@@ -1352,7 +1332,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                                   tooltip: 'Thêm số lượng',
                                   onPressed: () =>
                                       _addGrabFoodItemToCart(context, dish),
-                                  icon: const Icon(
+                                  icon: const GhstButtonIcon(
                                     Icons.add_circle_rounded,
                                     color: Color(0xFF00B14F),
                                     size: 20,
@@ -1481,7 +1461,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
         children: [
           Row(
             children: [
-              const Icon(
+              const GhstButtonIcon(
                 Icons.shopping_bag_rounded,
                 color: Color(0xFF00B14F),
                 size: 20,
@@ -1498,14 +1478,16 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                 ),
               ),
               if (_grabFoodCart.isNotEmpty)
-                TextButton(
+                TextButton.icon(
                   style: TextButton.styleFrom(
                     visualDensity: VisualDensity.compact,
                     foregroundColor: AppColors.danger,
                   ),
                   onPressed: () =>
                       _rebuildCustomerUi(() => _grabFoodCart.clear()),
-                  child: const Text(
+                  icon: const GhstButtonIcon.glyph(GhstActionKind.delete, size: 16),
+
+                  label: const Text(
                     'Xóa giỏ',
                     style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800),
                   ),
@@ -1519,7 +1501,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
               color: AppColors.paper,
               child: const Column(
                 children: [
-                  Icon(
+                  GhstButtonIcon(
                     Icons.fastfood_outlined,
                     size: 30,
                     color: AppColors.textSecondary,
@@ -1593,13 +1575,13 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                       visualDensity: VisualDensity.compact,
                       onPressed: () =>
                           _decrementGrabFoodItemInCart(entry.item.id),
-                      icon: const Icon(Icons.remove_circle_outline, size: 18),
+                      icon: const GhstButtonIcon(Icons.remove_circle_outline, size: 18),
                     ),
                     IconButton(
                       visualDensity: VisualDensity.compact,
                       onPressed: () =>
                           _addGrabFoodItemToCart(context, entry.item),
-                      icon: const Icon(
+                      icon: const GhstButtonIcon(
                         Icons.add_circle_outline,
                         size: 18,
                         color: Color(0xFF00B14F),
@@ -1635,7 +1617,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
               decoration: const InputDecoration(
                 isDense: true,
                 labelText: 'Ghi chú cho quán (VD: ít đá, không hành...)',
-                prefixIcon: Icon(Icons.sticky_note_2_outlined, size: 17),
+                prefixIcon: GhstButtonIcon(Icons.sticky_note_2_outlined, size: 17),
               ),
             ),
             const SizedBox(height: 10),
@@ -1653,21 +1635,15 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                 (DeliveryServiceType.standard, 'Tiêu chuẩn'),
               ].map((opt) {
                 final selected = _foodDeliveryService == opt.$1;
-                return ChoiceChip(
-                  visualDensity: VisualDensity.compact,
-                  selected: selected,
-                  selectedColor: AppColors.acid,
-                  label: Text(
+                return ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel(opt.$2, size: 15, color: AppColors.ink), visualDensity: VisualDensity.compact, selected: selected, selectedColor: AppColors.acid, label: Text(
                     opt.$2,
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
                     ),
-                  ),
-                  onSelected: (_) => _rebuildCustomerUi(
+                  ), onSelected: (_) => _rebuildCustomerUi(
                     () => _foodDeliveryService = opt.$1,
-                  ),
-                );
+                  ),);
               }).toList(),
             ),
             const SizedBox(height: 8),
@@ -1750,21 +1726,15 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                 runSpacing: 6,
                 children: usableVouchers.take(4).map((v) {
                   final selected = _selectedFoodVoucherCode == v.code;
-                  return FilterChip(
-                    visualDensity: VisualDensity.compact,
-                    selected: selected,
-                    selectedColor: AppColors.acid,
-                    label: Text(
+                  return FilterChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel('${v.code} (${v.discountLabel})', size: 15, color: AppColors.ink), visualDensity: VisualDensity.compact, selected: selected, selectedColor: AppColors.acid, label: Text(
                       '${v.code} (${v.discountLabel})',
                       style: const TextStyle(
                         fontSize: 10.5,
                         fontWeight: FontWeight.w800,
                       ),
-                    ),
-                    onSelected: (on) => _rebuildCustomerUi(() {
+                    ), onSelected: (on) => _rebuildCustomerUi(() {
                       _selectedFoodVoucherCode = on ? v.code : null;
-                    }),
-                  );
+                    }),);
                 }).toList(),
               ),
             ],
@@ -1812,24 +1782,17 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                   'Chuyển khoản Ngân hàng',
                   'Quét mã VietQR',
                 ])
-                  ChoiceChip(
-                    visualDensity: VisualDensity.compact,
-                    label: Text(
+                  ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel(method, size: 15, color: (_foodPaymentMethod == method) ? Colors.white : null), visualDensity: VisualDensity.compact, label: Text(
                       method,
                       style: const TextStyle(fontSize: 11.5),
-                    ),
-                    selected: _foodPaymentMethod == method,
-                    selectedColor: const Color(0xFF00B14F),
-                    labelStyle: TextStyle(
+                    ), selected: _foodPaymentMethod == method, selectedColor: const Color(0xFF00B14F), labelStyle: TextStyle(
                       color: _foodPaymentMethod == method
                           ? Colors.white
                           : AppColors.ink,
                       fontWeight: FontWeight.w700,
-                    ),
-                    onSelected: (_) => _rebuildCustomerUi(
+                    ), onSelected: (_) => _rebuildCustomerUi(
                       () => _foodPaymentMethod = method,
-                    ),
-                  ),
+                    ),),
               ],
             ),
             if (_foodPaymentMethod != 'Tiền mặt khi nhận món') ...[
@@ -1934,7 +1897,7 @@ extension _CustomerGrabFoodViews on _CustomerSubsystemEntryState {
                   ),
                 );
               },
-              icon: const Icon(Icons.delivery_dining_rounded, size: 19),
+              icon: const GhstButtonIcon(Icons.delivery_dining_rounded, size: 19),
               label: const Text(
                 'Đặt món & Giao ngay',
                 style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w900),

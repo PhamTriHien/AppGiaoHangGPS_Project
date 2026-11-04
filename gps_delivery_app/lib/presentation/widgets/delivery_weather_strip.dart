@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/integrations/delivery_weather_service.dart';
 import '../../domain/entities/geo_point.dart';
+import 'ghst_button_icon.dart';
 
 class DeliveryWeatherStrip extends StatefulWidget {
   const DeliveryWeatherStrip({super.key, required this.point, this.service});
@@ -54,7 +55,7 @@ class _DeliveryWeatherStripState extends State<DeliveryWeatherStrip> {
             children: [
               Padding(
                 padding: const EdgeInsets.only(top: 10),
-                child: Icon(
+                child: GhstButtonIcon(
                   weather?.needsCaution == true
                       ? Icons.thunderstorm_outlined
                       : Icons.cloud_outlined,
@@ -105,7 +106,7 @@ class _DeliveryWeatherStripState extends State<DeliveryWeatherStrip> {
                             color: Colors.deepOrange,
                           ),
                         ),
-                      TextButton(
+                      TextButton.icon(
                         style: TextButton.styleFrom(
                           padding: EdgeInsets.zero,
                           minimumSize: const Size(0, 28),
@@ -114,7 +115,9 @@ class _DeliveryWeatherStripState extends State<DeliveryWeatherStrip> {
                         onPressed: () => launchUrl(
                           Uri.parse('https://api.met.no/doc/License'),
                         ),
-                        child: const Text(
+                        icon: const GhstButtonIcon.glyph(GhstActionKind.weather, size: 16),
+
+                        label: const Text(
                           'MET Norway · CC BY 4.0',
                           style: TextStyle(fontSize: 10),
                         ),
@@ -130,7 +133,7 @@ class _DeliveryWeatherStripState extends State<DeliveryWeatherStrip> {
                         () => _request = _service.load(widget.point!),
                       )
                     : null,
-                icon: const Icon(Icons.refresh, size: 18),
+                icon: const GhstButtonIcon(Icons.refresh, size: 18),
               ),
             ],
           );

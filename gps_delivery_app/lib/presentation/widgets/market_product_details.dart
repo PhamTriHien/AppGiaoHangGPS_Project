@@ -6,6 +6,7 @@ import '../../core/network/public_json_api.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/utils/market_options.dart';
 import 'market_commercial_sheets.dart';
+import 'ghst_button_icon.dart';
 
 class MarketProductDetails extends StatefulWidget {
   const MarketProductDetails({
@@ -167,7 +168,7 @@ class _MarketProductDetailsState extends State<MarketProductDetails> {
                       images[_imageIndex.clamp(0, images.length - 1)],
                       fit: BoxFit.contain,
                       errorBuilder: (_, _, _) =>
-                          const Icon(Icons.broken_image_outlined),
+                          const GhstButtonIcon(Icons.broken_image_outlined),
                     ),
                   ),
                 if (images.length > 1)
@@ -179,7 +180,7 @@ class _MarketProductDetailsState extends State<MarketProductDetails> {
                         onPressed: _imageIndex > 0
                             ? () => setState(() => _imageIndex--)
                             : null,
-                        icon: const Icon(Icons.chevron_left),
+                        icon: const GhstButtonIcon(Icons.chevron_left),
                       ),
                       Text('${_imageIndex + 1} / ${images.length}'),
                       IconButton(
@@ -187,7 +188,7 @@ class _MarketProductDetailsState extends State<MarketProductDetails> {
                         onPressed: _imageIndex + 1 < images.length
                             ? () => setState(() => _imageIndex++)
                             : null,
-                        icon: const Icon(Icons.chevron_right),
+                        icon: const GhstButtonIcon(Icons.chevron_right),
                       ),
                     ],
                   ),
@@ -223,7 +224,7 @@ class _MarketProductDetailsState extends State<MarketProductDetails> {
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: ActionChip(
-                      avatar: Icon(
+                      avatar: GhstButtonIcon(
                         _data['shop_following'] == true
                             ? Icons.bookmark_added
                             : Icons.bookmark_add_outlined,
@@ -250,16 +251,12 @@ class _MarketProductDetailsState extends State<MarketProductDetails> {
                     runSpacing: 8,
                     children: [
                       for (final v in variants)
-                        ChoiceChip(
-                          label: Text(
+                        ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel('${v['title']} · ${CurrencyFormatter.formatVnd((v['price'] as num).toDouble())}', size: 15), label: Text(
                             '${v['title']} · ${CurrencyFormatter.formatVnd((v['price'] as num).toDouble())}',
-                          ),
-                          selected: selectedVariant?['id'] == v['id'],
-                          onSelected: _busy || (v['stock'] as num? ?? 0) <= 0
+                          ), selected: selectedVariant?['id'] == v['id'], onSelected: _busy || (v['stock'] as num? ?? 0) <= 0
                               ? null
                               : (_) =>
-                                    setState(() => _variantId = '${v['id']}'),
-                        ),
+                                    setState(() => _variantId = '${v['id']}'),),
                     ],
                   ),
                 ],
@@ -347,7 +344,7 @@ class _MarketProductDetailsState extends State<MarketProductDetails> {
                                   ))
                                     IconButton(
                                       tooltip: 'Phản hồi đánh giá',
-                                      icon: const Icon(
+                                      icon: const GhstButtonIcon(
                                         Icons.reply_outlined,
                                         size: 18,
                                       ),
@@ -369,7 +366,7 @@ class _MarketProductDetailsState extends State<MarketProductDetails> {
                                     ),
                                   IconButton(
                                     tooltip: 'Báo cáo đánh giá',
-                                    icon: const Icon(
+                                    icon: const GhstButtonIcon(
                                       Icons.flag_outlined,
                                       size: 18,
                                     ),
@@ -396,15 +393,17 @@ class _MarketProductDetailsState extends State<MarketProductDetails> {
         ),
       ),
       actions: [
-        TextButton(
+        TextButton.icon(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Đóng'),
+          icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+          label: const Text('Đóng'),
         ),
         if (p != null)
           IconButton(
             tooltip: _data['favorite'] == true ? 'Bỏ yêu thích' : 'Yêu thích',
             onPressed: _busy ? null : () => _load(favorite: true),
-            icon: Icon(
+            icon: GhstButtonIcon(
               _data['favorite'] == true
                   ? Icons.favorite
                   : Icons.favorite_outline,
@@ -425,7 +424,7 @@ class _MarketProductDetailsState extends State<MarketProductDetails> {
                       });
                     }
                   },
-            icon: const Icon(Icons.add_shopping_cart),
+            icon: const GhstButtonIcon(Icons.add_shopping_cart),
             label: const Text('Thêm vào giỏ'),
           ),
       ],

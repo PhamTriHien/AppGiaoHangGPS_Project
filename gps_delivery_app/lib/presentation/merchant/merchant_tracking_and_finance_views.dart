@@ -35,7 +35,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
               ),
               onPressed: () =>
                   _rebuildMerchantUi(() => _selectedScreenIndex = 2),
-              icon: const Icon(Icons.add_box_outlined, size: 18),
+              icon: const GhstButtonIcon(Icons.add_box_outlined, size: 18),
               label: const Text('Tạo đơn gửi hàng'),
             ),
           ],
@@ -151,7 +151,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                         ),
                       );
                     },
-                    icon: const Icon(Icons.alt_route_rounded, size: 16),
+                    icon: const GhstButtonIcon(Icons.alt_route_rounded, size: 16),
                     label: Text(
                       _store.isMultiStopRouteActive
                           ? 'Đã bật lộ trình 2-Opt'
@@ -168,18 +168,12 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
           runSpacing: 8,
           children: tabs.map((t) {
             final selected = _shopOrderStatusTab == t;
-            return ChoiceChip(
-              label: Text(t),
-              selected: selected,
-              selectedColor: const Color(0xFFF43F5E),
-              labelStyle: TextStyle(
+            return ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel(t, size: 15, color: (selected) ? Colors.white : null), label: Text(t), selected: selected, selectedColor: const Color(0xFFF43F5E), labelStyle: TextStyle(
                 color: selected ? Colors.white : AppColors.textPrimary,
                 fontWeight: FontWeight.w700,
                 fontSize: 12,
-              ),
-              onSelected: (_) =>
-                  _rebuildMerchantUi(() => _shopOrderStatusTab = t),
-            );
+              ), onSelected: (_) =>
+                  _rebuildMerchantUi(() => _shopOrderStatusTab = t),);
           }).toList(),
         ),
         const SizedBox(height: 12),
@@ -281,7 +275,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                                           ),
                                         );
                                       },
-                                      icon: const Icon(
+                                      icon: const GhstButtonIcon(
                                         Icons.share_location_rounded,
                                         size: 14,
                                         color: AppColors.success,
@@ -308,7 +302,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                                           _selectedScreenIndex = 4;
                                         });
                                       },
-                                      icon: const Icon(
+                                      icon: const GhstButtonIcon(
                                         Icons.print_outlined,
                                         size: 14,
                                       ),
@@ -344,7 +338,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                                           _selectedScreenIndex = 6;
                                         });
                                       },
-                                      icon: const Icon(
+                                      icon: const GhstButtonIcon(
                                         Icons.edit_note_outlined,
                                         size: 15,
                                       ),
@@ -498,7 +492,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                             ),
                           );
                         },
-                        icon: const Icon(Icons.alt_route_rounded, size: 15),
+                        icon: const GhstButtonIcon(Icons.alt_route_rounded, size: 15),
                         label: const Text(
                           'Đồng bộ lộ trình thực tế',
                           style: TextStyle(fontSize: 11.5),
@@ -516,7 +510,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                     ),
                     child: Row(
                       children: [
-                        Icon(
+                        GhstButtonIcon(
                           focusedOrd.podImageNote != null
                               ? Icons.verified_outlined
                               : Icons.local_shipping_outlined,
@@ -603,55 +597,43 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
             children: [
               SizedBox(
                 width: 230,
-                child: DropdownButtonFormField<String>(
-                  initialValue: vehicleOptions.contains(_pickupVehicleType)
+                child: DropdownButtonFormField<String>(icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 18), initialValue: vehicleOptions.contains(_pickupVehicleType)
                       ? _pickupVehicleType
-                      : vehicleOptions[1],
-                  isExpanded: true,
-                  decoration: const InputDecoration(
+                      : vehicleOptions[1], isExpanded: true, decoration: const InputDecoration(
                     isDense: true,
                     labelText: 'Loại xe thu gom',
-                  ),
-                  items: vehicleOptions
+                  ), items: vehicleOptions
                       .map(
                         (v) => DropdownMenuItem(
                           value: v,
                           child: Text(v, style: const TextStyle(fontSize: 12.5)),
                         ),
                       )
-                      .toList(),
-                  onChanged: (v) {
+                      .toList(), onChanged: (v) {
                     if (v != null) {
                       _rebuildMerchantUi(() => _pickupVehicleType = v);
                     }
-                  },
-                ),
+                  },),
               ),
               SizedBox(
                 width: 230,
-                child: DropdownButtonFormField<String>(
-                  initialValue: slotOptions.contains(_pickupTimeSlot)
+                child: DropdownButtonFormField<String>(icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 18), initialValue: slotOptions.contains(_pickupTimeSlot)
                       ? _pickupTimeSlot
-                      : slotOptions[1],
-                  isExpanded: true,
-                  decoration: const InputDecoration(
+                      : slotOptions[1], isExpanded: true, decoration: const InputDecoration(
                     isDense: true,
                     labelText: 'Khung giờ hẹn lấy',
-                  ),
-                  items: slotOptions
+                  ), items: slotOptions
                       .map(
                         (s) => DropdownMenuItem(
                           value: s,
                           child: Text(s, style: const TextStyle(fontSize: 12.5)),
                         ),
                       )
-                      .toList(),
-                  onChanged: (v) {
+                      .toList(), onChanged: (v) {
                     if (v != null) {
                       _rebuildMerchantUi(() => _pickupTimeSlot = v);
                     }
-                  },
-                ),
+                  },),
               ),
               SizedBox(
                 width: 130,
@@ -746,7 +728,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                     ),
                   );
                 },
-                icon: const Icon(Icons.local_shipping_outlined, size: 17),
+                icon: const GhstButtonIcon(Icons.local_shipping_outlined, size: 17),
                 label: const Text('Đặt lịch xe thu gom'),
               ),
             ],
@@ -827,7 +809,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                   ),
                   onPressed: () =>
                       _rebuildMerchantUi(() => _selectedScreenIndex = 2),
-                  icon: const Icon(Icons.add_box_outlined, size: 18),
+                  icon: const GhstButtonIcon(Icons.add_box_outlined, size: 18),
                   label: const Text('Mở Tạo đơn gửi hàng'),
                 ),
               ],
@@ -874,19 +856,14 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                   final statusLabel = item.paymentStatus == 'RETURNED'
                       ? 'Đã hoàn kho'
                       : item.status.displayName;
-                  return ChoiceChip(
-                    visualDensity: VisualDensity.compact,
-                    label: Text(
+                  return ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.glyph(GhstActionKind.receipt, size: 15, color: (selected) ? Colors.white : null), visualDensity: VisualDensity.compact, label: Text(
                       '${item.trackingCode} ($statusLabel)',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: selected ? Colors.white : AppColors.textPrimary,
                       ),
-                    ),
-                    selected: selected,
-                    selectedColor: const Color(0xFF2563EB),
-                    onSelected: (_) => _rebuildMerchantUi(() {
+                    ), selected: selected, selectedColor: const Color(0xFF2563EB), onSelected: (_) => _rebuildMerchantUi(() {
                       _selectedWaybillOrderIndex = idx;
                       _editOrderNameCtrl.text = item.recipientName;
                       _editOrderPhoneCtrl.text = item.recipientPhone;
@@ -895,8 +872,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                         0,
                       );
                       _lastSyncedEditOrderCode = item.trackingCode;
-                    }),
-                  );
+                    }),);
                 }).toList(),
               ),
               const SizedBox(height: 10),
@@ -1038,7 +1014,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                             ),
                           );
                         },
-                  icon: const Icon(Icons.save_outlined, size: 18),
+                  icon: const GhstButtonIcon(Icons.save_outlined, size: 18),
                   label: const Text('Lưu thay đổi thông tin đơn'),
                 ),
               ),
@@ -1135,7 +1111,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                               );
                             }
                           : null,
-                      icon: const Icon(Icons.cancel_outlined, size: 18),
+                      icon: const GhstButtonIcon(Icons.cancel_outlined, size: 18),
                       label: const Text('Xác nhận Hủy đơn hàng'),
                     ),
                   ),
@@ -1196,7 +1172,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                                   ),
                                 );
                               },
-                        icon: const Icon(Icons.replay, size: 16),
+                        icon: const GhstButtonIcon(Icons.replay, size: 16),
                         label: const Text('Yêu cầu Giao lại'),
                       ),
                       OutlinedButton.icon(
@@ -1217,7 +1193,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                                   ),
                                 );
                               },
-                        icon: const Icon(
+                        icon: const GhstButtonIcon(
                           Icons.assignment_return_outlined,
                           size: 16,
                         ),
@@ -1383,7 +1359,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                     ),
                   );
                 },
-                icon: const Icon(Icons.table_view, size: 16),
+                icon: const GhstButtonIcon(Icons.table_view, size: 16),
                 label: const Text('Xuất Excel'),
               ),
             ],
@@ -1724,7 +1700,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                       ),
                     );
                   },
-                  icon: const Icon(Icons.payments_outlined),
+                  icon: const GhstButtonIcon(Icons.payments_outlined),
                   label: const Text('Yêu cầu Rút tiền ngay'),
                 ),
               ),
@@ -1763,7 +1739,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                   (w) => ListTile(
                     dense: true,
                     contentPadding: EdgeInsets.zero,
-                    leading: const Icon(
+                    leading: const GhstButtonIcon(
                       Icons.account_balance_wallet_outlined,
                       color: AppColors.success,
                     ),
@@ -1923,7 +1899,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                     ),
                   );
                 },
-                icon: const Icon(Icons.open_in_new, size: 16),
+                icon: const GhstButtonIcon(Icons.open_in_new, size: 16),
                 label: const Text('Xuất báo cáo ↗'),
               ),
             ],
@@ -2094,7 +2070,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                       ListTile(
                         dense: true,
                         contentPadding: EdgeInsets.zero,
-                        leading: const Icon(
+                        leading: const GhstButtonIcon(
                           Icons.circle,
                           color: AppColors.success,
                         ),
@@ -2105,7 +2081,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                       ListTile(
                         dense: true,
                         contentPadding: EdgeInsets.zero,
-                        leading: const Icon(
+                        leading: const GhstButtonIcon(
                           Icons.circle,
                           color: Color(0xFF2563EB),
                         ),
@@ -2116,7 +2092,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                       ListTile(
                         dense: true,
                         contentPadding: EdgeInsets.zero,
-                        leading: const Icon(
+                        leading: const GhstButtonIcon(
                           Icons.circle,
                           color: AppColors.danger,
                         ),
@@ -2127,7 +2103,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                       ListTile(
                         dense: true,
                         contentPadding: EdgeInsets.zero,
-                        leading: const Icon(
+                        leading: const GhstButtonIcon(
                           Icons.circle,
                           color: Color(0xFFF43F5E),
                         ),
@@ -2198,6 +2174,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                     backgroundColor: selected
                         ? const Color(0xFFEDE9FE)
                         : const Color(0xFFF4F7FA),
+                    avatar: const GhstButtonIcon.glyph(GhstActionKind.receipt, size: 14),
                     label: Text(
                       '${ord.trackingCode} (${ord.status.displayName})',
                       style: TextStyle(
@@ -2224,27 +2201,21 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                 ),
               ),
               const SizedBox(height: 10),
-              DropdownButtonFormField<String>(
-                isExpanded: true,
-                initialValue: _shopComplaintType,
-                decoration: const InputDecoration(
+              DropdownButtonFormField<String>(icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 18), isExpanded: true, initialValue: _shopComplaintType, decoration: const InputDecoration(
                   labelText: 'Loại khiếu nại',
                   isDense: true,
-                ),
-                items: complaintTypes
+                ), items: complaintTypes
                     .map(
                       (c) => DropdownMenuItem(
                         value: c,
                         child: Text(c, overflow: TextOverflow.ellipsis),
                       ),
                     )
-                    .toList(),
-                onChanged: (v) {
+                    .toList(), onChanged: (v) {
                   if (v != null) {
                     _rebuildMerchantUi(() => _shopComplaintType = v);
                   }
-                },
-              ),
+                },),
               const SizedBox(height: 10),
               TextField(
                 controller: _shopComplaintDescCtrl,
@@ -2301,7 +2272,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                   ),
                   child: Row(
                     children: [
-                      const Icon(
+                      const GhstButtonIcon(
                         Icons.add_photo_alternate_outlined,
                         color: Color(0xFF2563EB),
                       ),
@@ -2323,13 +2294,9 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                   runSpacing: 6,
                   children: _attachedShopEvidenceFiles
                       .map(
-                        (f) => InputChip(
-                          visualDensity: VisualDensity.compact,
-                          label: Text(f, style: const TextStyle(fontSize: 11)),
-                          onDeleted: () => _rebuildMerchantUi(
+                        (f) => InputChip(avatar: const GhstButtonIcon.glyph(GhstActionKind.link, size: 15), deleteIcon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 15), visualDensity: VisualDensity.compact, label: Text(f, style: const TextStyle(fontSize: 11)), onDeleted: () => _rebuildMerchantUi(
                             () => _attachedShopEvidenceFiles.remove(f),
-                          ),
-                        ),
+                          ),),
                       )
                       .toList(),
                 ),
@@ -2407,7 +2374,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                       ),
                     );
                   },
-                  icon: const Icon(Icons.send_outlined, size: 16),
+                  icon: const GhstButtonIcon(Icons.send_outlined, size: 16),
                   label: const Text('Gửi khiếu nại'),
                 ),
               ),
@@ -2467,6 +2434,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                           ),
                           ActionChip(
                             visualDensity: VisualDensity.compact,
+                            avatar: const GhstButtonIcon.glyph(GhstActionKind.route, size: 14),
                             label: Text(
                               'Theo dõi ${c.orderId}',
                               style: const TextStyle(
@@ -2514,7 +2482,7 @@ extension _MerchantTrackingAndFinanceViews on _MerchantSubsystemEntryState {
                               .map(
                                 (f) => Chip(
                                   visualDensity: VisualDensity.compact,
-                                  avatar: const Icon(
+                                  avatar: const GhstButtonIcon(
                                     Icons.attach_file,
                                     size: 13,
                                   ),

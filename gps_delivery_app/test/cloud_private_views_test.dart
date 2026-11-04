@@ -424,24 +424,28 @@ void main() {
       final (api, session) = setup();
       await session.refresh();
       await profileForm(tester, session);
+      final nameField = find.widgetWithText(TextFormField, 'Họ và tên');
+      final phoneField = find.widgetWithText(TextFormField, 'Số điện thoại');
+      final saveBtn = find.widgetWithText(FilledButton, 'Lưu hồ sơ');
       expect(
-        tester
-            .widget<TextFormField>(find.byType(TextFormField).first)
-            .controller!
-            .text,
+        tester.widget<TextFormField>(nameField).controller!.text,
         'Private Alice',
       );
-      await tester.enterText(find.byType(TextFormField).first, '  New Alice  ');
-      await tester.enterText(find.byType(TextFormField).last, '123');
-      await tester.tap(find.widgetWithText(FilledButton, 'Lưu hồ sơ'));
+      await tester.enterText(nameField, '  New Alice  ');
+      await tester.enterText(phoneField, '123');
+      await tester.ensureVisible(saveBtn);
+      await tester.tap(saveBtn);
       await tester.pumpAndSettle();
       expect(api.calls.where((call) => call['body'] != null), isEmpty);
-      await tester.enterText(find.byType(TextFormField).last, '0901234567');
-      await tester.tap(find.byType(DropdownButtonFormField<String>));
+      await tester.enterText(phoneField, '0901234567');
+      final roleDropdown = find.byType(DropdownButtonFormField<String>);
+      await tester.ensureVisible(roleDropdown);
+      await tester.tap(roleDropdown);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Tài xế').last);
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, 'Lưu hồ sơ'));
+      await tester.ensureVisible(saveBtn);
+      await tester.tap(saveBtn);
       await tester.pumpAndSettle();
       expect(api.calls.last['body'], {
         'full_name': 'New Alice',
@@ -463,7 +467,9 @@ void main() {
     await profileForm(tester, session);
     await tester.enterText(find.byType(TextFormField).first, 'Retry Alice');
     api.saveFailure = const PublicApiException('Offline', statusCode: 502);
-    await tester.tap(find.widgetWithText(FilledButton, 'Lưu hồ sơ'));
+    final saveBtn = find.widgetWithText(FilledButton, 'Lưu hồ sơ');
+    await tester.ensureVisible(saveBtn);
+    await tester.tap(saveBtn);
     await tester.pumpAndSettle();
     expect(find.text('Offline'), findsOneWidget);
     expect(
@@ -474,7 +480,8 @@ void main() {
       'Retry Alice',
     );
     api.saveFailure = null;
-    await tester.tap(find.widgetWithText(FilledButton, 'Lưu hồ sơ'));
+    await tester.ensureVisible(saveBtn);
+    await tester.tap(saveBtn);
     await tester.pumpAndSettle();
     expect(session.account!['full_name'], 'Retry Alice');
     await tester.pumpWidget(const SizedBox());
@@ -498,7 +505,9 @@ void main() {
       );
       api.pendingSave = Completer<Map<String, dynamic>>();
       final old = api.profile();
-      await tester.tap(find.widgetWithText(FilledButton, 'Lưu hồ sơ'));
+      final saveBtn = find.widgetWithText(FilledButton, 'Lưu hồ sơ');
+      await tester.ensureVisible(saveBtn);
+      await tester.tap(saveBtn);
       await tester.pump();
       api.identity = 'bob';
       api.changes.add(AuthState(AuthChangeEvent.signedIn, null));
@@ -663,7 +672,9 @@ void main() {
         find.byType(TextFormField).first,
         'Updated from profile',
       );
-      await tester.tap(find.widgetWithText(FilledButton, 'Lưu hồ sơ'));
+      final saveBtn = find.widgetWithText(FilledButton, 'Lưu hồ sơ');
+      await tester.ensureVisible(saveBtn);
+      await tester.tap(saveBtn);
       await tester.pumpAndSettle();
       expect(find.text('Hồ sơ cá nhân'), findsNothing);
       expect(session.account!['full_name'], 'Updated from profile');

@@ -552,6 +552,8 @@ class GhstLuminousCard extends StatelessWidget {
           child: content,
         ),
       );
+    } else {
+      content = Material(type: MaterialType.transparency, child: content);
     }
 
     Widget surface = Container(
@@ -573,19 +575,36 @@ class GhstLuminousCard extends StatelessWidget {
                 stops: const [0.0, 0.78],
               ),
       ),
-      foregroundDecoration: BoxDecoration(
-        borderRadius: radius,
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            tokens.specularRim,
-            tokens.specularRim.withValues(alpha: 0),
-          ],
-          stops: const [0.0, 0.16],
-        ),
+      child: Stack(
+        children: [
+          Positioned(
+            top: 0,
+            left: 1,
+            right: 1,
+            height: 16,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(
+                      (borderRadius - 1).clamp(0.0, borderRadius),
+                    ),
+                  ),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      tokens.specularRim,
+                      tokens.specularRim.withValues(alpha: 0),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          content,
+        ],
       ),
-      child: content,
     );
 
     if (interactive3d) {

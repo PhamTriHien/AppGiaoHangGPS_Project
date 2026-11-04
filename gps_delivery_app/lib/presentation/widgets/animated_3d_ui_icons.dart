@@ -114,6 +114,102 @@ enum Icon3dStyle {
     glowColor: Color(0xFF34D399),
     fallbackIcon: Icons.admin_panel_settings_rounded,
     label: '3D Admin Shield',
+  ),
+  homePortal(
+    assetPath: 'assets/icons_3d/home_portal_3d.png',
+    primaryColor: AppColors.primary,
+    secondaryColor: Color(0xFF10B981),
+    glowColor: Color(0xFF38BDF8),
+    fallbackIcon: Icons.home_rounded,
+    label: '3D Home Portal',
+  ),
+  createPlus(
+    assetPath: 'assets/icons_3d/create_plus_3d.png',
+    primaryColor: Color(0xFF0EA5E9),
+    secondaryColor: Color(0xFF10B981),
+    glowColor: Color(0xFF6EE7B7),
+    fallbackIcon: Icons.add_box_rounded,
+    label: '3D Create Order',
+  ),
+  orderReceipt(
+    assetPath: 'assets/icons_3d/order_receipt_3d.png',
+    primaryColor: AppColors.primary,
+    secondaryColor: Color(0xFF059669),
+    glowColor: Color(0xFF34D399),
+    fallbackIcon: Icons.receipt_long_rounded,
+    label: '3D Order Receipt',
+  ),
+  addressBook(
+    assetPath: 'assets/icons_3d/address_book_3d.png',
+    primaryColor: Color(0xFF2563EB),
+    secondaryColor: Color(0xFFF97316),
+    glowColor: Color(0xFFFB923C),
+    fallbackIcon: Icons.bookmarks_rounded,
+    label: '3D Address Book',
+  ),
+  notificationBell(
+    assetPath: 'assets/icons_3d/notification_bell_3d.png',
+    primaryColor: Color(0xFFF59E0B),
+    secondaryColor: Color(0xFFF43F5E),
+    glowColor: Color(0xFFFBBF24),
+    fallbackIcon: Icons.notifications_active_outlined,
+    label: '3D Notification Bell',
+  ),
+  userProfile(
+    assetPath: 'assets/icons_3d/user_profile_3d.png',
+    primaryColor: AppColors.primary,
+    secondaryColor: Color(0xFF10B981),
+    glowColor: Color(0xFF22D3EE),
+    fallbackIcon: Icons.person_rounded,
+    label: '3D User Profile',
+  ),
+  shoppingCart(
+    assetPath: 'assets/icons_3d/shopping_cart_3d.png',
+    primaryColor: Color(0xFFF97316),
+    secondaryColor: AppColors.primary,
+    glowColor: Color(0xFF34D399),
+    fallbackIcon: Icons.shopping_cart_rounded,
+    label: '3D Shopping Cart',
+  ),
+  chatSupport(
+    assetPath: 'assets/icons_3d/chat_support_3d.png',
+    primaryColor: Color(0xFF10B981),
+    secondaryColor: AppColors.primary,
+    glowColor: Color(0xFF6EE7B7),
+    fallbackIcon: Icons.forum_rounded,
+    label: '3D Chat Support',
+  ),
+  analyticsChart(
+    assetPath: 'assets/icons_3d/analytics_chart_3d.png',
+    primaryColor: Color(0xFF6366F1),
+    secondaryColor: Color(0xFF10B981),
+    glowColor: Color(0xFFFBBF24),
+    fallbackIcon: Icons.insights_rounded,
+    label: '3D Analytics Chart',
+  ),
+  csvImport(
+    assetPath: 'assets/icons_3d/csv_import_3d.png',
+    primaryColor: Color(0xFF059669),
+    secondaryColor: AppColors.primary,
+    glowColor: Color(0xFF38BDF8),
+    fallbackIcon: Icons.upload_file_rounded,
+    label: '3D CSV Import',
+  ),
+  settingsGear(
+    assetPath: 'assets/icons_3d/settings_gear_3d.png',
+    primaryColor: AppColors.primary,
+    secondaryColor: Color(0xFF06B6D4),
+    glowColor: Color(0xFF22D3EE),
+    fallbackIcon: Icons.settings_outlined,
+    label: '3D Settings Gear',
+  ),
+  themeSunMoon(
+    assetPath: 'assets/icons_3d/theme_sun_moon_3d.png',
+    primaryColor: Color(0xFFF59E0B),
+    secondaryColor: Color(0xFF1E40AF),
+    glowColor: Color(0xFFFDE047),
+    fallbackIcon: Icons.wb_sunny_rounded,
+    label: '3D Theme Sun & Moon',
   );
 
   final String assetPath;
@@ -188,18 +284,11 @@ class GhstAiIcon extends StatelessWidget {
             cacheHeight: cachePx,
             filterQuality: FilterQuality.medium,
             isAntiAlias: true,
-            errorBuilder: (_, _, _) => DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [style.primaryColor, style.secondaryColor],
-                ),
-              ),
-              child: Icon(
-                style.fallbackIcon,
-                color: Colors.white,
-                size: effectiveSize * 0.54,
+            errorBuilder: (_, _, _) => CustomPaint(
+              painter: _FallbackOrbPainter(
+                primary: style.primaryColor,
+                secondary: style.secondaryColor,
+                glow: style.glowColor,
               ),
             ),
           ),
@@ -551,24 +640,13 @@ class _Animated3dIconBadgeState extends State<Animated3dIconBadge>
                                   cacheHeight: targetCachePx,
                                   filterQuality: FilterQuality.medium,
                                   isAntiAlias: true,
-                                  errorBuilder: (_, _, _) {
-                                    return DecoratedBox(
-                                      decoration: BoxDecoration(
-                                        gradient: RadialGradient(
-                                          colors: [
-                                            Colors.white,
-                                            widget.style.primaryColor,
-                                            widget.style.secondaryColor,
-                                          ],
-                                        ),
-                                      ),
-                                      child: Icon(
-                                        widget.style.fallbackIcon,
-                                        color: Colors.white,
-                                        size: widget.size * 0.42,
-                                      ),
-                                    );
-                                  },
+                                  errorBuilder: (_, _, _) => CustomPaint(
+                                    painter: _FallbackOrbPainter(
+                                      primary: widget.style.primaryColor,
+                                      secondary: widget.style.secondaryColor,
+                                      glow: widget.style.glowColor,
+                                    ),
+                                  ),
                                 ),
                               ),
                               CustomPaint(
@@ -682,12 +760,56 @@ class _Animated3dIconBadgeState extends State<Animated3dIconBadge>
           scale: 1.0 + 0.026 * smoothBounce1,
         );
       case Icon3dStyle.adminShieldOps:
+      case Icon3dStyle.settingsGear:
         return _Physical3dMotion(
           offsetX: 0.0,
           offsetY: baseSelectLift - 3.1 * smoothBounce1,
           pitchX: 0.08 * math.cos(fullAngle),
           yawY: 0.135 * math.sin(fullAngle),
           rollZ: 0.018 * math.sin(fullAngle),
+          scale: 1.0 + 0.024 * smoothBounce1,
+        );
+      case Icon3dStyle.homePortal:
+      case Icon3dStyle.createPlus:
+        return _Physical3dMotion(
+          offsetX: math.sin(fullAngle) * 0.7,
+          offsetY: baseSelectLift - 3.0 * smoothBounce1,
+          pitchX: 0.075 * math.sin(fullAngle),
+          yawY: 0.13 * math.cos(fullAngle),
+          rollZ: 0.02 * math.sin(fullAngle),
+          scale: 1.0 + 0.023 * smoothBounce1,
+        );
+      case Icon3dStyle.orderReceipt:
+      case Icon3dStyle.addressBook:
+      case Icon3dStyle.csvImport:
+        return _Physical3dMotion(
+          offsetX: math.cos(fullAngle) * 0.75,
+          offsetY: baseSelectLift - 2.9 * smoothBounce1,
+          pitchX: 0.08 * math.cos(fullAngle),
+          yawY: 0.13 * math.sin(fullAngle),
+          rollZ: 0.022 * math.cos(fullAngle),
+          scale: 1.0 + 0.022 * smoothBounce1,
+        );
+      case Icon3dStyle.notificationBell:
+      case Icon3dStyle.themeSunMoon:
+        return _Physical3dMotion(
+          offsetX: math.sin(fullAngle) * 0.9,
+          offsetY: baseSelectLift - 3.2 * smoothBounce1,
+          pitchX: 0.085 * math.sin(fullAngle),
+          yawY: 0.14 * math.cos(fullAngle),
+          rollZ: 0.042 * math.sin(fullAngle * 2.0),
+          scale: 1.0 + 0.024 * smoothBounce1,
+        );
+      case Icon3dStyle.userProfile:
+      case Icon3dStyle.shoppingCart:
+      case Icon3dStyle.chatSupport:
+      case Icon3dStyle.analyticsChart:
+        return _Physical3dMotion(
+          offsetX: math.sin(fullAngle) * 0.85,
+          offsetY: baseSelectLift - 3.1 * smoothBounce1,
+          pitchX: 0.08 * math.sin(fullAngle),
+          yawY: 0.135 * math.cos(fullAngle),
+          rollZ: 0.024 * math.sin(fullAngle),
           scale: 1.0 + 0.024 * smoothBounce1,
         );
     }
@@ -909,7 +1031,52 @@ class _Photorealistic3dVfxOverlayPainter extends CustomPainter {
           shimmerCenter: const Offset(0.49, 0.48),
         );
       case Icon3dStyle.adminShieldOps:
+      case Icon3dStyle.settingsGear:
         _paintAdminShieldVolumetricVfx(canvas, size);
+      case Icon3dStyle.homePortal:
+      case Icon3dStyle.createPlus:
+      case Icon3dStyle.userProfile:
+      case Icon3dStyle.chatSupport:
+        _paintSparkleShimmerVfx(
+          canvas,
+          size,
+          anchors: const [
+            Offset(0.36, 0.34),
+            Offset(0.64, 0.36),
+            Offset(0.50, 0.62),
+          ],
+          sparkleColor: const Color(0xFF67E8F9),
+          shimmerCenter: const Offset(0.48, 0.44),
+        );
+      case Icon3dStyle.orderReceipt:
+      case Icon3dStyle.addressBook:
+      case Icon3dStyle.shoppingCart:
+      case Icon3dStyle.analyticsChart:
+      case Icon3dStyle.csvImport:
+        _paintSparkleShimmerVfx(
+          canvas,
+          size,
+          anchors: const [
+            Offset(0.35, 0.32),
+            Offset(0.66, 0.38),
+            Offset(0.52, 0.66),
+          ],
+          sparkleColor: const Color(0xFF6EE7B7),
+          shimmerCenter: const Offset(0.50, 0.46),
+        );
+      case Icon3dStyle.notificationBell:
+      case Icon3dStyle.themeSunMoon:
+        _paintSparkleShimmerVfx(
+          canvas,
+          size,
+          anchors: const [
+            Offset(0.34, 0.32),
+            Offset(0.66, 0.30),
+            Offset(0.56, 0.66),
+          ],
+          sparkleColor: const Color(0xFFFDE047),
+          shimmerCenter: const Offset(0.46, 0.46),
+        );
     }
     _paintAnisotropicGlassRimLight(canvas, size);
   }
@@ -1505,4 +1672,65 @@ class _Photorealistic3dVfxOverlayPainter extends CustomPainter {
         oldDelegate.tiltX != tiltX ||
         oldDelegate.tiltY != tiltY;
   }
+}
+
+class _FallbackOrbPainter extends CustomPainter {
+  final Color primary;
+  final Color secondary;
+  final Color glow;
+
+  const _FallbackOrbPainter({
+    required this.primary,
+    required this.secondary,
+    required this.glow,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty) return;
+    final rect = Offset.zero & size;
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [primary, secondary],
+        ).createShader(rect),
+    );
+    final center = rect.center;
+    final r = size.shortestSide * 0.28;
+    canvas.drawCircle(
+      center,
+      r,
+      Paint()
+        ..isAntiAlias = true
+        ..color = Colors.white.withValues(alpha: 0.26),
+    );
+    final diamond = Path()
+      ..moveTo(center.dx, center.dy - r * 0.72)
+      ..lineTo(center.dx + r * 0.72, center.dy)
+      ..lineTo(center.dx, center.dy + r * 0.72)
+      ..lineTo(center.dx - r * 0.72, center.dy)
+      ..close();
+    canvas.drawPath(
+      diamond,
+      Paint()
+        ..isAntiAlias = true
+        ..color = Colors.white,
+    );
+    canvas.drawCircle(
+      center.translate(-r * 0.28, -r * 0.28),
+      r * 0.16,
+      Paint()
+        ..isAntiAlias = true
+        ..color = glow.withValues(alpha: 0.85),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _FallbackOrbPainter oldDelegate) =>
+      oldDelegate.primary != primary ||
+      oldDelegate.secondary != secondary ||
+      oldDelegate.glow != glow;
 }

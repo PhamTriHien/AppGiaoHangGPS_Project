@@ -174,7 +174,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
       builder: (dialogContext) => AlertDialog(
         title: Row(
           children: [
-            const Icon(Icons.receipt_long_outlined, color: Color(0xFF2563EB)),
+            const GhstButtonIcon(Icons.receipt_long_outlined, color: Color(0xFF2563EB)),
             const SizedBox(width: 8),
             Expanded(child: Text('Chi tiết ${order.trackingCode}')),
           ],
@@ -204,7 +204,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                 SnackBar(content: Text('Đã sao chép mã ${order.trackingCode}')),
               );
             },
-            icon: const Icon(Icons.copy_outlined, size: 17),
+            icon: const GhstButtonIcon(Icons.copy_outlined, size: 17),
             label: const Text('Sao chép mã'),
           ),
           TextButton.icon(
@@ -230,12 +230,14 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                 );
               }
             },
-            icon: const Icon(Icons.download_outlined, size: 17),
+            icon: const GhstButtonIcon(Icons.download_outlined, size: 17),
             label: const Text('Xuất biên nhận'),
           ),
-          TextButton(
+          TextButton.icon(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Đóng'),
+            icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+            label: const Text('Đóng'),
           ),
         ],
       ),
@@ -283,7 +285,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
+              const GhstButtonIcon(
                 Icons.chat_bubble_outline_rounded,
                 size: 44,
                 color: Color(0xFF2563EB),
@@ -307,7 +309,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                 ),
                 onPressed: () =>
                     _rebuildCustomerUi(() => _selectedScreenIndex = 2),
-                icon: const Icon(Icons.add_box_outlined, size: 16),
+                icon: const GhstButtonIcon(Icons.add_box_outlined, size: 16),
                 label: const Text('Tạo đơn hàng mới'),
               ),
             ],
@@ -352,7 +354,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                 InkWell(
                   onTap: () =>
                       _rebuildCustomerUi(() => _selectedScreenIndex = 4),
-                  child: const Icon(
+                  child: const GhstButtonIcon(
                     Icons.arrow_back_rounded,
                     color: Colors.white,
                   ),
@@ -361,7 +363,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                 const CircleAvatar(
                   radius: 18,
                   backgroundColor: Colors.white,
-                  child: Icon(
+                  child: GhstButtonIcon(
                     Icons.delivery_dining_rounded,
                     color: Color(0xFF2563EB),
                     size: 20,
@@ -384,7 +386,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                       ),
                       Row(
                         children: [
-                          Icon(
+                          GhstButtonIcon(
                             Icons.circle,
                             color: hasAssignedDriver
                                 ? const Color(0xFF14B866)
@@ -413,7 +415,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                   style: IconButton.styleFrom(
                     backgroundColor: const Color(0xFF14B866),
                   ),
-                  icon: const Icon(Icons.phone, color: Colors.white, size: 18),
+                  icon: const GhstButtonIcon(Icons.phone, color: Colors.white, size: 18),
                   onPressed: () {
                     if (!hasAssignedDriver) {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -480,22 +482,16 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                     children: _store.customerOrders.map((ordItem) {
                       final isCur =
                           ordItem.trackingCode == activeOrder.trackingCode;
-                      return ChoiceChip(
-                        visualDensity: VisualDensity.compact,
-                        label: Text(
+                      return ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.glyph(GhstActionKind.receipt, size: 15, color: (isCur) ? Colors.white : null), visualDensity: VisualDensity.compact, label: Text(
                           '${ordItem.trackingCode} (${ordItem.status.displayName})',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w800,
                             color: isCur ? Colors.white : AppColors.ink,
                           ),
-                        ),
-                        selected: isCur,
-                        selectedColor: const Color(0xFF2563EB),
-                        onSelected: (_) => _rebuildCustomerUi(() {
+                        ), selected: isCur, selectedColor: const Color(0xFF2563EB), onSelected: (_) => _rebuildCustomerUi(() {
                           _store.selectCustomerOrder(ordItem.trackingCode);
-                        }),
-                      );
+                        }),);
                     }).toList(),
                   ),
                   const SizedBox(height: 8),
@@ -578,7 +574,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(
+                                const GhstButtonIcon(
                                   Icons.image_rounded,
                                   color: Color(0xFF2563EB),
                                   size: 22,
@@ -611,6 +607,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                         'Gọi điện khi tới nơi nhé',
                       ].map((quick) {
                         return ActionChip(
+                          avatar: const GhstButtonIcon.glyph(GhstActionKind.chat, size: 14),
                           label: Text(
                             quick,
                             style: const TextStyle(fontSize: 11),
@@ -647,7 +644,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                       style: IconButton.styleFrom(
                         backgroundColor: const Color(0xFF2563EB),
                       ),
-                      icon: const Icon(Icons.send_rounded, size: 18),
+                      icon: const GhstButtonIcon(Icons.send_rounded, size: 18),
                       onPressed: canChatWithDriver
                           ? () {
                               if (_chatInputCtrl.text.trim().isEmpty) return;
@@ -684,7 +681,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
+              const GhstButtonIcon(
                 Icons.cancel_presentation_rounded,
                 size: 44,
                 color: Color(0xFF2563EB),
@@ -760,22 +757,16 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                 children: _store.customerOrders.map((ordItem) {
                   final isCur =
                       ordItem.trackingCode == targetOrder.trackingCode;
-                  return ChoiceChip(
-                    visualDensity: VisualDensity.compact,
-                    label: Text(
+                  return ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.glyph(GhstActionKind.receipt, size: 15, color: (isCur) ? Colors.white : null), visualDensity: VisualDensity.compact, label: Text(
                       '${ordItem.trackingCode} (${ordItem.status.displayName})',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
                         color: isCur ? Colors.white : AppColors.ink,
                       ),
-                    ),
-                    selected: isCur,
-                    selectedColor: const Color(0xFF2563EB),
-                    onSelected: (_) => _rebuildCustomerUi(() {
+                    ), selected: isCur, selectedColor: const Color(0xFF2563EB), onSelected: (_) => _rebuildCustomerUi(() {
                       _store.selectCustomerOrder(ordItem.trackingCode);
-                    }),
-                  );
+                    }),);
                 }).toList(),
               ),
             ],
@@ -829,7 +820,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
               ),
               child: Row(
                 children: [
-                  const Icon(
+                  const GhstButtonIcon(
                     Icons.warning_amber_rounded,
                     color: Color(0xFFF43F5E),
                     size: 22,
@@ -855,7 +846,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
             const SizedBox(height: 14),
             SizedBox(
               height: 46,
-              child: ElevatedButton(
+              child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: canCancel
                       ? const Color(0xFFDC2626)
@@ -895,7 +886,9 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                         );
                       }
                     : null,
-                child: Text(
+                icon: GhstButtonIcon.forLabel(canCancel ? 'Xác nhận hủy đơn' : 'Không thể hủy đơn này', size: 16),
+
+                label: Text(
                   canCancel ? 'Xác nhận hủy đơn' : 'Không thể hủy đơn này',
                   style: const TextStyle(
                     fontWeight: FontWeight.w800,
@@ -907,7 +900,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
             const SizedBox(height: 8),
             SizedBox(
               height: 44,
-              child: OutlinedButton(
+              child: OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.all(Radius.circular(12)),
@@ -915,7 +908,9 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                 ),
                 onPressed: () =>
                     _rebuildCustomerUi(() => _selectedScreenIndex = 4),
-                child: const Text(
+                icon: const GhstButtonIcon.glyph(GhstActionKind.back, size: 16),
+
+                label: const Text(
                   'Quay lại',
                   style: TextStyle(fontWeight: FontWeight.w700),
                 ),
@@ -1011,7 +1006,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                   decoration: const InputDecoration(
                     isDense: true,
                     hintText: 'Tìm mã đơn, người nhận, SĐT hoặc địa chỉ...',
-                    prefixIcon: Icon(Icons.search_rounded),
+                    prefixIcon: GhstButtonIcon(Icons.search_rounded),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -1027,14 +1022,9 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                         'Thất bại',
                         'Chuyển hoàn',
                       ].map((tab) {
-                        return ChoiceChip(
-                          visualDensity: VisualDensity.compact,
-                          label: Text(tab),
-                          selected: _historyFilterTab == tab,
-                          onSelected: (_) => _rebuildCustomerUi(() {
+                        return ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel(tab, size: 15), visualDensity: VisualDensity.compact, label: Text(tab), selected: _historyFilterTab == tab, onSelected: (_) => _rebuildCustomerUi(() {
                             _historyFilterTab = tab;
-                          }),
-                        );
+                          }),);
                       }).toList(),
                 ),
                 const SizedBox(height: 8),
@@ -1043,10 +1033,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                   runSpacing: 6,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    DropdownButton<int>(
-                      value: _historyPeriodDays ?? 0,
-                      hint: const Text('Khoảng thời gian'),
-                      items: const [
+                    DropdownButton<int>(icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 18), value: _historyPeriodDays ?? 0, hint: const Text('Khoảng thời gian'), items: const [
                         DropdownMenuItem(
                           value: 0,
                           child: Text('Mọi thời gian'),
@@ -1054,16 +1041,14 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                         DropdownMenuItem(value: 7, child: Text('7 ngày qua')),
                         DropdownMenuItem(value: 30, child: Text('30 ngày qua')),
                         DropdownMenuItem(value: 90, child: Text('90 ngày qua')),
-                      ],
-                      onChanged: (value) => _rebuildCustomerUi(
+                      ], onChanged: (value) => _rebuildCustomerUi(
                         () => _historyPeriodDays = value == 0 ? null : value,
-                      ),
-                    ),
+                      ),),
                     OutlinedButton.icon(
                       onPressed: () => _rebuildCustomerUi(
                         () => _historyNewestFirst = !_historyNewestFirst,
                       ),
-                      icon: Icon(
+                      icon: GhstButtonIcon(
                         _historyNewestFirst
                             ? Icons.south_rounded
                             : Icons.north_rounded,
@@ -1074,13 +1059,15 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                     if (query.isNotEmpty ||
                         _historyPeriodDays != null ||
                         _historyFilterTab != 'Tất cả')
-                      TextButton(
+                      TextButton.icon(
                         onPressed: () => _rebuildCustomerUi(() {
                           _historySearchCtrl.clear();
                           _historyFilterTab = 'Tất cả';
                           _historyPeriodDays = null;
                         }),
-                        child: const Text('Xóa bộ lọc'),
+                        icon: const GhstButtonIcon.glyph(GhstActionKind.delete, size: 16),
+
+                        label: const Text('Xóa bộ lọc'),
                       ),
                   ],
                 ),
@@ -1100,7 +1087,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                           _historyFilterTab = 'Tất cả';
                           _historyPeriodDays = null;
                         }),
-                        icon: const Icon(Icons.filter_alt_off_outlined),
+                        icon: const GhstButtonIcon(Icons.filter_alt_off_outlined),
                         label: const Text('Đặt lại bộ lọc'),
                       ),
                     ],
@@ -1261,12 +1248,12 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                                     () => _selectedScreenIndex = 4,
                                   );
                                 },
-                                icon: const Icon(Icons.my_location, size: 15),
+                                icon: const GhstButtonIcon(Icons.my_location, size: 15),
                                 label: const Text('Theo dõi'),
                               ),
                               TextButton.icon(
                                 onPressed: () => _showCustomerOrderDetails(ord),
-                                icon: const Icon(
+                                icon: const GhstButtonIcon(
                                   Icons.receipt_long_outlined,
                                   size: 15,
                                 ),
@@ -1278,7 +1265,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                                 TextButton.icon(
                                   onPressed: () =>
                                       _showLegacyBankQrPaymentDialog(ord),
-                                  icon: const Icon(
+                                  icon: const GhstButtonIcon(
                                     Icons.qr_code_2_rounded,
                                     size: 15,
                                   ),
@@ -1299,14 +1286,14 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                                     ),
                                   );
                                 },
-                                icon: const Icon(Icons.copy_outlined, size: 15),
+                                icon: const GhstButtonIcon(Icons.copy_outlined, size: 15),
                                 label: const Text('Sao chép mã'),
                               ),
                               TextButton.icon(
                                 onPressed: () async {
                                   await _prefillOrderForRepeat(ord);
                                 },
-                                icon: const Icon(
+                                icon: const GhstButtonIcon(
                                   Icons.replay_rounded,
                                   size: 15,
                                 ),
@@ -1323,7 +1310,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                                         );
                                       }
                                     : null,
-                                icon: Icon(
+                                icon: GhstButtonIcon(
                                   ord.ratingStars != null
                                       ? Icons.star_rounded
                                       : Icons.star_outline_rounded,
@@ -1345,7 +1332,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                                     () => _selectedScreenIndex = 9,
                                   );
                                 },
-                                icon: const Icon(
+                                icon: const GhstButtonIcon(
                                   Icons.support_agent_outlined,
                                   size: 15,
                                 ),
@@ -1392,7 +1379,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
+              const GhstButtonIcon(
                 Icons.star_border_rounded,
                 size: 46,
                 color: Color(0xFF2563EB),
@@ -1463,7 +1450,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                 InkWell(
                   onTap: () =>
                       _rebuildCustomerUi(() => _selectedScreenIndex = 4),
-                  child: const Icon(
+                  child: const GhstButtonIcon(
                     Icons.arrow_back_rounded,
                     color: Colors.white,
                   ),
@@ -1493,22 +1480,16 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                     children: deliveredOrders.map((ordItem) {
                       final isCur =
                           ordItem.trackingCode == activeOrder.trackingCode;
-                      return ChoiceChip(
-                        visualDensity: VisualDensity.compact,
-                        label: Text(
+                      return ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.glyph(GhstActionKind.receipt, size: 15, color: (isCur) ? Colors.white : null), visualDensity: VisualDensity.compact, label: Text(
                           '${ordItem.trackingCode} (${ordItem.ratingStars != null ? "${ordItem.ratingStars}★" : "Chưa đánh giá"})',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w800,
                             color: isCur ? Colors.white : AppColors.ink,
                           ),
-                        ),
-                        selected: isCur,
-                        selectedColor: const Color(0xFF2563EB),
-                        onSelected: (_) => _rebuildCustomerUi(() {
+                        ), selected: isCur, selectedColor: const Color(0xFF2563EB), onSelected: (_) => _rebuildCustomerUi(() {
                           _store.selectCustomerOrder(ordItem.trackingCode);
-                        }),
-                      );
+                        }),);
                     }).toList(),
                   ),
                   const SizedBox(height: 10),
@@ -1516,7 +1497,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                 const CircleAvatar(
                   radius: 32,
                   backgroundColor: Color(0xFFE9E9E4),
-                  child: Icon(
+                  child: GhstButtonIcon(
                     Icons.person_rounded,
                     size: 38,
                     color: Color(0xFF2563EB),
@@ -1587,7 +1568,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                     return IconButton(
                       onPressed: () =>
                           _rebuildCustomerUi(() => _ratingStars = starNum),
-                      icon: Icon(
+                      icon: GhstButtonIcon(
                         starNum <= _ratingStars
                             ? Icons.star_rounded
                             : Icons.star_border_rounded,
@@ -1615,11 +1596,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                   alignment: WrapAlignment.center,
                   children: chips.map((chip) {
                     final selected = _selectedFeedbackChips.contains(chip);
-                    return FilterChip(
-                      label: Text(chip),
-                      selected: selected,
-                      selectedColor: const Color(0xFFE9E9E4),
-                      onSelected: (v) {
+                    return FilterChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel(chip, size: 15, color: AppColors.ink), label: Text(chip), selected: selected, selectedColor: const Color(0xFFE9E9E4), onSelected: (v) {
                         _rebuildCustomerUi(() {
                           if (v) {
                             _selectedFeedbackChips.add(chip);
@@ -1627,8 +1604,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                             _selectedFeedbackChips.remove(chip);
                           }
                         });
-                      },
-                    );
+                      },);
                   }).toList(),
                 ),
                 const SizedBox(height: 12),
@@ -1662,7 +1638,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                         ? 'Không'
                         : CurrencyFormatter.formatVnd(tip.toDouble());
                     final alreadyRated = activeOrder.ratingStars != null;
-                    return OutlinedButton(
+                    return OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
                         backgroundColor: selected
                             ? const Color(0xFFF43F5E)
@@ -1680,7 +1656,9 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                           ? null
                           : () =>
                                 _rebuildCustomerUi(() => _selectedTipVnd = tip),
-                      child: Text(
+                      icon: GhstButtonIcon.forLabel(label, size: 16),
+
+                      label: Text(
                         label,
                         style: const TextStyle(
                           fontWeight: FontWeight.w800,
@@ -1694,7 +1672,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                 SizedBox(
                   width: double.infinity,
                   height: 48,
-                  child: ElevatedButton(
+                  child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFF43F5E),
                       foregroundColor: Colors.white,
@@ -1737,7 +1715,9 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                             );
                           }
                         : null,
-                    child: const Text(
+                    icon: const GhstButtonIcon.glyph(GhstActionKind.send, size: 16),
+
+                    label: const Text(
                       'Gửi đánh giá',
                       style: TextStyle(
                         fontWeight: FontWeight.w800,
@@ -1768,7 +1748,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
+              const GhstButtonIcon(
                 Icons.support_agent_rounded,
                 size: 46,
                 color: Color(0xFF2563EB),
@@ -1831,7 +1811,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                 OutlinedButton.icon(
                   onPressed: () =>
                       _rebuildCustomerUi(() => _selectedScreenIndex = 7),
-                  icon: const Icon(Icons.arrow_back_rounded, size: 15),
+                  icon: const GhstButtonIcon(Icons.arrow_back_rounded, size: 15),
                   label: const Text('Quay lại Lịch sử đơn'),
                 ),
               ],
@@ -1843,9 +1823,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                 runSpacing: 6,
                 children: _store.customerOrders.map((o) {
                   final selected = o.trackingCode == targetOrder.trackingCode;
-                  return ChoiceChip(
-                    visualDensity: VisualDensity.compact,
-                    label: Text(
+                  return ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.glyph(GhstActionKind.receipt, size: 15, color: (selected) ? Colors.white : null), visualDensity: VisualDensity.compact, label: Text(
                       '${o.trackingCode} (${o.status.displayName})',
                       style: TextStyle(
                         fontSize: 11,
@@ -1854,13 +1832,9 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                             ? Colors.white
                             : const Color(0xFF0F172A),
                       ),
-                    ),
-                    selected: selected,
-                    selectedColor: const Color(0xFF2563EB),
-                    onSelected: (_) => _rebuildCustomerUi(
+                    ), selected: selected, selectedColor: const Color(0xFF2563EB), onSelected: (_) => _rebuildCustomerUi(
                       () => _store.selectCustomerOrder(o.trackingCode),
-                    ),
-                  );
+                    ),);
                 }).toList(),
               ),
               const SizedBox(height: AppSpacing.xs),
@@ -1885,12 +1859,8 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
             Wrap(
               spacing: 8,
               children: types.map((t) {
-                return ChoiceChip(
-                  label: Text(t),
-                  selected: _complaintType == t,
-                  onSelected: (_) =>
-                      _rebuildCustomerUi(() => _complaintType = t),
-                );
+                return ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel(t, size: 15), label: Text(t), selected: _complaintType == t, onSelected: (_) =>
+                      _rebuildCustomerUi(() => _complaintType = t),);
               }).toList(),
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -1924,25 +1894,20 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                             );
                           }
                         },
-                  icon: const Icon(Icons.add_a_photo_outlined, size: 16),
+                  icon: const GhstButtonIcon(Icons.add_a_photo_outlined, size: 16),
                   label: Text(
                     'Đính kèm ảnh (${_customerEvidenceFiles.length}/3)',
                     style: const TextStyle(fontSize: 12),
                   ),
                 ),
                 for (final fileName in _customerEvidenceFiles)
-                  Chip(
-                    visualDensity: VisualDensity.compact,
-                    avatar: const Icon(
+                  Chip(deleteIcon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 15), visualDensity: VisualDensity.compact, avatar: const GhstButtonIcon(
                       Icons.check_circle,
                       size: 15,
                       color: Color(0xFF14B866),
-                    ),
-                    label: Text(fileName, style: const TextStyle(fontSize: 11)),
-                    onDeleted: () => _rebuildCustomerUi(
+                    ), label: Text(fileName, style: const TextStyle(fontSize: 11)), onDeleted: () => _rebuildCustomerUi(
                       () => _customerEvidenceFiles.remove(fileName),
-                    ),
-                  ),
+                    ),),
               ],
             ),
             const SizedBox(height: AppSpacing.md),
@@ -2026,7 +1991,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                     ),
                   );
                 },
-                icon: const Icon(Icons.report_problem_outlined),
+                icon: const GhstButtonIcon(Icons.report_problem_outlined),
                 label: const Text('Gửi yêu cầu hỗ trợ / Khiếu nại'),
               ),
             ),
@@ -2151,7 +2116,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                             shape: BoxShape.circle,
                             border: Border.all(color: Colors.white, width: 3),
                           ),
-                          child: Icon(theme.$3, size: 46, color: theme.$2),
+                          child: GhstButtonIcon(theme.$3, size: 46, color: theme.$2),
                         );
                       },
                     ),
@@ -2196,7 +2161,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                             shape: BoxShape.circle,
                             border: Border.all(color: Colors.white, width: 1.5),
                           ),
-                          child: const Icon(
+                          child: const GhstButtonIcon(
                             Icons.camera_alt_rounded,
                             size: 13,
                             color: Colors.white,
@@ -2228,7 +2193,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
+                      const GhstButtonIcon(
                         Icons.workspace_premium_rounded,
                         size: 15,
                         color: Colors.white,
@@ -2402,7 +2367,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                     leading: const CircleAvatar(
                       radius: 14,
                       backgroundColor: Color(0xFFDCFCE7),
-                      child: Icon(
+                      child: GhstButtonIcon(
                         Icons.shield_outlined,
                         size: 15,
                         color: Color(0xFF14B866),
@@ -2425,7 +2390,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                   SizedBox(
                     width: double.infinity,
                     height: 46,
-                    child: ElevatedButton(
+                    child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF2563EB),
                         foregroundColor: Colors.white,
@@ -2468,7 +2433,9 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                           ),
                         );
                       },
-                      child: const Text(
+                      icon: const GhstButtonIcon.glyph(GhstActionKind.save, size: 16),
+
+                      label: const Text(
                         'Lưu thay đổi hồ sơ',
                         style: TextStyle(fontWeight: FontWeight.w800),
                       ),
@@ -2557,7 +2524,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
               vertical: 2,
             ),
             childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-            leading: const Icon(
+            leading: const GhstButtonIcon(
               Icons.verified_user_rounded,
               color: Color(0xFF2563EB),
               size: 20,
@@ -2586,7 +2553,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                   children: [
                     Row(
                       children: [
-                        const Icon(
+                        const GhstButtonIcon(
                           Icons.two_wheeler_rounded,
                           size: 18,
                           color: Color(0xFF2563EB),
@@ -2622,7 +2589,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                           context,
                           existing: drvRecord,
                         ),
-                        icon: const Icon(
+                        icon: const GhstButtonIcon(
                           Icons.assignment_ind_outlined,
                           size: 16,
                         ),
@@ -2652,7 +2619,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                   children: [
                     Row(
                       children: [
-                        const Icon(
+                        const GhstButtonIcon(
                           Icons.storefront_rounded,
                           size: 18,
                           color: Color(0xFFF43F5E),
@@ -2688,7 +2655,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                           context,
                           existing: merRecord,
                         ),
-                        icon: const Icon(
+                        icon: const GhstButtonIcon(
                           Icons.business_center_outlined,
                           size: 16,
                         ),
@@ -2763,25 +2730,20 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                         ),
                       ),
                       const SizedBox(height: 10),
-                      DropdownButtonFormField<String>(
-                        initialValue: selectedVehicle,
-                        decoration: const InputDecoration(
+                      DropdownButtonFormField<String>(icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 18), initialValue: selectedVehicle, decoration: const InputDecoration(
                           labelText: 'Loại phương tiện đăng ký',
-                        ),
-                        items: vehicleOptions
+                        ), items: vehicleOptions
                             .map(
                               (opt) => DropdownMenuItem(
                                 value: opt,
                                 child: Text(opt),
                               ),
                             )
-                            .toList(),
-                        onChanged: (v) {
+                            .toList(), onChanged: (v) {
                           if (v != null) {
                             setDialogState(() => selectedVehicle = v);
                           }
-                        },
-                      ),
+                        },),
                       const SizedBox(height: 10),
                       TextField(
                         controller: plateCtrl,
@@ -2821,7 +2783,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                             setDialogState(() => attachedDocs.add(picked));
                           }
                         },
-                        icon: const Icon(Icons.upload_file_rounded, size: 16),
+                        icon: const GhstButtonIcon(Icons.upload_file_rounded, size: 16),
                         label: Text(
                           'Đính kèm giấy tờ KYC (${attachedDocs.length})',
                         ),
@@ -2833,16 +2795,12 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                           runSpacing: 4,
                           children: attachedDocs
                               .map(
-                                (doc) => Chip(
-                                  visualDensity: VisualDensity.compact,
-                                  label: Text(
+                                (doc) => Chip(avatar: const GhstButtonIcon.glyph(GhstActionKind.link, size: 15), deleteIcon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 15), visualDensity: VisualDensity.compact, label: Text(
                                     doc,
                                     style: const TextStyle(fontSize: 11),
-                                  ),
-                                  onDeleted: () => setDialogState(
+                                  ), onDeleted: () => setDialogState(
                                     () => attachedDocs.remove(doc),
-                                  ),
-                                ),
+                                  ),),
                               )
                               .toList(),
                         ),
@@ -2852,11 +2810,13 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                 ),
               ),
               actions: [
-                TextButton(
+                TextButton.icon(
                   onPressed: () => Navigator.of(dialogCtx).pop(),
-                  child: const Text('Hủy'),
+                  icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+                  label: const Text('Hủy'),
                 ),
-                ElevatedButton(
+                ElevatedButton.icon(
                   onPressed: () {
                     final rawCitizen = citizenCtrl.text.trim();
                     final rawPlate = plateCtrl.text.trim();
@@ -2905,7 +2865,9 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                       ),
                     );
                   },
-                  child: const Text('Lưu & Gửi hồ sơ'),
+                  icon: const GhstButtonIcon.glyph(GhstActionKind.save, size: 16),
+
+                  label: const Text('Lưu & Gửi hồ sơ'),
                 ),
               ],
             );
@@ -2975,25 +2937,20 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                         ),
                       ),
                       const SizedBox(height: 10),
-                      DropdownButtonFormField<String>(
-                        initialValue: businessType,
-                        decoration: const InputDecoration(
+                      DropdownButtonFormField<String>(icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 18), initialValue: businessType, decoration: const InputDecoration(
                           labelText: 'Loại hình kinh doanh',
-                        ),
-                        items: bizOptions
+                        ), items: bizOptions
                             .map(
                               (opt) => DropdownMenuItem(
                                 value: opt,
                                 child: Text(opt),
                               ),
                             )
-                            .toList(),
-                        onChanged: (v) {
+                            .toList(), onChanged: (v) {
                           if (v != null) {
                             setDialogState(() => businessType = v);
                           }
-                        },
-                      ),
+                        },),
                       const SizedBox(height: 10),
                       TextField(
                         controller: taxCtrl,
@@ -3033,7 +2990,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                             setDialogState(() => attachedDocs.add(picked));
                           }
                         },
-                        icon: const Icon(Icons.upload_file_rounded, size: 16),
+                        icon: const GhstButtonIcon(Icons.upload_file_rounded, size: 16),
                         label: Text(
                           'Đính kèm GPKD / Pháp lý (${attachedDocs.length})',
                         ),
@@ -3045,16 +3002,12 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                           runSpacing: 4,
                           children: attachedDocs
                               .map(
-                                (doc) => Chip(
-                                  visualDensity: VisualDensity.compact,
-                                  label: Text(
+                                (doc) => Chip(avatar: const GhstButtonIcon.glyph(GhstActionKind.link, size: 15), deleteIcon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 15), visualDensity: VisualDensity.compact, label: Text(
                                     doc,
                                     style: const TextStyle(fontSize: 11),
-                                  ),
-                                  onDeleted: () => setDialogState(
+                                  ), onDeleted: () => setDialogState(
                                     () => attachedDocs.remove(doc),
-                                  ),
-                                ),
+                                  ),),
                               )
                               .toList(),
                         ),
@@ -3064,11 +3017,13 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                 ),
               ),
               actions: [
-                TextButton(
+                TextButton.icon(
                   onPressed: () => Navigator.of(dialogCtx).pop(),
-                  child: const Text('Hủy'),
+                  icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+                  label: const Text('Hủy'),
                 ),
-                ElevatedButton(
+                ElevatedButton.icon(
                   onPressed: () {
                     if (storeNameCtrl.text.trim().isEmpty ||
                         taxCtrl.text.trim().isEmpty ||
@@ -3107,7 +3062,9 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                       ),
                     );
                   },
-                  child: const Text('Lưu & Gửi hồ sơ'),
+                  icon: const GhstButtonIcon.glyph(GhstActionKind.save, size: 16),
+
+                  label: const Text('Lưu & Gửi hồ sơ'),
                 ),
               ],
             );
@@ -3156,25 +3113,41 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                     ),
                   ),
                 ),
-                TextButton(
-                  onPressed: () {
-                    _store.markAllNotificationsAsRead(
-                      targetGroupScope: 'Khách hàng',
-                    );
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Đã đánh dấu tất cả thông báo là đã đọc!',
-                        ),
+                Flexible(
+                  child: TextButton.icon(
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
                       ),
-                    );
-                  },
-                  child: const Text(
-                    'Đánh dấu tất cả đã đọc',
-                    style: TextStyle(
+                    ),
+                    onPressed: () {
+                      _store.markAllNotificationsAsRead(
+                        targetGroupScope: 'Khách hàng',
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Đã đánh dấu tất cả thông báo là đã đọc!',
+                          ),
+                        ),
+                      );
+                    },
+                    icon: const GhstButtonIcon.glyph(
+                      GhstActionKind.checkCircle,
+                      size: 15,
                       color: Color(0xFFDCEBFF),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
+                    ),
+                    label: const Text(
+                      'Đánh dấu tất cả đã đọc',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Color(0xFFDCEBFF),
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ),
@@ -3190,12 +3163,8 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                   spacing: 8,
                   children: ['Tất cả', 'Đơn hàng', 'Khuyến mãi', 'Hệ thống']
                       .map((cat) {
-                        return ChoiceChip(
-                          label: Text(cat),
-                          selected: _notiFilter == cat,
-                          onSelected: (_) =>
-                              _rebuildCustomerUi(() => _notiFilter = cat),
-                        );
+                        return ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel(cat, size: 15), label: Text(cat), selected: _notiFilter == cat, onSelected: (_) =>
+                              _rebuildCustomerUi(() => _notiFilter = cat),);
                       })
                       .toList(),
                 ),
@@ -3273,7 +3242,7 @@ extension _CustomerHistoryAndProfileViews on _CustomerSubsystemEntryState {
                               color: iconColor.withValues(alpha: 0.14),
                               shape: BoxShape.circle,
                             ),
-                            child: Icon(iconData, color: iconColor, size: 20),
+                            child: GhstButtonIcon(iconData, color: iconColor, size: 20),
                           ),
                           const SizedBox(width: 12),
                           Expanded(

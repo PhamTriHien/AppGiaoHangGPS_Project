@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/integrations/cloud_account_session.dart';
 import '../../core/integrations/cloud_session_lease.dart';
+import 'ghst_button_icon.dart';
 
 class CloudSessionBoundary extends StatefulWidget {
   const CloudSessionBoundary({
@@ -65,9 +66,11 @@ class _CloudSessionBoundaryState extends State<CloudSessionBoundary> {
       return AlertDialog(
         content: const Text(message),
         actions: [
-          TextButton(
+          TextButton.icon(
             onPressed: () => Navigator.of(context).maybePop(),
-            child: const Text('Đóng'),
+            icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+            label: const Text('Đóng'),
           ),
         ],
       );

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../core/integrations/delivery_api_client.dart';
 import '../../core/network/public_json_api.dart';
 import '../../core/theme/admin_studio_theme.dart';
+import 'ghst_button_icon.dart';
 
 class BackendReadinessDialog extends StatefulWidget {
   const BackendReadinessDialog({
@@ -106,13 +107,15 @@ class _BackendReadinessDialogState extends State<BackendReadinessDialog> {
               ),
             ),
             actions: [
-              TextButton(
+              TextButton.icon(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('Quay lại'),
+                icon: const GhstButtonIcon.glyph(GhstActionKind.back, size: 16),
+
+                label: const Text('Quay lại'),
               ),
               FilledButton.icon(
                 onPressed: () => Navigator.pop(context, true),
-                icon: const Icon(Icons.system_update_alt),
+                icon: const GhstButtonIcon(Icons.system_update_alt),
                 label: const Text('Áp dụng'),
               ),
             ],
@@ -189,7 +192,7 @@ class _BackendReadinessDialogState extends State<BackendReadinessDialog> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
+          GhstButtonIcon(
             status == 'ok' ? Icons.check_circle_outline : Icons.info_outline,
             color: fg,
             size: 20,
@@ -258,7 +261,7 @@ class _BackendReadinessDialogState extends State<BackendReadinessDialog> {
                   ? null
                   : () =>
                         Clipboard.setData(ClipboardData(text: '${row['url']}')),
-              icon: const Icon(Icons.copy, size: 18),
+              icon: const GhstButtonIcon(Icons.copy, size: 18),
             ),
           ],
         ),
@@ -390,7 +393,7 @@ class _BackendReadinessDialogState extends State<BackendReadinessDialog> {
                               _busy || _report!['databaseConfigured'] != true
                               ? null
                               : _migrate,
-                          icon: const Icon(Icons.system_update_alt),
+                          icon: const GhstButtonIcon(Icons.system_update_alt),
                           label: const Text('Cập nhật cấu trúc dữ liệu'),
                         ),
                       ),
@@ -403,11 +406,13 @@ class _BackendReadinessDialogState extends State<BackendReadinessDialog> {
             IconButton(
               tooltip: 'Kiểm tra lại triển khai',
               onPressed: _busy ? null : _load,
-              icon: const Icon(Icons.refresh),
+              icon: const GhstButtonIcon(Icons.refresh),
             ),
-            TextButton(
+            TextButton.icon(
               onPressed: _migrating ? null : () => Navigator.pop(context),
-              child: const Text('Đóng'),
+              icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+              label: const Text('Đóng'),
             ),
           ],
         ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../presentation/widgets/ghst_button_icon.dart';
 import 'app_colors.dart';
 import 'ghst_theme_tokens.dart';
 
@@ -73,6 +74,10 @@ class AppTheme {
 
     return base.copyWith(
       dividerColor: tokens.border,
+      actionIconTheme: _ghstActionIconTheme,
+      segmentedButtonTheme: const SegmentedButtonThemeData(
+        selectedIcon: GhstButtonIcon.glyph(GhstActionKind.check, size: 15),
+      ),
       appBarTheme: AppBarTheme(
         backgroundColor: tokens.cardSurface,
         foregroundColor: tokens.ink,
@@ -239,6 +244,10 @@ class AppTheme {
       scaffoldBackgroundColor: tokens.canvas,
       dividerColor: tokens.border,
       extensions: [tokens],
+      actionIconTheme: _ghstActionIconTheme,
+      segmentedButtonTheme: const SegmentedButtonThemeData(
+        selectedIcon: GhstButtonIcon.glyph(GhstActionKind.check, size: 15),
+      ),
       appBarTheme: AppBarTheme(
         backgroundColor: tokens.shellBg,
         foregroundColor: Colors.white,
@@ -382,8 +391,9 @@ class AppTheme {
       chipTheme: ChipThemeData(
         backgroundColor: tokens.cardSubtle,
         selectedColor: tokens.sapphire.fill,
-        secondarySelectedColor: tokens.primary,
+        secondarySelectedColor: tokens.sapphire.fill,
         checkmarkColor: tokens.sapphire.foreground,
+        iconTheme: IconThemeData(color: tokens.sapphire.foreground, size: 15),
         disabledColor: tokens.cardMuted,
         padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
         shape: RoundedRectangleBorder(
@@ -395,10 +405,10 @@ class AppTheme {
           fontWeight: FontWeight.w600,
           color: tokens.ink,
         ),
-        secondaryLabelStyle: const TextStyle(
+        secondaryLabelStyle: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w700,
-          color: Colors.white,
+          color: tokens.sapphire.foreground,
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -446,4 +456,15 @@ class AppTheme {
       ),
     );
   }
+
+  static final ActionIconThemeData _ghstActionIconTheme = ActionIconThemeData(
+    backButtonIconBuilder: (_) =>
+        const GhstButtonIcon.glyph(GhstActionKind.back, size: 20),
+    closeButtonIconBuilder: (_) =>
+        const GhstButtonIcon.glyph(GhstActionKind.close, size: 20),
+    drawerButtonIconBuilder: (_) =>
+        const GhstButtonIcon.glyph(GhstActionKind.grid, size: 20),
+    endDrawerButtonIconBuilder: (_) =>
+        const GhstButtonIcon.glyph(GhstActionKind.tune, size: 20),
+  );
 }

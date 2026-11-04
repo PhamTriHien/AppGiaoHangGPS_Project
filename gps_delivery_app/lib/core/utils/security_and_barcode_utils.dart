@@ -7,6 +7,7 @@ import '../../domain/entities/geo_point.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import 'platform_file_and_browser_bridge.dart';
+import '../../presentation/widgets/ghst_button_icon.dart';
 
 class SecurityAndBarcodeUtils {
   const SecurityAndBarcodeUtils._();
@@ -984,7 +985,7 @@ class PodGpsWatermarkPhotoCard extends StatelessWidget {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
+                  GhstButtonIcon(
                     Icons.receipt_long_outlined,
                     color:
                         isWithinGeofence ? AppColors.success : AppColors.warning,

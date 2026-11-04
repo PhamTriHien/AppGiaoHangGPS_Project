@@ -6,6 +6,7 @@ import '../../core/integrations/delivery_api_client.dart';
 import '../../data/datasources/local/app_state_store.dart';
 import '../../domain/enums/order_status.dart';
 import '../../domain/enums/service_type.dart';
+import 'ghst_button_icon.dart';
 
 class BatchRouteOptimizer extends StatefulWidget {
   const BatchRouteOptimizer({super.key, required this.store});
@@ -144,7 +145,7 @@ class _BatchRouteOptimizerState extends State<BatchRouteOptimizer> {
           alignment: Alignment.centerLeft,
           child: TextButton.icon(
             onPressed: _busy ? null : _optimize,
-            icon: const Icon(Icons.route_outlined),
+            icon: const GhstButtonIcon(Icons.route_outlined),
             label: Text(
               _busy ? 'Đang tối ưu...' : 'Tối ưu phân tuyến nhiều đơn',
             ),
@@ -181,7 +182,7 @@ class _BatchRouteOptimizerState extends State<BatchRouteOptimizer> {
                 .join(' → ');
             return ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.local_shipping_outlined),
+              leading: const GhstButtonIcon(Icons.local_shipping_outlined),
               title: Text(name),
               subtitle: Text(stops),
             );

@@ -8,6 +8,7 @@ import '../../core/network/public_json_api.dart';
 import '../../core/theme/ghst_theme_tokens.dart';
 import 'cloud_membership_panel.dart';
 import 'theme_mode_toggle.dart';
+import 'ghst_button_icon.dart';
 
 const cloudAccountRoles = {
   'customer': 'Khách hàng',
@@ -342,7 +343,7 @@ class _CloudProfileFormState extends State<CloudProfileForm> {
     final account = widget.session.account;
     final verifiedKyc = widget.session.identityVerified;
     final kycTone = verifiedKyc ? tokens.emerald : tokens.amber;
-    return ConstrainedBox(
+    final formBox = ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 460),
       child: Form(
         key: _form,
@@ -369,7 +370,7 @@ class _CloudProfileFormState extends State<CloudProfileForm> {
                 ),
                 child: Row(
                   children: [
-                    Icon(
+                    GhstButtonIcon(
                       verifiedKyc
                           ? Icons.verified_user_outlined
                           : Icons.badge_outlined,
@@ -457,14 +458,14 @@ class _CloudProfileFormState extends State<CloudProfileForm> {
                     if (_birthDate.text.isNotEmpty)
                       IconButton(
                         tooltip: 'Xóa ngày sinh',
-                        icon: const Icon(Icons.close, size: 18),
+                        icon: const GhstButtonIcon(Icons.close, size: 18),
                         onPressed: _busy
                             ? null
                             : () => setState(() => _birthDate.clear()),
                       ),
                     IconButton(
                       tooltip: 'Chọn ngày sinh',
-                      icon: const Icon(Icons.calendar_month_outlined),
+                      icon: const GhstButtonIcon(Icons.calendar_month_outlined),
                       onPressed: _busy ? null : _pickBirthDate,
                     ),
                   ],
@@ -499,7 +500,7 @@ class _CloudProfileFormState extends State<CloudProfileForm> {
                     if (_citizenId.text.isNotEmpty)
                       IconButton(
                         tooltip: _revealCitizenId ? 'Ẩn CCCD' : 'Hiện CCCD',
-                        icon: Icon(
+                        icon: GhstButtonIcon(
                           _revealCitizenId
                               ? Icons.visibility_off_outlined
                               : Icons.visibility_outlined,
@@ -514,7 +515,7 @@ class _CloudProfileFormState extends State<CloudProfileForm> {
                     if (_citizenId.text.isNotEmpty)
                       IconButton(
                         tooltip: 'Xóa CCCD',
-                        icon: const Icon(Icons.close, size: 18),
+                        icon: const GhstButtonIcon(Icons.close, size: 18),
                         onPressed: _busy
                             ? null
                             : () => setState(() => _citizenId.clear()),
@@ -532,25 +533,19 @@ class _CloudProfileFormState extends State<CloudProfileForm> {
             ),
             const SizedBox(height: 14),
             if (widget.session.schemaVersion < 3)
-              DropdownButtonFormField<String>(
-                initialValue: _requested,
-                isExpanded: true,
-                decoration: const InputDecoration(
+              DropdownButtonFormField<String>(icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 18), initialValue: _requested, isExpanded: true, decoration: const InputDecoration(
                   labelText: 'Đăng ký vai trò',
                   border: OutlineInputBorder(),
-                ),
-                items: cloudAccountRoles.entries
+                ), items: cloudAccountRoles.entries
                     .map(
                       (entry) => DropdownMenuItem(
                         value: entry.key,
                         child: Text(entry.value),
                       ),
                     )
-                    .toList(),
-                onChanged: _busy
+                    .toList(), onChanged: _busy
                     ? null
-                    : (value) => setState(() => _requested = value!),
-              ),
+                    : (value) => setState(() => _requested = value!),),
             const SizedBox(height: 16),
             if (_error != null)
               Text(
@@ -561,13 +556,15 @@ class _CloudProfileFormState extends State<CloudProfileForm> {
             if (_busy) const LinearProgressIndicator(),
             FilledButton.icon(
               onPressed: _busy ? null : _save,
-              icon: const Icon(Icons.save_outlined),
+              icon: const GhstButtonIcon(Icons.save_outlined),
               label: const Text('Lưu hồ sơ'),
             ),
             if (widget.onCancel != null)
-              TextButton(
+              TextButton.icon(
                 onPressed: _busy ? null : widget.onCancel,
-                child: const Text('Quay lại'),
+                icon: const GhstButtonIcon.glyph(GhstActionKind.back, size: 16),
+
+                label: const Text('Quay lại'),
               ),
             if (account != null && widget.session.schemaVersion >= 3)
               CloudMembershipPanel(
@@ -577,6 +574,14 @@ class _CloudProfileFormState extends State<CloudProfileForm> {
           ],
         ),
       ),
+    );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.hasBoundedHeight) {
+          return SingleChildScrollView(child: formBox);
+        }
+        return formBox;
+      },
     );
   }
 }

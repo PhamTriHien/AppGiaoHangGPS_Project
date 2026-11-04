@@ -6,6 +6,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_windows/webview_windows.dart';
 import '../../core/auth/real_auth_delivery_service.dart';
 import '../../core/theme/ghst_theme_tokens.dart';
+import 'ghst_button_icon.dart';
 
 class InAppGoogleOAuthDialog extends StatefulWidget {
   final String initialAuthUrl;
@@ -249,7 +250,7 @@ class _InAppGoogleOAuthDialogState extends State<InAppGoogleOAuthDialog> {
                           ),
                           Row(
                             children: [
-                              Icon(
+                              GhstButtonIcon(
                                 Icons.lock_rounded,
                                 size: 11,
                                 color: tokens.emerald.icon,
@@ -276,7 +277,7 @@ class _InAppGoogleOAuthDialogState extends State<InAppGoogleOAuthDialog> {
                     IconButton(
                       tooltip: 'Tải lại trang',
                       onPressed: _reloadPage,
-                      icon: Icon(
+                      icon: GhstButtonIcon(
                         Icons.refresh_rounded,
                         size: 19,
                         color: tokens.ink,
@@ -288,7 +289,7 @@ class _InAppGoogleOAuthDialogState extends State<InAppGoogleOAuthDialog> {
                         RealAuthDeliveryService.instance.stopGoogleOAuthServer();
                         widget.onCancel();
                       },
-                      icon: Icon(
+                      icon: GhstButtonIcon(
                         Icons.close_rounded,
                         size: 20,
                         color: tokens.ink,
@@ -321,7 +322,7 @@ class _InAppGoogleOAuthDialogState extends State<InAppGoogleOAuthDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
+              GhstButtonIcon(
                 Icons.open_in_browser_rounded,
                 color: tokens.primary,
                 size: 42,
@@ -343,7 +344,7 @@ class _InAppGoogleOAuthDialogState extends State<InAppGoogleOAuthDialog> {
                     widget.initialAuthUrl,
                   );
                 },
-                icon: const Icon(Icons.launch_rounded, size: 18),
+                icon: const GhstButtonIcon(Icons.launch_rounded, size: 18),
                 label: const Text('Mở xác thực trên trình duyệt hệ thống'),
               ),
             ],

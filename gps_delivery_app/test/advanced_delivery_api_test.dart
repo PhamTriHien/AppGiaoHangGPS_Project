@@ -61,6 +61,9 @@ void main() {
   test('Native Windows does not request Firebase Messaging', () {
     debugDefaultTargetPlatformOverride = TargetPlatform.windows;
     addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    expect(PushNotificationService.fcmSupported, isFalse);
+    expect(PushNotificationService.supported, isTrue);
+    debugDefaultTargetPlatformOverride = TargetPlatform.linux;
     expect(PushNotificationService.supported, isFalse);
   });
   test('Local relay credentials are never sent to a remote backend', () async {

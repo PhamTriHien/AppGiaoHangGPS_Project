@@ -38,6 +38,28 @@ class ConsistencyFixture extends OperationsFixture {
     Map<String, String>? query,
   }) async {
     fail(path);
+    if (path == 'notifications/list') {
+      fail('notifications');
+      return {
+        'ok': true,
+        'unread_count': read ? 0 : 1,
+        'notifications': [
+          {
+            'id': 'notice-1',
+            'category': 'market',
+            'kind': kind,
+            'title': 'Đơn ${order['id']}',
+            'reference_type': 'market_order',
+            'reference_id': order['id'],
+            'read_at': read ? '2026-10-30T00:00:00Z' : null,
+          },
+        ],
+      };
+    }
+    if (path == 'notifications/mark_read') {
+      read = true;
+      return {'ok': true, 'unread_count': 0};
+    }
     final result = await super.request(path, body: body, query: query);
     if (path == 'addresses') result['addresses'][0]['version'] = 7;
     return result;
@@ -214,7 +236,10 @@ void main() {
           expect(tester.takeException(), isNull);
           await tester.pageBack();
           await tester.pumpAndSettle();
-          expect(find.byIcon(Icons.notifications_none), findsOneWidget);
+          expect(
+            tester.widget<Text>(find.text('Đơn order-1')).style?.fontWeight,
+            FontWeight.w600,
+          );
           await tester.pumpWidget(const SizedBox.shrink());
         },
       );

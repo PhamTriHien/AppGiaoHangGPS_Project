@@ -9,19 +9,25 @@ class ThemeController extends ChangeNotifier {
   ThemeController({this.session, String? sessionSlot})
     : _prefsKey = sessionSlot == null || sessionSlot.isEmpty
           ? 'ghst_theme_mode'
-          : 'ghst_theme_mode:$sessionSlot' {
+          : 'ghst_theme_mode:$sessionSlot',
+      _aiBubbleKey = sessionSlot == null || sessionSlot.isEmpty
+          ? 'ghst_ai_bubble'
+          : 'ghst_ai_bubble:$sessionSlot' {
     session?.addListener(_onSessionChanged);
     unawaited(_hydrateLocal());
   }
 
   final CloudAccountSession? session;
   final String _prefsKey;
+  final String _aiBubbleKey;
   ThemeMode _themeMode = ThemeMode.light;
+  bool _showAiFloatingBubble = true;
   String _lastSyncedAccountScope = '';
   String? _lastCloudModeApplied;
   bool _disposed = false;
 
   ThemeMode get themeMode => _themeMode;
+  bool get showAiFloatingBubble => _showAiFloatingBubble;
 
   static ThemeMode parseMode(String? raw) => switch (raw) {
     'dark' => ThemeMode.dark,
@@ -39,14 +45,21 @@ class ThemeController extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       if (_disposed) return;
+      var changed = false;
       final saved = prefs.getString(_prefsKey);
       if (saved != null) {
         final parsed = parseMode(saved);
         if (parsed != _themeMode) {
           _themeMode = parsed;
-          notifyListeners();
+          changed = true;
         }
       }
+      final savedBubble = prefs.getBool(_aiBubbleKey);
+      if (savedBubble != null && savedBubble != _showAiFloatingBubble) {
+        _showAiFloatingBubble = savedBubble;
+        changed = true;
+      }
+      if (changed) notifyListeners();
     } catch (_) {}
   }
 
@@ -102,6 +115,18 @@ class ThemeController extends ChangeNotifier {
     final effectiveDark = Theme.of(context).brightness == Brightness.dark;
     final next = effectiveDark ? ThemeMode.light : ThemeMode.dark;
     return setThemeMode(next);
+  }
+
+  Future<void> setShowAiFloatingBubble(bool value) async {
+    if (_disposed) return;
+    if (_showAiFloatingBubble != value) {
+      _showAiFloatingBubble = value;
+      notifyListeners();
+    }
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_aiBubbleKey, value);
+    } catch (_) {}
   }
 
   @override

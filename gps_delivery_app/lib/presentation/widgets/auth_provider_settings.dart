@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/config/env_config.dart';
 import '../../data/datasources/local/app_state_store.dart';
+import 'ghst_button_icon.dart';
 
 class AuthProviderSettings extends StatefulWidget {
   const AuthProviderSettings({super.key, required this.canEdit});
@@ -101,7 +102,7 @@ class _AuthProviderSettingsState extends State<AuthProviderSettings> {
         decoration: InputDecoration(
           labelText: label,
           hintText: secret && configured ? 'Đã lưu' : null,
-          prefixIcon: secret ? const Icon(Icons.lock_outline, size: 18) : null,
+          prefixIcon: secret ? const GhstButtonIcon(Icons.lock_outline, size: 18) : null,
         ),
       ),
     );
@@ -163,7 +164,7 @@ class _AuthProviderSettingsState extends State<AuthProviderSettings> {
                     height: 16,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Icon(Icons.save_outlined, size: 18),
+                : const GhstButtonIcon(Icons.save_outlined, size: 18),
             label: Text(_saving ? 'Đang lưu...' : 'Lưu cấu hình đăng nhập'),
           ),
         ],
@@ -175,7 +176,7 @@ class _AuthProviderSettingsState extends State<AuthProviderSettings> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
+        GhstButtonIcon(
           ready ? Icons.check_circle_outline : Icons.pending_outlined,
           size: 16,
           color: ready ? Colors.green.shade700 : Colors.grey.shade700,

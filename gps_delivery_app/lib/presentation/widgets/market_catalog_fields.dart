@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/integrations/cloud_session_lease.dart';
 import '../../core/utils/market_options.dart';
+import 'ghst_button_icon.dart';
 
 class MarketOptionEditor extends StatelessWidget {
   const MarketOptionEditor({
@@ -66,7 +67,7 @@ class MarketOptionEditor extends StatelessWidget {
                             groups.remove(group);
                             onChanged();
                           },
-                    icon: const Icon(Icons.delete_outline),
+                    icon: const GhstButtonIcon(Icons.delete_outline),
                   ),
                 ],
               ),
@@ -112,7 +113,7 @@ class MarketOptionEditor extends StatelessWidget {
                                   );
                                   onChanged();
                                 },
-                          icon: const Icon(Icons.close),
+                          icon: const GhstButtonIcon(Icons.close),
                         ),
                       ],
                     ),
@@ -127,7 +128,7 @@ class MarketOptionEditor extends StatelessWidget {
                           (group['options'] as List).add(_option());
                           onChanged();
                         },
-                  icon: const Icon(Icons.add),
+                  icon: const GhstButtonIcon(Icons.add),
                   label: const Text('Thêm lựa chọn'),
                 ),
               ),
@@ -149,7 +150,7 @@ class MarketOptionEditor extends StatelessWidget {
                   });
                   onChanged();
                 },
-          icon: const Icon(Icons.add),
+          icon: const GhstButtonIcon(Icons.add),
           label: const Text('Thêm nhóm'),
         ),
       ),
@@ -233,22 +234,17 @@ class MarketScheduleEditor extends StatelessWidget {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              DropdownButtonFormField<int>(
-                                initialValue: day,
-                                decoration: const InputDecoration(
+                              DropdownButtonFormField<int>(icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 18), initialValue: day, decoration: const InputDecoration(
                                   labelText: 'Ngày',
-                                ),
-                                items: [
+                                ), items: [
                                   for (var d = 1; d <= 7; d++)
                                     DropdownMenuItem(
                                       value: d,
                                       child: Text(days[d - 1]),
                                     ),
-                                ],
-                                onChanged: (v) {
+                                ], onChanged: (v) {
                                   if (v != null) update(() => day = v);
-                                },
-                              ),
+                                },),
                               const SizedBox(height: 16),
                               TextFormField(
                                 controller: open,
@@ -295,12 +291,14 @@ class MarketScheduleEditor extends StatelessWidget {
                       ),
                     ),
               actions: [
-                TextButton(
+                TextButton.icon(
                   onPressed: () => Navigator.pop(dialog),
-                  child: const Text('Đóng'),
+                  icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+                  label: const Text('Đóng'),
                 ),
                 if (lease.valid)
-                  FilledButton(
+                  FilledButton.icon(
                     onPressed: () {
                       if (form.currentState!.validate() && lease.valid) {
                         Navigator.pop(dialog, {
@@ -310,7 +308,9 @@ class MarketScheduleEditor extends StatelessWidget {
                         });
                       }
                     },
-                    child: const Text('Lưu'),
+                    icon: const GhstButtonIcon.glyph(GhstActionKind.save, size: 16),
+
+                    label: const Text('Lưu'),
                   ),
               ],
             ),
@@ -356,7 +356,7 @@ class MarketScheduleEditor extends StatelessWidget {
                     slots.removeAt(i);
                     onChanged();
                   },
-            icon: const Icon(Icons.delete_outline),
+            icon: const GhstButtonIcon(Icons.delete_outline),
           ),
         ),
       Align(
@@ -365,7 +365,7 @@ class MarketScheduleEditor extends StatelessWidget {
           onPressed: !enabled || slots.length >= 28
               ? null
               : () => _edit(context),
-          icon: const Icon(Icons.add),
+          icon: const GhstButtonIcon(Icons.add),
           label: const Text('Thêm khung giờ'),
         ),
       ),

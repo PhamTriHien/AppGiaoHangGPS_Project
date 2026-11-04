@@ -90,7 +90,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                   ),
                   onPressed: () =>
                       _rebuildCustomerUi(() => _selectedScreenIndex = 1),
-                  icon: const Icon(Icons.bookmarks_outlined, size: 15),
+                  icon: const GhstButtonIcon(Icons.bookmarks_outlined, size: 15),
                   label: const Text('Sổ địa chỉ'),
                 ),
               ],
@@ -118,17 +118,17 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                       _syncCustomerControllersFromDb();
                     });
                   },
-                  icon: const Icon(Icons.note_add_outlined),
+                  icon: const GhstButtonIcon(Icons.note_add_outlined),
                 ),
                 IconButton(
                   tooltip: 'Lưu đơn nháp',
                   onPressed: _savingDraft ? null : _saveCustomerDraft,
-                  icon: const Icon(Icons.save_outlined),
+                  icon: const GhstButtonIcon(Icons.save_outlined),
                 ),
                 IconButton(
                   tooltip: 'Mở đơn nháp',
                   onPressed: _openCustomerDrafts,
-                  icon: const Icon(Icons.drafts_outlined),
+                  icon: const GhstButtonIcon(Icons.drafts_outlined),
                 ),
               ],
             ),
@@ -161,7 +161,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
               controller: _pickupCtrl,
               decoration: InputDecoration(
                 labelText: 'Điểm lấy hàng (Người gửi)',
-                prefixIcon: const Icon(
+                prefixIcon: const GhstButtonIcon(
                   Icons.radio_button_checked_rounded,
                   color: AppColors.violet,
                   size: 18,
@@ -196,7 +196,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                   backgroundColor: _store.hasRealDeviceGpsFix
                       ? const Color(0xFFE0F2FE)
                       : null,
-                  avatar: const Icon(
+                  avatar: const GhstButtonIcon(
                     Icons.my_location_rounded,
                     size: 13,
                     color: Color(0xFF0284C7),
@@ -272,7 +272,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                 ..._store.customerSavedAddresses.map((addr) {
                   return ActionChip(
                     visualDensity: VisualDensity.compact,
-                    avatar: const Icon(
+                    avatar: const GhstButtonIcon(
                       Icons.bookmark_rounded,
                       size: 13,
                       color: AppColors.violet,
@@ -297,7 +297,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                 ...pickupSuggestions.take(2).map((place) {
                   return ActionChip(
                     visualDensity: VisualDensity.compact,
-                    avatar: const Icon(
+                    avatar: const GhstButtonIcon(
                       Icons.place_outlined,
                       size: 13,
                       color: AppColors.violet,
@@ -323,7 +323,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
               controller: _dropoffCtrl,
               decoration: InputDecoration(
                 labelText: 'Điểm giao hàng (Người nhận)',
-                prefixIcon: const Icon(
+                prefixIcon: const GhstButtonIcon(
                   Icons.location_on,
                   color: AppColors.pink,
                   size: 20,
@@ -356,7 +356,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                   ..._store.customerSavedAddresses.map((addr) {
                     return ActionChip(
                       visualDensity: VisualDensity.compact,
-                      avatar: const Icon(
+                      avatar: const GhstButtonIcon(
                         Icons.bookmark_border_rounded,
                         size: 13,
                         color: AppColors.pink,
@@ -380,7 +380,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                   ...dropoffSuggestions.take(3).map((place) {
                     return ActionChip(
                       visualDensity: VisualDensity.compact,
-                      avatar: const Icon(
+                      avatar: const GhstButtonIcon(
                         Icons.place,
                         size: 13,
                         color: AppColors.pink,
@@ -428,7 +428,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                           ),
                           child: Row(
                             children: [
-                              const Icon(
+                              const GhstButtonIcon(
                                 Icons.alt_route_rounded,
                                 size: 18,
                                 color: AppColors.violet,
@@ -487,7 +487,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                                 ),
                               ),
                               const SizedBox(width: 4),
-                              Icon(
+                              GhstButtonIcon(
                                 showMultiStopBody
                                     ? Icons.expand_less_rounded
                                     : Icons.expand_more_rounded,
@@ -539,7 +539,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                                       onPressed: () => _rebuildCustomerUi(
                                         () => _additionalStops.removeAt(index),
                                       ),
-                                      icon: const Icon(
+                                      icon: const GhstButtonIcon(
                                         Icons.close_rounded,
                                         size: 18,
                                       ),
@@ -553,7 +553,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                                   controller: _extraDropoffCtrl,
                                   decoration: const InputDecoration(
                                     labelText: 'Địa chỉ điểm giao phụ',
-                                    prefixIcon: Icon(
+                                    prefixIcon: GhstButtonIcon(
                                       Icons.add_location_alt_outlined,
                                       size: 18,
                                     ),
@@ -708,7 +708,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                                             ),
                                           );
                                         },
-                                        icon: const Icon(
+                                        icon: const GhstButtonIcon(
                                           Icons.route_rounded,
                                           size: 15,
                                         ),
@@ -741,7 +741,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                                           _lastTspSavedMeters = null;
                                         });
                                       },
-                                      icon: const Icon(Icons.add, size: 16),
+                                      icon: const GhstButtonIcon(Icons.add, size: 16),
                                       label: const Text('Thêm điểm giao'),
                                     ),
                                   ],
@@ -831,7 +831,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                     controller: _recipientNameCtrl,
                     decoration: const InputDecoration(
                       labelText: 'Họ tên người nhận',
-                      prefixIcon: Icon(Icons.person_outline, size: 18),
+                      prefixIcon: GhstButtonIcon(Icons.person_outline, size: 18),
                     ),
                   ),
                 ),
@@ -841,7 +841,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                     controller: _recipientPhoneCtrl,
                     decoration: const InputDecoration(
                       labelText: 'Số điện thoại nhận',
-                      prefixIcon: Icon(Icons.phone_outlined, size: 18),
+                      prefixIcon: GhstButtonIcon(Icons.phone_outlined, size: 18),
                     ),
                   ),
                 ),
@@ -853,14 +853,10 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
               style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13.5),
             ),
             const SizedBox(height: 8),
-            DropdownButtonFormField<String>(
-              isExpanded: true,
-              initialValue: _pkgCategory,
-              decoration: const InputDecoration(
+            DropdownButtonFormField<String>(icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 18), isExpanded: true, initialValue: _pkgCategory, decoration: const InputDecoration(
                 labelText: 'Phân loại hàng hóa',
-                prefixIcon: Icon(Icons.inventory_2_outlined, size: 18),
-              ),
-              items:
+                prefixIcon: GhstButtonIcon(Icons.inventory_2_outlined, size: 18),
+              ), items:
                   <String>{
                         'Quần áo & Thời trang',
                         'Tài liệu & Hợp đồng',
@@ -874,15 +870,13 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                           child: Text(c, overflow: TextOverflow.ellipsis),
                         ),
                       )
-                      .toList(),
-              onChanged: (v) {
+                      .toList(), onChanged: (v) {
                 if (v != null) {
                   _rebuildCustomerUi(() {
                     _pkgCategory = v;
                   });
                 }
-              },
-            ),
+              },),
             const SizedBox(height: 10),
             Row(
               children: [
@@ -938,7 +932,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                           ),
                           child: Row(
                             children: [
-                              const Icon(
+                              const GhstButtonIcon(
                                 Icons.verified_user_outlined,
                                 size: 17,
                                 color: AppColors.violet,
@@ -958,7 +952,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                                   ),
                                 ),
                               ),
-                              Icon(
+                              GhstButtonIcon(
                                 showInsuranceInput
                                     ? Icons.expand_less_rounded
                                     : Icons.expand_more_rounded,
@@ -997,7 +991,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
               onChanged: (_) => _rebuildCustomerUi(() {}),
               decoration: const InputDecoration(
                 labelText: 'Ghi chú cho tài xế khi lấy/giao',
-                prefixIcon: Icon(Icons.notes_rounded, size: 18),
+                prefixIcon: GhstButtonIcon(Icons.notes_rounded, size: 18),
               ),
             ),
           ],
@@ -1066,7 +1060,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                       ),
                     );
                   },
-                  icon: const Icon(Icons.alt_route, size: 15),
+                  icon: const GhstButtonIcon(Icons.alt_route, size: 15),
                   label: const Text(
                     'Tính tuyến đường',
                     style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
@@ -1088,9 +1082,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                     color: AppColors.textSecondary,
                   ),
                 ),
-                ChoiceChip(
-                  visualDensity: VisualDensity.compact,
-                  label: Text(
+                ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel('[A] Điểm lấy hàng', size: 15, color: (!_mapPinTargetsDropoff) ? Colors.white : null), visualDensity: VisualDensity.compact, label: Text(
                     '[A] Điểm lấy hàng',
                     style: TextStyle(
                       fontSize: 11,
@@ -1099,15 +1091,9 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                           ? Colors.white
                           : AppColors.ink,
                     ),
-                  ),
-                  selected: !_mapPinTargetsDropoff,
-                  selectedColor: AppColors.violet,
-                  onSelected: (_) =>
-                      _rebuildCustomerUi(() => _mapPinTargetsDropoff = false),
-                ),
-                ChoiceChip(
-                  visualDensity: VisualDensity.compact,
-                  label: Text(
+                  ), selected: !_mapPinTargetsDropoff, selectedColor: AppColors.violet, onSelected: (_) =>
+                      _rebuildCustomerUi(() => _mapPinTargetsDropoff = false),),
+                ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel('[B] Điểm giao hàng', size: 15, color: (_mapPinTargetsDropoff) ? Colors.white : null), visualDensity: VisualDensity.compact, label: Text(
                     '[B] Điểm giao hàng',
                     style: TextStyle(
                       fontSize: 11,
@@ -1116,12 +1102,8 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                           ? Colors.white
                           : AppColors.ink,
                     ),
-                  ),
-                  selected: _mapPinTargetsDropoff,
-                  selectedColor: AppColors.pink,
-                  onSelected: (_) =>
-                      _rebuildCustomerUi(() => _mapPinTargetsDropoff = true),
-                ),
+                  ), selected: _mapPinTargetsDropoff, selectedColor: AppColors.pink, onSelected: (_) =>
+                      _rebuildCustomerUi(() => _mapPinTargetsDropoff = true),),
               ],
             ),
             const SizedBox(height: 8),
@@ -1326,16 +1308,13 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                     runSpacing: 6,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      FilterChip(
-                        visualDensity: VisualDensity.compact,
-                        avatar: Icon(
+                      FilterChip(showCheckmark: false, visualDensity: VisualDensity.compact, avatar: GhstButtonIcon(
                           Icons.electric_moped_rounded,
                           size: 15,
                           color: _preferEcoEv
                               ? Colors.white
                               : AppColors.success,
-                        ),
-                        label: Text(
+                        ), label: Text(
                           _preferEcoEv
                               ? 'Xe điện Xanh (Eco EV • -48g CO₂/km)'
                               : 'Ưu tiên Xe điện Xanh (Eco EV)',
@@ -1344,23 +1323,16 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                             fontWeight: FontWeight.w800,
                             color: _preferEcoEv ? Colors.white : AppColors.ink,
                           ),
-                        ),
-                        selected: _preferEcoEv,
-                        selectedColor: AppColors.success,
-                        onSelected: (v) => _rebuildCustomerUi(() {
+                        ), selected: _preferEcoEv, selectedColor: AppColors.success, onSelected: (v) => _rebuildCustomerUi(() {
                           _preferEcoEv = v;
-                        }),
-                      ),
-                      FilterChip(
-                        visualDensity: VisualDensity.compact,
-                        avatar: Icon(
+                        }),),
+                      FilterChip(showCheckmark: false, visualDensity: VisualDensity.compact, avatar: GhstButtonIcon(
                           Icons.park_rounded,
                           size: 15,
                           color: _greenFundContributed
                               ? Colors.white
                               : AppColors.success,
-                        ),
-                        label: Text(
+                        ), label: Text(
                           'Góp 1.000đ Quỹ Xanh',
                           style: TextStyle(
                             fontSize: 11,
@@ -1369,23 +1341,16 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                                 ? Colors.white
                                 : AppColors.ink,
                           ),
-                        ),
-                        selected: _greenFundContributed,
-                        selectedColor: const Color(0xFF059669),
-                        onSelected: (v) => _rebuildCustomerUi(() {
+                        ), selected: _greenFundContributed, selectedColor: const Color(0xFF059669), onSelected: (v) => _rebuildCustomerUi(() {
                           _greenFundContributed = v;
-                        }),
-                      ),
-                      FilterChip(
-                        visualDensity: VisualDensity.compact,
-                        avatar: Icon(
+                        }),),
+                      FilterChip(showCheckmark: false, visualDensity: VisualDensity.compact, avatar: GhstButtonIcon(
                           Icons.event_available_rounded,
                           size: 15,
                           color: _isScheduledDelivery
                               ? Colors.white
                               : AppColors.violet,
-                        ),
-                        label: Text(
+                        ), label: Text(
                           _isScheduledDelivery
                               ? 'Hẹn khung giờ lấy: $_scheduledDeliverySlot'
                               : 'Đặt lịch hẹn giờ lấy hàng',
@@ -1396,12 +1361,8 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                                 ? Colors.white
                                 : AppColors.ink,
                           ),
-                        ),
-                        selected: _isScheduledDelivery,
-                        selectedColor: AppColors.violet,
-                        onSelected: (v) =>
-                            _rebuildCustomerUi(() => _isScheduledDelivery = v),
-                      ),
+                        ), selected: _isScheduledDelivery, selectedColor: AppColors.violet, onSelected: (v) =>
+                            _rebuildCustomerUi(() => _isScheduledDelivery = v),),
                     ],
                   ),
                   if (_isScheduledDelivery) ...[
@@ -1418,9 +1379,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                           ].map((slot) {
                             final isSlotSelected =
                                 _scheduledDeliverySlot == slot;
-                            return ChoiceChip(
-                              visualDensity: VisualDensity.compact,
-                              label: Text(
+                            return ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel(slot, size: 15, color: (isSlotSelected) ? Colors.white : null), visualDensity: VisualDensity.compact, label: Text(
                                 slot,
                                 style: TextStyle(
                                   fontSize: 11,
@@ -1429,13 +1388,9 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                                       ? Colors.white
                                       : AppColors.ink,
                                 ),
-                              ),
-                              selected: isSlotSelected,
-                              selectedColor: AppColors.violet,
-                              onSelected: (_) => _rebuildCustomerUi(
+                              ), selected: isSlotSelected, selectedColor: AppColors.violet, onSelected: (_) => _rebuildCustomerUi(
                                 () => _scheduledDeliverySlot = slot,
-                              ),
-                            );
+                              ),);
                           }).toList(),
                     ),
                   ],
@@ -1455,7 +1410,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                   if (!_validateOrderFormInputs()) return;
                   _rebuildCustomerUi(() => _selectedScreenIndex = 3);
                 },
-                icon: const Icon(Icons.receipt_long_rounded, size: 18),
+                icon: const GhstButtonIcon(Icons.receipt_long_rounded, size: 18),
                 label: const Text(
                   'XEM CHI TIẾT CƯỚC PHÍ & ĐẶT ĐƠN',
                   style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13.5),
@@ -1627,7 +1582,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                 child: CircleAvatar(
                   radius: 10,
                   backgroundColor: Color(0xFFF43F5E),
-                  child: Icon(Icons.check, size: 13, color: Colors.white),
+                  child: GhstButtonIcon(Icons.check, size: 13, color: Colors.white),
                 ),
               ),
             Column(
@@ -1640,7 +1595,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                     color: iconColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.all(Radius.circular(12)),
                   ),
-                  child: Icon(icon, color: iconColor, size: 22),
+                  child: GhstButtonIcon(icon, color: iconColor, size: 22),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -1859,7 +1814,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                 OutlinedButton.icon(
                   onPressed: () =>
                       _rebuildCustomerUi(() => _selectedScreenIndex = 2),
-                  icon: const Icon(Icons.arrow_back_rounded, size: 15),
+                  icon: const GhstButtonIcon(Icons.arrow_back_rounded, size: 15),
                   label: const Text(
                     'Quay lại sửa đơn',
                     style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
@@ -1968,7 +1923,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
             const SizedBox(height: 14),
             OutlinedButton.icon(
               onPressed: _showVoucherPicker,
-              icon: const Icon(Icons.local_offer_outlined),
+              icon: const GhstButtonIcon(Icons.local_offer_outlined),
               label: Text(code.isEmpty ? 'Chọn ưu đãi' : 'Ưu đãi: $code'),
             ),
             if (code.isNotEmpty)
@@ -1978,7 +1933,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                   onPressed: () => _rebuildCustomerUi(() {
                     _voucherCtrl.clear();
                   }),
-                  icon: const Icon(Icons.close, size: 16),
+                  icon: const GhstButtonIcon(Icons.close, size: 16),
                   label: const Text('Bỏ ưu đãi'),
                 ),
               ),
@@ -1997,20 +1952,14 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                   'Chuyển khoản Ngân hàng',
                   'Quét mã VietQR',
                 ])
-                  ChoiceChip(
-                    label: Text(method),
-                    selected: _selectedPaymentMethod == method,
-                    selectedColor: const Color(0xFF2563EB),
-                    labelStyle: TextStyle(
+                  ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel(method, size: 15, color: (_selectedPaymentMethod == method) ? Colors.white : null), label: Text(method), selected: _selectedPaymentMethod == method, selectedColor: const Color(0xFF2563EB), labelStyle: TextStyle(
                       color: _selectedPaymentMethod == method
                           ? Colors.white
                           : const Color(0xFF0F172A),
                       fontWeight: FontWeight.w700,
-                    ),
-                    onSelected: (_) => _rebuildCustomerUi(
+                    ), onSelected: (_) => _rebuildCustomerUi(
                       () => _selectedPaymentMethod = method,
-                    ),
-                  ),
+                    ),),
               ],
             ),
             if (_selectedPaymentMethod != 'Tiền mặt (COD)') ...[
@@ -2057,7 +2006,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                       children: [
                         Row(
                           children: [
-                            const Icon(
+                            const GhstButtonIcon(
                               Icons.account_balance_wallet_rounded,
                               color: Color(0xFF2563EB),
                             ),
@@ -2080,7 +2029,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                   }
                   return Row(
                     children: [
-                      const Icon(
+                      const GhstButtonIcon(
                         Icons.account_balance_wallet_rounded,
                         color: Color(0xFF2563EB),
                       ),
@@ -2115,23 +2064,16 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                     'Người gửi trả phí',
                     'Người nhận trả phí',
                   ])
-                    ChoiceChip(
-                      visualDensity: VisualDensity.compact,
-                      label: Text(
+                    ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel(payer, size: 15, color: (_cashFeePayer == payer) ? Colors.white : null), visualDensity: VisualDensity.compact, label: Text(
                         payer,
                         style: const TextStyle(fontSize: 11.5),
-                      ),
-                      selected: _cashFeePayer == payer,
-                      selectedColor: const Color(0xFF2563EB),
-                      labelStyle: TextStyle(
+                      ), selected: _cashFeePayer == payer, selectedColor: const Color(0xFF2563EB), labelStyle: TextStyle(
                         color: _cashFeePayer == payer
                             ? Colors.white
                             : const Color(0xFF0F172A),
                         fontWeight: FontWeight.w700,
-                      ),
-                      onSelected: (_) =>
-                          _rebuildCustomerUi(() => _cashFeePayer = payer),
-                    ),
+                      ), onSelected: (_) =>
+                          _rebuildCustomerUi(() => _cashFeePayer = payer),),
                 ],
               ),
             ],
@@ -2255,7 +2197,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                     _selectedScreenIndex = 4;
                   });
                 },
-                icon: const Icon(Icons.local_shipping_outlined),
+                icon: const GhstButtonIcon(Icons.local_shipping_outlined),
                 label: const Text(
                   'Đặt đơn ngay',
                   style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
@@ -2436,7 +2378,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                             onPressed: () => _rebuildCustomerUi(
                               () => _selectedScreenIndex = 2,
                             ),
-                            icon: const Icon(Icons.add_box_rounded, size: 17),
+                            icon: const GhstButtonIcon(Icons.add_box_rounded, size: 17),
                             label: const Text('Tạo đơn hàng mới'),
                           ),
                         ],
@@ -2554,9 +2496,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                           ),
                           ...quickNotes.map((note) {
                             final selected = currentNote == note;
-                            return ChoiceChip(
-                              visualDensity: VisualDensity.compact,
-                              label: Text(
+                            return ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel(note, size: 15, color: (selected) ? Colors.white : null), visualDensity: VisualDensity.compact, label: Text(
                                 note,
                                 style: TextStyle(
                                   fontSize: 11,
@@ -2565,17 +2505,13 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                                       ? Colors.white
                                       : const Color(0xFF0F172A),
                                 ),
-                              ),
-                              selected: selected,
-                              selectedColor: const Color(0xFF2563EB),
-                              onSelected: (_) {
+                              ), selected: selected, selectedColor: const Color(0xFF2563EB), onSelected: (_) {
                                 _store.setQuickDeliveryInstruction(
                                   activeOrder.trackingCode,
                                   selected ? '' : note,
                                 );
                                 _rebuildCustomerUi(() {});
-                              },
-                            );
+                              },);
                           }),
                         ],
                       ),
@@ -2741,22 +2677,16 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                 children: _store.customerOrders.map((ordItem) {
                   final isCurrent =
                       ordItem.trackingCode == activeOrder.trackingCode;
-                  return ChoiceChip(
-                    visualDensity: VisualDensity.compact,
-                    label: Text(
+                  return ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.glyph(GhstActionKind.receipt, size: 15, color: (isCurrent) ? Colors.white : null), visualDensity: VisualDensity.compact, label: Text(
                       '${ordItem.trackingCode} (${ordItem.status.displayName})',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
                         color: isCurrent ? Colors.white : AppColors.ink,
                       ),
-                    ),
-                    selected: isCurrent,
-                    selectedColor: const Color(0xFF2563EB),
-                    onSelected: (_) => _rebuildCustomerUi(() {
+                    ), selected: isCurrent, selectedColor: const Color(0xFF2563EB), onSelected: (_) => _rebuildCustomerUi(() {
                       _store.selectCustomerOrder(ordItem.trackingCode);
-                    }),
-                  );
+                    }),);
                 }).toList(),
               ),
             ],
@@ -2916,7 +2846,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                           ),
                         );
                       },
-                      icon: const Icon(
+                      icon: const GhstButtonIcon(
                         Icons.phone,
                         color: Colors.white,
                         size: 18,
@@ -2929,7 +2859,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                       ),
                       onPressed: () =>
                           _rebuildCustomerUi(() => _selectedScreenIndex = 5),
-                      icon: const Icon(
+                      icon: const GhstButtonIcon(
                         Icons.chat_bubble_rounded,
                         color: Colors.white,
                         size: 18,
@@ -2968,7 +2898,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                       ),
                     );
                   },
-                  icon: const Icon(
+                  icon: const GhstButtonIcon(
                     Icons.share_location_rounded,
                     size: 17,
                     color: AppColors.success,
@@ -2983,20 +2913,20 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                     ),
                     onPressed: () =>
                         _rebuildCustomerUi(() => _selectedScreenIndex = 5),
-                    icon: const Icon(Icons.chat_bubble_outline, size: 17),
+                    icon: const GhstButtonIcon(Icons.chat_bubble_outline, size: 17),
                     label: const Text('Nhắn tin tài xế'),
                   ),
                 if (isDelivered && activeOrder.paymentStatus != 'RETURNED')
                   OutlinedButton.icon(
                     onPressed: () =>
                         _rebuildCustomerUi(() => _selectedScreenIndex = 8),
-                    icon: const Icon(Icons.star_outline_rounded, size: 17),
+                    icon: const GhstButtonIcon(Icons.star_outline_rounded, size: 17),
                     label: const Text('Đánh giá 5 sao'),
                   ),
                 OutlinedButton.icon(
                   onPressed: () =>
                       _rebuildCustomerUi(() => _selectedScreenIndex = 9),
-                  icon: const Icon(Icons.report_problem_outlined, size: 17),
+                  icon: const GhstButtonIcon(Icons.report_problem_outlined, size: 17),
                   label: const Text('Khiếu nại'),
                 ),
                 if (activeOrder.status.canTransitionTo(OrderStatus.cancelled))
@@ -3007,7 +2937,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
                     ),
                     onPressed: () =>
                         _rebuildCustomerUi(() => _selectedScreenIndex = 6),
-                    icon: const Icon(Icons.cancel_outlined, size: 17),
+                    icon: const GhstButtonIcon(Icons.cancel_outlined, size: 17),
                     label: const Text('Hủy đơn'),
                   ),
               ],
@@ -3035,7 +2965,7 @@ extension _CustomerOrderAndPricingViews on _CustomerSubsystemEntryState {
             width: 26,
             height: 26,
             decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-            child: Icon(
+            child: GhstButtonIcon(
               done
                   ? Icons.check
                   : active

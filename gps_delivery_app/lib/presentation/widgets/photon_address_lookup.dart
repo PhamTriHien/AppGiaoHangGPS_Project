@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../core/config/env_config.dart';
 import '../../core/integrations/photon_address_service.dart';
 import '../../domain/entities/geo_point.dart';
+import 'ghst_button_icon.dart';
 
 class PhotonAddressLookup extends StatefulWidget {
   const PhotonAddressLookup({
@@ -126,7 +127,7 @@ class _PhotonAddressLookupState extends State<PhotonAddressLookup> {
                   height: 16,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Icon(Icons.search, size: 17),
+              : const GhstButtonIcon(Icons.search, size: 17),
           label: Text(widget.buttonLabel),
         ),
       ),
@@ -142,7 +143,7 @@ class _PhotonAddressLookupState extends State<PhotonAddressLookup> {
         (place) => ListTile(
           dense: true,
           contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.location_on_outlined, size: 18),
+          leading: const GhstButtonIcon(Icons.location_on_outlined, size: 18),
           title: Text(place.address, maxLines: 3),
           onTap: () {
             _enabled = false;

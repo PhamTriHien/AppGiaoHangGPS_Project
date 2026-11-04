@@ -13,6 +13,7 @@ import '../../core/theme/admin_studio_theme.dart';
 import '../../core/theme/ghst_theme_tokens.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../data/repositories/cloud_orders_repository.dart';
+import '../widgets/animated_3d_ui_icons.dart';
 import '../widgets/cloud_order_form.dart';
 import '../widgets/cloud_pricing_dialog.dart';
 import '../widgets/cloud_commerce_dialog.dart';
@@ -23,6 +24,7 @@ import '../widgets/cloud_membership_panel.dart';
 import '../widgets/cloud_membership_decision_dialog.dart';
 import '../widgets/cloud_session_boundary.dart';
 import '../widgets/cloud_order_labels.dart';
+import '../widgets/ghst_button_icon.dart';
 import 'cloud_address_book_screen.dart';
 import 'cloud_order_details_screen.dart';
 import 'cloud_pickup_screen.dart';
@@ -257,11 +259,17 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
         });
       }
     } finally {
+      _loading = false;
       if (generation == _generation) {
-        _loading = false;
         if (mounted) setState(() => _busy = false);
-      } else if (!_loading && mounted && _session.error == null) {
-        _load();
+      } else if (_foreground &&
+          _api.signedIn &&
+          mounted &&
+          _session.error == null) {
+        _busy = false;
+        unawaited(_load());
+      } else if (mounted) {
+        setState(() => _busy = false);
       }
     }
   }
@@ -372,13 +380,17 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
             decoration: const InputDecoration(labelText: 'Lý do'),
           ),
           actions: [
-            TextButton(
+            TextButton.icon(
               onPressed: () => Navigator.pop(dialog),
-              child: const Text('Quay lại'),
+              icon: const GhstButtonIcon.glyph(GhstActionKind.back, size: 16),
+
+              label: const Text('Quay lại'),
             ),
-            FilledButton(
+            FilledButton.icon(
               onPressed: () => Navigator.pop(dialog, controller.text.trim()),
-              child: const Text('Xác nhận'),
+              icon: const GhstButtonIcon.glyph(GhstActionKind.checkCircle, size: 16),
+
+              label: const Text('Xác nhận'),
             ),
           ],
         ),
@@ -465,7 +477,7 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
                                 }
                               }
                             },
-                      icon: Icon(
+                      icon: GhstButtonIcon(
                         podUploaded
                             ? Icons.check_circle_outline
                             : Icons.camera_alt_outlined,
@@ -492,11 +504,13 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
               ),
             ),
             actions: [
-              TextButton(
+              TextButton.icon(
                 onPressed: () => Navigator.pop(dialog),
-                child: const Text('Quay lại'),
+                icon: const GhstButtonIcon.glyph(GhstActionKind.back, size: 16),
+
+                label: const Text('Quay lại'),
               ),
-              FilledButton(
+              FilledButton.icon(
                 onPressed: uploading
                     ? null
                     : () {
@@ -516,7 +530,9 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
                         }
                         Navigator.pop(dialog, needOtp ? otp : '');
                       },
-                child: const Text('Đã giao'),
+                icon: const GhstButtonIcon.glyph(GhstActionKind.scooter, size: 16),
+
+                label: const Text('Đã giao'),
               ),
             ],
           ),
@@ -555,13 +571,17 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
             ],
           ),
           actions: [
-            TextButton(
+            TextButton.icon(
               onPressed: () => Navigator.pop(dialog, false),
-              child: const Text('Quay lại'),
+              icon: const GhstButtonIcon.glyph(GhstActionKind.back, size: 16),
+
+              label: const Text('Quay lại'),
             ),
-            FilledButton(
+            FilledButton.icon(
               onPressed: () => Navigator.pop(dialog, true),
-              child: const Text('Xác nhận đã thu'),
+              icon: const GhstButtonIcon.glyph(GhstActionKind.wallet, size: 16),
+
+              label: const Text('Xác nhận đã thu'),
             ),
           ],
         ),
@@ -581,13 +601,17 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
                 : 'Hàng đã được trả lại cho người gửi?',
           ),
           actions: [
-            TextButton(
+            TextButton.icon(
               onPressed: () => Navigator.pop(dialog, false),
-              child: const Text('Quay lại'),
+              icon: const GhstButtonIcon.glyph(GhstActionKind.back, size: 16),
+
+              label: const Text('Quay lại'),
             ),
-            FilledButton(
+            FilledButton.icon(
               onPressed: () => Navigator.pop(dialog, true),
-              child: Text(action == 'deliver' ? 'Đã giao' : 'Đã hoàn hàng'),
+              icon: GhstButtonIcon.forLabel(action == 'deliver' ? 'Đã giao' : 'Đã hoàn hàng', size: 16),
+
+              label: Text(action == 'deliver' ? 'Đã giao' : 'Đã hoàn hàng'),
             ),
           ],
         ),
@@ -685,9 +709,11 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
           ),
         ),
         actions: [
-          TextButton(
+          TextButton.icon(
             onPressed: () => Navigator.pop(dialog),
-            child: const Text('Đóng'),
+            icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+            label: const Text('Đóng'),
           ),
         ],
       ),
@@ -729,19 +755,23 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
         const SizedBox(height: 20),
         _field(_email, 'Email', keyboard: TextInputType.emailAddress),
         _field(_password, 'Mật khẩu', password: true),
-        FilledButton(
+        FilledButton.icon(
           onPressed: _busy ? null : _authenticate,
-          child: Text(_register ? 'Tạo tài khoản' : 'Đăng nhập'),
+          icon: GhstButtonIcon.forLabel(_register ? 'Tạo tài khoản' : 'Đăng nhập', size: 16),
+
+          label: Text(_register ? 'Tạo tài khoản' : 'Đăng nhập'),
         ),
         if (!widget.admin)
-          TextButton(
+          TextButton.icon(
             onPressed: _busy
                 ? null
                 : () => setState(() {
                     _register = !_register;
                     _error = null;
                   }),
-            child: Text(_register ? 'Đã có tài khoản' : 'Đăng ký tài khoản'),
+            icon: GhstButtonIcon.forLabel(_register ? 'Đã có tài khoản' : 'Đăng ký tài khoản', size: 16),
+
+            label: Text(_register ? 'Đã có tài khoản' : 'Đăng ký tài khoản'),
           ),
       ],
     ),
@@ -1004,7 +1034,7 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
               if (canOpenOnlinePayment)
                 OutlinedButton.icon(
                   onPressed: _busy ? null : () => _commerce(order),
-                  icon: const Icon(Icons.payment),
+                  icon: const GhstButtonIcon(Icons.payment),
                   label: const Text('Thanh toán cước'),
                 ),
               if (!_queue && (carrier || _operator))
@@ -1012,7 +1042,7 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
                   onPressed: _busy
                       ? null
                       : () => _commerce(order, shipment: true),
-                  icon: const Icon(Icons.local_shipping_outlined),
+                  icon: const GhstButtonIcon(Icons.local_shipping_outlined),
                   label: const Text('Vận chuyển GHN'),
                 ),
               for (final action in actions.entries)
@@ -1021,19 +1051,21 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
                         onPressed: _busy || _schemaVersion < 2
                             ? null
                             : () => _transition(order, action.key),
-                        icon: const Icon(Icons.bolt_rounded, size: 18),
+                        icon: const GhstButtonIcon(Icons.bolt_rounded, size: 18),
                         label: Text(action.value),
                       )
-                    : OutlinedButton(
+                    : OutlinedButton.icon(
                         onPressed: _busy || _schemaVersion < 2
                             ? null
                             : () => _transition(order, action.key),
-                        child: Text(action.value),
+                        icon: GhstButtonIcon.forLabel(action.value, size: 16),
+
+                        label: Text(action.value),
                       ),
               if (!_queue)
                 OutlinedButton.icon(
                   onPressed: _busy ? null : () => _history(order),
-                  icon: const Icon(Icons.receipt_long_outlined),
+                  icon: const GhstButtonIcon(Icons.receipt_long_outlined),
                   label: const Text('Chi tiết'),
                 ),
               if (!_queue &&
@@ -1109,13 +1141,17 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
         title: Text(title),
         content: Text('${account['full_name']}\n${account['phone']}'),
         actions: [
-          TextButton(
+          TextButton.icon(
             onPressed: () => Navigator.pop(dialog, false),
-            child: const Text('Quay lại'),
+            icon: const GhstButtonIcon.glyph(GhstActionKind.back, size: 16),
+
+            label: const Text('Quay lại'),
           ),
-          FilledButton(
+          FilledButton.icon(
             onPressed: () => Navigator.pop(dialog, true),
-            child: const Text('Xác nhận'),
+            icon: const GhstButtonIcon.glyph(GhstActionKind.checkCircle, size: 16),
+
+            label: const Text('Xác nhận'),
           ),
         ],
       ),
@@ -1167,7 +1203,7 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
                         '${account['requested_role']}',
                         account['blocked'] == true,
                       ),
-                icon: const Icon(Icons.check),
+                icon: const GhstButtonIcon(Icons.check),
                 label: Text('Duyệt ${cloudRoles[account['requested_role']]}'),
               ),
               IconButton(
@@ -1179,17 +1215,26 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
                         '${account['role']}',
                         account['blocked'] == true,
                       ),
-                icon: const Icon(Icons.close),
+                icon: const GhstButtonIcon(Icons.close),
               ),
             ],
             if (_schemaVersion < 3)
               PopupMenuButton<String>(
                 tooltip: 'Phân quyền tài khoản',
                 enabled: !_busy && _schemaVersion >= 2,
-                icon: const Icon(Icons.manage_accounts_outlined),
+                icon: const GhstButtonIcon(Icons.manage_accounts_outlined),
                 itemBuilder: (_) => cloudRoles.entries
                     .map(
-                      (e) => PopupMenuItem(value: e.key, child: Text(e.value)),
+                      (e) => PopupMenuItem(
+                        value: e.key,
+                        child: Row(
+                          children: [
+                            GhstButtonIcon.forLabel(e.value, size: 16),
+                            const SizedBox(width: 8),
+                            Expanded(child: Text(e.value)),
+                          ],
+                        ),
+                      ),
                     )
                     .toList(),
                 onSelected: (role) =>
@@ -1199,7 +1244,7 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
               tooltip: account['blocked'] == true
                   ? 'Mở khóa tài khoản'
                   : 'Khóa tài khoản',
-              icon: Icon(
+              icon: GhstButtonIcon(
                 account['blocked'] == true
                     ? Icons.lock_open
                     : Icons.lock_outline,
@@ -1277,7 +1322,7 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
                   if (membership['state'] == 'pending') ...[
                     IconButton(
                       tooltip: 'Duyệt ${cloudRoles[membership['role']]}',
-                      icon: const Icon(Icons.check),
+                      icon: const GhstButtonIcon(Icons.check),
                       onPressed: _busy || account['blocked'] == true
                           ? null
                           : () => _updateMembership(
@@ -1288,7 +1333,7 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
                     ),
                     IconButton(
                       tooltip: 'Từ chối ${cloudRoles[membership['role']]}',
-                      icon: const Icon(Icons.close),
+                      icon: const GhstButtonIcon(Icons.close),
                       onPressed: _busy || account['blocked'] == true
                           ? null
                           : () => _updateMembership(
@@ -1301,7 +1346,7 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
                   if (membership['state'] == 'active')
                     IconButton(
                       tooltip: 'Thu hồi ${cloudRoles[membership['role']]}',
-                      icon: const Icon(Icons.person_remove_outlined),
+                      icon: const GhstButtonIcon(Icons.person_remove_outlined),
                       onPressed: _busy || account['blocked'] == true
                           ? null
                           : () => _updateMembership(
@@ -1373,13 +1418,13 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
               labelText: accounts
                   ? 'Tìm tài khoản đã tải'
                   : 'Tìm đơn hàng đã tải',
-              prefixIcon: const Icon(Icons.search),
+              prefixIcon: const GhstButtonIcon(Icons.search),
               suffixIcon: _search.text.isEmpty
                   ? null
                   : IconButton(
                       tooltip: 'Xóa tìm kiếm',
                       onPressed: () => setState(_search.clear),
-                      icon: const Icon(Icons.close),
+                      icon: const GhstButtonIcon(Icons.close),
                     ),
               border: const OutlineInputBorder(),
             ),
@@ -1387,15 +1432,10 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
         ),
         SizedBox(
           width: constraints.maxWidth < 600 ? constraints.maxWidth : 240,
-          child: DropdownButtonFormField<String>(
-            key: ValueKey(accounts),
-            initialValue: accounts ? _accountFilter : _statusFilter,
-            isExpanded: true,
-            decoration: InputDecoration(
+          child: DropdownButtonFormField<String>(icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 18), key: ValueKey(accounts), initialValue: accounts ? _accountFilter : _statusFilter, isExpanded: true, decoration: InputDecoration(
               labelText: accounts ? 'Vai trò / duyệt' : 'Trạng thái',
               border: const OutlineInputBorder(),
-            ),
-            items:
+            ), items:
                 (accounts
                         ? {
                             '': 'Tất cả',
@@ -1409,15 +1449,13 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
                       (e) =>
                           DropdownMenuItem(value: e.key, child: Text(e.value)),
                     )
-                    .toList(),
-            onChanged: (value) => setState(() {
+                    .toList(), onChanged: (value) => setState(() {
               if (accounts) {
                 _accountFilter = value!;
               } else {
                 _statusFilter = value!;
               }
-            }),
-          ),
+            }),),
         ),
       ],
     ),
@@ -1462,7 +1500,7 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
                                 _session,
                                 operator: true,
                               ),
-                        icon: const Icon(Icons.account_balance_outlined),
+                        icon: const GhstButtonIcon(Icons.account_balance_outlined),
                       ),
                       IconButton(
                         tooltip: 'Duyệt cửa hàng',
@@ -1473,30 +1511,30 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
                                 _session,
                                 MarketView.moderation,
                               ),
-                        icon: const Icon(Icons.fact_check_outlined),
+                        icon: const GhstButtonIcon(Icons.fact_check_outlined),
                       ),
                       IconButton(
                         tooltip: 'Bảng giá cước',
                         onPressed: _busy || _schemaVersion < 2
                             ? null
                             : _pricing,
-                        icon: const Icon(Icons.price_change_outlined),
+                        icon: const GhstButtonIcon(Icons.price_change_outlined),
                       ),
                       IconButton(
                         tooltip: 'Nhật ký điều hành',
                         onPressed: _busy ? null : _audit,
-                        icon: const Icon(Icons.history),
+                        icon: const GhstButtonIcon(Icons.history),
                       ),
                     ],
                     IconButton(
                       tooltip: 'Tải lại đơn hàng',
                       onPressed: _busy ? null : _load,
-                      icon: const Icon(Icons.refresh),
+                      icon: const GhstButtonIcon(Icons.refresh),
                     ),
                     if (_account != null && !blocked)
                       IconButton(
                         tooltip: 'Sổ địa chỉ',
-                        icon: const Icon(Icons.contact_mail_outlined),
+                        icon: const GhstButtonIcon(Icons.contact_mail_outlined),
                         onPressed: _busy
                             ? null
                             : () => Navigator.of(context).push(
@@ -1531,7 +1569,7 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
                             icon: Badge.count(
                               count: unread,
                               isLabelVisible: unread > 0,
-                              child: const Icon(
+                              child: const GhstButtonIcon(
                                 Icons.notifications_none_rounded,
                               ),
                             ),
@@ -1540,14 +1578,14 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
                       ),
                       IconButton(
                         tooltip: 'Thông tin tài khoản',
-                        icon: const Icon(Icons.person_outline),
+                        icon: const GhstButtonIcon(Icons.person_outline),
                         onPressed: _busy || blocked ? null : _profile,
                       ),
                     ],
                     IconButton(
                       tooltip: 'Đăng xuất',
                       onPressed: _busy ? null : () => _run(_api.signOut),
-                      icon: const Icon(Icons.logout),
+                      icon: const GhstButtonIcon(Icons.logout),
                     ),
                   ],
                 ),
@@ -1599,14 +1637,14 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
                       IconButton(
                         tooltip: 'Tải lại đơn hàng',
                         onPressed: _busy ? null : _load,
-                        icon: const Icon(Icons.refresh),
+                        icon: const GhstButtonIcon(Icons.refresh),
                       ),
                     if (_account != null &&
                         _session.canCreateShippingOrder &&
                         !_accountsView)
                       FilledButton.icon(
                         onPressed: _busy ? null : _create,
-                        icon: const Icon(Icons.add),
+                        icon: const GhstButtonIcon(Icons.add),
                         label: const Text('Tạo đơn hàng'),
                       ),
                     if (_operator || _session.hasRole('driver'))
@@ -1619,7 +1657,7 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
                                 _session,
                                 operator: _operator,
                               ),
-                        icon: const Icon(Icons.local_shipping_outlined),
+                        icon: const GhstButtonIcon(Icons.local_shipping_outlined),
                       ),
                     if (!widget.admin && _session.hasRole('driver'))
                       IconButton(
@@ -1627,16 +1665,29 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
                         onPressed: _busy
                             ? null
                             : () => openCloudDeliveryStats(context, _session),
-                        icon: const Icon(Icons.insights_outlined),
+                        icon: const GhstButtonIcon(Icons.insights_outlined),
                       ),
                     if (_session.hasRole('driver'))
                       SegmentedButton<bool>(
                         segments: const [
                           ButtonSegment(
                             value: false,
+                            icon: GhstAiIcon(
+                              style: Icon3dStyle.driverPartner,
+                              size: 17,
+                              circular: true,
+                            ),
                             label: Text('Chuyến của tôi'),
                           ),
-                          ButtonSegment(value: true, label: Text('Chờ nhận')),
+                          ButtonSegment(
+                            value: true,
+                            icon: GhstAiIcon(
+                              style: Icon3dStyle.gpsPinRadar,
+                              size: 17,
+                              circular: true,
+                            ),
+                            label: Text('Chờ nhận'),
+                          ),
                         ],
                         selected: {_queue},
                         onSelectionChanged: _busy
@@ -1652,8 +1703,24 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
                     if (_operator && widget.showAccountsToggle)
                       SegmentedButton<bool>(
                         segments: const [
-                          ButtonSegment(value: false, label: Text('Đơn hàng')),
-                          ButtonSegment(value: true, label: Text('Tài khoản')),
+                          ButtonSegment(
+                            value: false,
+                            icon: GhstAiIcon(
+                              style: Icon3dStyle.orderReceipt,
+                              size: 17,
+                              circular: true,
+                            ),
+                            label: Text('Đơn hàng'),
+                          ),
+                          ButtonSegment(
+                            value: true,
+                            icon: GhstAiIcon(
+                              style: Icon3dStyle.userProfile,
+                              size: 17,
+                              circular: true,
+                            ),
+                            label: Text('Tài khoản'),
+                          ),
                         ],
                         selected: {_accountsView},
                         onSelectionChanged: _busy
@@ -1703,9 +1770,11 @@ class _CloudOrdersScreenState extends State<CloudOrdersScreen>
                     ),
                   for (final order in visibleOrders) _order(order),
                   if (_hasMore)
-                    TextButton(
+                    TextButton.icon(
                       onPressed: _busy ? null : () => _load(more: true),
-                      child: const Text('Tải thêm'),
+                      icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 16),
+
+                      label: const Text('Tải thêm'),
                     ),
                 ],
               ],

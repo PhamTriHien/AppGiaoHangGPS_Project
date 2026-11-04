@@ -23,6 +23,7 @@ import '../widgets/support_ai_summary.dart';
 import '../widgets/road_dispatch_comparison.dart';
 import '../widgets/system_state_screens.dart';
 import '../screens/cloud_orders_screen.dart';
+import '../widgets/ghst_button_icon.dart';
 
 part 'admin_overview_and_fleet_views.dart';
 part 'admin_config_and_governance_views.dart';
@@ -265,7 +266,7 @@ class _AdminSubsystemEntryState extends State<AdminSubsystemEntry> {
                         color: AppColors.acid,
                         border: Border.all(color: AppColors.techBg),
                       ),
-                      child: const Icon(
+                      child: const GhstButtonIcon(
                         Icons.hexagon_outlined,
                         color: AppColors.techBg,
                         size: 24,
@@ -314,7 +315,7 @@ class _AdminSubsystemEntryState extends State<AdminSubsystemEntry> {
               ListTile(
                 dense: true,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-                leading: const Icon(
+                leading: const GhstButtonIcon(
                   Icons.logout_rounded,
                   color: AppColors.pink,
                   size: 19,
@@ -375,7 +376,7 @@ class _AdminSubsystemEntryState extends State<AdminSubsystemEntry> {
           ),
           child: Row(
             children: [
-              Icon(
+              GhstButtonIcon(
                 safeIcon,
                 size: 19,
                 color: selected ? AppColors.acid : AppColors.techMuted,
@@ -448,7 +449,7 @@ class _AdminSubsystemEntryState extends State<AdminSubsystemEntry> {
                         color: AppColors.acid,
                         border: Border.all(color: AppColors.ink, width: 1.2),
                       ),
-                      child: const Icon(
+                      child: const GhstButtonIcon(
                         Icons.person,
                         color: AppColors.ink,
                         size: 18,
@@ -501,7 +502,7 @@ class _AdminSubsystemEntryState extends State<AdminSubsystemEntry> {
                     ),
                   ),
                   onPressed: widget.onLogout,
-                  icon: const Icon(Icons.logout_rounded, size: 15),
+                  icon: const GhstButtonIcon(Icons.logout_rounded, size: 15),
                   label: Text(
                     compact ? 'Thoát' : 'Đăng xuất',
                     style: const TextStyle(
@@ -529,11 +530,7 @@ class _AdminSubsystemEntryState extends State<AdminSubsystemEntry> {
           border: Border.all(color: AppColors.ink, width: 1.2),
         ),
         child: DropdownButtonHideUnderline(
-          child: DropdownButton<int>(
-            value: _selectedScreenIndex,
-            isExpanded: true,
-            menuMaxHeight: 480,
-            items: [
+          child: DropdownButton<int>(icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 18), value: _selectedScreenIndex, isExpanded: true, menuMaxHeight: 480, items: [
               for (var index = 0; index < _screenTitles.length; index++)
                 DropdownMenuItem(
                   value: index,
@@ -544,11 +541,9 @@ class _AdminSubsystemEntryState extends State<AdminSubsystemEntry> {
                     style: const TextStyle(fontSize: 14),
                   ),
                 ),
-            ],
-            onChanged: (index) {
+            ], onChanged: (index) {
               if (index != null) setState(() => _selectedScreenIndex = index);
-            },
-          ),
+            },),
         ),
       ),
     );

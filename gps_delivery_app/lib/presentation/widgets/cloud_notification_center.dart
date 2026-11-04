@@ -12,6 +12,7 @@ import '../screens/market_order_services_screen.dart';
 import '../screens/marketplace_view.dart';
 import 'cloud_order_labels.dart';
 import 'cloud_session_boundary.dart';
+import 'ghst_button_icon.dart';
 
 Future<void> openCloudNotificationCenter(
   BuildContext context,
@@ -156,8 +157,10 @@ class _CloudNotificationCenterState extends State<CloudNotificationCenter> {
       if (!mounted) return;
       if (widget.lease?.handleAccessFailure(e) == true) return;
       setState(() {
-        _error = e is PublicApiException
+        _error = e is PublicApiException && e.statusCode != 503
             ? e.message
+            : e is PublicApiException && e.statusCode == 503
+            ? 'Dịch vụ tạm thời chưa khả dụng. Vui lòng thử lại sau.'
             : 'Chưa tải được danh sách thông báo.';
       });
     } finally {
@@ -373,7 +376,7 @@ class _CloudNotificationCenterState extends State<CloudNotificationCenter> {
                     onChanged: _savingPref
                         ? null
                         : (v) => _togglePreference('push_enabled', v),
-                    secondary: const Icon(Icons.notifications_active_outlined),
+                    secondary: const GhstButtonIcon(Icons.notifications_active_outlined),
                     title: const Text(
                       'Thông báo đẩy trên thiết bị',
                       style: TextStyle(fontWeight: FontWeight.w700),
@@ -390,7 +393,7 @@ class _CloudNotificationCenterState extends State<CloudNotificationCenter> {
                   onChanged: _savingPref
                       ? null
                       : (v) => _togglePreference('shipping_updates', v),
-                  secondary: const Icon(Icons.local_shipping_outlined),
+                  secondary: const GhstButtonIcon(Icons.local_shipping_outlined),
                   title: const Text('Cập nhật vận đơn & thu gom'),
                   subtitle: const Text(
                     'Trạng thái nhận chuyến, đang giao, hoàn tất và điều xe',
@@ -402,7 +405,7 @@ class _CloudNotificationCenterState extends State<CloudNotificationCenter> {
                   onChanged: _savingPref
                       ? null
                       : (v) => _togglePreference('market_updates', v),
-                  secondary: const Icon(Icons.storefront_outlined),
+                  secondary: const GhstButtonIcon(Icons.storefront_outlined),
                   title: const Text('Đơn mua sắm & gian hàng'),
                   subtitle: const Text(
                     'Xác nhận đơn ăn uống, hậu mãi hoàn tiền và quyết toán',
@@ -414,7 +417,7 @@ class _CloudNotificationCenterState extends State<CloudNotificationCenter> {
                   onChanged: _savingPref
                       ? null
                       : (v) => _togglePreference('promo_updates', v),
-                  secondary: const Icon(Icons.card_giftcard_outlined),
+                  secondary: const GhstButtonIcon(Icons.card_giftcard_outlined),
                   title: const Text('Ưu đãi, sự kiện & Ví Xu'),
                   subtitle: const Text(
                     'Tích Xu đơn hoàn tất, hoàn Xu và phần thưởng sự kiện',
@@ -477,14 +480,14 @@ class _CloudNotificationCenterState extends State<CloudNotificationCenter> {
               if (_unreadCount > 0)
                 TextButton.icon(
                   onPressed: _busy ? null : _markAllRead,
-                  icon: const Icon(Icons.done_all_rounded, size: 18),
+                  icon: const GhstButtonIcon(Icons.done_all_rounded, size: 18),
                   label: const Text('Đọc tất cả'),
                 ),
               IconButton(
                 tooltip: 'Tùy chọn thông báo đẩy',
                 onPressed: () =>
                     setState(() => _showSettings = !_showSettings),
-                icon: Icon(
+                icon: GhstButtonIcon(
                   _showSettings
                       ? Icons.tune_rounded
                       : Icons.settings_outlined,
@@ -493,7 +496,7 @@ class _CloudNotificationCenterState extends State<CloudNotificationCenter> {
               IconButton(
                 tooltip: 'Làm mới',
                 onPressed: _busy ? null : () => _load(),
-                icon: const Icon(Icons.refresh_rounded),
+                icon: const GhstButtonIcon(Icons.refresh_rounded),
               ),
             ],
           ),
@@ -504,10 +507,7 @@ class _CloudNotificationCenterState extends State<CloudNotificationCenter> {
             child: Row(
               children: [
                 for (final entry in _categories.entries) ...[
-                  ChoiceChip(
-                    label: Text(entry.value),
-                    selected: _category == entry.key,
-                    onSelected: _busy
+                  ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel(entry.value, size: 15), label: Text(entry.value), selected: _category == entry.key, onSelected: _busy
                         ? null
                         : (selected) {
                             if (!selected || _category == entry.key) return;
@@ -516,14 +516,10 @@ class _CloudNotificationCenterState extends State<CloudNotificationCenter> {
                               _nextCursor = null;
                             });
                             unawaited(_load());
-                          },
-                  ),
+                          },),
                   const SizedBox(width: 8),
                 ],
-                FilterChip(
-                  label: const Text('Chưa đọc'),
-                  selected: _unreadOnly,
-                  onSelected: _busy
+                FilterChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel('Chưa đọc', size: 15), label: const Text('Chưa đọc'), selected: _unreadOnly, onSelected: _busy
                       ? null
                       : (v) {
                           setState(() {
@@ -531,8 +527,7 @@ class _CloudNotificationCenterState extends State<CloudNotificationCenter> {
                             _nextCursor = null;
                           });
                           unawaited(_load());
-                        },
-                ),
+                        },),
               ],
             ),
           ),
@@ -546,13 +541,13 @@ class _CloudNotificationCenterState extends State<CloudNotificationCenter> {
                 style: TextStyle(color: theme.colorScheme.error),
               ),
             ),
-          if (!_busy && _items.isEmpty)
+          if (!_busy && _error == null && _items.isEmpty)
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   children: [
-                    Icon(
+                    GhstButtonIcon(
                       Icons.notifications_none_rounded,
                       size: 40,
                       color: theme.colorScheme.outline,
@@ -605,7 +600,7 @@ class _CloudNotificationCenterState extends State<CloudNotificationCenter> {
                               color: accent.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: Icon(
+                            child: GhstButtonIcon(
                               _iconFor(category, kind),
                               color: accent,
                               size: 20,
@@ -673,9 +668,11 @@ class _CloudNotificationCenterState extends State<CloudNotificationCenter> {
           if (_nextCursor != null)
             Padding(
               padding: const EdgeInsets.only(top: 8),
-              child: OutlinedButton(
+              child: OutlinedButton.icon(
                 onPressed: _loadingMore ? null : () => _load(append: true),
-                child: Text(
+                icon: GhstButtonIcon.forLabel(_loadingMore ? 'Đang tải...' : 'Tải thêm thông báo', size: 16),
+
+                label: Text(
                   _loadingMore ? 'Đang tải...' : 'Tải thêm thông báo',
                 ),
               ),

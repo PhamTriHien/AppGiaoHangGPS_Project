@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../core/integrations/bank_directory_service.dart';
+import 'ghst_button_icon.dart';
 
 class BankDirectoryField extends StatefulWidget {
   const BankDirectoryField({
@@ -80,7 +81,7 @@ class _BankDirectoryFieldState extends State<BankDirectoryField> {
       suffixIcon: IconButton(
         tooltip: 'Chọn ngân hàng',
         onPressed: _choosing ? null : _choose,
-        icon: const Icon(Icons.account_balance_outlined),
+        icon: const GhstButtonIcon(Icons.account_balance_outlined),
       ),
     ),
   );
@@ -126,7 +127,7 @@ class _BankDirectoryDialogState extends State<_BankDirectoryDialog> {
                 IconButton(
                   tooltip: 'Đóng',
                   onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close),
+                  icon: const GhstButtonIcon(Icons.close),
                 ),
               ],
             ),
@@ -134,7 +135,7 @@ class _BankDirectoryDialogState extends State<_BankDirectoryDialog> {
               autofocus: true,
               decoration: const InputDecoration(
                 labelText: 'Tên, mã ngân hàng hoặc BIN',
-                prefixIcon: Icon(Icons.search),
+                prefixIcon: GhstButtonIcon(Icons.search),
               ),
               onChanged: (value) => setState(() => _query = value),
             ),
@@ -160,7 +161,7 @@ class _BankDirectoryDialogState extends State<_BankDirectoryDialog> {
                             onPressed: () => setState(
                               () => _request = widget.service.load(),
                             ),
-                            icon: const Icon(Icons.refresh),
+                            icon: const GhstButtonIcon(Icons.refresh),
                           ),
                         ],
                       ),

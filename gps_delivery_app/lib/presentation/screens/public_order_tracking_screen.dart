@@ -7,6 +7,7 @@ import '../../core/theme/ghst_theme_tokens.dart';
 import '../widgets/animated_3d_ui_icons.dart';
 import '../widgets/cloud_order_labels.dart';
 import '../widgets/theme_mode_toggle.dart';
+import '../widgets/ghst_button_icon.dart';
 
 class PublicOrderTrackingScreen extends StatefulWidget {
   final String? initialQuery;
@@ -214,7 +215,7 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
                   Navigator.of(context).pushReplacementNamed('/');
                 }
               },
-              icon: Icon(
+              icon: GhstButtonIcon(
                 Icons.home_outlined,
                 size: 17,
                 color: tokens.primary,
@@ -300,7 +301,7 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
                             onSubmitted: (_) => _submitSearch(),
                             decoration: const InputDecoration(
                               labelText: 'Mã vận đơn hoặc mã chia sẻ',
-                              prefixIcon: Icon(Icons.search_rounded),
+                              prefixIcon: GhstButtonIcon(Icons.search_rounded),
                             ),
                           );
                           final phoneField = TextField(
@@ -312,7 +313,7 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
                             decoration: const InputDecoration(
                               labelText: '4 số cuối SĐT nhận',
                               counterText: '',
-                              prefixIcon: Icon(Icons.pin_outlined),
+                              prefixIcon: GhstButtonIcon(Icons.pin_outlined),
                             ),
                           );
                           final button = FilledButton.icon(
@@ -328,7 +329,7 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
                               ),
                             ),
                             onPressed: _busy ? null : _submitSearch,
-                            icon: const Icon(
+                            icon: const GhstButtonIcon(
                               Icons.gps_fixed_rounded,
                               size: 17,
                             ),
@@ -424,7 +425,7 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: tone.border),
             ),
-            child: Icon(icon, size: 28, color: tone.icon),
+            child: GhstButtonIcon(icon, size: 28, color: tone.icon),
           ),
         const SizedBox(width: 16),
         Expanded(
@@ -516,7 +517,7 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
                     const SnackBar(content: Text('Đã sao chép mã vận đơn.')),
                   );
                 },
-                icon: const Icon(Icons.copy_rounded, size: 16),
+                icon: const GhstButtonIcon(Icons.copy_rounded, size: 16),
                 label: const Text('Sao chép mã'),
               ),
             ],
@@ -595,7 +596,7 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
               padding: const EdgeInsets.only(bottom: 8),
               child: Row(
                 children: [
-                  Icon(
+                  GhstButtonIcon(
                     Icons.check_circle_outline,
                     size: 16,
                     color: tokens.sapphire.icon,
@@ -747,7 +748,7 @@ class _PublicOrderTrackingScreenState extends State<PublicOrderTrackingScreen> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
+        GhstButtonIcon(
           done
               ? Icons.check_circle_rounded
               : active

@@ -61,14 +61,18 @@ class PushNotificationService extends ChangeNotifier {
   Map<String, bool> get preferences => Map.unmodifiable(_preferences);
   Stream<Map<String, dynamic>> get incomingAlerts => _incomingController.stream;
 
-  static bool get supported =>
-      kIsWeb ||
+  static bool get fcmSupported =>
+      !kIsWeb &&
       [
         TargetPlatform.android,
         TargetPlatform.iOS,
         TargetPlatform.macOS,
-        TargetPlatform.windows,
       ].contains(defaultTargetPlatform);
+
+  static bool get supported =>
+      kIsWeb ||
+      fcmSupported ||
+      defaultTargetPlatform == TargetPlatform.windows;
 
   Object attachWatcher(CloudAccountSession session) {
     final marker = Object();
@@ -357,12 +361,7 @@ class PushNotificationService extends ChangeNotifier {
   }
 
   Future<void> _tryRegisterFcm(ValueChanged<String>? onMessage) async {
-    if (kIsWeb ||
-        ![
-          TargetPlatform.android,
-          TargetPlatform.iOS,
-          TargetPlatform.macOS,
-        ].contains(defaultTargetPlatform)) {
+    if (!fcmSupported) {
       return;
     }
     try {

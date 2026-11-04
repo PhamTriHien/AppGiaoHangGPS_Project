@@ -16,6 +16,7 @@ import '../widgets/cloud_order_labels.dart';
 import '../widgets/cloud_session_boundary.dart';
 import '../widgets/market_commercial_sheets.dart';
 import '../widgets/theme_mode_toggle.dart';
+import '../widgets/ghst_button_icon.dart';
 
 Future<void> openCloudPromoEvents(
   BuildContext context,
@@ -421,7 +422,7 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                       IconButton(
                         visualDensity: VisualDensity.compact,
                         onPressed: () => Navigator.pop(dialogCtx),
-                        icon: Icon(Icons.close, color: tokens.ink),
+                        icon: GhstButtonIcon(Icons.close, color: tokens.ink),
                       ),
                     ],
                   ),
@@ -462,7 +463,7 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(
+                              GhstButtonIcon(
                                 Icons.confirmation_num_outlined,
                                 color: tokens.sapphire.icon,
                               ),
@@ -479,9 +480,11 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                               ),
                             ],
                           ),
-                          OutlinedButton(
+                          OutlinedButton.icon(
                             onPressed: () => _copyVoucherAndShop(voucherCode),
-                            child: const Text('Sao chép'),
+                            icon: const GhstButtonIcon.glyph(GhstActionKind.copy, size: 16),
+
+                            label: const Text('Sao chép'),
                           ),
                         ],
                       ),
@@ -501,12 +504,14 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                             Navigator.pop(dialogCtx);
                             _copyVoucherAndShop(voucherCode, goShop: true);
                           },
-                          icon: const Icon(Icons.storefront_outlined, size: 16),
+                          icon: const GhstButtonIcon(Icons.storefront_outlined, size: 16),
                           label: const Text('Dùng đặt món ngay'),
                         ),
-                      FilledButton(
+                      FilledButton.icon(
                         onPressed: () => Navigator.pop(dialogCtx),
-                        child: const Text('Tuyệt vời'),
+                        icon: const GhstButtonIcon.glyph(GhstActionKind.checkCircle, size: 16),
+
+                        label: const Text('Tuyệt vời'),
                       ),
                     ],
                   ),
@@ -770,7 +775,7 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                         onPressed: _busy || !_enabled || checkedToday
                             ? null
                             : () => _mutate('checkin'),
-                        icon: Icon(
+                        icon: GhstButtonIcon(
                           checkedToday
                               ? Icons.check_circle_outline
                               : Icons.bolt_rounded,
@@ -792,7 +797,7 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                     children: [
                       Row(
                         children: [
-                          Icon(
+                          GhstButtonIcon(
                             Icons.flash_on_rounded,
                             color: tokens.rose.icon,
                             size: 20,
@@ -809,12 +814,14 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                             ),
                           ),
                           if (widget.onOpenCatalog != null)
-                            TextButton(
+                            TextButton.icon(
                               onPressed: () {
                                 Navigator.of(context).pop();
                                 widget.onOpenCatalog!();
                               },
-                              child: const Text('Vào quán ăn'),
+                              icon: const GhstButtonIcon.glyph(GhstActionKind.food, size: 16),
+
+                              label: const Text('Vào quán ăn'),
                             ),
                         ],
                       ),
@@ -874,12 +881,14 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                                   ),
                                 ),
                                 if (widget.onOpenCatalog != null)
-                                  FilledButton.tonal(
+                                  FilledButton.tonalIcon(
                                     onPressed: () {
                                       Navigator.of(context).pop();
                                       widget.onOpenCatalog!();
                                     },
-                                    child: const Text('Săn ngay'),
+                                    icon: const GhstButtonIcon.glyph(GhstActionKind.voucher, size: 16),
+
+                                    label: const Text('Săn ngay'),
                                   ),
                               ],
                             ),
@@ -976,7 +985,7 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                                       ],
                                     ),
                                   ),
-                                  FilledButton(
+                                  FilledButton.icon(
                                     onPressed:
                                         _busy ||
                                             !_enabled ||
@@ -985,7 +994,13 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                                         : () => _mutate('claim_mission', {
                                             'mission_id': '${m['id']}',
                                           }),
-                                    child: Text(
+                                    icon: GhstButtonIcon.forLabel(m['claimed'] == true
+                                          ? 'Đã nhận'
+                                          : m['claimable'] == true
+                                          ? 'Nhận thưởng'
+                                          : 'Chưa đạt', size: 16),
+
+                                    label: Text(
                                       m['claimed'] == true
                                           ? 'Đã nhận'
                                           : m['claimable'] == true
@@ -1067,7 +1082,7 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                                     : () => _mutate('exchange_coins', {
                                         'item_id': '${item['id']}',
                                       }),
-                                icon: const Icon(
+                                icon: const GhstButtonIcon(
                                   Icons.swap_horiz_rounded,
                                   size: 16,
                                 ),
@@ -1213,7 +1228,7 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                     FilledButton.icon(
                       key: const ValueKey('btn-promo-spin'),
                       onPressed: _busy || !_enabled ? null : _spinWheel,
-                      icon: const Icon(Icons.autorenew),
+                      icon: const GhstButtonIcon(Icons.autorenew),
                       label: Text(
                         _spinTickets > 0
                             ? 'Quay thưởng ngay · Còn $_spinTickets vé'
@@ -1221,9 +1236,11 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                       ),
                     ),
                     if (_spinTickets == 0)
-                      OutlinedButton(
+                      OutlinedButton.icon(
                         onPressed: () => _tabController.animateTo(0),
-                        child: const Text('Tới Điểm danh / Đổi Xu'),
+                        icon: const GhstButtonIcon.glyph(GhstActionKind.wallet, size: 16),
+
+                        label: const Text('Tới Điểm danh / Đổi Xu'),
                       ),
                   ],
                 ),
@@ -1298,7 +1315,7 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                         onPressed: _busy || !_enabled
                             ? null
                             : () => _mutate('reset_blind_boxes'),
-                        icon: const Icon(Icons.refresh, size: 16),
+                        icon: const GhstButtonIcon(Icons.refresh, size: 16),
                         label: const Text('Làm mới khay 6 hộp'),
                       ),
                   ],
@@ -1606,18 +1623,22 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                                   spacing: 6,
                                   runSpacing: 6,
                                   children: [
-                                    OutlinedButton(
+                                    OutlinedButton.icon(
                                       onPressed: () =>
                                           _copyVoucherAndShop('${v['code']}'),
-                                      child: const Text('Sao chép'),
+                                      icon: const GhstButtonIcon.glyph(GhstActionKind.copy, size: 16),
+
+                                      label: const Text('Sao chép'),
                                     ),
                                     if (widget.onOpenCatalog != null)
-                                      FilledButton(
+                                      FilledButton.icon(
                                         onPressed: () => _copyVoucherAndShop(
                                           '${v['code']}',
                                           goShop: true,
                                         ),
-                                        child: const Text('Dùng ngay'),
+                                        icon: const GhstButtonIcon.glyph(GhstActionKind.voucher, size: 16),
+
+                                        label: const Text('Dùng ngay'),
                                       ),
                                   ],
                                 ),
@@ -1670,11 +1691,13 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                             ),
                             trailing:
                                 (h['voucher_code'] as String? ?? '').isNotEmpty
-                                ? TextButton(
+                                ? TextButton.icon(
                                     onPressed: () => _copyVoucherAndShop(
                                       '${h['voucher_code']}',
                                     ),
-                                    child: const Text('Chép mã'),
+                                    icon: const GhstButtonIcon.glyph(GhstActionKind.copy, size: 16),
+
+                                    label: const Text('Chép mã'),
                                   )
                                 : null,
                           ),
@@ -1732,7 +1755,7 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
           IconButton(
             tooltip: 'Tải lại sự kiện',
             onPressed: _loading || _busy ? null : _load,
-            icon: const Icon(Icons.refresh),
+            icon: const GhstButtonIcon(Icons.refresh),
           ),
         ],
         bottom: TabBar(
@@ -1796,7 +1819,7 @@ class _CloudPromoEventsScreenState extends State<CloudPromoEventsScreen>
                       const SizedBox(height: 12),
                       FilledButton.icon(
                         onPressed: _load,
-                        icon: const Icon(Icons.refresh),
+                        icon: const GhstButtonIcon(Icons.refresh),
                         label: const Text('Thử lại'),
                       ),
                     ],

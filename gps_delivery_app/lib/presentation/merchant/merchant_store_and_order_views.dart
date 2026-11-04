@@ -40,7 +40,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
           ),
           child: Row(
             children: [
-              Icon(
+              GhstButtonIcon(
                 isMerApproved
                     ? Icons.verified_rounded
                     : isMerRejected
@@ -191,20 +191,15 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      DropdownButtonFormField<String>(
-                        key: ValueKey(
+                      DropdownButtonFormField<String>(icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 18), key: ValueKey(
                           _businessCategory.trim().isNotEmpty
                               ? _businessCategory.trim()
                               : '',
-                        ),
-                        isExpanded: true,
-                        initialValue: _businessCategory.trim().isNotEmpty
+                        ), isExpanded: true, initialValue: _businessCategory.trim().isNotEmpty
                             ? _businessCategory.trim()
-                            : null,
-                        decoration: const InputDecoration(
+                            : null, decoration: const InputDecoration(
                           labelText: 'Loại hình kinh doanh',
-                        ),
-                        items:
+                        ), items:
                             <String>{
                                   'Gốm sứ & Nội thất',
                                   'Thời trang & Phụ kiện',
@@ -223,13 +218,11 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                                     ),
                                   ),
                                 )
-                                .toList(),
-                        onChanged: (v) {
+                                .toList(), onChanged: (v) {
                           if (v != null) {
                             _rebuildMerchantUi(() => _businessCategory = v);
                           }
-                        },
-                      ),
+                        },),
                       const SizedBox(height: 12),
                       TextField(
                         controller: _repNameCtrl,
@@ -330,7 +323,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
               SizedBox(
                 width: double.infinity,
                 height: 48,
-                child: ElevatedButton(
+                child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFF43F5E),
                     foregroundColor: Colors.white,
@@ -394,7 +387,9 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                       ),
                     );
                   },
-                  child: Text(
+                  icon: GhstButtonIcon.forLabel(isMerApproved ? 'Cập nhật hồ sơ Shop' : 'Gửi hồ sơ', size: 16),
+
+                  label: Text(
                     isMerApproved ? 'Cập nhật hồ sơ Shop' : 'Gửi hồ sơ',
                     style: const TextStyle(
                       fontWeight: FontWeight.w700,
@@ -422,7 +417,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
           width: 40,
           height: 40,
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          child: Icon(
+          child: GhstButtonIcon(
             icon,
             color: active ? Colors.white : const Color(0xFF4A4754),
             size: 20,
@@ -495,7 +490,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
         ),
         child: Column(
           children: [
-            Icon(
+            GhstButtonIcon(
               isAttached ? Icons.check_circle_rounded : Icons.upload_rounded,
               size: 26,
               color: isAttached ? AppColors.success : const Color(0xFF334155),
@@ -680,7 +675,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                                         ),
                                       );
                                     },
-                                    icon: const Icon(
+                                    icon: const GhstButtonIcon(
                                       Icons.star_border_rounded,
                                       size: 15,
                                       color: Color(0xFF2563EB),
@@ -698,7 +693,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                                   IconButton(
                                     visualDensity: VisualDensity.compact,
                                     tooltip: 'Xóa kho lấy hàng này',
-                                    icon: const Icon(
+                                    icon: const GhstButtonIcon(
                                       Icons.delete_outline,
                                       size: 18,
                                       color: AppColors.danger,
@@ -764,7 +759,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                       foregroundColor: Colors.white,
                     ),
                     onPressed: () => _showAddMerchantWarehouseDialog(context),
-                    icon: const Icon(Icons.add, size: 18),
+                    icon: const GhstButtonIcon(Icons.add, size: 18),
                     label: const Text('Thêm điểm lấy hàng mới'),
                   ),
                 ],
@@ -887,7 +882,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                       },
                     ),
                     const SizedBox(height: 6),
-                    ElevatedButton(
+                    ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFF43F5E),
                         foregroundColor: Colors.white,
@@ -939,7 +934,9 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                           ),
                         );
                       },
-                      child: const Text(
+                      icon: const GhstButtonIcon.glyph(GhstActionKind.save, size: 16),
+
+                      label: const Text(
                         'Lưu thay đổi',
                         style: TextStyle(fontWeight: FontWeight.w800),
                       ),
@@ -980,7 +977,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                               ScaffoldMessenger.of(context)
                                   .showSnackBar(SnackBar(content: Text(msg)));
                             },
-                      icon: const Icon(Icons.webhook_rounded, size: 16),
+                      icon: const GhstButtonIcon(Icons.webhook_rounded, size: 16),
                       label: Text(
                         _isTestingWebhook
                             ? 'Đang gửi gói tin chữ ký số...'
@@ -1068,7 +1065,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                                 _isReverseGeocodingWarehouse = false;
                               });
                             },
-                            icon: const Icon(
+                            icon: const GhstButtonIcon(
                               Icons.my_location_rounded,
                               size: 14,
                             ),
@@ -1238,11 +1235,13 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                 ),
               ),
               actions: [
-                TextButton(
+                TextButton.icon(
                   onPressed: () => Navigator.of(dialogCtx).pop(),
-                  child: const Text('Hủy'),
+                  icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+                  label: const Text('Hủy'),
                 ),
-                ElevatedButton(
+                ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFF43F5E),
                     foregroundColor: Colors.white,
@@ -1293,7 +1292,9 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                       ),
                     );
                   },
-                  child: const Text('Lưu điểm lấy hàng'),
+                  icon: const GhstButtonIcon.glyph(GhstActionKind.save, size: 16),
+
+                  label: const Text('Lưu điểm lấy hàng'),
                 ),
               ],
             );
@@ -1461,16 +1462,11 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    DropdownButtonFormField<String>(
-                      key: ValueKey(
+                    DropdownButtonFormField<String>(icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 18), key: ValueKey(
                         '${personalWhs.length}_${activeWarehouseId ?? "NONE"}',
-                      ),
-                      isExpanded: true,
-                      initialValue: activeWarehouseId,
-                      decoration: const InputDecoration(
+                      ), isExpanded: true, initialValue: activeWarehouseId, decoration: const InputDecoration(
                         hintText: 'Chọn điểm lấy hàng',
-                      ),
-                      items: personalWhs
+                      ), items: personalWhs
                           .map(
                             (w) => DropdownMenuItem(
                               value: w.id,
@@ -1480,8 +1476,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                               ),
                             ),
                           )
-                          .toList(),
-                      onChanged: (whId) {
+                          .toList(), onChanged: (whId) {
                         if (whId != null) {
                           final idx = personalWhs.indexWhere(
                             (w) => w.id == whId,
@@ -1492,8 +1487,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                             }
                           });
                         }
-                      },
-                    ),
+                      },),
                     const SizedBox(height: 16),
                     const Text(
                       'Thông tin người nhận',
@@ -1547,7 +1541,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                                     Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Icon(
+                                        GhstButtonIcon(
                                           trustProfile.isHighRisk
                                               ? Icons.warning_amber_rounded
                                               : Icons.verified_user_rounded,
@@ -1596,7 +1590,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                                           ),
                                         );
                                       },
-                                      icon: Icon(
+                                      icon: GhstButtonIcon(
                                         trustProfile.isBlacklisted
                                             ? Icons.lock_open_rounded
                                             : Icons.flag_outlined,
@@ -1621,7 +1615,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                           decoration: const InputDecoration(
                             labelText:
                                 'Địa chỉ giao (Hoặc chạm lên bản đồ bên cạnh)',
-                            suffixIcon: Icon(Icons.keyboard_arrow_down_rounded),
+                            suffixIcon: GhstButtonIcon(Icons.keyboard_arrow_down_rounded),
                           ),
                         );
                         final scanner = ShippingLabelScanner(
@@ -1694,6 +1688,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                             .map(
                               (place) => ActionChip(
                                 visualDensity: VisualDensity.compact,
+                                avatar: const GhstButtonIcon.glyph(GhstActionKind.mapPin, size: 14),
                                 label: Text(
                                   place.title,
                                   style: const TextStyle(fontSize: 11),
@@ -1719,14 +1714,9 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                     LayoutBuilder(
                       builder: (context, pkgConstraints) {
                         final isNarrowPkg = pkgConstraints.maxWidth < 520;
-                        final catField = DropdownButtonFormField<String>(
-                          key: ValueKey(_singlePkgCategory),
-                          isExpanded: true,
-                          initialValue: _singlePkgCategory,
-                          decoration: const InputDecoration(
+                        final catField = DropdownButtonFormField<String>(icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 18), key: ValueKey(_singlePkgCategory), isExpanded: true, initialValue: _singlePkgCategory, decoration: const InputDecoration(
                             labelText: 'Loại hàng',
-                          ),
-                          items:
+                          ), items:
                               const [
                                     'Quần áo, Điện tử',
                                     'Gốm sứ & Đồ dễ vỡ',
@@ -1742,13 +1732,11 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                                       ),
                                     ),
                                   )
-                                  .toList(),
-                          onChanged: (v) {
+                                  .toList(), onChanged: (v) {
                             if (v != null) {
                               _rebuildMerchantUi(() => _singlePkgCategory = v);
                             }
-                          },
-                        );
+                          },);
                         final weightField = TextField(
                           controller: _singleWeightCtrl,
                           onChanged: (_) => _rebuildMerchantUi(() {}),
@@ -1834,40 +1822,22 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                       spacing: 8,
                       runSpacing: 6,
                       children: [
-                        FilterChip(
-                          label: const Text('Hàng dễ vỡ'),
-                          selected: _isFragile,
-                          onSelected: (v) =>
-                              _rebuildMerchantUi(() => _isFragile = v),
-                        ),
-                        FilterChip(
-                          label: const Text('Giữ lạnh'),
-                          selected: _isKeepCold,
-                          onSelected: (v) =>
-                              _rebuildMerchantUi(() => _isKeepCold = v),
-                        ),
-                        FilterChip(
-                          avatar: const Icon(
+                        FilterChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel('Hàng dễ vỡ', size: 15), label: const Text('Hàng dễ vỡ'), selected: _isFragile, onSelected: (v) =>
+                              _rebuildMerchantUi(() => _isFragile = v),),
+                        FilterChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel('Giữ lạnh', size: 15), label: const Text('Giữ lạnh'), selected: _isKeepCold, onSelected: (v) =>
+                              _rebuildMerchantUi(() => _isKeepCold = v),),
+                        FilterChip(showCheckmark: false, avatar: const GhstButtonIcon(
                             Icons.electric_moped_rounded,
                             size: 15,
                             color: AppColors.success,
-                          ),
-                          label: const Text('Xe điện Xanh (Eco EV)'),
-                          selected: _merchantPreferEcoEv,
-                          onSelected: (v) =>
-                              _rebuildMerchantUi(() => _merchantPreferEcoEv = v),
-                        ),
-                        FilterChip(
-                          avatar: const Icon(
+                          ), label: const Text('Xe điện Xanh (Eco EV)'), selected: _merchantPreferEcoEv, onSelected: (v) =>
+                              _rebuildMerchantUi(() => _merchantPreferEcoEv = v),),
+                        FilterChip(showCheckmark: false, avatar: const GhstButtonIcon(
                             Icons.swap_horiz_rounded,
                             size: 15,
                             color: Color(0xFF2563EB),
-                          ),
-                          label: const Text('Giao 2 chiều (Khứ hồi)'),
-                          selected: _merchantIsRoundTrip,
-                          onSelected: (v) =>
-                              _rebuildMerchantUi(() => _merchantIsRoundTrip = v),
-                        ),
+                          ), label: const Text('Giao 2 chiều (Khứ hồi)'), selected: _merchantIsRoundTrip, onSelected: (v) =>
+                              _rebuildMerchantUi(() => _merchantIsRoundTrip = v),),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -2142,7 +2112,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                 const SizedBox(height: 16),
                 SizedBox(
                   height: 50,
-                  child: ElevatedButton(
+                  child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFF43F5E),
                       foregroundColor: Colors.white,
@@ -2319,7 +2289,9 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                         ),
                       );
                     },
-                    child: const Text(
+                    icon: const GhstButtonIcon.glyph(GhstActionKind.plus, size: 16),
+
+                    label: const Text(
                       'Tạo đơn',
                       style: TextStyle(
                         fontWeight: FontWeight.w800,
@@ -2435,7 +2407,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                           ),
                         );
                       },
-                      icon: const Icon(Icons.download, size: 16),
+                      icon: const GhstButtonIcon(Icons.download, size: 16),
                       label: const Text('Tải mẫu Đầy đủ (7 cột .csv)'),
                     ),
                     OutlinedButton.icon(
@@ -2452,7 +2424,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                           ),
                         );
                       },
-                      icon: const Icon(Icons.description_outlined, size: 16),
+                      icon: const GhstButtonIcon(Icons.description_outlined, size: 16),
                       label: const Text('Tải mẫu Rút gọn (4 cột .csv)'),
                     ),
                     OutlinedButton.icon(
@@ -2467,7 +2439,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                           ),
                         );
                       },
-                      icon: const Icon(Icons.pin_drop_outlined, size: 16),
+                      icon: const GhstButtonIcon(Icons.pin_drop_outlined, size: 16),
                       label: const Text('Tải mẫu kèm tọa độ'),
                     ),
                     OutlinedButton.icon(
@@ -2487,32 +2459,27 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                           ),
                         );
                       },
-                      icon: const Icon(Icons.folder_open_outlined, size: 16),
+                      icon: const GhstButtonIcon(Icons.folder_open_outlined, size: 16),
                       label: const Text('Chọn tệp CSV từ máy'),
                     ),
                   ],
                 ),
                 if (personalWhs.isNotEmpty) ...[
                   const SizedBox(height: 12),
-                  DropdownButtonFormField<int>(
-                    key: ValueKey(
+                  DropdownButtonFormField<int>(icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 18), key: ValueKey(
                       '${personalWhs.length}_${_selectedWarehouseIndex.clamp(0, personalWhs.length - 1)}',
-                    ),
-                    isExpanded: true,
-                    initialValue: _selectedWarehouseIndex.clamp(
+                    ), isExpanded: true, initialValue: _selectedWarehouseIndex.clamp(
                       0,
                       personalWhs.length - 1,
-                    ),
-                    decoration: const InputDecoration(
+                    ), decoration: const InputDecoration(
                       isDense: true,
                       labelText: 'Kho lấy hàng áp dụng cho lô đơn CSV',
-                      prefixIcon: Icon(
+                      prefixIcon: GhstButtonIcon(
                         Icons.warehouse_outlined,
                         color: Color(0xFF2563EB),
                         size: 18,
                       ),
-                    ),
-                    items: List.generate(personalWhs.length, (idx) {
+                    ), items: List.generate(personalWhs.length, (idx) {
                       final wh = personalWhs[idx];
                       return DropdownMenuItem<int>(
                         value: idx,
@@ -2521,16 +2488,14 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                           overflow: TextOverflow.ellipsis,
                         ),
                       );
-                    }),
-                    onChanged: (idx) {
+                    }), onChanged: (idx) {
                       if (idx != null) {
                         _rebuildMerchantUi(() {
                           _selectedWarehouseIndex = idx;
                           _parseCsvBatch();
                         });
                       }
-                    },
-                  ),
+                    },),
                 ],
                 const SizedBox(height: 10),
                 Wrap(
@@ -2545,22 +2510,12 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                         fontSize: 12.5,
                       ),
                     ),
-                    ChoiceChip(
-                      label: const Text('Người gửi trả phí'),
-                      selected: _batchFeePayer == 'Người gửi trả phí',
-                      selectedColor: const Color(0xFFEDE9FE),
-                      onSelected: (_) => _rebuildMerchantUi(
+                    ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel('Người gửi trả phí', size: 15, color: (_batchFeePayer == 'Người gửi trả phí') ? const Color(0xFF1E3A8A) : AppColors.ink), label: const Text('Người gửi trả phí'), selected: _batchFeePayer == 'Người gửi trả phí', selectedColor: const Color(0xFFEDE9FE), onSelected: (_) => _rebuildMerchantUi(
                         () => _batchFeePayer = 'Người gửi trả phí',
-                      ),
-                    ),
-                    ChoiceChip(
-                      label: const Text('Người nhận trả phí'),
-                      selected: _batchFeePayer == 'Người nhận trả phí',
-                      selectedColor: const Color(0xFFEDE9FE),
-                      onSelected: (_) => _rebuildMerchantUi(
+                      ),),
+                    ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel('Người nhận trả phí', size: 15, color: (_batchFeePayer == 'Người nhận trả phí') ? const Color(0xFF1E3A8A) : AppColors.ink), label: const Text('Người nhận trả phí'), selected: _batchFeePayer == 'Người nhận trả phí', selectedColor: const Color(0xFFEDE9FE), onSelected: (_) => _rebuildMerchantUi(
                         () => _batchFeePayer = 'Người nhận trả phí',
-                      ),
-                    ),
+                      ),),
                   ],
                 ),
                 const SizedBox(height: 14),
@@ -2577,7 +2532,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                     children: [
                       const Row(
                         children: [
-                          Icon(
+                          GhstButtonIcon(
                             Icons.cloud_upload_outlined,
                             color: Color(0xFF2563EB),
                           ),
@@ -2713,7 +2668,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(
+                                GhstButtonIcon(
                                   r.isValid ? Icons.check_circle : Icons.cancel,
                                   size: 16,
                                   color: r.isValid
@@ -2798,7 +2753,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                               ),
                             );
                           },
-                    icon: const Icon(Icons.playlist_add_check),
+                    icon: const GhstButtonIcon(Icons.playlist_add_check),
                     label: Text(
                       'Xác nhận tạo $validCount đơn hợp lệ',
                       style: const TextStyle(fontWeight: FontWeight.w800),
@@ -2853,7 +2808,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
               ),
               onPressed: () =>
                   _rebuildMerchantUi(() => _selectedScreenIndex = 2),
-              icon: const Icon(Icons.add_box_outlined, size: 18),
+              icon: const GhstButtonIcon(Icons.add_box_outlined, size: 18),
               label: const Text('Mở Tạo đơn gửi hàng'),
             ),
           ],
@@ -2920,7 +2875,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                         ),
                       );
                     },
-                    icon: const Icon(Icons.print, size: 16),
+                    icon: const GhstButtonIcon(Icons.print, size: 16),
                     label: Text('In phiếu A6 (${ord.trackingCode})'),
                   ),
                 ],
@@ -2953,7 +2908,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                       },
                       cells: [
                         DataCell(
-                          Icon(
+                          GhstButtonIcon(
                             isSelected
                                 ? Icons.check_box
                                 : Icons.check_box_outline_blank,
@@ -3179,7 +3134,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                     ),
                   ),
                   if (_editingMenuItemId != null)
-                    TextButton(
+                    TextButton.icon(
                       onPressed: () => _rebuildMerchantUi(() {
                         _editingMenuItemId = null;
                         _menuDishNameCtrl.clear();
@@ -3187,7 +3142,9 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                         _menuDishPriceCtrl.text = '49000';
                         _menuDishPrepCtrl.text = '12';
                       }),
-                      child: const Text('Hủy sửa'),
+                      icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+                      label: const Text('Hủy sửa'),
                     ),
                 ],
               ),
@@ -3252,14 +3209,10 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                 },
               ),
               const SizedBox(height: 10),
-              DropdownButtonFormField<String>(
-                isExpanded: true,
-                initialValue: _menuDishCategory,
-                decoration: const InputDecoration(
+              DropdownButtonFormField<String>(icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 18), isExpanded: true, initialValue: _menuDishCategory, decoration: const InputDecoration(
                   isDense: true,
                   labelText: 'Nhóm ẩm thực (hiển thị bộ lọc Khách hàng)',
-                ),
-                items: <String>{
+                ), items: <String>{
                   ...GrabFoodRecommendationEngine.supportedCategories,
                   _menuDishCategory,
                 }.map((cat) {
@@ -3267,13 +3220,11 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                     value: cat,
                     child: Text(cat, overflow: TextOverflow.ellipsis),
                   );
-                }).toList(),
-                onChanged: (val) {
+                }).toList(), onChanged: (val) {
                   if (val != null) {
                     _rebuildMerchantUi(() => _menuDishCategory = val);
                   }
-                },
-              ),
+                },),
               const SizedBox(height: 10),
               TextField(
                 controller: _menuDishDescCtrl,
@@ -3295,18 +3246,13 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                 runSpacing: 6,
                 children: slotOptions.map((opt) {
                   final selected = _menuDishMealSlots.contains(opt.$1);
-                  return FilterChip(
-                    visualDensity: VisualDensity.compact,
-                    selected: selected,
-                    selectedColor: AppColors.acid,
-                    label: Text(
+                  return FilterChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel(opt.$2, size: 15, color: AppColors.ink), visualDensity: VisualDensity.compact, selected: selected, selectedColor: AppColors.acid, label: Text(
                       opt.$2,
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: selected ? FontWeight.w900 : FontWeight.w600,
                       ),
-                    ),
-                    onSelected: (on) {
+                    ), onSelected: (on) {
                       _rebuildMerchantUi(() {
                         if (on) {
                           _menuDishMealSlots.add(opt.$1);
@@ -3314,8 +3260,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                           _menuDishMealSlots.remove(opt.$1);
                         }
                       });
-                    },
-                  );
+                    },);
                 }).toList(),
               ),
               const SizedBox(height: 8),
@@ -3433,7 +3378,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                     ),
                   );
                 },
-                icon: const Icon(Icons.publish_rounded, size: 18),
+                icon: const GhstButtonIcon(Icons.publish_rounded, size: 18),
                 label: Text(
                   _editingMenuItemId != null
                       ? 'Lưu cập nhật món ăn'
@@ -3477,7 +3422,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                 color: AppColors.paper,
                 child: const Column(
                   children: [
-                    Icon(
+                    GhstButtonIcon(
                       Icons.restaurant_outlined,
                       size: 34,
                       color: AppColors.textSecondary,
@@ -3618,7 +3563,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                                 item.id,
                               );
                             },
-                            icon: Icon(
+                            icon: GhstButtonIcon(
                               item.isAvailable
                                   ? Icons.pause_circle_outline
                                   : Icons.play_circle_outline,
@@ -3650,7 +3595,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                               _menuDishCold = item.isColdItem;
                               _menuDishPromo = item.hasPromoBadge;
                             }),
-                            icon: const Icon(Icons.edit_outlined, size: 15),
+                            icon: const GhstButtonIcon(Icons.edit_outlined, size: 15),
                             label: const Text(
                               'Sửa',
                               style: TextStyle(fontSize: 11.5),
@@ -3664,7 +3609,7 @@ extension _MerchantStoreAndOrderViews on _MerchantSubsystemEntryState {
                             onPressed: () async {
                               await _store.deleteMerchantMenuItem(item.id);
                             },
-                            icon: const Icon(Icons.delete_outline, size: 15),
+                            icon: const GhstButtonIcon(Icons.delete_outline, size: 15),
                             label: const Text(
                               'Xóa',
                               style: TextStyle(fontSize: 11.5),

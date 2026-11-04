@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/ghst_theme_tokens.dart';
 import 'animated_3d_ui_icons.dart';
+import 'ghst_button_icon.dart';
 import 'motion_3d_effects.dart';
 import 'studio_design_widgets.dart';
 import 'system_state_screens.dart';
@@ -314,6 +315,7 @@ class StudioAuthTabBar extends StatelessWidget {
         children: [
           Expanded(
             child: _TabPill(
+              iconKind: GhstActionKind.login,
               label: 'Đăng nhập',
               selected: loginSelected,
               onTap: enabled ? onSelectLogin : null,
@@ -322,6 +324,7 @@ class StudioAuthTabBar extends StatelessWidget {
           const SizedBox(width: 4),
           Expanded(
             child: _TabPill(
+              iconKind: GhstActionKind.userPlus,
               label: 'Đăng ký tài khoản',
               selected: !loginSelected,
               onTap: enabled ? onSelectRegister : null,
@@ -335,11 +338,13 @@ class StudioAuthTabBar extends StatelessWidget {
 
 class _TabPill extends StatelessWidget {
   const _TabPill({
+    required this.iconKind,
     required this.label,
     required this.selected,
     required this.onTap,
   });
 
+  final GhstActionKind iconKind;
   final String label;
   final bool selected;
   final VoidCallback? onTap;
@@ -347,6 +352,7 @@ class _TabPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = GhstThemeTokens.of(context);
+    final fg = selected ? tokens.ink : tokens.inkSecondary;
     return Semantics(
       button: true,
       selected: selected,
@@ -365,7 +371,7 @@ class _TabPill extends StatelessWidget {
               curve: Curves.easeOutCubic,
               constraints: const BoxConstraints(minHeight: 40),
               alignment: Alignment.center,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               decoration: BoxDecoration(
                 color: selected ? tokens.cardSurface : Colors.transparent,
                 borderRadius: BorderRadius.circular(10),
@@ -374,15 +380,30 @@ class _TabPill extends StatelessWidget {
                     : null,
                 boxShadow: selected ? tokens.cardShadow : null,
               ),
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                  color: selected ? tokens.ink : tokens.inkSecondary,
-                ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  GhstButtonIcon.glyph(
+                    iconKind,
+                    size: 15,
+                    color: selected ? tokens.primary : fg,
+                    selected: selected,
+                  ),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12.8,
+                        fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                        color: fg,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

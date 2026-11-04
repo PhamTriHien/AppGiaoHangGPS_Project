@@ -4,6 +4,7 @@ import '../../core/integrations/cloud_account_session.dart';
 import '../../core/integrations/cloud_session_lease.dart';
 import '../widgets/cloud_order_form.dart';
 import '../widgets/cloud_session_boundary.dart';
+import '../widgets/ghst_button_icon.dart';
 
 class GhstShippingScreen extends StatelessWidget {
   const GhstShippingScreen({
@@ -101,7 +102,7 @@ class _ShippingFormHostState extends State<_ShippingFormHost> {
             const Text('Chưa tải được dịch vụ giao hàng.'),
             TextButton.icon(
               onPressed: _load,
-              icon: const Icon(Icons.refresh),
+              icon: const GhstButtonIcon(Icons.refresh),
               label: const Text('Thử lại'),
             ),
           ],

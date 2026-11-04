@@ -8,6 +8,7 @@ import '../../core/integrations/cloud_orders_service.dart';
 import '../../core/integrations/cloud_session_lease.dart';
 import '../../core/network/public_json_api.dart';
 import '../widgets/photon_address_lookup.dart';
+import '../widgets/ghst_button_icon.dart';
 
 class CloudAddressBookScreen extends StatefulWidget {
   const CloudAddressBookScreen({
@@ -178,13 +179,17 @@ class _CloudAddressBookScreenState extends State<CloudAddressBookScreen> {
         title: const Text('Xóa địa chỉ?'),
         content: Text('${address['label']}\n${address['full_address']}'),
         actions: [
-          TextButton(
+          TextButton.icon(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Giữ lại'),
+            icon: const GhstButtonIcon.glyph(GhstActionKind.checkCircle, size: 16),
+
+            label: const Text('Giữ lại'),
           ),
-          FilledButton(
+          FilledButton.icon(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Xóa'),
+            icon: const GhstButtonIcon.glyph(GhstActionKind.delete, size: 16),
+
+            label: const Text('Xóa'),
           ),
         ],
       ),
@@ -279,14 +284,16 @@ class _CloudAddressBookScreenState extends State<CloudAddressBookScreen> {
           children: [
             FilledButton.icon(
               onPressed: _busy || !_sameAccount ? null : _save,
-              icon: const Icon(Icons.save_outlined),
+              icon: const GhstButtonIcon(Icons.save_outlined),
               label: const Text('Lưu địa chỉ'),
             ),
-            TextButton(
+            TextButton.icon(
               onPressed: _busy
                   ? null
                   : () => setState(() => _showEditor = false),
-              child: const Text('Quay lại'),
+              icon: const GhstButtonIcon.glyph(GhstActionKind.back, size: 16),
+
+              label: const Text('Quay lại'),
             ),
           ],
         ),
@@ -302,14 +309,14 @@ class _CloudAddressBookScreenState extends State<CloudAddressBookScreen> {
         IconButton(
           tooltip: 'Tải lại địa chỉ',
           onPressed: _busy || !_sameAccount ? null : _load,
-          icon: const Icon(Icons.refresh),
+          icon: const GhstButtonIcon(Icons.refresh),
         ),
         IconButton(
           tooltip: 'Thêm địa chỉ',
           onPressed: _busy || !_sameAccount || _addresses.length >= 25
               ? null
               : _edit,
-          icon: const Icon(Icons.add_location_alt_outlined),
+          icon: const GhstButtonIcon(Icons.add_location_alt_outlined),
         ),
       ],
     ),
@@ -360,18 +367,18 @@ class _CloudAddressBookScreenState extends State<CloudAddressBookScreen> {
                                       Navigator.pop(context, address);
                                     }
                                   },
-                            icon: const Icon(Icons.check),
+                            icon: const GhstButtonIcon(Icons.check),
                             label: const Text('Chọn địa chỉ'),
                           ),
                         IconButton(
                           tooltip: 'Sửa địa chỉ',
                           onPressed: _busy ? null : () => _edit(address),
-                          icon: const Icon(Icons.edit_outlined),
+                          icon: const GhstButtonIcon(Icons.edit_outlined),
                         ),
                         IconButton(
                           tooltip: 'Xóa địa chỉ',
                           onPressed: _busy ? null : () => _delete(address),
-                          icon: const Icon(Icons.delete_outline),
+                          icon: const GhstButtonIcon(Icons.delete_outline),
                         ),
                       ],
                     ),

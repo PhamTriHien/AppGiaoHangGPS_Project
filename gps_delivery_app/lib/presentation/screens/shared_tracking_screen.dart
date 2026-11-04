@@ -4,6 +4,7 @@ import '../../core/integrations/cloud_orders_service.dart';
 import '../../core/theme/ghst_theme_tokens.dart';
 import '../widgets/cloud_order_labels.dart';
 import '../widgets/theme_mode_toggle.dart';
+import '../widgets/ghst_button_icon.dart';
 
 class SharedTrackingScreen extends StatefulWidget {
   const SharedTrackingScreen({
@@ -128,14 +129,14 @@ class _SharedTrackingScreenState extends State<SharedTrackingScreen> {
                           maxLength: 64,
                           decoration: const InputDecoration(
                             labelText: 'Mã theo dõi được chia sẻ',
-                            prefixIcon: Icon(Icons.qr_code_scanner_rounded),
+                            prefixIcon: GhstButtonIcon(Icons.qr_code_scanner_rounded),
                           ),
                           onSubmitted: (_) => _load(),
                         ),
                         const SizedBox(height: 8),
                         FilledButton.icon(
                           onPressed: _busy ? null : _load,
-                          icon: const Icon(Icons.search),
+                          icon: const GhstButtonIcon(Icons.search),
                           label: const Text('Tra cứu'),
                         ),
                         if (_busy) ...[
@@ -152,7 +153,7 @@ class _SharedTrackingScreenState extends State<SharedTrackingScreen> {
                       accentGlow: tokens.rose.glow,
                       child: Row(
                         children: [
-                          Icon(
+                          GhstButtonIcon(
                             Icons.error_outline_rounded,
                             color: tokens.rose.icon,
                           ),
@@ -329,7 +330,7 @@ class _SharedTrackingScreenState extends State<SharedTrackingScreen> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
+        GhstButtonIcon(
           done
               ? Icons.check_circle_rounded
               : active

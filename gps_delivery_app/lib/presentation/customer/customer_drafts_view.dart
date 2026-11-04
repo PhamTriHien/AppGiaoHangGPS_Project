@@ -18,13 +18,17 @@ extension _CustomerDraftsView on _CustomerSubsystemEntryState {
               'Các thay đổi chưa lưu sẽ bị thay thế. Đơn nháp đã lưu vẫn được giữ lại.',
             ),
             actions: [
-              TextButton(
+              TextButton.icon(
                 onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Giữ lại'),
+                icon: const GhstButtonIcon.glyph(GhstActionKind.checkCircle, size: 16),
+
+                label: const Text('Giữ lại'),
               ),
-              TextButton(
+              TextButton.icon(
                 onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('Thay thế'),
+                icon: const GhstButtonIcon.glyph(GhstActionKind.edit, size: 16),
+
+                label: const Text('Thay thế'),
               ),
             ],
           ),
@@ -222,7 +226,7 @@ extension _CustomerDraftsView on _CustomerSubsystemEntryState {
             IconButton(
               tooltip: 'Tải lại đơn nháp',
               onPressed: _openCustomerDrafts,
-              icon: const Icon(Icons.refresh),
+              icon: const GhstButtonIcon(Icons.refresh),
             ),
           ],
         ),
@@ -236,7 +240,7 @@ extension _CustomerDraftsView on _CustomerSubsystemEntryState {
             if (snapshot.hasError) {
               return TextButton.icon(
                 onPressed: _openCustomerDrafts,
-                icon: const Icon(Icons.refresh),
+                icon: const GhstButtonIcon(Icons.refresh),
                 label: const Text('Không tải được đơn nháp. Thử lại'),
               );
             }
@@ -258,7 +262,7 @@ extension _CustomerDraftsView on _CustomerSubsystemEntryState {
                 );
                 return ListTile(
                   contentPadding: const EdgeInsets.symmetric(vertical: 6),
-                  leading: const Icon(Icons.drafts_outlined),
+                  leading: const GhstButtonIcon(Icons.drafts_outlined),
                   title: Text(
                     '${fields['recipientName']?.toString().trim().isNotEmpty == true ? fields['recipientName'] : 'Đơn chưa có người nhận'}',
                   ),
@@ -273,7 +277,7 @@ extension _CustomerDraftsView on _CustomerSubsystemEntryState {
                   },
                   trailing: IconButton(
                     tooltip: 'Xóa đơn nháp',
-                    icon: const Icon(Icons.delete_outline),
+                    icon: const GhstButtonIcon(Icons.delete_outline),
                     onPressed: () async {
                       final ownerId = _store.activeAuthenticatedUser?.id;
                       final confirmed = await showDialog<bool>(
@@ -281,13 +285,17 @@ extension _CustomerDraftsView on _CustomerSubsystemEntryState {
                         builder: (ctx) => AlertDialog(
                           title: const Text('Xóa đơn nháp?'),
                           actions: [
-                            TextButton(
+                            TextButton.icon(
                               onPressed: () => Navigator.pop(ctx, false),
-                              child: const Text('Giữ lại'),
+                              icon: const GhstButtonIcon.glyph(GhstActionKind.checkCircle, size: 16),
+
+                              label: const Text('Giữ lại'),
                             ),
-                            TextButton(
+                            TextButton.icon(
                               onPressed: () => Navigator.pop(ctx, true),
-                              child: const Text('Xóa'),
+                              icon: const GhstButtonIcon.glyph(GhstActionKind.delete, size: 16),
+
+                              label: const Text('Xóa'),
                             ),
                           ],
                         ),

@@ -15,7 +15,7 @@ extension _CustomerAuthAndAddressViews on _CustomerSubsystemEntryState {
             color: const Color(0xFF2563EB),
             child: const Row(
               children: [
-                Icon(
+                GhstButtonIcon(
                   Icons.bookmarks_rounded,
                   color: Colors.white,
                   size: 20,
@@ -164,7 +164,7 @@ extension _CustomerAuthAndAddressViews on _CustomerSubsystemEntryState {
                         ),
                       );
                     },
-                    icon: const Icon(Icons.my_location_rounded, size: 18),
+                    icon: const GhstButtonIcon(Icons.my_location_rounded, size: 18),
                     label: const Text(
                       'Dùng vị trí hiện tại (GPS)',
                       style: TextStyle(fontWeight: FontWeight.w800),
@@ -241,7 +241,7 @@ extension _CustomerAuthAndAddressViews on _CustomerSubsystemEntryState {
                                     color: Color(0xFFEFF3F8),
                                     borderRadius: BorderRadius.all(Radius.circular(12)),
                                   ),
-                                  child: Icon(
+                                  child: GhstButtonIcon(
                                     addr.label.contains('Nhà')
                                         ? Icons.home_rounded
                                         : addr.label.contains('Cơ quan') ||
@@ -302,7 +302,7 @@ extension _CustomerAuthAndAddressViews on _CustomerSubsystemEntryState {
                                 ),
                                 IconButton(
                                   visualDensity: VisualDensity.compact,
-                                  icon: const Icon(
+                                  icon: const GhstButtonIcon(
                                     Icons.delete_outline,
                                     color: Color(0xFFDC2626),
                                     size: 20,
@@ -335,7 +335,7 @@ extension _CustomerAuthAndAddressViews on _CustomerSubsystemEntryState {
                                       _selectedScreenIndex = 2;
                                     });
                                   },
-                                  icon: const Icon(
+                                  icon: const GhstButtonIcon(
                                     Icons.trip_origin_rounded,
                                     size: 14,
                                   ),
@@ -362,7 +362,7 @@ extension _CustomerAuthAndAddressViews on _CustomerSubsystemEntryState {
                                       _selectedScreenIndex = 2;
                                     });
                                   },
-                                  icon: const Icon(
+                                  icon: const GhstButtonIcon(
                                     Icons.location_on_outlined,
                                     size: 14,
                                   ),
@@ -398,7 +398,7 @@ extension _CustomerAuthAndAddressViews on _CustomerSubsystemEntryState {
                                         ),
                                       );
                                     },
-                                    icon: const Icon(
+                                    icon: const GhstButtonIcon(
                                       Icons.star_outline_rounded,
                                       size: 14,
                                       color: Color(0xFF2563EB),
@@ -422,12 +422,8 @@ extension _CustomerAuthAndAddressViews on _CustomerSubsystemEntryState {
                 Wrap(
                   spacing: 8,
                   children: ['Nhà riêng', 'Công ty', 'Khác'].map((tag) {
-                    return ChoiceChip(
-                      label: Text(tag),
-                      selected: _selectedAddressTag == tag,
-                      onSelected: (_) =>
-                          _rebuildCustomerUi(() => _selectedAddressTag = tag),
-                    );
+                    return ChoiceChip(showCheckmark: false, avatar: GhstButtonIcon.forLabel(tag, size: 15), label: Text(tag), selected: _selectedAddressTag == tag, onSelected: (_) =>
+                          _rebuildCustomerUi(() => _selectedAddressTag = tag),);
                   }).toList(),
                 ),
                 const SizedBox(height: 8),
@@ -439,7 +435,7 @@ extension _CustomerAuthAndAddressViews on _CustomerSubsystemEntryState {
                       decoration: InputDecoration(
                         isDense: true,
                         hintText: 'Nhập địa chỉ mới để lưu vào sổ...',
-                        prefixIcon: const Icon(Icons.place_outlined),
+                        prefixIcon: const GhstButtonIcon(Icons.place_outlined),
                         suffixIcon: IconButton(
                           tooltip: 'Tra cứu địa chỉ thực tế từ OpenStreetMap',
                           onPressed: () async {
@@ -457,7 +453,7 @@ extension _CustomerAuthAndAddressViews on _CustomerSubsystemEntryState {
                               ),
                             );
                           },
-                          icon: const Icon(
+                          icon: const GhstButtonIcon(
                             Icons.travel_explore_rounded,
                             color: Color(0xFF2563EB),
                             size: 18,
@@ -487,7 +483,7 @@ extension _CustomerAuthAndAddressViews on _CustomerSubsystemEntryState {
                         _pinnedSavedAddressLocation = null;
                         _newAddressCtrl.clear();
                       },
-                      icon: const Icon(Icons.add, size: 18),
+                      icon: const GhstButtonIcon(Icons.add, size: 18),
                       label: const Text(
                         'Thêm địa chỉ',
                         style: TextStyle(fontWeight: FontWeight.w800),
@@ -522,7 +518,7 @@ extension _CustomerAuthAndAddressViews on _CustomerSubsystemEntryState {
                     ).take(3).map((place) {
                       return ActionChip(
                         visualDensity: VisualDensity.compact,
-                        avatar: const Icon(
+                        avatar: const GhstButtonIcon(
                           Icons.location_searching_rounded,
                           size: 13,
                           color: Color(0xFF2563EB),
@@ -604,10 +600,10 @@ extension _CustomerAuthAndAddressViews on _CustomerSubsystemEntryState {
           controller: _voucherCtrl,
           decoration: InputDecoration(
             labelText: 'Mã ưu đãi',
-            prefixIcon: const Icon(Icons.local_offer_outlined),
+            prefixIcon: const GhstButtonIcon(Icons.local_offer_outlined),
             suffixIcon: IconButton(
               tooltip: 'Áp dụng',
-              icon: const Icon(Icons.check),
+              icon: const GhstButtonIcon(Icons.check),
               onPressed: () => onSelected(_voucherCtrl.text),
             ),
           ),
@@ -621,12 +617,12 @@ extension _CustomerAuthAndAddressViews on _CustomerSubsystemEntryState {
           ),
         ...available.map((voucher) => ListTile(
           contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.confirmation_number_outlined),
+          leading: const GhstButtonIcon(Icons.confirmation_number_outlined),
           title: Text(voucher.code),
           subtitle: Text('${voucher.title}\nĐơn tối thiểu: ${CurrencyFormatter.formatVnd(voucher.minOrderValue)} • HSD: ${voucher.expiryDate}'),
           trailing: IconButton(
             tooltip: 'Chọn ưu đãi',
-            icon: const Icon(Icons.add_circle_outline),
+            icon: const GhstButtonIcon(Icons.add_circle_outline),
             onPressed: () => onSelected(voucher.code),
           ),
           onTap: () => onSelected(voucher.code),
@@ -648,9 +644,11 @@ extension _CustomerAuthAndAddressViews on _CustomerSubsystemEntryState {
             ),
           ),
         ),
-        actions: [TextButton(
+        actions: [TextButton.icon(
           onPressed: () => Navigator.of(dialogContext).pop(),
-          child: const Text('Đóng'),
+          icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+          label: const Text('Đóng'),
         )],
       ),
     );

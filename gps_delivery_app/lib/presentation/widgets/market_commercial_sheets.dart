@@ -9,6 +9,7 @@ import '../../core/theme/ghst_theme_tokens.dart';
 import '../../core/utils/currency_formatter.dart';
 import 'cloud_order_labels.dart';
 import 'cloud_session_boundary.dart';
+import 'ghst_button_icon.dart';
 
 String _vnd(dynamic v) =>
     CurrencyFormatter.formatVnd((v as num? ?? 0).toDouble());
@@ -82,9 +83,11 @@ Future<void> openSignedPrivateAttachment(
           ),
         ),
         actions: [
-          TextButton(
+          TextButton.icon(
             onPressed: () => Navigator.pop(dialog),
-            child: const Text('Đóng'),
+            icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+            label: const Text('Đóng'),
           ),
         ],
       ),
@@ -253,7 +256,7 @@ class _VariantsDialogState extends State<_VariantsDialog> {
                 ),
                 trailing: IconButton(
                   tooltip: 'Sửa biến thể',
-                  icon: const Icon(Icons.edit_outlined),
+                  icon: const GhstButtonIcon(Icons.edit_outlined),
                   onPressed: _busy ? null : () => _selectForEdit(v),
                 ),
               ),
@@ -353,13 +356,15 @@ class _VariantsDialogState extends State<_VariantsDialog> {
               children: [
                 FilledButton.icon(
                   onPressed: _busy ? null : _save,
-                  icon: const Icon(Icons.save_outlined),
+                  icon: const GhstButtonIcon(Icons.save_outlined),
                   label: Text(_editing == null ? 'Thêm SKU' : 'Lưu SKU'),
                 ),
                 if (_editing != null)
-                  TextButton(
+                  TextButton.icon(
                     onPressed: _busy ? null : () => _selectForEdit(null),
-                    child: const Text('Hủy sửa'),
+                    icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+                    label: const Text('Hủy sửa'),
                   ),
               ],
             ),
@@ -368,9 +373,11 @@ class _VariantsDialogState extends State<_VariantsDialog> {
       ),
     ),
     actions: [
-      TextButton(
+      TextButton.icon(
         onPressed: () => Navigator.pop(context),
-        child: const Text('Đóng'),
+        icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+        label: const Text('Đóng'),
       ),
     ],
   );
@@ -501,7 +508,7 @@ class _ShopStaffDialogState extends State<_ShopStaffDialog> {
                 ),
                 trailing: IconButton(
                   tooltip: 'Thu hồi quyền',
-                  icon: const Icon(Icons.person_remove_outlined),
+                  icon: const GhstButtonIcon(Icons.person_remove_outlined),
                   onPressed: _busy
                       ? null
                       : () => _save(
@@ -519,11 +526,7 @@ class _ShopStaffDialogState extends State<_ShopStaffDialog> {
               ),
             ),
             const SizedBox(height: 10),
-            DropdownButtonFormField<String>(
-              initialValue: _role,
-              isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Vai trò cửa hàng'),
-              items: const [
+            DropdownButtonFormField<String>(icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 18), initialValue: _role, isExpanded: true, decoration: const InputDecoration(labelText: 'Vai trò cửa hàng'), items: const [
                 DropdownMenuItem(
                   value: 'staff',
                   child: Text('Nhân viên xử lý đơn'),
@@ -532,13 +535,11 @@ class _ShopStaffDialogState extends State<_ShopStaffDialog> {
                   value: 'manager',
                   child: Text('Quản lý cửa hàng'),
                 ),
-              ],
-              onChanged: _busy ? null : (v) => setState(() => _role = v!),
-            ),
+              ], onChanged: _busy ? null : (v) => setState(() => _role = v!),),
             const SizedBox(height: 12),
             FilledButton.icon(
               onPressed: _busy ? null : () => _save(),
-              icon: const Icon(Icons.person_add_outlined),
+              icon: const GhstButtonIcon(Icons.person_add_outlined),
               label: const Text('Cấp quyền nhân sự'),
             ),
           ],
@@ -546,9 +547,11 @@ class _ShopStaffDialogState extends State<_ShopStaffDialog> {
       ),
     ),
     actions: [
-      TextButton(
+      TextButton.icon(
         onPressed: () => Navigator.pop(context),
-        child: const Text('Đóng'),
+        icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+        label: const Text('Đóng'),
       ),
     ],
   );
@@ -720,16 +723,10 @@ class _VoucherEditorDialogState extends State<_VoucherEditorDialog> {
               decoration: const InputDecoration(labelText: 'Tên chương trình'),
             ),
             const SizedBox(height: 8),
-            DropdownButtonFormField<String>(
-              initialValue: _kind,
-              isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Loại giảm giá'),
-              items: const [
+            DropdownButtonFormField<String>(icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 18), initialValue: _kind, isExpanded: true, decoration: const InputDecoration(labelText: 'Loại giảm giá'), items: const [
                 DropdownMenuItem(value: 'fixed', child: Text('Số tiền cố định')),
                 DropdownMenuItem(value: 'percent', child: Text('Theo %')),
-              ],
-              onChanged: _busy ? null : (v) => setState(() => _kind = v!),
-            ),
+              ], onChanged: _busy ? null : (v) => setState(() => _kind = v!),),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -814,13 +811,17 @@ class _VoucherEditorDialogState extends State<_VoucherEditorDialog> {
       ),
     ),
     actions: [
-      TextButton(
+      TextButton.icon(
         onPressed: () => Navigator.pop(context),
-        child: const Text('Hủy'),
+        icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+        label: const Text('Hủy'),
       ),
-      FilledButton(
+      FilledButton.icon(
         onPressed: _busy ? null : _save,
-        child: const Text('Lưu voucher'),
+        icon: const GhstButtonIcon.glyph(GhstActionKind.save, size: 16),
+
+        label: const Text('Lưu voucher'),
       ),
     ],
   );
@@ -952,11 +953,7 @@ class _FlashSaleDialogState extends State<_FlashSaleDialog> {
                 ),
               ),
             if (widget.products.isNotEmpty)
-              DropdownButtonFormField<String>(
-                initialValue: _productId,
-                isExpanded: true,
-                decoration: const InputDecoration(labelText: 'Sản phẩm'),
-                items: widget.products
+              DropdownButtonFormField<String>(icon: const GhstButtonIcon.glyph(GhstActionKind.down, size: 18), initialValue: _productId, isExpanded: true, decoration: const InputDecoration(labelText: 'Sản phẩm'), items: widget.products
                     .map(
                       (p) => DropdownMenuItem(
                         value: '${p['id']}',
@@ -966,11 +963,9 @@ class _FlashSaleDialogState extends State<_FlashSaleDialog> {
                         ),
                       ),
                     )
-                    .toList(),
-                onChanged: _busy || widget.flashSale != null
+                    .toList(), onChanged: _busy || widget.flashSale != null
                     ? null
-                    : (v) => setState(() => _productId = v),
-              ),
+                    : (v) => setState(() => _productId = v),),
             const SizedBox(height: 8),
             TextField(
               controller: _price,
@@ -1022,13 +1017,17 @@ class _FlashSaleDialogState extends State<_FlashSaleDialog> {
       ),
     ),
     actions: [
-      TextButton(
+      TextButton.icon(
         onPressed: () => Navigator.pop(context),
-        child: const Text('Hủy'),
+        icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+        label: const Text('Hủy'),
       ),
-      FilledButton(
+      FilledButton.icon(
         onPressed: _busy || _productId == null ? null : _save,
-        child: const Text('Lưu Flash Sale'),
+        icon: const GhstButtonIcon.glyph(GhstActionKind.save, size: 16),
+
+        label: const Text('Lưu Flash Sale'),
       ),
     ],
   );
@@ -1116,14 +1115,16 @@ class _VoucherBrowserDialogState extends State<_VoucherBrowserDialog> {
                     '${v['discount_kind'] == 'percent' ? 'Giảm ${v['discount_value']}% tối đa ${_vnd(v['max_discount'])}' : 'Giảm ${_vnd(v['discount_value'])}'
                     } · Đơn từ ${_vnd(v['min_subtotal'])} · Ngân sách còn ${_vnd(v['remaining_budget'])}',
                   ),
-                  trailing: FilledButton.tonal(
+                  trailing: FilledButton.tonalIcon(
                     onPressed: () {
                       Clipboard.setData(
                         ClipboardData(text: '${v['code']}'),
                       ).ignore();
                       Navigator.pop(context, '${v['code']}');
                     },
-                    child: const Text('Dùng'),
+                    icon: const GhstButtonIcon.glyph(GhstActionKind.voucher, size: 16),
+
+                    label: const Text('Dùng'),
                   ),
                 ),
               ),
@@ -1132,9 +1133,11 @@ class _VoucherBrowserDialogState extends State<_VoucherBrowserDialog> {
       ),
     ),
     actions: [
-      TextButton(
+      TextButton.icon(
         onPressed: () => Navigator.pop(context),
-        child: const Text('Đóng'),
+        icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+        label: const Text('Đóng'),
       ),
     ],
   );
@@ -1252,9 +1255,11 @@ class _CoinWalletDialogState extends State<_CoinWalletDialog> {
         ),
       ),
       actions: [
-        TextButton(
+        TextButton.icon(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Đóng'),
+          icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+          label: const Text('Đóng'),
         ),
       ],
     );
@@ -1411,7 +1416,7 @@ class _SplitShipmentDialogState extends State<_SplitShipmentDialog> {
                                 removed.$1.dispose();
                                 removed.$2.dispose();
                               }),
-                        icon: const Icon(Icons.remove_circle_outline),
+                        icon: const GhstButtonIcon(Icons.remove_circle_outline),
                       ),
                   ],
                 ),
@@ -1426,7 +1431,7 @@ class _SplitShipmentDialogState extends State<_SplitShipmentDialog> {
                           TextEditingController(text: '0'),
                         )),
                       ),
-                icon: const Icon(Icons.add),
+                icon: const GhstButtonIcon(Icons.add),
                 label: const Text('Thêm kiện'),
               ),
           ],
@@ -1434,13 +1439,17 @@ class _SplitShipmentDialogState extends State<_SplitShipmentDialog> {
       ),
     ),
     actions: [
-      TextButton(
+      TextButton.icon(
         onPressed: () => Navigator.pop(context),
-        child: const Text('Hủy'),
+        icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+        label: const Text('Hủy'),
       ),
-      FilledButton(
+      FilledButton.icon(
         onPressed: _busy ? null : _submit,
-        child: const Text('Tạo vận đơn tách kiện'),
+        icon: const GhstButtonIcon.glyph(GhstActionKind.plus, size: 16),
+
+        label: const Text('Tạo vận đơn tách kiện'),
       ),
     ],
   );
@@ -1493,7 +1502,7 @@ Future<bool?> showPartnerReviewDialog(
                           onPressed: busy
                               ? null
                               : () => update(() => rating = i),
-                          icon: Icon(
+                          icon: GhstButtonIcon(
                             i <= rating ? Icons.star : Icons.star_border,
                           ),
                         ),
@@ -1511,11 +1520,13 @@ Future<bool?> showPartnerReviewDialog(
               ),
             ),
             actions: [
-              TextButton(
+              TextButton.icon(
                 onPressed: () => Navigator.pop(dialog),
-                child: const Text('Quay lại'),
+                icon: const GhstButtonIcon.glyph(GhstActionKind.back, size: 16),
+
+                label: const Text('Quay lại'),
               ),
-              FilledButton(
+              FilledButton.icon(
                 onPressed: busy
                     ? null
                     : () async {
@@ -1547,7 +1558,9 @@ Future<bool?> showPartnerReviewDialog(
                           }
                         }
                       },
-                child: const Text('Gửi đánh giá'),
+                icon: const GhstButtonIcon.glyph(GhstActionKind.send, size: 16),
+
+                label: const Text('Gửi đánh giá'),
               ),
             ],
           ),
@@ -1606,11 +1619,13 @@ Future<bool?> showReviewReplyOrReportDialog(
               ),
             ),
             actions: [
-              TextButton(
+              TextButton.icon(
                 onPressed: () => Navigator.pop(dialog),
-                child: const Text('Hủy'),
+                icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+                label: const Text('Hủy'),
               ),
-              FilledButton(
+              FilledButton.icon(
                 onPressed: busy
                     ? null
                     : () async {
@@ -1643,7 +1658,9 @@ Future<bool?> showReviewReplyOrReportDialog(
                           }
                         }
                       },
-                child: Text(reply ? 'Gửi phản hồi' : 'Gửi báo cáo'),
+                icon: GhstButtonIcon.forLabel(reply ? 'Gửi phản hồi' : 'Gửi báo cáo', size: 16),
+
+                label: Text(reply ? 'Gửi phản hồi' : 'Gửi báo cáo'),
               ),
             ],
           ),

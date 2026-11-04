@@ -101,7 +101,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                   ),
                   child: Column(
                     children: [
-                      Icon(
+                      GhstButtonIcon(
                         outcome.mintedVoucherCode != null
                             ? Icons.confirmation_number_rounded
                             : Icons.stars_rounded,
@@ -177,7 +177,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                           Navigator.of(dialogCtx).pop();
                           _applyVoucherAndProceed(context, code);
                         },
-                        icon: const Icon(
+                        icon: const GhstButtonIcon(
                           Icons.local_shipping_outlined,
                           size: 16,
                         ),
@@ -202,7 +202,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                           Navigator.of(dialogCtx).pop();
                           _applyVoucherToGrabFood(context, code);
                         },
-                        icon: const Icon(
+                        icon: const GhstButtonIcon(
                           Icons.restaurant_menu_rounded,
                           size: 16,
                         ),
@@ -221,9 +221,11 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
             ),
           ),
           actions: [
-            TextButton(
+            TextButton.icon(
               onPressed: () => Navigator.of(dialogCtx).pop(),
-              child: const Text(
+              icon: const GhstButtonIcon.glyph(GhstActionKind.voucher, size: 16),
+
+              label: const Text(
                 'Tiếp tục săn thưởng',
                 style: TextStyle(fontWeight: FontWeight.w800),
               ),
@@ -361,7 +363,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                   ),
                 ),
                 onPressed: () => _openPromoHubAtTab(0),
-                icon: const Icon(Icons.flash_on_rounded, size: 15),
+                icon: const GhstButtonIcon(Icons.flash_on_rounded, size: 15),
                 label: Text(
                   checkedInToday ? 'Flash Sale & Nhiệm vụ' : 'Điểm danh & Săn Sale',
                   style: const TextStyle(
@@ -380,7 +382,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                   ),
                 ),
                 onPressed: () => _openPromoHubAtTab(1),
-                icon: const Icon(Icons.radar_rounded, size: 15),
+                icon: const GhstButtonIcon(Icons.radar_rounded, size: 15),
                 label: Text(
                   'Vòng Xoay (${wallet.spinTickets})',
                   style: const TextStyle(
@@ -399,7 +401,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                   ),
                 ),
                 onPressed: () => _openPromoHubAtTab(2),
-                icon: const Icon(
+                icon: const GhstButtonIcon(
                   Icons.card_giftcard_rounded,
                   size: 15,
                   color: AppColors.pink,
@@ -431,7 +433,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: fg),
+          GhstButtonIcon(icon, size: 12, color: fg),
           const SizedBox(width: 4),
           Text(
             label,
@@ -615,7 +617,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
+                      GhstButtonIcon(
                         item.$1,
                         size: 16,
                         color: selected ? AppColors.acid : AppColors.ink,
@@ -735,7 +737,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: accent, size: 18),
+          GhstButtonIcon(icon, color: accent, size: 18),
           const SizedBox(width: 8),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -810,7 +812,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                   const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
+                      GhstButtonIcon(
                         Icons.calendar_month_rounded,
                         color: Color(0xFFD97706),
                         size: 20,
@@ -846,7 +848,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                               SnackBar(content: Text(res.message)),
                             );
                           },
-                    icon: Icon(
+                    icon: GhstButtonIcon(
                       checkedInToday
                           ? Icons.check_circle_rounded
                           : Icons.touch_app_rounded,
@@ -907,7 +909,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                                   fontFamily: 'Consolas',
                                 ),
                               ),
-                              Icon(
+                              GhstButtonIcon(
                                 isDone
                                     ? Icons.check_circle_rounded
                                     : (isBigDay
@@ -966,7 +968,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                   const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
+                      GhstButtonIcon(
                         Icons.bolt_rounded,
                         color: Color(0xFFEE4D2D),
                         size: 22,
@@ -1148,7 +1150,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                                               ),
                                             );
                                           },
-                                          icon: const Icon(
+                                          icon: const GhstButtonIcon(
                                             Icons.download_done_rounded,
                                             size: 14,
                                           ),
@@ -1165,7 +1167,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                                           spacing: 6,
                                           runSpacing: 4,
                                           children: [
-                                            OutlinedButton(
+                                            OutlinedButton.icon(
                                               style: OutlinedButton.styleFrom(
                                                 visualDensity:
                                                     VisualDensity.compact,
@@ -1180,7 +1182,9 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                                                     context,
                                                     camp.codePrefix,
                                                   ),
-                                              child: const Text(
+                                              icon: const GhstButtonIcon.glyph(GhstActionKind.scooter, size: 16),
+
+                                              label: const Text(
                                                 'Dùng Ship',
                                                 style: TextStyle(
                                                   fontSize: 11,
@@ -1188,7 +1192,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                                                 ),
                                               ),
                                             ),
-                                            OutlinedButton(
+                                            OutlinedButton.icon(
                                               style: OutlinedButton.styleFrom(
                                                 visualDensity:
                                                     VisualDensity.compact,
@@ -1206,7 +1210,9 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                                                     context,
                                                     camp.codePrefix,
                                                   ),
-                                              child: const Text(
+                                              icon: const GhstButtonIcon.glyph(GhstActionKind.food, size: 16),
+
+                                              label: const Text(
                                                 'Dùng Food',
                                                 style: TextStyle(
                                                   fontSize: 11,
@@ -1245,7 +1251,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                 children: [
                   const Row(
                     children: [
-                      Icon(
+                      GhstButtonIcon(
                         Icons.emoji_events_rounded,
                         color: Color(0xFF00B14F),
                         size: 20,
@@ -1345,7 +1351,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                                   ),
                                 )
                               else if (m.canClaim)
-                                FilledButton(
+                                FilledButton.icon(
                                   style: FilledButton.styleFrom(
                                     visualDensity: VisualDensity.compact,
                                     backgroundColor: const Color(0xFF00B14F),
@@ -1362,7 +1368,9 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                                       SnackBar(content: Text(res.message)),
                                     );
                                   },
-                                  child: const Text(
+                                  icon: const GhstButtonIcon.glyph(GhstActionKind.gift, size: 16),
+
+                                  label: const Text(
                                     'Nhận thưởng',
                                     style: TextStyle(
                                       fontSize: 11,
@@ -1371,7 +1379,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                                   ),
                                 )
                               else
-                                OutlinedButton(
+                                OutlinedButton.icon(
                                   style: OutlinedButton.styleFrom(
                                     visualDensity: VisualDensity.compact,
                                     shape: const RoundedRectangleBorder(
@@ -1382,7 +1390,9 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                                     _selectedScreenIndex =
                                         m.id == 'MIS_GRABFOOD_FAN' ? 13 : 2;
                                   }),
-                                  child: const Text(
+                                  icon: const GhstButtonIcon.glyph(GhstActionKind.checkCircle, size: 16),
+
+                                  label: const Text(
                                     'Thực hiện',
                                     style: TextStyle(
                                       fontSize: 11,
@@ -1411,7 +1421,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                 children: [
                   Row(
                     children: [
-                      const Icon(
+                      const GhstButtonIcon(
                         Icons.storefront_rounded,
                         color: AppColors.violet,
                         size: 20,
@@ -1542,7 +1552,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
               ],
             ),
           ),
-          FilledButton(
+          FilledButton.icon(
             style: FilledButton.styleFrom(
               visualDensity: VisualDensity.compact,
               backgroundColor: affordable ? accent : AppColors.textSecondary,
@@ -1560,7 +1570,9 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                 ),
               );
             },
-            child: Text(
+            icon: GhstButtonIcon.forLabel('Đổi $costCoins Xu', size: 16),
+
+            label: Text(
               'Đổi $costCoins Xu',
               style: const TextStyle(
                 fontSize: 11.5,
@@ -1611,7 +1623,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                 ),
                 onPressed: () =>
                     _rebuildCustomerUi(() => _selectedPromoHubTabIndex = 1),
-                icon: const Icon(Icons.casino_outlined, size: 15),
+                icon: const GhstButtonIcon(Icons.casino_outlined, size: 15),
                 label: const Text(
                   'Quay thêm mã mới',
                   style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800),
@@ -1625,10 +1637,10 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
             decoration: InputDecoration(
               isDense: true,
               labelText: 'Nhập mã ưu đãi (Giao hàng / GrabFood)',
-              prefixIcon: const Icon(Icons.local_offer_outlined),
+              prefixIcon: const GhstButtonIcon(Icons.local_offer_outlined),
               suffixIcon: IconButton(
                 tooltip: 'Áp dụng',
-                icon: const Icon(Icons.check),
+                icon: const GhstButtonIcon(Icons.check),
                 onPressed: () =>
                     _applyVoucherAndProceed(context, _voucherCtrl.text),
               ),
@@ -1675,7 +1687,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                         onPressed: () => _rebuildCustomerUi(
                           () => _selectedPromoHubTabIndex = 0,
                         ),
-                        icon: const Icon(Icons.flash_on_rounded, size: 15),
+                        icon: const GhstButtonIcon(Icons.flash_on_rounded, size: 15),
                         label: const Text('Săn Flash Sale'),
                       ),
                       FilledButton.icon(
@@ -1686,7 +1698,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                         onPressed: () => _rebuildCustomerUi(
                           () => _selectedPromoHubTabIndex = 2,
                         ),
-                        icon: const Icon(Icons.redeem_rounded, size: 15),
+                        icon: const GhstButtonIcon(Icons.redeem_rounded, size: 15),
                         label: const Text('Khui Hộp Mù'),
                       ),
                     ],
@@ -1787,7 +1799,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                           ),
                           onPressed: () =>
                               _applyVoucherAndProceed(context, voucher.code),
-                          icon: const Icon(
+                          icon: const GhstButtonIcon(
                             Icons.local_shipping_outlined,
                             size: 14,
                           ),
@@ -1810,7 +1822,7 @@ extension _CustomerPromoEventsViews on _CustomerSubsystemEntryState {
                           ),
                           onPressed: () =>
                               _applyVoucherToGrabFood(context, voucher.code),
-                          icon: const Icon(
+                          icon: const GhstButtonIcon(
                             Icons.restaurant_menu_rounded,
                             size: 14,
                           ),
@@ -2067,7 +2079,7 @@ class _LuckySpinWheelSectionState extends State<_LuckySpinWheelSection>
                           color: AppColors.pink,
                           border: Border.all(color: AppColors.ink, width: 2),
                         ),
-                        child: const Icon(
+                        child: const GhstButtonIcon(
                           Icons.arrow_drop_down_rounded,
                           color: Colors.white,
                           size: 24,
@@ -2128,7 +2140,7 @@ class _LuckySpinWheelSectionState extends State<_LuckySpinWheelSection>
                       ),
                     ),
                     onPressed: _isSpinning ? null : _triggerSpin,
-                    icon: const Icon(Icons.casino_rounded, size: 18),
+                    icon: const GhstButtonIcon(Icons.casino_rounded, size: 18),
                     label: Text(
                       _isSpinning
                           ? 'Vòng xoay đang chạy...'
@@ -2150,7 +2162,7 @@ class _LuckySpinWheelSectionState extends State<_LuckySpinWheelSection>
                       ),
                     ),
                     onPressed: widget.onGoToExchangeOrMissions,
-                    icon: const Icon(Icons.add_circle_outline, size: 16),
+                    icon: const GhstButtonIcon(Icons.add_circle_outline, size: 16),
                     label: const Text(
                       'Kiếm thêm lượt quay',
                       style: TextStyle(
@@ -2503,7 +2515,7 @@ class _MysteryBlindBoxSectionState extends State<_MysteryBlindBoxSection>
                           ),
                         );
                       },
-                      icon: const Icon(Icons.refresh_rounded, size: 15),
+                      icon: const GhstButtonIcon(Icons.refresh_rounded, size: 15),
                       label: const Text(
                         'Làm mới bộ 6 Hộp',
                         style: TextStyle(
@@ -2522,7 +2534,7 @@ class _MysteryBlindBoxSectionState extends State<_MysteryBlindBoxSection>
                       ),
                     ),
                     onPressed: widget.onGoToExchange,
-                    icon: const Icon(Icons.monetization_on_rounded, size: 15),
+                    icon: const GhstButtonIcon(Icons.monetization_on_rounded, size: 15),
                     label: const Text(
                       'Đổi Xu lấy Vé Hộp Mù',
                       style: TextStyle(
@@ -2667,7 +2679,7 @@ class _MysteryBlindBoxSectionState extends State<_MysteryBlindBoxSection>
                                           width: 1.5,
                                         ),
                                       ),
-                                      child: Icon(
+                                      child: GhstButtonIcon(
                                         Icons.inventory_2_rounded,
                                         size: 32,
                                         color: accentColor,
@@ -2707,7 +2719,7 @@ class _MysteryBlindBoxSectionState extends State<_MysteryBlindBoxSection>
                                         ? null
                                         : () =>
                                               _handleTapBlindBox(slot.boxIndex),
-                                    icon: const Icon(
+                                    icon: const GhstButtonIcon(
                                       Icons.auto_awesome_rounded,
                                       size: 14,
                                     ),
@@ -2785,7 +2797,7 @@ class _MysteryBlindBoxSectionState extends State<_MysteryBlindBoxSection>
                                       spacing: 6,
                                       runSpacing: 6,
                                       children: [
-                                        OutlinedButton(
+                                        OutlinedButton.icon(
                                           style: OutlinedButton.styleFrom(
                                             visualDensity:
                                                 VisualDensity.compact,
@@ -2797,7 +2809,9 @@ class _MysteryBlindBoxSectionState extends State<_MysteryBlindBoxSection>
                                               widget.onUseVoucherDelivery(
                                                 opened.voucherCode!,
                                               ),
-                                          child: const Text(
+                                          icon: const GhstButtonIcon.glyph(GhstActionKind.scooter, size: 16),
+
+                                          label: const Text(
                                             'Dùng Ship',
                                             style: TextStyle(
                                               fontSize: 11,
@@ -2805,7 +2819,7 @@ class _MysteryBlindBoxSectionState extends State<_MysteryBlindBoxSection>
                                             ),
                                           ),
                                         ),
-                                        OutlinedButton(
+                                        OutlinedButton.icon(
                                           style: OutlinedButton.styleFrom(
                                             visualDensity:
                                                 VisualDensity.compact,
@@ -2820,7 +2834,9 @@ class _MysteryBlindBoxSectionState extends State<_MysteryBlindBoxSection>
                                               widget.onUseVoucherGrabFood(
                                                 opened.voucherCode!,
                                               ),
-                                          child: const Text(
+                                          icon: const GhstButtonIcon.glyph(GhstActionKind.food, size: 16),
+
+                                          label: const Text(
                                             'Dùng Food',
                                             style: TextStyle(
                                               fontSize: 11,

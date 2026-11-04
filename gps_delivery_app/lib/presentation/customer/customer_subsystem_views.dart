@@ -23,6 +23,7 @@ import '../widgets/shipping_label_scanner.dart';
 import '../widgets/live_order_connection.dart';
 import '../widgets/system_state_screens.dart';
 import '../widgets/vietqr_bank_payment_panel.dart';
+import '../widgets/ghst_button_icon.dart';
 
 part 'customer_auth_and_address_views.dart';
 part 'customer_order_and_pricing_views.dart';
@@ -490,7 +491,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
                       color: AppColors.acid,
                       border: Border.all(color: AppColors.techBg),
                     ),
-                    child: const Icon(
+                    child: const GhstButtonIcon(
                       Icons.local_shipping_outlined,
                       color: AppColors.techBg,
                       size: 22,
@@ -590,7 +591,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
                               ),
                               child: Row(
                                 children: [
-                                  Icon(
+                                  GhstButtonIcon(
                                     item.$1,
                                     size: 18,
                                     color: selected
@@ -654,7 +655,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
               ListTile(
                 dense: true,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-                leading: const Icon(
+                leading: const GhstButtonIcon(
                   Icons.logout_rounded,
                   color: AppColors.pink,
                   size: 19,
@@ -727,7 +728,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
                     ),
                   ),
                   onPressed: () => setState(() => _selectedScreenIndex = 12),
-                  icon: const Icon(
+                  icon: const GhstButtonIcon(
                     Icons.casino_outlined,
                     size: 15,
                     color: Color(0xFFEE4D2D),
@@ -754,7 +755,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
                     ),
                   ),
                   onPressed: () => setState(() => _selectedScreenIndex = 13),
-                  icon: const Icon(
+                  icon: const GhstButtonIcon(
                     Icons.restaurant_menu_rounded,
                     size: 15,
                     color: Color(0xFF00B14F),
@@ -782,7 +783,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
                     ),
                   ),
                   onPressed: () => setState(() => _selectedScreenIndex = 2),
-                  icon: const Icon(Icons.add_box_outlined, size: 16),
+                  icon: const GhstButtonIcon(Icons.add_box_outlined, size: 16),
                   label: const Text(
                     'Tạo đơn hàng mới',
                     style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
@@ -797,7 +798,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
                     visualDensity: VisualDensity.compact,
                     tooltip: 'Trung tâm thông báo',
                     onPressed: () => setState(() => _selectedScreenIndex = 11),
-                    icon: const Icon(
+                    icon: const GhstButtonIcon(
                       Icons.notifications_none_rounded,
                       color: AppColors.ink,
                       size: 22,
@@ -838,7 +839,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
                         color: AppColors.acid,
                         border: Border.all(color: AppColors.ink, width: 1.2),
                       ),
-                      child: Icon(
+                      child: GhstButtonIcon(
                         const [
                           Icons.person,
                           Icons.sentiment_very_satisfied_rounded,
@@ -943,7 +944,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
               visualDensity: VisualDensity.compact,
               tooltip: 'Quay lại',
               onPressed: _navigateBackFromCustomerSubScreen,
-              icon: const Icon(
+              icon: const GhstButtonIcon(
                 Icons.arrow_back_rounded,
                 color: AppColors.acid,
                 size: 21,
@@ -1011,7 +1012,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
               children: [
                 const Padding(
                   padding: EdgeInsets.all(6),
-                  child: Icon(
+                  child: GhstButtonIcon(
                     Icons.notifications_none_rounded,
                     color: Colors.white,
                     size: 20,
@@ -1054,7 +1055,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
                 minimumSize: Size.zero,
               ),
               onPressed: widget.onLogout,
-              icon: const Icon(Icons.logout_rounded, size: 13),
+              icon: const GhstButtonIcon(Icons.logout_rounded, size: 13),
               label: const Text(
                 'Đăng xuất',
                 style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800),
@@ -1111,7 +1112,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
                     Stack(
                       clipBehavior: Clip.none,
                       children: [
-                        Icon(items[idx].$1, color: color, size: 20),
+                        GhstButtonIcon(items[idx].$1, color: color, size: 20),
                         if (idx == 2 && cartQty > 0)
                           Positioned(
                             right: -8,
@@ -1243,7 +1244,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
           children: [
             Row(
               children: [
-                const Icon(
+                const GhstButtonIcon(
                   Icons.apps_rounded,
                   size: 17,
                   color: AppColors.violet,
@@ -1385,7 +1386,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
                                 width: 32,
                                 height: 32,
                                 color: item.$4.withValues(alpha: 0.14),
-                                child: Icon(item.$3, color: item.$4, size: 18),
+                                child: GhstButtonIcon(item.$3, color: item.$4, size: 18),
                               ),
                               const SizedBox(width: 8),
                               Expanded(
@@ -1556,7 +1557,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
                             );
                           }
                         },
-                        icon: Icon(
+                        icon: GhstButtonIcon(
                           showOrderRouteOnHome
                               ? Icons.my_location_rounded
                               : Icons.route_rounded,
@@ -1580,7 +1581,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
                         () =>
                             _selectedScreenIndex = showOrderRouteOnHome ? 4 : 2,
                       ),
-                      icon: Icon(
+                      icon: GhstButtonIcon(
                         showOrderRouteOnHome
                             ? Icons.open_in_full_rounded
                             : Icons.edit_location_alt_outlined,
@@ -1694,12 +1695,14 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
                     ),
                   ),
                 ),
-                TextButton(
+                TextButton.icon(
                   style: TextButton.styleFrom(
                     visualDensity: VisualDensity.compact,
                   ),
                   onPressed: () => setState(() => _selectedScreenIndex = 7),
-                  child: const Text(
+                  icon: const GhstButtonIcon.glyph(GhstActionKind.forward, size: 16),
+
+                  label: const Text(
                     'Xem tất cả →',
                     style: TextStyle(
                       fontWeight: FontWeight.w800,
@@ -1773,7 +1776,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      OutlinedButton(
+                      OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
                           visualDensity: VisualDensity.compact,
                           padding: const EdgeInsets.symmetric(
@@ -1786,7 +1789,9 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
                           _store.selectCustomerOrder(ord.trackingCode);
                           setState(() => _selectedScreenIndex = 4);
                         },
-                        child: const Text(
+                        icon: const GhstButtonIcon.glyph(GhstActionKind.forward, size: 16),
+
+                        label: const Text(
                           'Xem',
                           style: TextStyle(fontSize: 11),
                         ),
@@ -1831,7 +1836,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
                       width: 36,
                       height: 36,
                       color: AppColors.pink,
-                      child: const Icon(
+                      child: const GhstButtonIcon(
                         Icons.location_on_rounded,
                         color: Colors.white,
                         size: 20,
@@ -1888,7 +1893,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
                       ),
                     ),
                     onPressed: () => setState(() => _selectedScreenIndex = 1),
-                    icon: const Icon(Icons.bookmarks_outlined, size: 15),
+                    icon: const GhstButtonIcon(Icons.bookmarks_outlined, size: 15),
                     label: const Text(
                       'Sổ địa chỉ',
                       style: TextStyle(
@@ -1908,7 +1913,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
                       ),
                     ),
                     onPressed: _openCustomerDrafts,
-                    icon: const Icon(Icons.drafts_outlined, size: 15),
+                    icon: const GhstButtonIcon(Icons.drafts_outlined, size: 15),
                     label: const Text(
                       'Đơn nháp',
                       style: TextStyle(
@@ -1928,7 +1933,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
                       ),
                     ),
                     onPressed: () => setState(() => _selectedScreenIndex = 12),
-                    icon: const Icon(
+                    icon: const GhstButtonIcon(
                       Icons.local_offer_outlined,
                       size: 15,
                       color: AppColors.violet,
@@ -1955,7 +1960,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
                       ),
                     ),
                     onPressed: () => setState(() => _selectedScreenIndex = 2),
-                    icon: const Icon(Icons.arrow_forward_rounded, size: 15),
+                    icon: const GhstButtonIcon(Icons.arrow_forward_rounded, size: 15),
                     label: const Text(
                       'Đặt đơn',
                       style: TextStyle(
@@ -1986,7 +1991,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
+                    const GhstButtonIcon(
                       Icons.local_shipping_rounded,
                       color: Color(0xFF166534),
                       size: 18,
@@ -2027,7 +2032,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
                         );
                         setState(() => _selectedScreenIndex = 4);
                       },
-                      icon: const Icon(Icons.my_location_rounded, size: 14),
+                      icon: const GhstButtonIcon(Icons.my_location_rounded, size: 14),
                       label: const Text(
                         'Theo dõi',
                         style: TextStyle(
@@ -2053,7 +2058,7 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
                         );
                         setState(() => _selectedScreenIndex = 5);
                       },
-                      icon: const Icon(Icons.chat_bubble_outline, size: 13),
+                      icon: const GhstButtonIcon(Icons.chat_bubble_outline, size: 13),
                       label: const Text(
                         'Chat',
                         style: TextStyle(
@@ -2161,13 +2166,15 @@ class _CustomerSubsystemEntryState extends State<CustomerSubsystemEntry> {
             ),
           ),
           actions: [
-            TextButton(
+            TextButton.icon(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Thanh toán sau'),
+              icon: const GhstButtonIcon.glyph(GhstActionKind.wallet, size: 16),
+
+              label: const Text('Thanh toán sau'),
             ),
             FilledButton.icon(
               onPressed: () => Navigator.pop(ctx, true),
-              icon: const Icon(Icons.check_circle_outline),
+              icon: const GhstButtonIcon(Icons.check_circle_outline),
               label: const Text('Tôi đã chuyển khoản'),
             ),
           ],

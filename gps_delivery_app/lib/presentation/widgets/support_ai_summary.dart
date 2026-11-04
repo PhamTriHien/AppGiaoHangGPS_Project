@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/integrations/delivery_api_client.dart';
+import 'ghst_button_icon.dart';
 
 class SupportAiSummary extends StatefulWidget {
   const SupportAiSummary({
@@ -37,13 +38,17 @@ class _SupportAiSummaryState extends State<SupportAiSummary> {
           ),
         ),
         actions: [
-          TextButton(
+          TextButton.icon(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Hủy'),
+            icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+            label: const Text('Hủy'),
           ),
-          FilledButton(
+          FilledButton.icon(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Gửi bản đã ẩn thông tin'),
+            icon: const GhstButtonIcon.glyph(GhstActionKind.send, size: 16),
+
+            label: const Text('Gửi bản đã ẩn thông tin'),
           ),
         ],
       ),
@@ -72,13 +77,17 @@ class _SupportAiSummaryState extends State<SupportAiSummary> {
             child: SingleChildScrollView(child: SelectableText(summary)),
           ),
           actions: [
-            TextButton(
+            TextButton.icon(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Đóng'),
+              icon: const GhstButtonIcon.glyph(GhstActionKind.close, size: 16),
+
+              label: const Text('Đóng'),
             ),
-            FilledButton(
+            FilledButton.icon(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Dùng làm bản nháp'),
+              icon: const GhstButtonIcon.glyph(GhstActionKind.edit, size: 16),
+
+              label: const Text('Dùng làm bản nháp'),
             ),
           ],
         ),
@@ -99,7 +108,7 @@ class _SupportAiSummaryState extends State<SupportAiSummary> {
     children: [
       TextButton.icon(
         onPressed: _busy ? null : _summarize,
-        icon: const Icon(Icons.auto_awesome_outlined),
+        icon: const GhstButtonIcon(Icons.auto_awesome_outlined),
         label: Text(_busy ? 'Đang phân tích...' : 'Gợi ý xử lý'),
       ),
       if (_error != null)

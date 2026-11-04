@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../data/datasources/local/app_state_store.dart';
 import 'animated_3d_ui_icons.dart';
 import 'system_state_screens.dart';
+import 'ghst_button_icon.dart';
 
 class StudioMarkWordmark extends StatelessWidget {
   final bool light;
@@ -449,7 +450,7 @@ class _Studio3dStartupSplashScreenState
                                     ),
                                   ),
                                   SizedBox(width: 6),
-                                  Icon(
+                                  GhstButtonIcon(
                                     Icons.north_east_rounded,
                                     color: AppColors.acid,
                                     size: 14,

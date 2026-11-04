@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/ghst_theme_tokens.dart';
 import '../../core/theme/theme_controller.dart';
+import 'animated_3d_ui_icons.dart';
+import 'ghst_button_icon.dart';
 
 class ThemeModeIconButton extends StatelessWidget {
   const ThemeModeIconButton({
@@ -20,9 +22,6 @@ class ThemeModeIconButton extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final tokens = GhstThemeTokens.of(context);
     final size = compact ? 34.0 : 38.0;
-    final iconColor = onDarkHeader
-        ? (isDark ? const Color(0xFFFCD34D) : const Color(0xFF93C5FD))
-        : (isDark ? const Color(0xFFFCD34D) : tokens.sapphire.icon);
     final bgColor = onDarkHeader
         ? Colors.white.withValues(alpha: 0.08)
         : (isDark ? tokens.cardMuted : tokens.sapphire.fill);
@@ -55,10 +54,11 @@ class ThemeModeIconButton extends StatelessWidget {
                 border: Border.all(color: borderColor),
               ),
               alignment: Alignment.center,
-              child: Icon(
-                isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-                size: compact ? 17 : 18,
-                color: iconColor,
+              child: GhstAiIcon(
+                style: Icon3dStyle.themeSunMoon,
+                size: compact ? 22 : 24,
+                circular: true,
+                selected: isDark,
               ),
             ),
           ),
@@ -80,50 +80,58 @@ class ThemeModeSelectorCard extends StatelessWidget {
 
     Widget option({
       required ThemeMode value,
-      required IconData icon,
+      required GhstActionKind iconKind,
       required String label,
       required Key key,
     }) {
       final selected = mode == value;
       return Expanded(
-        child: Material(
-          color: selected ? tokens.primary : tokens.cardSubtle,
-          borderRadius: BorderRadius.circular(11),
-          child: InkWell(
-            key: key,
+        child: Semantics(
+          button: true,
+          selected: selected,
+          child: Material(
+            color: selected ? tokens.primary : tokens.cardSubtle,
             borderRadius: BorderRadius.circular(11),
-            onTap: () => controller.setThemeMode(value),
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(11),
-                border: Border.all(
-                  color: selected ? tokens.primary : tokens.border,
+            child: InkWell(
+              key: key,
+              borderRadius: BorderRadius.circular(11),
+              onTap: () => controller.setThemeMode(value),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 10,
+                  horizontal: 8,
                 ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    icon,
-                    size: 16,
-                    color: selected ? Colors.white : tokens.inkSecondary,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(11),
+                  border: Border.all(
+                    color: selected ? tokens.primary : tokens.border,
                   ),
-                  const SizedBox(width: 6),
-                  Flexible(
-                    child: Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: selected ? Colors.white : tokens.ink,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    GhstButtonIcon.glyph(
+                      iconKind,
+                      size: 16,
+                      color: selected ? Colors.white : tokens.inkSecondary,
+                      selected: selected,
+                    ),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: selected ? Colors.white : tokens.ink,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -139,20 +147,12 @@ class ThemeModeSelectorCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: tokens.sapphire.fill,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: tokens.sapphire.border),
-                ),
-                child: Icon(
-                  tokens.isDark
-                      ? Icons.dark_mode_rounded
-                      : Icons.light_mode_rounded,
-                  size: 18,
-                  color: tokens.sapphire.icon,
-                ),
+              GhstAiIcon(
+                style: Icon3dStyle.themeSunMoon,
+                size: 36,
+                borderRadius: 10,
+                selected: tokens.isDark,
+                borderColor: tokens.sapphire.border,
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -184,21 +184,21 @@ class ThemeModeSelectorCard extends StatelessWidget {
             children: [
               option(
                 value: ThemeMode.light,
-                icon: Icons.wb_sunny_rounded,
+                iconKind: GhstActionKind.sun,
                 label: 'Sáng',
                 key: const Key('theme-mode-light'),
               ),
               const SizedBox(width: 8),
               option(
                 value: ThemeMode.dark,
-                icon: Icons.nights_stay_rounded,
+                iconKind: GhstActionKind.moon,
                 label: 'Tối',
                 key: const Key('theme-mode-dark'),
               ),
               const SizedBox(width: 8),
               option(
                 value: ThemeMode.system,
-                icon: Icons.brightness_auto_rounded,
+                iconKind: GhstActionKind.autoTheme,
                 label: 'Hệ thống',
                 key: const Key('theme-mode-system'),
               ),
